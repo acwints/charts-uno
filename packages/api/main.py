@@ -13,6 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from models.database import init_db, get_db, User, Chart, SavedChart, Like
 from dependencies import (
@@ -30,7 +33,16 @@ from schemas import (
     SavedChartResponse,
     LikeResponse,
     TokenResponse,
+    ImageAnalysisRequest,
+    ImageAnalysisResponse,
+    ChatRequest,
+    ChatResponse,
+    ChartRecommendRequest,
+    ChartRecommendResponse,
+    InfographicRequest,
+    InfographicResponse,
 )
+from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +53,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Environment configuration
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
@@ -55,6 +70,10 @@ app = FastAPI(
     description="Backend API for Charts Agent - AI-powered chart visualization",
     version="1.0.0",
 )
+
+# Add rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS configuration
 allowed_origins = [FRONTEND_URL]
@@ -296,25 +315,66 @@ async def get_current_user_info(
 # Chart Endpoints
 # ============================================================================
 
+def _get_user_interactions(
+    db: Session,
+    user_id: str,
+    chart_ids: List[str],
+) -> tuple[set, set]:
+    """Batch fetch user's likes and saves for a list of charts.
+
+    Returns (liked_chart_ids, saved_chart_ids) as sets for O(1) lookup.
+    """
+    if not chart_ids:
+        return set(), set()
+
+    # Single query for all likes
+    liked_ids = {
+        row[0] for row in db.query(Like.chart_id)
+        .filter(Like.user_id == user_id, Like.chart_id.in_(chart_ids))
+        .all()
+    }
+
+    # Single query for all saves
+    saved_ids = {
+        row[0] for row in db.query(SavedChart.chart_id)
+        .filter(SavedChart.user_id == user_id, SavedChart.chart_id.in_(chart_ids))
+        .all()
+    }
+
+    return liked_ids, saved_ids
+
+
 def _chart_to_response(
     chart: Chart,
     current_user: Optional[User] = None,
     db: Optional[Session] = None,
+    liked_ids: Optional[set] = None,
+    saved_ids: Optional[set] = None,
 ) -> ChartResponse:
-    """Convert a Chart model to a ChartResponse with computed fields"""
+    """Convert a Chart model to a ChartResponse with computed fields.
+
+    If liked_ids/saved_ids are provided (from batch fetch), use those.
+    Otherwise fall back to individual queries (for single chart lookups).
+    """
     is_liked = False
     is_saved = False
 
-    if current_user and db:
-        is_liked = db.query(Like).filter(
-            Like.user_id == current_user.id,
-            Like.chart_id == chart.id,
-        ).first() is not None
+    if current_user:
+        if liked_ids is not None and saved_ids is not None:
+            # Use pre-computed sets (batch mode)
+            is_liked = chart.id in liked_ids
+            is_saved = chart.id in saved_ids
+        elif db:
+            # Fall back to individual queries (single chart mode)
+            is_liked = db.query(Like).filter(
+                Like.user_id == current_user.id,
+                Like.chart_id == chart.id,
+            ).first() is not None
 
-        is_saved = db.query(SavedChart).filter(
-            SavedChart.user_id == current_user.id,
-            SavedChart.chart_id == chart.id,
-        ).first() is not None
+            is_saved = db.query(SavedChart).filter(
+                SavedChart.user_id == current_user.id,
+                SavedChart.chart_id == chart.id,
+            ).first() is not None
 
     return ChartResponse(
         id=chart.id,
@@ -374,8 +434,15 @@ async def list_my_charts(
 
     charts = query.order_by(Chart.created_at.desc()).offset(offset).limit(limit).all()
 
+    # Batch fetch user interactions (2 queries instead of 2*N)
+    chart_ids = [c.id for c in charts]
+    liked_ids, saved_ids = _get_user_interactions(db, current_user.id, chart_ids)
+
     return ChartListResponse(
-        charts=[_chart_to_response(c, current_user, db) for c in charts],
+        charts=[
+            _chart_to_response(c, current_user, db, liked_ids, saved_ids)
+            for c in charts
+        ],
         total=total,
         limit=limit,
         offset=offset,
@@ -395,8 +462,18 @@ async def list_public_charts(
 
     charts = query.order_by(Chart.created_at.desc()).offset(offset).limit(limit).all()
 
+    # Batch fetch user interactions if user is logged in
+    liked_ids: set = set()
+    saved_ids: set = set()
+    if current_user:
+        chart_ids = [c.id for c in charts]
+        liked_ids, saved_ids = _get_user_interactions(db, current_user.id, chart_ids)
+
     return ChartListResponse(
-        charts=[_chart_to_response(c, current_user, db) for c in charts],
+        charts=[
+            _chart_to_response(c, current_user, db, liked_ids, saved_ids)
+            for c in charts
+        ],
         total=total,
         limit=limit,
         offset=offset,
@@ -554,12 +631,16 @@ async def list_saved_charts(
         .all()
     )
 
+    # Batch fetch user interactions
+    chart_ids = [s.chart_id for s in saved_charts]
+    liked_ids, saved_ids = _get_user_interactions(db, current_user.id, chart_ids)
+
     return [
         SavedChartResponse(
             id=s.id,
             chart_id=s.chart_id,
             created_at=s.created_at,
-            chart=_chart_to_response(s.chart, current_user, db),
+            chart=_chart_to_response(s.chart, current_user, db, liked_ids, saved_ids),
         )
         for s in saved_charts
     ]
@@ -645,11 +726,117 @@ async def list_liked_charts(
         .all()
     )
 
+    # Batch fetch user interactions
+    chart_ids = [like.chart_id for like in likes if like.chart]
+    liked_ids, saved_ids = _get_user_interactions(db, current_user.id, chart_ids)
+
     return [
-        _chart_to_response(like.chart, current_user, db)
+        _chart_to_response(like.chart, current_user, db, liked_ids, saved_ids)
         for like in likes
         if like.chart
     ]
+
+
+# ============================================================================
+# AI Service Endpoints
+# ============================================================================
+
+@app.post("/api/ai/analyze-image", response_model=ImageAnalysisResponse)
+@limiter.limit("10/minute")
+async def analyze_image_endpoint(
+    request: Request,
+    data: ImageAnalysisRequest,
+):
+    """Analyze an image and extract chart data using AI."""
+    try:
+        result = await analyze_image(data.image_base64, data.mime_type)
+        return ImageAnalysisResponse(
+            labels=result["labels"],
+            series=result["series"],
+            suggestedTitle=result.get("suggestedTitle"),
+            suggestedType=result.get("suggestedType"),
+            xAxisLabel=result.get("xAxisLabel"),
+            yAxisLabel=result.get("yAxisLabel"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Image analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Image analysis failed")
+
+
+@app.post("/api/ai/chat", response_model=ChatResponse)
+@limiter.limit("20/minute")
+async def chat_endpoint(
+    request: Request,
+    data: ChatRequest,
+):
+    """Chat with AI about chart data."""
+    try:
+        result = await chat_with_chart(
+            message=data.message,
+            current_data=data.current_data.model_dump(),
+            current_config=data.current_config.model_dump(),
+            chat_history=[h.model_dump() for h in data.chat_history],
+        )
+        return ChatResponse(
+            message=result["message"],
+            updatedData=result.get("updatedData"),
+            updatedConfig=result.get("updatedConfig"),
+            changes=result["changes"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Chat failed: {e}")
+        raise HTTPException(status_code=500, detail="Chat processing failed")
+
+
+@app.post("/api/ai/recommend", response_model=ChartRecommendResponse)
+@limiter.limit("20/minute")
+async def recommend_chart_endpoint(
+    request: Request,
+    data: ChartRecommendRequest,
+):
+    """Get AI recommendation for the best chart type."""
+    try:
+        result = await recommend_chart_type(
+            data=data.data.model_dump(),
+            preferred_type=data.preferred_type,
+            user_prompt=data.user_prompt,
+        )
+        return ChartRecommendResponse(
+            type=result["type"],
+            reasoning=result["reasoning"],
+            summary=result["summary"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Recommendation failed: {e}")
+        raise HTTPException(status_code=500, detail="Recommendation failed")
+
+
+@app.post("/api/ai/infographic", response_model=InfographicResponse)
+@limiter.limit("5/minute")
+async def infographic_endpoint(
+    request: Request,
+    data: InfographicRequest,
+):
+    """Generate an SVG infographic for chart data."""
+    try:
+        svg = await generate_infographic(
+            data=data.data.model_dump(),
+            title=data.title,
+            color_scheme=data.color_scheme,
+            theme=data.theme,
+        )
+        return InfographicResponse(svg=svg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Infographic generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Infographic generation failed")
 
 
 # ============================================================================

@@ -118,3 +118,66 @@ class LikeResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# AI Service schemas
+class ImageAnalysisRequest(BaseModel):
+    image_base64: str
+    mime_type: str = "image/png"
+
+
+class ImageAnalysisResponse(BaseModel):
+    labels: List[str]
+    series: List[ChartDataSeries]
+    suggestedTitle: Optional[str] = None
+    suggestedType: Optional[str] = None
+    xAxisLabel: Optional[str] = None
+    yAxisLabel: Optional[str] = None
+
+
+class ChatMessageHistory(BaseModel):
+    role: str  # 'user' or 'assistant'
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    current_data: ChartData
+    current_config: ChartConfig
+    chat_history: List[ChatMessageHistory] = []
+
+
+class ChatChanges(BaseModel):
+    dataModified: bool
+    configModified: bool
+    summary: str
+
+
+class ChatResponse(BaseModel):
+    message: str
+    updatedData: Optional[Dict[str, Any]] = None
+    updatedConfig: Optional[Dict[str, Any]] = None
+    changes: ChatChanges
+
+
+class ChartRecommendRequest(BaseModel):
+    data: ChartData
+    preferred_type: Optional[str] = None
+    user_prompt: Optional[str] = None
+
+
+class ChartRecommendResponse(BaseModel):
+    type: str
+    reasoning: str
+    summary: str
+
+
+class InfographicRequest(BaseModel):
+    data: ChartData
+    title: str
+    color_scheme: str
+    theme: str = "dark"  # 'dark' or 'light'
+
+
+class InfographicResponse(BaseModel):
+    svg: str
