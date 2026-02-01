@@ -23,11 +23,13 @@ import {
   Legend,
   Cell,
 } from 'recharts';
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles, BarChart3, Table } from 'lucide-react';
 import type { ChartData, ChartConfig } from '../types';
 import { COLOR_PALETTES, COLOR_GRADIENTS, STYLE_VARIANTS } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import './ChartPreview.css';
+
+type ViewMode = 'chart' | 'table';
 
 interface ChartPreviewProps {
   data: ChartData;
@@ -41,6 +43,14 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('chart');
+
+  // Reset view mode to chart when chart type changes (unless it's table type)
+  useEffect(() => {
+    if (config.type === 'table') {
+      setViewMode('table');
+    }
+  }, [config.type]);
 
   useEffect(() => {
     if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
@@ -465,11 +475,37 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       data-style-variant={config.styleVariant}
     >
       <div className="chart-header">
-        {config.title ? (
-          <h2 className="chart-title">{config.title}</h2>
-        ) : (
-          <h2 className="chart-title-placeholder">Your Chart</h2>
-        )}
+        <div className="chart-header-top">
+          {config.title ? (
+            <h2 className="chart-title">{config.title}</h2>
+          ) : (
+            <h2 className="chart-title-placeholder">Your Chart</h2>
+          )}
+          {config.type !== 'infographic' && (
+            <div className="view-toggle" role="tablist" aria-label="View mode">
+              <button
+                className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+                onClick={() => setViewMode('chart')}
+                role="tab"
+                aria-selected={viewMode === 'chart'}
+                aria-label="Chart view"
+              >
+                <BarChart3 size={16} />
+                <span>Chart</span>
+              </button>
+              <button
+                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                role="tab"
+                aria-selected={viewMode === 'table'}
+                aria-label="Table view"
+              >
+                <Table size={16} />
+                <span>Data</span>
+              </button>
+            </div>
+          )}
+        </div>
         <div className="chart-meta">
           <span className="chart-meta-item">
             <span className="meta-label">Source:</span>
@@ -487,12 +523,12 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       </div>
 
       <div
-        className={`chart-container ${config.type === 'table' ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
+        className={`chart-container ${viewMode === 'table' ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
       >
-        {config.type === 'table' ? (
-          renderTable()
-        ) : config.type === 'infographic' ? (
+        {config.type === 'infographic' ? (
           renderInfographic()
+        ) : viewMode === 'table' ? (
+          renderTable()
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             {renderChart()}
@@ -500,7 +536,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         )}
       </div>
 
-      {config.type !== 'table' && config.type !== 'infographic' && (
+      {viewMode === 'chart' && config.type !== 'infographic' && (
         <div className="chart-color-bar">
           {colors.slice(0, data.series.length).map((color, idx) => (
             <div

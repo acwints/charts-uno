@@ -11,7 +11,6 @@ import {
   Zap,
   Palette,
   Type,
-  Table,
   Sparkles,
   Briefcase,
   Smile,
@@ -36,7 +35,6 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'pie', icon: PieChart, label: 'Pie' },
   { id: 'radar', icon: Hexagon, label: 'Radar' },
   { id: 'scatter', icon: Circle, label: 'Scatter' },
-  { id: 'table', icon: Table, label: 'Table' },
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
 ];
 

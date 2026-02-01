@@ -8,7 +8,9 @@ import { ChatPanel } from './components/ChatPanel';
 import { Hero } from './components/Hero';
 import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEngineerView';
 import { ChartFeed } from './components/ChartFeed';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AssistantProvider } from './contexts/AssistantProvider';
+import { ToastProvider } from './contexts/ToastContext';
 import { recommendChartType } from './services/chartTypeRecommender';
 import type { ChartData, ChartConfig } from './types';
 import type { ChartResponse } from './services/api';
@@ -19,7 +21,7 @@ type AppView = 'input' | 'chart' | 'feed';
 function AppContent() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [chartConfig, setChartConfig] = useState<ChartConfig>({
-    type: 'table',
+    type: 'bar',
     colorScheme: 'default',
     styleVariant: 'professional',
     showGrid: true,
@@ -57,7 +59,7 @@ function AppContent() {
       setCurrentView('chart');
     } catch (error) {
       console.error('AI recommendation failed:', error);
-      const fallbackType = data.suggestedType ?? 'table';
+      const fallbackType = data.suggestedType ?? 'bar';
       setChartData(data);
       setChartConfig(prev => ({ ...prev, ...updates, type: fallbackType }));
       setCurrentView('chart');
@@ -69,7 +71,7 @@ function AppContent() {
   const handleReset = useCallback(() => {
     setChartData(null);
     setChartConfig({
-      type: 'table',
+      type: 'bar',
       colorScheme: 'default',
       styleVariant: 'professional',
       showGrid: true,
@@ -227,9 +229,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AssistantProvider>
-      <AppContent />
-    </AssistantProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AssistantProvider>
+          <AppContent />
+        </AssistantProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

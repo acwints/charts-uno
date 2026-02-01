@@ -23,10 +23,56 @@
   padding: var(--space-4) var(--space-5);
   border-bottom: var(--border-subtle);
   display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.chart-header-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* View Toggle Switch */
+.view-toggle {
+  display: flex;
+  background: var(--bg-primary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 2px;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn:hover:not(.active) {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.view-toggle-btn svg {
+  flex-shrink: 0;
 }
 
 .chart-title {
