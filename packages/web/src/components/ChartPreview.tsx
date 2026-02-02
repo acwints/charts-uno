@@ -23,13 +23,11 @@ import {
   Legend,
   Cell,
 } from 'recharts';
-import { RefreshCw, Sparkles, BarChart3, Table } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 import type { ChartData, ChartConfig } from '../types';
 import { COLOR_PALETTES, COLOR_GRADIENTS, STYLE_VARIANTS } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import './ChartPreview.css';
-
-type ViewMode = 'chart' | 'table';
 
 interface ChartPreviewProps {
   data: ChartData;
@@ -43,14 +41,6 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('chart');
-
-  // Reset view mode to chart when chart type changes (unless it's table type)
-  useEffect(() => {
-    if (config.type === 'table') {
-      setViewMode('table');
-    }
-  }, [config.type]);
 
   useEffect(() => {
     if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
@@ -123,41 +113,6 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       default: return '3 3';
     }
   }, [styleConfig.chart.gridStyle]);
-
-  const renderTable = () => {
-    return (
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th className="table-header-cell sticky-col"></th>
-              {data.labels.map((label, idx) => (
-                <th key={idx} className="table-header-cell">{label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.series.map((series, seriesIdx) => (
-              <tr key={series.name}>
-                <td className="table-row-label sticky-col">
-                  <span
-                    className="series-indicator"
-                    style={{ background: colors[seriesIdx % colors.length] }}
-                  />
-                  {series.name}
-                </td>
-                {series.data.map((value, idx) => (
-                  <td key={idx} className="table-cell">
-                    {typeof value === 'number' ? value.toLocaleString() : value}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
 
   const renderInfographic = () => {
     if (infographicLoading) {
@@ -299,9 +254,6 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     };
 
     switch (config.type) {
-      case 'table':
-        return null;
-
       case 'infographic':
         return null;
 
@@ -481,30 +433,6 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
           ) : (
             <h2 className="chart-title-placeholder">Your Chart</h2>
           )}
-          {config.type !== 'infographic' && (
-            <div className="view-toggle" role="tablist" aria-label="View mode">
-              <button
-                className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
-                onClick={() => setViewMode('chart')}
-                role="tab"
-                aria-selected={viewMode === 'chart'}
-                aria-label="Chart view"
-              >
-                <BarChart3 size={16} />
-                <span>Chart</span>
-              </button>
-              <button
-                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-                role="tab"
-                aria-selected={viewMode === 'table'}
-                aria-label="Table view"
-              >
-                <Table size={16} />
-                <span>Data</span>
-              </button>
-            </div>
-          )}
         </div>
         <div className="chart-meta">
           <span className="chart-meta-item">
@@ -522,13 +450,9 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         </div>
       </div>
 
-      <div
-        className={`chart-container ${viewMode === 'table' ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
-      >
+      <div className="chart-container chart-container--no-scroll">
         {config.type === 'infographic' ? (
           renderInfographic()
-        ) : viewMode === 'table' ? (
-          renderTable()
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             {renderChart()}
@@ -536,7 +460,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         )}
       </div>
 
-      {viewMode === 'chart' && config.type !== 'infographic' && (
+      {config.type !== 'infographic' && (
         <div className="chart-color-bar">
           {colors.slice(0, data.series.length).map((color, idx) => (
             <div
