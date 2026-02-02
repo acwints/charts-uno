@@ -181,3 +181,137 @@ class InfographicRequest(BaseModel):
 
 class InfographicResponse(BaseModel):
     svg: str
+
+
+# ============================================
+# Team and SaaS Schemas
+# ============================================
+
+# Team schemas
+class TeamCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    slug: Optional[str] = Field(None, min_length=1, max_length=255, pattern=r'^[a-z0-9-]+$')
+
+
+class TeamUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    slug: Optional[str] = Field(None, min_length=1, max_length=255, pattern=r'^[a-z0-9-]+$')
+
+
+class TeamMemberResponse(BaseModel):
+    id: str
+    user_id: str
+    role: str
+    joined_at: datetime
+    user: Optional[UserResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SubscriptionResponse(BaseModel):
+    id: str
+    plan: str
+    status: str
+    seat_limit: int
+    charts_per_month: int
+    charts_created_this_month: int
+    current_period_start: Optional[datetime] = None
+    current_period_end: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TeamResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    owner_id: str
+    is_personal: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    member_count: int = 0
+    subscription: Optional[SubscriptionResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TeamListResponse(BaseModel):
+    teams: List[TeamResponse]
+    total: int
+
+
+# Team member management
+class TeamMemberAdd(BaseModel):
+    user_id: str
+    role: str = Field(default="member", pattern=r'^(admin|member)$')
+
+
+class TeamMemberUpdate(BaseModel):
+    role: str = Field(..., pattern=r'^(admin|member)$')
+
+
+# Team invitation schemas
+class InvitationCreate(BaseModel):
+    email: str = Field(..., pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+    role: str = Field(default="member", pattern=r'^(admin|member)$')
+
+
+class InvitationResponse(BaseModel):
+    id: str
+    team_id: str
+    email: str
+    role: str
+    expires_at: datetime
+    accepted_at: Optional[datetime] = None
+    created_at: datetime
+    inviter: Optional[UserResponse] = None
+    team: Optional[TeamResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InvitationListResponse(BaseModel):
+    invitations: List[InvitationResponse]
+    total: int
+
+
+# Billing schemas
+class CheckoutRequest(BaseModel):
+    plan: str = Field(..., pattern=r'^(pro|business)$')
+    success_url: str
+    cancel_url: Optional[str] = None
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
+    checkout_id: Optional[str] = None
+
+
+class PortalResponse(BaseModel):
+    portal_url: str
+
+
+class UsageSummaryResponse(BaseModel):
+    charts_created_this_month: int
+    charts_limit: int  # -1 for unlimited
+    charts_remaining: int  # -1 for unlimited
+    seats_used: int
+    seats_limit: int  # -1 for unlimited
+    seats_remaining: int  # -1 for unlimited
+    can_create_chart: bool
+    can_invite_member: bool
+
+
+# Update ChartCreate to include team_id
+class ChartCreateWithTeam(ChartCreate):
+    team_id: Optional[str] = None
+
+
+# Update ChartResponse to include team_id
+class ChartResponseWithTeam(ChartResponse):
+    team_id: Optional[str] = None

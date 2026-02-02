@@ -1,0 +1,212 @@
+.team-switcher {
+  position: relative;
+}
+
+.team-switcher--loading {
+  width: 140px;
+}
+
+.team-switcher__skeleton {
+  height: 32px;
+  background: var(--color-surface-elevated);
+  border-radius: 6px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+.team-switcher__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  min-width: 140px;
+}
+
+.team-switcher__trigger:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.team-switcher__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.team-switcher__name {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.team-switcher__plan {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.team-switcher__plan--pro {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+
+.team-switcher__plan--business {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.team-switcher__chevron {
+  color: var(--color-text-tertiary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.team-switcher__chevron--open {
+  transform: rotate(180deg);
+}
+
+.team-switcher__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 240px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.team-switcher__header {
+  padding: 10px 12px 6px;
+}
+
+.team-switcher__header-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-tertiary);
+}
+
+.team-switcher__list {
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.team-switcher__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.team-switcher__item:hover {
+  background: var(--color-surface-elevated);
+}
+
+.team-switcher__item--active {
+  background: var(--color-primary-subtle);
+}
+
+.team-switcher__item-icon {
+  flex-shrink: 0;
+}
+
+.team-switcher__avatar {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-elevated);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+}
+
+.team-switcher__avatar--personal {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.team-switcher__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-switcher__item-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-switcher__item-meta {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
+
+.team-switcher__check {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.team-switcher__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+.team-switcher__create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.team-switcher__create:hover {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}

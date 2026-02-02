@@ -9,14 +9,17 @@ import { Hero } from './components/Hero';
 import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEngineerView';
 import { ChartFeed } from './components/ChartFeed';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { SettingsPage } from './pages/Settings';
 import { AssistantProvider } from './contexts/AssistantProvider';
 import { ToastProvider } from './contexts/ToastContext';
+import { TeamProvider } from './contexts/TeamContext';
+import { useAuth } from './hooks/useAuth';
 import { recommendChartType } from './services/chartTypeRecommender';
 import type { ChartData, ChartConfig } from './types';
 import type { ChartResponse } from './services/api';
 import './App.css';
 
-type AppView = 'input' | 'chart' | 'feed';
+type AppView = 'input' | 'chart' | 'feed' | 'settings';
 
 function AppContent() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -32,6 +35,7 @@ function AppContent() {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('input');
+  const [settingsTab, setSettingsTab] = useState<'account' | 'team' | 'billing'>('account');
   const chartRef = useRef<HTMLDivElement>(null);
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
@@ -91,6 +95,20 @@ function AppContent() {
     setCurrentView(chartData ? 'chart' : 'input');
   }, [chartData]);
 
+  const handleSettingsClick = useCallback((tab?: 'account' | 'team' | 'billing') => {
+    setSettingsTab(tab || 'account');
+    setCurrentView('settings');
+  }, []);
+
+  const handleSettingsClose = useCallback(() => {
+    setCurrentView(chartData ? 'chart' : 'input');
+  }, [chartData]);
+
+  const handleCreateTeam = useCallback(() => {
+    setSettingsTab('team');
+    setCurrentView('settings');
+  }, []);
+
   const handleChartSelect = useCallback((chart: ChartResponse) => {
     const convertedData: ChartData = {
       labels: chart.data.labels,
@@ -118,7 +136,8 @@ function AppContent() {
 
   const showChart = currentView === 'chart' && chartData;
   const showFeed = currentView === 'feed';
-  const showInput = currentView === 'input' || (!chartData && !showFeed);
+  const showSettings = currentView === 'settings';
+  const showInput = currentView === 'input' || (!chartData && !showFeed && !showSettings);
 
   return (
     <div className="app">
@@ -129,12 +148,25 @@ function AppContent() {
         chartRef={chartRef}
         title={chartConfig.title}
         onFeedClick={handleFeedClick}
-        showFeedButton={!showFeed}
+        showFeedButton={!showFeed && !showSettings}
+        onSettingsClick={handleSettingsClick}
+        onCreateTeam={handleCreateTeam}
       />
 
       <main className="main">
         <AnimatePresence mode="wait">
-          {showFeed ? (
+          {showSettings ? (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="settings-view"
+            >
+              <SettingsPage initialTab={settingsTab} onClose={handleSettingsClose} />
+            </motion.div>
+          ) : showFeed ? (
             <motion.div
               key="feed"
               initial={{ opacity: 0 }}
@@ -227,12 +259,22 @@ function AppContent() {
   );
 }
 
+function AppWithTeam() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <TeamProvider isAuthenticated={isAuthenticated}>
+      <AppContent />
+    </TeamProvider>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
         <AssistantProvider>
-          <AppContent />
+          <AppWithTeam />
         </AssistantProvider>
       </ToastProvider>
     </ErrorBoundary>

@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface ApiOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
 }
 
@@ -167,4 +167,161 @@ export async function getLikedCharts(): Promise<ChartResponse[]> {
 // Health check
 export async function checkApiHealth(): Promise<{ status: string; timestamp: string }> {
   return apiRequest('/health');
+}
+
+// ============================================
+// Teams
+// ============================================
+
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  is_personal: boolean;
+  created_at: string;
+  updated_at: string | null;
+  member_count: number;
+  subscription: Subscription | null;
+}
+
+export interface TeamListResponse {
+  teams: Team[];
+  total: number;
+}
+
+export interface TeamMember {
+  id: string;
+  user_id: string;
+  role: 'owner' | 'admin' | 'member';
+  joined_at: string;
+  user: User | null;
+}
+
+export interface TeamInvitation {
+  id: string;
+  team_id: string;
+  email: string;
+  role: string;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  inviter: User | null;
+  team: Team | null;
+}
+
+export interface Subscription {
+  id: string;
+  plan: 'free' | 'pro' | 'business';
+  status: 'active' | 'canceled' | 'past_due';
+  seat_limit: number;
+  charts_per_month: number;
+  charts_created_this_month: number;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  created_at: string;
+}
+
+export interface UsageSummary {
+  charts_created_this_month: number;
+  charts_limit: number;
+  charts_remaining: number;
+  seats_used: number;
+  seats_limit: number;
+  seats_remaining: number;
+  can_create_chart: boolean;
+  can_invite_member: boolean;
+}
+
+// Team CRUD
+export async function createTeam(data: { name: string; slug?: string }): Promise<Team> {
+  return apiRequest('/api/teams', { method: 'POST', body: data });
+}
+
+export async function getTeams(): Promise<TeamListResponse> {
+  return apiRequest('/api/teams');
+}
+
+export async function getTeam(teamId: string): Promise<Team> {
+  return apiRequest(`/api/teams/${teamId}`);
+}
+
+export async function updateTeam(teamId: string, data: { name?: string; slug?: string }): Promise<Team> {
+  return apiRequest(`/api/teams/${teamId}`, { method: 'PATCH', body: data });
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+  await apiRequest(`/api/teams/${teamId}`, { method: 'DELETE' });
+}
+
+// Team Members
+export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
+  return apiRequest(`/api/teams/${teamId}/members`);
+}
+
+export async function addTeamMember(teamId: string, userId: string, role: 'admin' | 'member' = 'member'): Promise<TeamMember> {
+  return apiRequest(`/api/teams/${teamId}/members`, { method: 'POST', body: { user_id: userId, role } });
+}
+
+export async function updateTeamMember(teamId: string, userId: string, role: 'admin' | 'member'): Promise<TeamMember> {
+  return apiRequest(`/api/teams/${teamId}/members/${userId}`, { method: 'PATCH', body: { role } });
+}
+
+export async function removeTeamMember(teamId: string, userId: string): Promise<void> {
+  await apiRequest(`/api/teams/${teamId}/members/${userId}`, { method: 'DELETE' });
+}
+
+// Team Invitations
+export async function createInvitation(teamId: string, email: string, role: 'admin' | 'member' = 'member'): Promise<TeamInvitation> {
+  return apiRequest(`/api/teams/${teamId}/invitations`, { method: 'POST', body: { email, role } });
+}
+
+export async function getInvitations(teamId: string): Promise<{ invitations: TeamInvitation[]; total: number }> {
+  return apiRequest(`/api/teams/${teamId}/invitations`);
+}
+
+export async function getInvitationByToken(token: string): Promise<TeamInvitation> {
+  return apiRequest(`/api/invitations/${token}`);
+}
+
+export async function cancelInvitation(token: string): Promise<void> {
+  await apiRequest(`/api/invitations/${token}`, { method: 'DELETE' });
+}
+
+export async function acceptInvitation(token: string): Promise<{ status: string; team_id: string }> {
+  return apiRequest(`/api/invitations/${token}/accept`, { method: 'POST' });
+}
+
+// Billing
+export async function getSubscription(teamId: string): Promise<Subscription> {
+  return apiRequest(`/api/teams/${teamId}/subscription`);
+}
+
+export async function getUsage(teamId: string): Promise<UsageSummary> {
+  return apiRequest(`/api/teams/${teamId}/usage`);
+}
+
+export async function createCheckout(
+  teamId: string,
+  plan: 'pro' | 'business',
+  successUrl: string,
+  cancelUrl?: string
+): Promise<{ checkout_url: string; checkout_id?: string }> {
+  return apiRequest(`/api/teams/${teamId}/checkout`, {
+    method: 'POST',
+    body: { plan, success_url: successUrl, cancel_url: cancelUrl },
+  });
+}
+
+export async function getPortalUrl(teamId: string): Promise<{ portal_url: string }> {
+  return apiRequest(`/api/teams/${teamId}/portal`);
+}
+
+// Update createChart to support team_id
+export interface CreateChartDataWithTeam extends CreateChartData {
+  team_id?: string;
+}
+
+export async function createChartWithTeam(data: CreateChartDataWithTeam): Promise<ChartResponse> {
+  return apiRequest('/api/charts', { method: 'POST', body: data });
 }

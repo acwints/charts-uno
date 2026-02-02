@@ -3,8 +3,9 @@ import json
 import base64
 import secrets
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List
+import re
 
 import httpx
 from dotenv import load_dotenv
@@ -17,7 +18,10 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from models.database import init_db, get_db, User, Chart, SavedChart, Like
+from models.database import (
+    init_db, get_db, User, Chart, SavedChart, Like,
+    Team, TeamMember, TeamInvitation, Subscription, generate_uuid,
+)
 from dependencies import (
     get_current_user,
     get_optional_user,
@@ -41,8 +45,26 @@ from schemas import (
     ChartRecommendResponse,
     InfographicRequest,
     InfographicResponse,
+    # Team schemas
+    TeamCreate,
+    TeamUpdate,
+    TeamResponse,
+    TeamListResponse,
+    TeamMemberResponse,
+    TeamMemberAdd,
+    TeamMemberUpdate,
+    InvitationCreate,
+    InvitationResponse,
+    InvitationListResponse,
+    SubscriptionResponse,
+    CheckoutRequest,
+    CheckoutResponse,
+    PortalResponse,
+    UsageSummaryResponse,
+    ChartCreateWithTeam,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic
+from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 
 # Load environment variables
 load_dotenv()
@@ -221,6 +243,7 @@ async def google_callback(
     picture = user_info.get("picture")
 
     user = db.query(User).filter(User.google_id == google_id).first()
+    is_new_user = False
 
     if user:
         # Update existing user
@@ -237,9 +260,14 @@ async def google_callback(
             picture=picture,
         )
         db.add(user)
+        is_new_user = True
 
     db.commit()
     db.refresh(user)
+
+    # Create personal team for new users
+    if is_new_user:
+        _create_personal_team(db, user)
 
     # Generate JWT token
     jwt_token = create_access_token(user.id)
@@ -398,13 +426,41 @@ def _chart_to_response(
 
 @app.post("/api/charts", response_model=ChartResponse)
 async def create_chart(
-    chart_data: ChartCreate,
+    chart_data: ChartCreateWithTeam,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Create a new chart"""
+    # Determine which team to use
+    team_id = chart_data.team_id
+
+    if team_id:
+        # Verify user is a member of the specified team
+        team, _ = _get_team_with_access(db, team_id, current_user)
+    else:
+        # Use user's personal team
+        membership = db.query(TeamMember).filter(
+            TeamMember.user_id == current_user.id,
+        ).join(Team).filter(Team.is_personal == True).first()
+
+        if membership:
+            team_id = membership.team_id
+            team = membership.team
+        else:
+            # Create personal team if it doesn't exist (shouldn't happen normally)
+            team = _create_personal_team(db, current_user)
+            team_id = team.id
+
+    # Check chart creation limit
+    if not _check_can_create_chart(db, team):
+        raise HTTPException(
+            status_code=403,
+            detail="Monthly chart limit reached. Upgrade your plan to create more charts."
+        )
+
     chart = Chart(
         user_id=current_user.id,
+        team_id=team_id,
         title=chart_data.title,
         description=chart_data.description,
         data=chart_data.data.model_dump(),
@@ -415,6 +471,11 @@ async def create_chart(
     )
 
     db.add(chart)
+
+    # Increment chart count for the team's subscription
+    if team.subscription:
+        team.subscription.charts_created_this_month += 1
+
     db.commit()
     db.refresh(chart)
 
@@ -837,6 +898,898 @@ async def infographic_endpoint(
     except Exception as e:
         logger.error(f"Infographic generation failed: {e}")
         raise HTTPException(status_code=500, detail="Infographic generation failed")
+
+
+# ============================================================================
+# Team Helper Functions
+# ============================================================================
+
+def _generate_slug(name: str, db: Session) -> str:
+    """Generate a unique slug from a team name"""
+    base_slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    if not base_slug:
+        base_slug = 'team'
+
+    slug = base_slug
+    counter = 1
+    while db.query(Team).filter(Team.slug == slug).first():
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+    return slug
+
+
+def _create_personal_team(db: Session, user: User) -> Team:
+    """Create a personal team for a new user"""
+    display_name = user.name or user.email.split('@')[0]
+    slug = _generate_slug(f"{display_name}-personal", db)
+
+    team = Team(
+        name=f"{display_name}'s Team",
+        slug=slug,
+        owner_id=user.id,
+        is_personal=True,
+    )
+    db.add(team)
+    db.flush()  # Get the team ID
+
+    # Add user as owner member
+    member = TeamMember(
+        team_id=team.id,
+        user_id=user.id,
+        role="owner",
+    )
+    db.add(member)
+
+    # Create free subscription
+    subscription = Subscription(
+        team_id=team.id,
+        plan="free",
+        status="active",
+        seat_limit=1,
+        charts_per_month=10,
+        charts_created_this_month=0,
+    )
+    db.add(subscription)
+
+    db.commit()
+    db.refresh(team)
+    return team
+
+
+def _get_team_with_access(
+    db: Session,
+    team_id: str,
+    user: User,
+    require_admin: bool = False,
+    require_owner: bool = False,
+) -> tuple[Team, TeamMember]:
+    """Get a team and verify user has access. Returns (team, membership)."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    membership = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == user.id,
+    ).first()
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this team")
+
+    if require_owner and membership.role != "owner":
+        raise HTTPException(status_code=403, detail="Only team owner can perform this action")
+
+    if require_admin and membership.role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return team, membership
+
+
+def _team_to_response(team: Team, db: Session) -> TeamResponse:
+    """Convert a Team model to a TeamResponse"""
+    member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+
+    subscription_response = None
+    if team.subscription:
+        subscription_response = SubscriptionResponse(
+            id=team.subscription.id,
+            plan=team.subscription.plan,
+            status=team.subscription.status,
+            seat_limit=team.subscription.seat_limit,
+            charts_per_month=team.subscription.charts_per_month,
+            charts_created_this_month=team.subscription.charts_created_this_month,
+            current_period_start=team.subscription.current_period_start,
+            current_period_end=team.subscription.current_period_end,
+            created_at=team.subscription.created_at,
+        )
+
+    return TeamResponse(
+        id=team.id,
+        name=team.name,
+        slug=team.slug,
+        owner_id=team.owner_id,
+        is_personal=team.is_personal,
+        created_at=team.created_at,
+        updated_at=team.updated_at,
+        member_count=member_count,
+        subscription=subscription_response,
+    )
+
+
+def _check_can_create_chart(db: Session, team: Team) -> bool:
+    """Check if a team can create another chart based on their subscription"""
+    if not team.subscription:
+        return False
+
+    # Unlimited charts
+    if team.subscription.charts_per_month == -1:
+        return True
+
+    return team.subscription.charts_created_this_month < team.subscription.charts_per_month
+
+
+def _check_can_invite_member(db: Session, team: Team) -> bool:
+    """Check if a team can invite another member based on their subscription"""
+    if not team.subscription:
+        return False
+
+    # Unlimited seats
+    if team.subscription.seat_limit == -1:
+        return True
+
+    current_members = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+    pending_invites = db.query(TeamInvitation).filter(
+        TeamInvitation.team_id == team.id,
+        TeamInvitation.accepted_at.is_(None),
+        TeamInvitation.expires_at > datetime.utcnow(),
+    ).count()
+
+    return (current_members + pending_invites) < team.subscription.seat_limit
+
+
+# ============================================================================
+# Team Endpoints
+# ============================================================================
+
+@app.post("/api/teams", response_model=TeamResponse)
+async def create_team(
+    team_data: TeamCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new team"""
+    slug = team_data.slug or _generate_slug(team_data.name, db)
+
+    # Check if slug already exists
+    existing = db.query(Team).filter(Team.slug == slug).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Team slug already exists")
+
+    team = Team(
+        name=team_data.name,
+        slug=slug,
+        owner_id=current_user.id,
+        is_personal=False,
+    )
+    db.add(team)
+    db.flush()
+
+    # Add creator as owner
+    member = TeamMember(
+        team_id=team.id,
+        user_id=current_user.id,
+        role="owner",
+    )
+    db.add(member)
+
+    # Create free subscription (they can upgrade later)
+    subscription = Subscription(
+        team_id=team.id,
+        plan="free",
+        status="active",
+        seat_limit=1,
+        charts_per_month=10,
+        charts_created_this_month=0,
+    )
+    db.add(subscription)
+
+    db.commit()
+    db.refresh(team)
+
+    return _team_to_response(team, db)
+
+
+@app.get("/api/teams", response_model=TeamListResponse)
+async def list_teams(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all teams the user is a member of"""
+    memberships = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in memberships]
+
+    teams = db.query(Team).filter(Team.id.in_(team_ids)).order_by(Team.created_at).all()
+
+    return TeamListResponse(
+        teams=[_team_to_response(t, db) for t in teams],
+        total=len(teams),
+    )
+
+
+@app.get("/api/teams/{team_id}", response_model=TeamResponse)
+async def get_team(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get team details"""
+    team, _ = _get_team_with_access(db, team_id, current_user)
+    return _team_to_response(team, db)
+
+
+@app.patch("/api/teams/{team_id}", response_model=TeamResponse)
+async def update_team(
+    team_id: str,
+    team_data: TeamUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update team details (admin/owner only)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    if team_data.name is not None:
+        team.name = team_data.name
+
+    if team_data.slug is not None:
+        # Check if new slug is available
+        existing = db.query(Team).filter(Team.slug == team_data.slug, Team.id != team_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Team slug already exists")
+        team.slug = team_data.slug
+
+    db.commit()
+    db.refresh(team)
+
+    return _team_to_response(team, db)
+
+
+@app.delete("/api/teams/{team_id}")
+async def delete_team(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a team (owner only, cannot delete personal team)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_owner=True)
+
+    if team.is_personal:
+        raise HTTPException(status_code=400, detail="Cannot delete personal team")
+
+    db.delete(team)
+    db.commit()
+
+    return {"status": "ok"}
+
+
+# ============================================================================
+# Team Member Endpoints
+# ============================================================================
+
+@app.get("/api/teams/{team_id}/members", response_model=List[TeamMemberResponse])
+async def list_team_members(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all members of a team"""
+    team, _ = _get_team_with_access(db, team_id, current_user)
+
+    members = db.query(TeamMember).filter(TeamMember.team_id == team_id).all()
+
+    return [
+        TeamMemberResponse(
+            id=m.id,
+            user_id=m.user_id,
+            role=m.role,
+            joined_at=m.joined_at,
+            user=UserResponse.model_validate(m.user) if m.user else None,
+        )
+        for m in members
+    ]
+
+
+@app.post("/api/teams/{team_id}/members", response_model=TeamMemberResponse)
+async def add_team_member(
+    team_id: str,
+    member_data: TeamMemberAdd,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add a member directly to a team (admin/owner only)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    # Check seat limit
+    if not _check_can_invite_member(db, team):
+        raise HTTPException(status_code=403, detail="Team has reached seat limit. Upgrade plan to add more members.")
+
+    # Check user exists
+    user = db.query(User).filter(User.id == member_data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if already a member
+    existing = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == member_data.user_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User is already a team member")
+
+    member = TeamMember(
+        team_id=team_id,
+        user_id=member_data.user_id,
+        role=member_data.role,
+    )
+    db.add(member)
+    db.commit()
+    db.refresh(member)
+
+    return TeamMemberResponse(
+        id=member.id,
+        user_id=member.user_id,
+        role=member.role,
+        joined_at=member.joined_at,
+        user=UserResponse.model_validate(user),
+    )
+
+
+@app.patch("/api/teams/{team_id}/members/{user_id}", response_model=TeamMemberResponse)
+async def update_team_member(
+    team_id: str,
+    user_id: str,
+    member_data: TeamMemberUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a member's role (admin/owner only)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == user_id,
+    ).first()
+
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    # Cannot change owner's role
+    if member.role == "owner":
+        raise HTTPException(status_code=400, detail="Cannot change owner's role")
+
+    member.role = member_data.role
+    db.commit()
+    db.refresh(member)
+
+    return TeamMemberResponse(
+        id=member.id,
+        user_id=member.user_id,
+        role=member.role,
+        joined_at=member.joined_at,
+        user=UserResponse.model_validate(member.user) if member.user else None,
+    )
+
+
+@app.delete("/api/teams/{team_id}/members/{user_id}")
+async def remove_team_member(
+    team_id: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a member from a team (admin/owner only, or self-removal)"""
+    team, current_membership = _get_team_with_access(db, team_id, current_user)
+
+    # Users can remove themselves
+    is_self_removal = user_id == current_user.id
+
+    # Check permissions
+    if not is_self_removal and current_membership.role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Admin access required to remove others")
+
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == user_id,
+    ).first()
+
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    # Cannot remove owner
+    if member.role == "owner":
+        raise HTTPException(status_code=400, detail="Cannot remove team owner. Transfer ownership first.")
+
+    db.delete(member)
+    db.commit()
+
+    return {"status": "ok"}
+
+
+# ============================================================================
+# Team Invitation Endpoints
+# ============================================================================
+
+@app.post("/api/teams/{team_id}/invitations", response_model=InvitationResponse)
+async def create_invitation(
+    team_id: str,
+    invitation_data: InvitationCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Send an invitation to join a team (admin/owner only)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    # Check seat limit
+    if not _check_can_invite_member(db, team):
+        raise HTTPException(status_code=403, detail="Team has reached seat limit. Upgrade plan to add more members.")
+
+    # Check if user with this email is already a member
+    existing_user = db.query(User).filter(User.email == invitation_data.email).first()
+    if existing_user:
+        existing_member = db.query(TeamMember).filter(
+            TeamMember.team_id == team_id,
+            TeamMember.user_id == existing_user.id,
+        ).first()
+        if existing_member:
+            raise HTTPException(status_code=400, detail="User is already a team member")
+
+    # Check for existing pending invitation
+    existing_invite = db.query(TeamInvitation).filter(
+        TeamInvitation.team_id == team_id,
+        TeamInvitation.email == invitation_data.email,
+        TeamInvitation.accepted_at.is_(None),
+        TeamInvitation.expires_at > datetime.utcnow(),
+    ).first()
+    if existing_invite:
+        raise HTTPException(status_code=400, detail="Invitation already sent to this email")
+
+    # Create invitation
+    invitation = TeamInvitation(
+        team_id=team_id,
+        email=invitation_data.email,
+        role=invitation_data.role,
+        token=secrets.token_urlsafe(32),
+        invited_by=current_user.id,
+        expires_at=datetime.utcnow() + timedelta(days=7),
+    )
+    db.add(invitation)
+    db.commit()
+    db.refresh(invitation)
+
+    # TODO: Send invitation email
+
+    return InvitationResponse(
+        id=invitation.id,
+        team_id=invitation.team_id,
+        email=invitation.email,
+        role=invitation.role,
+        expires_at=invitation.expires_at,
+        accepted_at=invitation.accepted_at,
+        created_at=invitation.created_at,
+        inviter=UserResponse.model_validate(current_user),
+        team=_team_to_response(team, db),
+    )
+
+
+@app.get("/api/teams/{team_id}/invitations", response_model=InvitationListResponse)
+async def list_invitations(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List pending invitations for a team (admin/owner only)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    invitations = db.query(TeamInvitation).filter(
+        TeamInvitation.team_id == team_id,
+        TeamInvitation.accepted_at.is_(None),
+    ).order_by(TeamInvitation.created_at.desc()).all()
+
+    return InvitationListResponse(
+        invitations=[
+            InvitationResponse(
+                id=inv.id,
+                team_id=inv.team_id,
+                email=inv.email,
+                role=inv.role,
+                expires_at=inv.expires_at,
+                accepted_at=inv.accepted_at,
+                created_at=inv.created_at,
+                inviter=UserResponse.model_validate(inv.inviter) if inv.inviter else None,
+            )
+            for inv in invitations
+        ],
+        total=len(invitations),
+    )
+
+
+@app.delete("/api/invitations/{token}")
+async def cancel_invitation(
+    token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cancel a pending invitation (admin/owner only)"""
+    invitation = db.query(TeamInvitation).filter(TeamInvitation.token == token).first()
+
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    # Verify access to team
+    _, _ = _get_team_with_access(db, invitation.team_id, current_user, require_admin=True)
+
+    if invitation.accepted_at:
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+
+    db.delete(invitation)
+    db.commit()
+
+    return {"status": "ok"}
+
+
+@app.get("/api/invitations/{token}", response_model=InvitationResponse)
+async def get_invitation(
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """Get invitation details by token (public endpoint for viewing invite)"""
+    invitation = db.query(TeamInvitation).filter(TeamInvitation.token == token).first()
+
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if invitation.accepted_at:
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+
+    if invitation.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invitation has expired")
+
+    return InvitationResponse(
+        id=invitation.id,
+        team_id=invitation.team_id,
+        email=invitation.email,
+        role=invitation.role,
+        expires_at=invitation.expires_at,
+        accepted_at=invitation.accepted_at,
+        created_at=invitation.created_at,
+        team=_team_to_response(invitation.team, db) if invitation.team else None,
+    )
+
+
+@app.post("/api/invitations/{token}/accept")
+async def accept_invitation(
+    token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Accept a team invitation"""
+    invitation = db.query(TeamInvitation).filter(TeamInvitation.token == token).first()
+
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if invitation.accepted_at:
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+
+    if invitation.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invitation has expired")
+
+    # Verify email matches (optional - you might want to allow any user to accept)
+    if invitation.email.lower() != current_user.email.lower():
+        raise HTTPException(status_code=403, detail="This invitation was sent to a different email address")
+
+    # Check if already a member
+    existing_member = db.query(TeamMember).filter(
+        TeamMember.team_id == invitation.team_id,
+        TeamMember.user_id == current_user.id,
+    ).first()
+
+    if existing_member:
+        raise HTTPException(status_code=400, detail="Already a member of this team")
+
+    # Add as member
+    member = TeamMember(
+        team_id=invitation.team_id,
+        user_id=current_user.id,
+        role=invitation.role,
+    )
+    db.add(member)
+
+    # Mark invitation as accepted
+    invitation.accepted_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"status": "ok", "team_id": invitation.team_id}
+
+
+# ============================================================================
+# Billing Endpoints
+# ============================================================================
+
+@app.get("/api/teams/{team_id}/subscription", response_model=SubscriptionResponse)
+async def get_subscription(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get team's subscription details"""
+    team, _ = _get_team_with_access(db, team_id, current_user)
+
+    if not team.subscription:
+        raise HTTPException(status_code=404, detail="No subscription found")
+
+    return SubscriptionResponse(
+        id=team.subscription.id,
+        plan=team.subscription.plan,
+        status=team.subscription.status,
+        seat_limit=team.subscription.seat_limit,
+        charts_per_month=team.subscription.charts_per_month,
+        charts_created_this_month=team.subscription.charts_created_this_month,
+        current_period_start=team.subscription.current_period_start,
+        current_period_end=team.subscription.current_period_end,
+        created_at=team.subscription.created_at,
+    )
+
+
+@app.get("/api/teams/{team_id}/usage", response_model=UsageSummaryResponse)
+async def get_usage(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get team's usage summary"""
+    team, _ = _get_team_with_access(db, team_id, current_user)
+
+    if not team.subscription:
+        raise HTTPException(status_code=404, detail="No subscription found")
+
+    sub = team.subscription
+    seats_used = db.query(TeamMember).filter(TeamMember.team_id == team_id).count()
+
+    charts_remaining = -1 if sub.charts_per_month == -1 else max(0, sub.charts_per_month - sub.charts_created_this_month)
+    seats_remaining = -1 if sub.seat_limit == -1 else max(0, sub.seat_limit - seats_used)
+
+    return UsageSummaryResponse(
+        charts_created_this_month=sub.charts_created_this_month,
+        charts_limit=sub.charts_per_month,
+        charts_remaining=charts_remaining,
+        seats_used=seats_used,
+        seats_limit=sub.seat_limit,
+        seats_remaining=seats_remaining,
+        can_create_chart=_check_can_create_chart(db, team),
+        can_invite_member=_check_can_invite_member(db, team),
+    )
+
+
+@app.post("/api/teams/{team_id}/checkout", response_model=CheckoutResponse)
+async def create_checkout(
+    team_id: str,
+    checkout_data: CheckoutRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a Polar checkout session for upgrading the plan"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    try:
+        result = await polar_service.create_checkout_session(
+            team_id=team_id,
+            plan=checkout_data.plan,
+            customer_email=current_user.email,
+            success_url=checkout_data.success_url,
+            cancel_url=checkout_data.cancel_url,
+        )
+
+        return CheckoutResponse(
+            checkout_url=result["checkout_url"],
+            checkout_id=result.get("checkout_id"),
+        )
+    except PolarServiceError as e:
+        logger.error(f"Polar checkout failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/teams/{team_id}/portal", response_model=PortalResponse)
+async def get_portal_url(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get Polar customer portal URL for managing subscription"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    if not team.subscription or not team.subscription.polar_customer_id:
+        raise HTTPException(status_code=400, detail="No active paid subscription")
+
+    try:
+        portal_url = await polar_service.create_customer_portal_url(
+            team.subscription.polar_customer_id
+        )
+        return PortalResponse(portal_url=portal_url)
+    except PolarServiceError as e:
+        logger.error(f"Polar portal failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Polar Webhook Handler
+# ============================================================================
+
+@app.post("/api/webhooks/polar")
+async def polar_webhook(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Handle Polar.sh webhook events"""
+    # Get raw body and signature
+    body = await request.body()
+    signature = request.headers.get("webhook-signature", "")
+
+    # Verify signature
+    try:
+        if not polar_service.verify_webhook_signature(body, signature):
+            logger.warning("Invalid Polar webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+    except PolarServiceError as e:
+        logger.error(f"Webhook signature verification failed: {e}")
+        raise HTTPException(status_code=500, detail="Webhook verification error")
+
+    # Parse event
+    try:
+        payload = json.loads(body)
+        event_type = payload.get("type", "")
+        event_data = polar_service.parse_webhook_event(event_type, payload)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    logger.info(f"Processing Polar webhook: {event_type}")
+
+    # Handle events
+    if event_type == "checkout.completed":
+        await _handle_checkout_completed(db, event_data)
+    elif event_type == "subscription.created":
+        await _handle_subscription_created(db, event_data)
+    elif event_type == "subscription.updated":
+        await _handle_subscription_updated(db, event_data)
+    elif event_type == "subscription.canceled":
+        await _handle_subscription_canceled(db, event_data)
+    else:
+        logger.info(f"Ignoring unhandled webhook event: {event_type}")
+
+    return {"status": "ok"}
+
+
+async def _handle_checkout_completed(db: Session, event_data: dict):
+    """Handle checkout.completed event"""
+    team_id = event_data.get("team_id")
+    plan = event_data.get("plan")
+    polar_subscription_id = event_data.get("polar_subscription_id")
+    polar_customer_id = event_data.get("polar_customer_id")
+
+    if not team_id:
+        logger.error("checkout.completed missing team_id in metadata")
+        return
+
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        logger.error(f"checkout.completed: team {team_id} not found")
+        return
+
+    if not team.subscription:
+        logger.error(f"checkout.completed: team {team_id} has no subscription record")
+        return
+
+    # Update subscription with Polar IDs and new plan
+    plan_config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+
+    team.subscription.polar_subscription_id = polar_subscription_id
+    team.subscription.polar_customer_id = polar_customer_id
+    team.subscription.plan = plan
+    team.subscription.status = "active"
+    team.subscription.seat_limit = plan_config["seat_limit"]
+    team.subscription.charts_per_month = plan_config["charts_per_month"]
+    team.subscription.current_period_start = datetime.utcnow()
+    team.subscription.current_period_end = datetime.utcnow() + timedelta(days=30)
+
+    db.commit()
+    logger.info(f"Team {team_id} upgraded to {plan}")
+
+
+async def _handle_subscription_created(db: Session, event_data: dict):
+    """Handle subscription.created event"""
+    # Usually handled by checkout.completed, but handle separately if needed
+    polar_subscription_id = event_data.get("polar_subscription_id")
+    team_id = event_data.get("team_id")
+
+    if not polar_subscription_id:
+        return
+
+    # Check if we already have this subscription
+    existing = db.query(Subscription).filter(
+        Subscription.polar_subscription_id == polar_subscription_id
+    ).first()
+
+    if existing:
+        logger.info(f"Subscription {polar_subscription_id} already exists")
+        return
+
+    logger.info(f"subscription.created for team {team_id}")
+
+
+async def _handle_subscription_updated(db: Session, event_data: dict):
+    """Handle subscription.updated event"""
+    polar_subscription_id = event_data.get("polar_subscription_id")
+    status = event_data.get("status")
+    current_period_start = event_data.get("current_period_start")
+    current_period_end = event_data.get("current_period_end")
+
+    if not polar_subscription_id:
+        return
+
+    subscription = db.query(Subscription).filter(
+        Subscription.polar_subscription_id == polar_subscription_id
+    ).first()
+
+    if not subscription:
+        logger.warning(f"subscription.updated: subscription {polar_subscription_id} not found")
+        return
+
+    if status:
+        subscription.status = status
+
+    if current_period_start:
+        try:
+            subscription.current_period_start = datetime.fromisoformat(current_period_start.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            pass
+
+    if current_period_end:
+        try:
+            subscription.current_period_end = datetime.fromisoformat(current_period_end.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            pass
+
+    # Reset chart count on new billing period
+    if subscription.billing_cycle_start:
+        if subscription.current_period_start and subscription.current_period_start > subscription.billing_cycle_start:
+            subscription.charts_created_this_month = 0
+            subscription.billing_cycle_start = subscription.current_period_start
+
+    db.commit()
+    logger.info(f"Subscription {polar_subscription_id} updated")
+
+
+async def _handle_subscription_canceled(db: Session, event_data: dict):
+    """Handle subscription.canceled event"""
+    polar_subscription_id = event_data.get("polar_subscription_id")
+
+    if not polar_subscription_id:
+        return
+
+    subscription = db.query(Subscription).filter(
+        Subscription.polar_subscription_id == polar_subscription_id
+    ).first()
+
+    if not subscription:
+        logger.warning(f"subscription.canceled: subscription {polar_subscription_id} not found")
+        return
+
+    subscription.status = "canceled"
+    # Note: Don't downgrade immediately - let them use until period end
+    # A scheduled job should handle downgrading after current_period_end
+
+    db.commit()
+    logger.info(f"Subscription {polar_subscription_id} canceled")
 
 
 # ============================================================================
