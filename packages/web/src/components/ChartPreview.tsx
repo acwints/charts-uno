@@ -68,15 +68,35 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     generateInfographicSvg();
   };
 
+  // Check if all labels can be parsed as numbers
+  const isNumericLabels = useMemo(() => {
+    return data.labels.length > 0 &&
+      data.labels.every(label => !isNaN(parseFloat(label)) && isFinite(Number(label)));
+  }, [data.labels]);
+
   const chartData = useMemo(() => {
     return data.labels.map((label, idx) => {
-      const point: Record<string, string | number> = { name: label };
+      const point: Record<string, string | number> = {
+        name: label,
+        x: isNumericLabels ? parseFloat(label) : idx,
+      };
       data.series.forEach((series) => {
         point[series.name] = series.data[idx];
       });
       return point;
     });
-  }, [data]);
+  }, [data, isNumericLabels]);
+
+  // Calculate domain with padding for numeric axes
+  const numericDomain = useMemo((): [number, number] | undefined => {
+    if (!isNumericLabels) return undefined;
+    const values = data.labels.map(l => parseFloat(l));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min;
+    const padding = Math.max(range * 0.1, 1); // 10% padding or at least 1
+    return [min - padding, max + padding];
+  }, [data.labels, isNumericLabels]);
 
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
@@ -188,21 +208,35 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       />
     ) : null;
 
-    const xAxisElement = (
+    const xAxisLabelConfig = xAxisLabel ? {
+      value: xAxisLabel,
+      position: 'insideBottom' as const,
+      offset: -10,
+      fill: 'var(--text-muted)',
+      fontSize: 11,
+      fontFamily: 'var(--font-mono)',
+    } : undefined;
+
+    const xAxisElement = isNumericLabels ? (
+      <XAxis
+        type="number"
+        dataKey="x"
+        domain={numericDomain}
+        stroke="var(--text-muted)"
+        tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+        tickLine={{ stroke: 'var(--text-muted)' }}
+        axisLine={{ stroke: 'var(--border-default)', strokeOpacity: 0.5 }}
+        label={xAxisLabelConfig}
+      />
+    ) : (
       <XAxis
         dataKey="name"
         stroke="var(--text-muted)"
         tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
         tickLine={{ stroke: 'var(--text-muted)' }}
         axisLine={{ stroke: 'var(--border-default)', strokeOpacity: 0.5 }}
-        label={xAxisLabel ? {
-          value: xAxisLabel,
-          position: 'insideBottom',
-          offset: -10,
-          fill: 'var(--text-muted)',
-          fontSize: 11,
-          fontFamily: 'var(--font-mono)',
-        } : undefined}
+        padding={{ left: 20, right: 20 }}
+        label={xAxisLabelConfig}
       />
     );
 
