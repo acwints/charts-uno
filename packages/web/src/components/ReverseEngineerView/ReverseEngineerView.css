@@ -20,6 +20,7 @@
   padding: var(--space-4) var(--space-6);
   overflow-y: auto;
   min-width: 0;
+  min-height: 0;
 }
 
 .re-toolbar {
@@ -33,7 +34,7 @@
   grid-template-columns: 1fr 320px;
   gap: var(--space-4);
   min-height: 0;
-  height: clamp(280px, 38vh, 420px);
+  flex: 1;
 }
 
 .re-chart-area {
@@ -119,17 +120,34 @@
 
   .re-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    height: auto;
+    grid-template-rows: 1fr auto;
+    flex: none;
   }
 
   .re-chart-area {
-    min-height: 400px;
+    min-height: 450px;
+  }
+
+  .re-editor-area {
+    min-height: 350px;
   }
 }
 
 @media (max-width: 768px) {
   .re-chart-area {
+    min-height: 350px;
+  }
+
+  .re-editor-area {
     min-height: 300px;
+  }
+
+  .re-view-toggle {
+    width: 100%;
+  }
+
+  .re-toggle-btn {
+    flex: 1;
+    justify-content: center;
   }
 }
