@@ -10,8 +10,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   overflow-y: auto;
   min-width: 0;
   min-height: 0;
@@ -26,7 +26,7 @@
 .re-workspace {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-height: 0;
   flex: 1;
 }
@@ -44,28 +44,10 @@
   min-height: 0;
 }
 
-/* Wide controls layout - two columns */
+/* Controls use flex column - internal grid handles 2-col layout */
 .re-controls-area .chart-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr;
-}
-
-.re-controls-area .controls-header {
-  grid-column: 1 / -1;
-}
-
-.re-controls-area .control-section {
-  border-bottom: none;
-  border-right: var(--border-subtle);
-}
-
-.re-controls-area .control-section:nth-child(even) {
-  border-right: none;
-}
-
-.re-controls-area .controls-footer {
-  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
 }
 
 .re-data-area {
@@ -75,14 +57,12 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .re-controls-area .chart-controls {
-    display: flex;
-    flex-direction: column;
+  .re-controls-area .controls-grid {
+    grid-template-columns: 1fr;
   }
 
   .re-controls-area .control-section {
     border-right: none;
-    border-bottom: var(--border-subtle);
   }
 }
 
