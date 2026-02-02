@@ -10,7 +10,7 @@ import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEng
 import { ChartFeed } from './components/ChartFeed';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SettingsPage } from './pages/Settings';
-import { AssistantProvider, useAssistant } from './contexts/AssistantProvider';
+import { AssistantProvider } from './contexts/AssistantProvider';
 import { ToastProvider } from './contexts/ToastContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { useAuth } from './hooks/useAuth';
@@ -37,7 +37,6 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<AppView>('input');
   const [settingsTab, setSettingsTab] = useState<'account' | 'team' | 'billing'>('account');
   const chartRef = useRef<HTMLDivElement>(null);
-  const { isOpen: isAssistantOpen } = useAssistant();
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
     const updates: Partial<ChartConfig> = {};
@@ -144,7 +143,7 @@ function AppContent() {
 
   return (
     <div className="app-wrapper">
-      <div className={`app ${isAssistantOpen && showAssistantPanel ? 'with-assistant-open' : ''}`}>
+      <div className="app">
         <Header
           onReset={handleReset}
           hasData={!!chartData}
@@ -256,14 +255,25 @@ function AppContent() {
       </div>
 
       {/* AI Assistant Panel - embedded right panel */}
-      {showAssistantPanel && (
-        <ChatPanel
-          data={chartData}
-          config={chartConfig}
-          onDataChange={setChartData}
-          onConfigChange={setChartConfig}
-        />
-      )}
+      <AnimatePresence>
+        {showAssistantPanel && (
+          <motion.div
+            key="assistant-panel"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 'auto', opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden', flexShrink: 0 }}
+          >
+            <ChatPanel
+              data={chartData}
+              config={chartConfig}
+              onDataChange={setChartData}
+              onConfigChange={setChartConfig}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
