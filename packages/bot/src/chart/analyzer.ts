@@ -52,7 +52,7 @@ Rules:
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
 - If you can't find chartable data, return: {"error": "No chartable data found"}`;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = client.getGenerativeModel({ model: 'gemini-2.5-pro' });
 
   const result = await model.generateContent([
     prompt,

@@ -18,7 +18,7 @@ def get_model():
     """Get the Gemini model instance."""
     if not GOOGLE_API_KEY:
         raise ValueError("GOOGLE_API_KEY not configured")
-    return genai.GenerativeModel("gemini-2.0-flash")
+    return genai.GenerativeModel("gemini-2.5-pro")
 
 
 async def analyze_image(image_base64: str, mime_type: str) -> Dict[str, Any]:
