@@ -72,58 +72,6 @@
   flex-shrink: 0;
 }
 
-/* View Mode Toggle */
-.re-view-toggle {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  width: fit-content;
-}
-
-.re-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  position: relative;
-}
-
-.re-toggle-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
-}
-
-.re-toggle-btn.active {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.re-dirty-indicator {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
-  margin-left: var(--space-1);
-}
-
-/* Editor Area */
-.re-editor-area {
-  flex: 1;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-}
 
 /* Responsive */
 @media (max-width: 1200px) {
@@ -157,18 +105,5 @@
 @media (max-width: 768px) {
   .re-chart-area {
     min-height: 350px;
-  }
-
-  .re-editor-area {
-    min-height: 300px;
-  }
-
-  .re-view-toggle {
-    width: 100%;
-  }
-
-  .re-toggle-btn {
-    flex: 1;
-    justify-content: center;
   }
 }

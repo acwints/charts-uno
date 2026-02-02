@@ -208,7 +208,6 @@ function AppContent() {
                 initialData={chartData}
                 config={chartConfig}
                 onConfigChange={setChartConfig}
-                onDataChange={setChartData}
                 chartRef={chartRef}
               />
             </motion.div>

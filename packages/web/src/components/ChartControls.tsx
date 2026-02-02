@@ -8,7 +8,6 @@ import {
   Circle,
   Grid,
   Hash,
-  Zap,
   Palette,
   Type,
   Sparkles,
@@ -16,6 +15,7 @@ import {
   Smile,
   Newspaper,
   Minus,
+  Zap,
   Paintbrush,
 } from 'lucide-react';
 import type { ChartConfig, ChartType, ColorScheme, StyleVariant, ChartData } from '../types';
@@ -232,12 +232,6 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         </div>
       </div>
 
-      <div className="controls-footer">
-        <div className="ai-badge">
-          <Zap size={12} />
-          <span>AI-Optimized Layout</span>
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
   );
 }
