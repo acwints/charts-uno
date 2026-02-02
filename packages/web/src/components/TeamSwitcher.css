@@ -8,7 +8,7 @@
 
 .team-switcher__skeleton {
   height: 32px;
-  background: var(--color-surface-elevated);
+  background: var(--bg-elevated);
   border-radius: 6px;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
@@ -23,26 +23,26 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
+  background: var(--bg-elevated);
+  border: var(--border-default);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   font-size: 13px;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   min-width: 140px;
 }
 
 .team-switcher__trigger:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-hover);
+  background: var(--bg-hover);
+  border-color: var(--accent);
 }
 
 .team-switcher__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .team-switcher__name {
@@ -75,7 +75,7 @@
 }
 
 .team-switcher__chevron {
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
@@ -89,8 +89,8 @@
   top: calc(100% + 4px);
   left: 0;
   min-width: 240px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-secondary);
+  border: var(--border-default);
   border-radius: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   z-index: 100;
@@ -106,7 +106,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
 }
 
 .team-switcher__list {
@@ -130,11 +130,11 @@
 }
 
 .team-switcher__item:hover {
-  background: var(--color-surface-elevated);
+  background: var(--bg-elevated);
 }
 
 .team-switcher__item--active {
-  background: var(--color-primary-subtle);
+  background: var(--accent-subtle);
 }
 
 .team-switcher__item-icon {
@@ -147,9 +147,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-elevated);
+  background: var(--bg-elevated);
   border-radius: 6px;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .team-switcher__avatar--personal {
@@ -168,7 +168,7 @@
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,18 +177,18 @@
 .team-switcher__item-meta {
   display: block;
   font-size: 11px;
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
   margin-top: 1px;
 }
 
 .team-switcher__check {
-  color: var(--color-primary);
+  color: var(--accent);
   flex-shrink: 0;
 }
 
 .team-switcher__divider {
   height: 1px;
-  background: var(--color-border);
+  background: var(--bg-tertiary);
   margin: 4px 0;
 }
 
@@ -202,11 +202,11 @@
   background: transparent;
   cursor: pointer;
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   transition: all 0.15s ease;
 }
 
 .team-switcher__create:hover {
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }

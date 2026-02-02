@@ -13,6 +13,7 @@ import { SettingsPage } from './pages/Settings';
 import { AssistantProvider } from './contexts/AssistantProvider';
 import { ToastProvider } from './contexts/ToastContext';
 import { TeamProvider } from './contexts/TeamContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import { recommendChartType } from './services/chartTypeRecommender';
 import type { ChartData, ChartConfig } from './types';
@@ -278,11 +279,13 @@ function AppWithTeam() {
 function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <AssistantProvider>
-          <AppWithTeam />
-        </AssistantProvider>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AssistantProvider>
+            <AppWithTeam />
+          </AssistantProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

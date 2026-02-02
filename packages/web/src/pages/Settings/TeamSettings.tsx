@@ -143,7 +143,7 @@ export function TeamSettings() {
             </button>
           )}
           {currentTeam.is_personal && (
-            <p style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', margin: 0 }}>
+            <p className="settings-muted-text">
               This is your personal team and cannot be renamed.
             </p>
           )}
@@ -159,7 +159,7 @@ export function TeamSettings() {
               onClick={() => setIsInviteOpen(true)}
               disabled={!canInviteMember}
             >
-              <UserPlus size={16} style={{ marginRight: 6 }} />
+              <UserPlus size={16} className="settings-button__icon" />
               Invite
             </button>
           )}
@@ -196,7 +196,7 @@ export function TeamSettings() {
                     member.role === 'owner' ? 'member-item__role--owner' : ''
                   }`}
                 >
-                  {member.role === 'owner' && <Shield size={12} style={{ marginRight: 4 }} />}
+                  {member.role === 'owner' && <Shield size={12} className="settings-inline-icon" />}
                   {member.role}
                 </span>
                 {isAdmin && member.role !== 'owner' && member.user_id !== user?.id && (
@@ -252,12 +252,15 @@ export function TeamSettings() {
       )}
 
       {!canInviteMember && isAdmin && (
-        <div className="settings-card" style={{ borderColor: '#f59e0b' }}>
+        <div className="settings-card settings-card--warning">
           <div className="settings-card__content">
-            <p style={{ margin: 0, fontSize: '14px', color: '#f59e0b' }}>
+            <p className="settings-warning-text">
               You've reached your seat limit. Upgrade your plan to invite more members.
             </p>
-            <a href="/settings/billing" className="settings-button settings-button--primary" style={{ marginTop: 12, display: 'inline-block', textDecoration: 'none' }}>
+            <a
+              href="/settings/billing"
+              className="settings-button settings-button--primary settings-warning-link"
+            >
               Upgrade Plan
             </a>
           </div>

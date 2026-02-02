@@ -73,7 +73,7 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           <h3 className="settings-card__title">Privacy</h3>
         </div>
         <div className="settings-card__content">
-          <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', margin: 0 }}>
+          <p className="settings-privacy-text">
             Your data is stored securely and never shared with third parties without your consent.
             Charts you create are private by default unless you choose to make them public.
           </p>

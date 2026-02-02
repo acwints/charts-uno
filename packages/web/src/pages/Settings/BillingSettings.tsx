@@ -70,7 +70,7 @@ export function BillingSettings() {
   };
 
   return (
-    <div className="settings-section" style={{ maxWidth: '100%' }}>
+    <div className="settings-section settings-section--wide">
       <div className="settings-section__header">
         <h1 className="settings-section__title">Billing & Usage</h1>
         <p className="settings-section__description">
@@ -88,39 +88,20 @@ export function BillingSettings() {
               onClick={handleManageSubscription}
               disabled={isLoadingPortal}
             >
-              <ExternalLink size={14} style={{ marginRight: 6 }} />
+              <ExternalLink size={14} className="settings-button__icon" />
               {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
             </button>
           )}
         </div>
         <div className="settings-card__content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span
-              style={{
-                fontSize: 24,
-                fontWeight: 700,
-                textTransform: 'capitalize',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              {plan}
-            </span>
+          <div className="settings-plan-row">
+            <span className="settings-plan-name">{plan}</span>
             {subscription?.status === 'canceled' && (
-              <span
-                style={{
-                  fontSize: 12,
-                  padding: '4px 8px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#ef4444',
-                  borderRadius: 4,
-                }}
-              >
-                Canceling
-              </span>
+              <span className="settings-plan-status">Canceling</span>
             )}
           </div>
           {subscription?.current_period_end && (
-            <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', margin: '8px 0 0' }}>
+            <p className="settings-plan-renewal">
               {subscription.status === 'canceled'
                 ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
                 : `Renews ${new Date(subscription.current_period_end).toLocaleDateString()}`}
@@ -134,7 +115,7 @@ export function BillingSettings() {
         <div className="settings-card">
           <div className="settings-card__header">
             <h3 className="settings-card__title">
-              <TrendingUp size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+              <TrendingUp size={18} className="settings-usage-title-icon" />
               Usage This Month
             </h3>
           </div>
@@ -181,34 +162,34 @@ export function BillingSettings() {
       )}
 
       {/* Plan Selection */}
-      <div style={{ marginTop: 32 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, color: 'var(--color-text-primary)' }}>
+      <div className="settings-plan-selection">
+        <h2 className="settings-plan-selection__title">
           {isPaid ? 'Change Plan' : 'Upgrade Your Plan'}
         </h2>
         <PlanSelector teamId={currentTeam.id} currentPlan={plan as 'free' | 'pro' | 'business'} />
       </div>
 
       {/* Billing FAQ */}
-      <div className="settings-card" style={{ marginTop: 32 }}>
+      <div className="settings-card settings-faq">
         <div className="settings-card__header">
           <h3 className="settings-card__title">Billing FAQ</h3>
         </div>
         <div className="settings-card__content">
-          <div style={{ marginBottom: 16 }}>
-            <strong style={{ color: 'var(--color-text-primary)' }}>When does my billing cycle reset?</strong>
-            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+          <div className="settings-faq-item">
+            <strong className="settings-faq-title">When does my billing cycle reset?</strong>
+            <p className="settings-faq-text">
               Chart limits reset on the first day of each billing period. Your billing date depends on when you upgraded.
             </p>
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <strong style={{ color: 'var(--color-text-primary)' }}>Can I cancel anytime?</strong>
-            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+          <div className="settings-faq-item">
+            <strong className="settings-faq-title">Can I cancel anytime?</strong>
+            <p className="settings-faq-text">
               Yes! You can cancel your subscription at any time. You'll retain access until the end of your current billing period.
             </p>
           </div>
-          <div>
-            <strong style={{ color: 'var(--color-text-primary)' }}>What payment methods do you accept?</strong>
-            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+          <div className="settings-faq-item">
+            <strong className="settings-faq-title">What payment methods do you accept?</strong>
+            <p className="settings-faq-text">
               We accept all major credit cards through our payment partner Polar. Enterprise customers can request invoicing.
             </p>
           </div>

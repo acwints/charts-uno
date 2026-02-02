@@ -1,52 +1,10 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import './ThemeToggle.css';
 
-type Theme = 'light' | 'dark';
-
-function getSystemTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function getStoredTheme(): Theme | null {
-  if (typeof window === 'undefined') return null;
-  const stored = localStorage.getItem('epic-charts-theme');
-  if (stored === 'light' || stored === 'dark') return stored;
-  return null;
-}
-
-function setThemeAttribute(theme: Theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-}
-
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = getStoredTheme();
-    return stored ?? getSystemTheme();
-  });
-
-  useEffect(() => {
-    setThemeAttribute(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!getStoredTheme()) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('epic-charts-theme', newTheme);
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <motion.button
