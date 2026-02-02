@@ -12,8 +12,9 @@
 
 /* Full-width title row */
 .controls-top-row {
-  padding: var(--space-3) var(--space-4);
-  padding-bottom: 0;
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-3) 0 var(--space-3);
 }
 
 .control-input-title {
@@ -41,7 +42,9 @@
 
 /* Full-width chart type row */
 .controls-type-row {
-  padding: var(--space-3) var(--space-4);
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-3) var(--space-3);
   border-bottom: var(--border-subtle);
 }
 
@@ -50,6 +53,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: var(--space-1);
+  width: 100%;
 }
 
 .type-button {
@@ -90,7 +94,7 @@
 }
 
 .type-label {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 500;
 }
 
@@ -123,7 +127,7 @@
 }
 
 .control-section {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3);
   border-bottom: var(--border-subtle);
   border-right: var(--border-subtle);
 }
@@ -331,7 +335,7 @@
 
 /* Footer */
 .controls-footer {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-top: var(--border-subtle);
   background: var(--bg-tertiary);
 }
