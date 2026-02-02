@@ -325,3 +325,103 @@ export interface CreateChartDataWithTeam extends CreateChartData {
 export async function createChartWithTeam(data: CreateChartDataWithTeam): Promise<ChartResponse> {
   return apiRequest('/api/charts', { method: 'POST', body: data });
 }
+
+// ============================================
+// Dashboard APIs
+// ============================================
+
+export interface ChartQueryOptions {
+  limit?: number;
+  offset?: number;
+  sort?: 'created_at' | 'updated_at' | 'title' | 'view_count';
+  order?: 'asc' | 'desc';
+  search?: string;
+  is_public?: boolean;
+}
+
+export async function getMyChartsFiltered(options: ChartQueryOptions = {}): Promise<ChartListResponse> {
+  const params = new URLSearchParams();
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.offset) params.set('offset', String(options.offset));
+  if (options.sort) params.set('sort', options.sort);
+  if (options.order) params.set('order', options.order);
+  if (options.search) params.set('search', options.search);
+  if (options.is_public !== undefined) params.set('is_public', String(options.is_public));
+  const queryString = params.toString();
+  return apiRequest(`/api/charts${queryString ? `?${queryString}` : ''}`);
+}
+
+// Team charts with filtering
+export interface TeamChartQueryOptions extends ChartQueryOptions {
+  memberId?: string;
+}
+
+export async function getTeamCharts(
+  teamId: string,
+  options: TeamChartQueryOptions = {}
+): Promise<ChartListResponse> {
+  const params = new URLSearchParams();
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.offset) params.set('offset', String(options.offset));
+  if (options.memberId) params.set('member_id', options.memberId);
+  if (options.sort) params.set('sort', options.sort);
+  if (options.order) params.set('order', options.order);
+  if (options.search) params.set('search', options.search);
+  const queryString = params.toString();
+  return apiRequest(`/api/teams/${teamId}/charts${queryString ? `?${queryString}` : ''}`);
+}
+
+// Team activity feed
+export interface ActivityItem {
+  id: string;
+  type: 'chart_created' | 'chart_updated' | 'chart_published' |
+        'chart_deleted' | 'member_joined' | 'member_left';
+  actor: User;
+  target?: { type: string; id: string; name: string };
+  created_at: string;
+}
+
+export interface ActivityResponse {
+  activities: ActivityItem[];
+  total: number;
+}
+
+export async function getTeamActivity(
+  teamId: string,
+  limit = 20,
+  offset = 0
+): Promise<ActivityResponse> {
+  return apiRequest(`/api/teams/${teamId}/activity?limit=${limit}&offset=${offset}`);
+}
+
+// User stats
+export interface UserStats {
+  total_charts: number;
+  published_charts: number;
+  draft_charts: number;
+  total_views: number;
+  total_likes: number;
+}
+
+export async function getUserStats(): Promise<UserStats> {
+  return apiRequest('/api/user/stats');
+}
+
+// Batch operations
+export async function batchDeleteCharts(chartIds: string[]): Promise<void> {
+  await apiRequest('/api/charts/batch/delete', { method: 'POST', body: { chart_ids: chartIds } });
+}
+
+export async function batchPublishCharts(chartIds: string[], isPublic: boolean): Promise<void> {
+  await apiRequest('/api/charts/batch/publish', { method: 'POST', body: { chart_ids: chartIds, is_public: isPublic } });
+}
+
+// Move chart to team
+export async function moveChartToTeam(chartId: string, teamId: string): Promise<ChartResponse> {
+  return apiRequest(`/api/charts/${chartId}/move`, { method: 'POST', body: { team_id: teamId } });
+}
+
+// Duplicate chart
+export async function duplicateChart(chartId: string): Promise<ChartResponse> {
+  return apiRequest(`/api/charts/${chartId}/duplicate`, { method: 'POST' });
+}

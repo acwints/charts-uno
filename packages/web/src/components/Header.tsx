@@ -1,44 +1,43 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { RotateCcw, Sparkles, LayoutGrid, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
+import { Plus, Sparkles, LayoutGrid, Home, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
+import { useChartStore } from '../stores/chartStore';
 import type { ChartData } from '../types';
 import './Header.css';
 
 interface HeaderProps {
-  onReset: () => void;
-  hasData: boolean;
+  hasData?: boolean;
   data?: ChartData | null;
   chartRef?: React.RefObject<HTMLDivElement | null>;
   title?: string;
-  onFeedClick?: () => void;
   showFeedButton?: boolean;
-  onSettingsClick?: (tab?: 'account' | 'team' | 'billing') => void;
-  onCreateTeam?: () => void;
   onAuthOpen?: () => void;
 }
 
 export function Header({
-  onReset,
   hasData,
   data,
   chartRef,
   title,
-  onFeedClick,
   showFeedButton = true,
-  onSettingsClick,
-  onCreateTeam,
   onAuthOpen,
 }: HeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { reset } = useChartStore();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/team/');
+  const isNewChartPage = location.pathname === '/new';
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -52,6 +51,16 @@ export function Header({
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     await logout();
+    navigate('/');
+  };
+
+  const handleCreateNew = () => {
+    reset();
+    navigate('/new');
+  };
+
+  const handleCreateTeam = () => {
+    navigate('/settings/team');
   };
 
   const initials = user?.name
@@ -72,11 +81,13 @@ export function Header({
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="logo-icon">
-            <Sparkles size={20} />
-          </div>
-          <span className="logo-text">Epic Charts</span>
-          <span className="logo-badge">BETA</span>
+          <Link to="/" className="logo-link">
+            <div className="logo-icon">
+              <Sparkles size={20} />
+            </div>
+            <span className="logo-text">Epic Charts</span>
+            <span className="logo-badge">BETA</span>
+          </Link>
         </motion.div>
 
         <motion.nav
@@ -86,7 +97,7 @@ export function Header({
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           {isAuthenticated && (
-            <TeamSwitcher onCreateTeam={onCreateTeam} />
+            <TeamSwitcher onCreateTeam={handleCreateTeam} />
           )}
 
           <ThemeToggle />
@@ -97,23 +108,36 @@ export function Header({
             </Button>
           )}
 
-          {showFeedButton && onFeedClick && (
-            <Button onClick={onFeedClick}>
-              <LayoutGrid size={16} />
-              <span>Feed</span>
+          {/* Dashboard link for authenticated users when not on dashboard */}
+          {isAuthenticated && !isDashboard && (
+            <Link to="/dashboard">
+              <Button>
+                <Home size={16} />
+                <span>Dashboard</span>
+              </Button>
+            </Link>
+          )}
+
+          {showFeedButton && (
+            <Link to="/feed">
+              <Button>
+                <LayoutGrid size={16} />
+                <span>Feed</span>
+              </Button>
+            </Link>
+          )}
+
+          {/* Create New button for authenticated users (always visible when authenticated) */}
+          {isAuthenticated && !isNewChartPage && (
+            <Button variant="primary" onClick={handleCreateNew}>
+              <Plus size={16} />
+              <span>Create New</span>
             </Button>
           )}
 
-          {hasData && (
-            <>
-              <Button onClick={onReset}>
-                <RotateCcw size={16} />
-                <span>New Chart</span>
-              </Button>
-              {data && chartRef && (
-                <ExportMenu data={data} chartRef={chartRef} title={title} />
-              )}
-            </>
+          {/* Export menu when viewing a chart */}
+          {hasData && data && chartRef && (
+            <ExportMenu data={data} chartRef={chartRef} title={title} />
           )}
 
           {isAuthenticated && user && (
@@ -150,27 +174,23 @@ export function Header({
 
                     <div className="user-menu-divider" />
 
-                    <button
+                    <Link
+                      to="/settings/account"
                       className="user-menu-item"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onSettingsClick?.('account');
-                      }}
+                      onClick={() => setIsUserMenuOpen(false)}
                     >
                       <Settings size={16} />
                       <span>Settings</span>
-                    </button>
+                    </Link>
 
-                    <button
+                    <Link
+                      to="/settings/billing"
                       className="user-menu-item"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onSettingsClick?.('billing');
-                      }}
+                      onClick={() => setIsUserMenuOpen(false)}
                     >
                       <CreditCard size={16} />
                       <span>Billing</span>
-                    </button>
+                    </Link>
 
                     <div className="user-menu-divider" />
 

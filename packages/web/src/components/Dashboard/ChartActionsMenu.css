@@ -1,0 +1,76 @@
+.chart-actions-menu {
+  position: relative;
+}
+
+.chart-actions-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chart-actions-trigger:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.chart-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.chart-actions-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.chart-actions-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.chart-actions-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chart-actions-item--danger {
+  color: var(--error);
+}
+
+.chart-actions-item--danger:hover {
+  background: var(--error-subtle);
+  color: var(--error);
+}
+
+.chart-actions-divider {
+  height: 1px;
+  background: var(--bg-tertiary);
+  margin: var(--space-1) 0;
+}

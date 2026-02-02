@@ -1,298 +1,96 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Header } from './components/Header';
-import { DataInput } from './components/DataInput';
-import { ChartPreview } from './components/ChartPreview';
-import { ChartControls } from './components/ChartControls';
-import { ChatPanel } from './components/ChatPanel';
-import { Hero } from './components/Hero';
-import { AuthModal } from './components/AuthModal';
-import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEngineerView';
-import { ChartFeed } from './components/ChartFeed';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MainLayout } from './layouts/MainLayout';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { ChartBuilder } from './pages/ChartBuilder';
+import { ChartView } from './pages/ChartView';
+import { ChartFeedPage } from './pages/ChartFeedPage';
 import { SettingsPage } from './pages/Settings';
+import { InviteAccept } from './pages/InviteAccept';
+import { NotFound } from './pages/NotFound';
+import { UserDashboardPage, TeamDashboardPage, TeamActivityPage } from './pages/Dashboard';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AssistantProvider } from './contexts/AssistantProvider';
 import { ToastProvider } from './contexts/ToastContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
-import { recommendChartType } from './services/chartTypeRecommender';
-import type { ChartData, ChartConfig } from './types';
-import type { ChartResponse } from './services/api';
 import './App.css';
-
-type AppView = 'input' | 'chart' | 'feed' | 'settings';
-
-function AppContent() {
-  const [chartData, setChartData] = useState<ChartData | null>(null);
-  const [chartConfig, setChartConfig] = useState<ChartConfig>({
-    type: 'bar',
-    colorScheme: 'default',
-    styleVariant: 'professional',
-    showGrid: true,
-    showLegend: true,
-    showValues: false,
-    animate: true,
-    title: '',
-  });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentView, setCurrentView] = useState<AppView>('input');
-  const [settingsTab, setSettingsTab] = useState<'account' | 'team' | 'billing'>('account');
-  const chartRef = useRef<HTMLDivElement>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
-
-  const handleDataSubmit = useCallback(async (data: ChartData) => {
-    const updates: Partial<ChartConfig> = {};
-    if (data.suggestedTitle) {
-      updates.title = data.suggestedTitle;
-    }
-
-    setIsProcessing(true);
-    try {
-      const recommendation = await recommendChartType(data, { preferredType: data.suggestedType });
-      const chosenType = data.suggestedType ?? recommendation.type;
-      const enrichedData: ChartData = {
-        ...data,
-        suggestedType: chosenType,
-        aiReasoning: recommendation.reasoning,
-        aiSummary: recommendation.summary,
-      };
-      setChartData(enrichedData);
-      setChartConfig(prev => ({
-        ...prev,
-        ...updates,
-        type: chosenType,
-      }));
-      setCurrentView('chart');
-    } catch (error) {
-      console.error('AI recommendation failed:', error);
-      const fallbackType = data.suggestedType ?? 'bar';
-      setChartData(data);
-      setChartConfig(prev => ({ ...prev, ...updates, type: fallbackType }));
-      setCurrentView('chart');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setChartData(null);
-    setChartConfig({
-      type: 'bar',
-      colorScheme: 'default',
-      styleVariant: 'professional',
-      showGrid: true,
-      showLegend: true,
-      showValues: false,
-      animate: true,
-      title: '',
-    });
-    setCurrentView('input');
-  }, []);
-
-  const handleFeedClick = useCallback(() => {
-    setCurrentView('feed');
-  }, []);
-
-  const handleFeedBack = useCallback(() => {
-    setCurrentView(chartData ? 'chart' : 'input');
-  }, [chartData]);
-
-  const handleSettingsClick = useCallback((tab?: 'account' | 'team' | 'billing') => {
-    setSettingsTab(tab || 'account');
-    setCurrentView('settings');
-  }, []);
-
-  const handleSettingsClose = useCallback(() => {
-    setCurrentView(chartData ? 'chart' : 'input');
-  }, [chartData]);
-
-  const handleAuthOpen = useCallback(() => {
-    setIsAuthModalOpen(true);
-  }, []);
-
-  const handleAuthClose = useCallback(() => {
-    setIsAuthModalOpen(false);
-  }, []);
-
-  const handleCreateTeam = useCallback(() => {
-    setSettingsTab('team');
-    setCurrentView('settings');
-  }, []);
-
-  const handleChartSelect = useCallback((chart: ChartResponse) => {
-    const convertedData: ChartData = {
-      labels: chart.data.labels,
-      series: chart.data.series,
-      sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
-      suggestedTitle: chart.data.suggestedTitle,
-      suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
-    };
-
-    setChartData(convertedData);
-    setChartConfig({
-      type: (chart.config.type as ChartConfig['type']) || 'bar',
-      colorScheme: (chart.config.colorScheme as ChartConfig['colorScheme']) || 'default',
-      styleVariant: (chart.config.styleVariant as ChartConfig['styleVariant']) || 'professional',
-      showGrid: chart.config.showGrid ?? true,
-      showLegend: chart.config.showLegend ?? true,
-      showValues: chart.config.showValues ?? false,
-      animate: chart.config.animate ?? true,
-      title: chart.config.title || chart.title || '',
-    });
-    setCurrentView('chart');
-  }, []);
-
-  const isImageSource = chartData?.sourceType === 'image';
-
-  const showChart = currentView === 'chart' && chartData;
-  const showFeed = currentView === 'feed';
-  const showSettings = currentView === 'settings';
-  const showInput = currentView === 'input' || (!chartData && !showFeed && !showSettings);
-
-  const showAssistantPanel = showChart && chartData;
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsAuthModalOpen(false);
-    }
-  }, [isAuthenticated]);
-
-  return (
-    <div className="app-wrapper">
-      <div className="app">
-        <Header
-          onReset={handleReset}
-          hasData={!!chartData}
-          data={chartData}
-          chartRef={chartRef}
-          title={chartConfig.title}
-          onFeedClick={handleFeedClick}
-          showFeedButton={!showFeed && !showSettings}
-          onSettingsClick={handleSettingsClick}
-          onCreateTeam={handleCreateTeam}
-          onAuthOpen={handleAuthOpen}
-        />
-
-        <main className="main">
-        <AnimatePresence mode="wait">
-          {showSettings ? (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="settings-view"
-            >
-              <SettingsPage initialTab={settingsTab} onClose={handleSettingsClose} />
-            </motion.div>
-          ) : showFeed ? (
-            <motion.div
-              key="feed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="feed-view"
-            >
-              <ChartFeed
-                onChartSelect={handleChartSelect}
-                onBack={handleFeedBack}
-              />
-            </motion.div>
-          ) : showInput ? (
-            <motion.div
-              key="input"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="input-view"
-            >
-              <Hero showAuthCta={!isAuthenticated} onAuthOpen={handleAuthOpen} />
-              <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
-            </motion.div>
-          ) : showChart && isImageSource ? (
-            <motion.div
-              key="reverse-engineer"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="chart-view"
-            >
-              <ReverseEngineerView
-                initialData={chartData}
-                config={chartConfig}
-                onConfigChange={setChartConfig}
-                chartRef={chartRef}
-              />
-            </motion.div>
-          ) : showChart ? (
-            <motion.div
-              key="chart"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="chart-view"
-            >
-              <div className="chart-workspace" ref={chartRef}>
-                <div className="chart-column">
-                  {chartData.aiSummary && (
-                    <div className="chart-ai-summary">
-                      <span className="chart-ai-label">AI Insight</span>
-                      <p className="chart-ai-text">{chartData.aiSummary}</p>
-                    </div>
-                  )}
-                  <ChartPreview data={chartData} config={chartConfig} />
-                </div>
-                <div className="chart-sidebar">
-                  <ChartControls
-                    config={chartConfig}
-                    onChange={setChartConfig}
-                    data={chartData}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </main>
-
-      <footer className="footer">
-          <div className="footer-content">
-            <span className="footer-brand">Epic Charts</span>
-            <span className="footer-divider">•</span>
-            <span className="footer-tagline">Data visualization, elevated</span>
-          </div>
-        </footer>
-      </div>
-
-      <AuthModal isOpen={showInput && !isAuthenticated && isAuthModalOpen} onClose={handleAuthClose} />
-
-      {/* AI Assistant Panel - persistent right sidebar */}
-      {showAssistantPanel && (
-        <ChatPanel
-          data={chartData}
-          config={chartConfig}
-          onDataChange={setChartData}
-          onConfigChange={setChartConfig}
-        />
-      )}
-    </div>
-  );
-}
 
 function AppWithTeam() {
   const { isAuthenticated } = useAuth();
 
   return (
     <TeamProvider isAuthenticated={isAuthenticated}>
-      <AppContent />
+      <Routes>
+        {/* Home route with auth-based redirect */}
+        <Route path="/" element={<HomeRoute />} />
+
+        {/* Public routes */}
+        <Route path="/feed" element={<MainLayout />}>
+          <Route index element={<ChartFeedPage />} />
+        </Route>
+
+        <Route path="/chart" element={<MainLayout />}>
+          <Route index element={<ChartView />} />
+        </Route>
+
+        <Route path="/chart/:id" element={<MainLayout />}>
+          <Route index element={<ChartView />} />
+        </Route>
+
+        <Route path="/invite/:token" element={<MainLayout />}>
+          <Route index element={<InviteAccept />} />
+        </Route>
+
+        {/* Auth-required dashboard routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<UserDashboardPage tab="all" />} />
+            <Route path="published" element={<UserDashboardPage tab="published" />} />
+            <Route path="drafts" element={<UserDashboardPage tab="drafts" />} />
+            <Route path="liked" element={<UserDashboardPage tab="liked" />} />
+            <Route path="saved" element={<UserDashboardPage tab="saved" />} />
+          </Route>
+
+          <Route path="/team/:slug" element={<DashboardLayout />}>
+            <Route index element={<TeamDashboardPage />} />
+            <Route path="activity" element={<TeamActivityPage />} />
+          </Route>
+
+          <Route path="/new" element={<MainLayout />}>
+            <Route index element={<ChartBuilder />} />
+          </Route>
+
+          <Route path="/settings" element={<MainLayout />}>
+            <Route index element={<SettingsPage />} />
+            <Route path=":tab" element={<SettingsPage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </TeamProvider>
+  );
+}
+
+// Home route: authenticated users go to dashboard, others see landing page
+function HomeRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show landing page with chart builder for unauthenticated users
+  return (
+    <MainLayout>
+      <ChartBuilder />
+    </MainLayout>
   );
 }
 
@@ -302,7 +100,9 @@ function App() {
       <ThemeProvider>
         <ToastProvider>
           <AssistantProvider>
-            <AppWithTeam />
+            <BrowserRouter>
+              <AppWithTeam />
+            </BrowserRouter>
           </AssistantProvider>
         </ToastProvider>
       </ThemeProvider>

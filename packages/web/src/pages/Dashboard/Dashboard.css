@@ -1,0 +1,56 @@
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-16);
+}
+
+/* Team Dashboard Tabs */
+.team-dashboard-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-6);
+  border-bottom: var(--border-subtle);
+}
+
+.team-dashboard-tab {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.team-dashboard-tab:hover {
+  color: var(--text-secondary);
+}
+
+.team-dashboard-tab--active {
+  color: var(--text-primary);
+}
+
+.team-dashboard-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+}
+
+.team-dashboard-tabs-actions {
+  margin-left: auto;
+  padding: var(--space-2) 0;
+}

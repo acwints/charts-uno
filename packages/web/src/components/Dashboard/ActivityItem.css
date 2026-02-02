@@ -1,0 +1,78 @@
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.activity-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.activity-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.activity-item-icon--default {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.activity-item-icon--success {
+  background: var(--success-subtle);
+  color: var(--success);
+}
+
+.activity-item-icon--accent {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.activity-item-icon--warning {
+  background: var(--warning-subtle);
+  color: var(--warning);
+}
+
+.activity-item-icon--danger {
+  background: var(--error-subtle);
+  color: var(--error);
+}
+
+.activity-item-content {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.activity-item-actor {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.activity-item-action {
+  color: var(--text-muted);
+}
+
+.activity-item-target {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.activity-item-target:hover {
+  text-decoration: underline;
+}
+
+.activity-item-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

@@ -1,0 +1,36 @@
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+}
+
+.activity-feed-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-16);
+  color: var(--text-muted);
+}
+
+.activity-feed-group {
+  margin-bottom: var(--space-6);
+}
+
+.activity-feed-group:last-child {
+  margin-bottom: 0;
+}
+
+.activity-feed-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-8);
+}
+
+.activity-feed-group-items {
+  display: flex;
+  flex-direction: column;
+}

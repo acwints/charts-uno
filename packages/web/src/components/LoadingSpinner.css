@@ -1,0 +1,28 @@
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner-ring {
+  border: 2px solid var(--bg-tertiary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-spinner--sm .loading-spinner-ring {
+  width: 16px;
+  height: 16px;
+}
+
+.loading-spinner--md .loading-spinner-ring {
+  width: 24px;
+  height: 24px;
+}
+
+.loading-spinner--lg .loading-spinner-ring {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}

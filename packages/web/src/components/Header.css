@@ -23,6 +23,13 @@
   gap: var(--space-3);
 }
 
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
 .logo-icon {
   width: 32px;
   height: 32px;
@@ -162,6 +169,7 @@
   color: var(--text-secondary);
   transition: all var(--transition-fast);
   text-align: left;
+  text-decoration: none;
 }
 
 .user-menu-item:hover {

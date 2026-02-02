@@ -1,0 +1,171 @@
+.invite-accept {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+}
+
+.invite-accept__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.invite-accept__card--error {
+  border-color: var(--color-error, #ef4444);
+}
+
+.invite-accept__card--success {
+  border-color: var(--color-success, #22c55e);
+}
+
+.invite-accept__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.1));
+  border-radius: 50%;
+  color: var(--color-primary);
+}
+
+.invite-accept__icon--error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error, #ef4444);
+}
+
+.invite-accept__icon--success {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success, #22c55e);
+}
+
+.invite-accept__spinner {
+  animation: spin 1s linear infinite;
+  color: var(--color-primary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.invite-accept__loading-text {
+  color: var(--color-text-secondary);
+  margin: 1rem 0 0;
+}
+
+.invite-accept__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.invite-accept__message {
+  color: var(--color-text-secondary);
+  margin: 0 0 1.5rem;
+}
+
+.invite-accept__redirect {
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.invite-accept__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.invite-accept__link:hover {
+  background: var(--color-primary-hover);
+}
+
+.invite-accept__details {
+  background: var(--color-surface-secondary, var(--color-background));
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.invite-accept__team-name {
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.invite-accept__inviter {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+}
+
+.invite-accept__role {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.invite-accept__role-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.1));
+  color: var(--color-primary);
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.invite-accept__auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.invite-accept__auth-message {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.invite-accept__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.invite-accept__decline {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.invite-accept__decline:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.invite-accept__button-spinner {
+  animation: spin 1s linear infinite;
+}
