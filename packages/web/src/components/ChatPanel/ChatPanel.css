@@ -1,4 +1,37 @@
-/* Assistant Panel - Embedded Right Panel */
+/* Assistant Sidebar - Collapsed State */
+.assistant-sidebar {
+  width: 56px;
+  min-width: 56px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--space-4);
+  background: var(--bg-secondary);
+  border-left: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.assistant-sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.assistant-sidebar-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  transform: scale(1.05);
+}
+
+/* Assistant Panel - Expanded State */
 .assistant-panel {
   width: 420px;
   min-width: 420px;
@@ -407,15 +440,20 @@
 }
 
 @media (max-width: 768px) {
-  .app-wrapper {
-    flex-direction: column;
+  .assistant-sidebar {
+    width: 48px;
+    min-width: 48px;
   }
 
   .assistant-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
     width: 100%;
+    max-width: 100%;
     min-width: 100%;
-    height: 50vh;
+    height: 100vh;
+    z-index: 200;
     border-left: none;
-    border-top: var(--border-subtle);
   }
 }

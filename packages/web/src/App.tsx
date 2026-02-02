@@ -154,7 +154,6 @@ function AppContent() {
           showFeedButton={!showFeed && !showSettings}
           onSettingsClick={handleSettingsClick}
           onCreateTeam={handleCreateTeam}
-          showAssistantToggle={!!showChart}
         />
 
         <main className="main">
@@ -254,26 +253,15 @@ function AppContent() {
         </footer>
       </div>
 
-      {/* AI Assistant Panel - embedded right panel */}
-      <AnimatePresence>
-        {showAssistantPanel && (
-          <motion.div
-            key="assistant-panel"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            style={{ overflow: 'hidden', flexShrink: 0 }}
-          >
-            <ChatPanel
-              data={chartData}
-              config={chartConfig}
-              onDataChange={setChartData}
-              onConfigChange={setChartConfig}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* AI Assistant Panel - persistent right sidebar */}
+      {showAssistantPanel && (
+        <ChatPanel
+          data={chartData}
+          config={chartConfig}
+          onDataChange={setChartData}
+          onConfigChange={setChartConfig}
+        />
+      )}
     </div>
   );
 }

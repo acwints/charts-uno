@@ -33,7 +33,7 @@ export function ChatPanel({
   onDataChange,
   onConfigChange,
 }: ChatPanelProps) {
-  const { isOpen, close } = useAssistant();
+  const { isOpen, open, close } = useAssistant();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -128,13 +128,24 @@ export function ChatPanel({
     "Which category is performing best?",
   ];
 
-  // Don't render if not open (toggle is in the header)
+  // Collapsed state - thin sidebar with icon
   if (!isOpen) {
-    return null;
+    return (
+      <div className="assistant-sidebar">
+        <button
+          className="assistant-sidebar-btn"
+          onClick={open}
+          title="Open Assistant"
+        >
+          <Sparkles size={20} />
+        </button>
+      </div>
+    );
   }
 
+  // Expanded state - full panel
   return (
-    <div className="assistant-panel">
+    <div className="assistant-panel expanded">
       {/* Header */}
       <div className="assistant-header">
         <div className="assistant-header-title">
