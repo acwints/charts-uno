@@ -101,7 +101,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
   const chartMargins = {
-    top: config.showValues ? 20 : 5,
+    top: 20,
     right: 5,
     bottom: xAxisLabel ? 25 : 5,
     left: yAxisLabel ? 15 : 5,
@@ -131,7 +131,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       case 'solid': return '0';
       case 'dashed': return '3 3';
       case 'dotted': return '1 3';
-      case 'none': return '0';
+      case 'none': return '3 3'; // Fall back to dashed when style says none but user enabled grid
       default: return '3 3';
     }
   }, [styleConfig.chart.gridStyle]);
@@ -198,12 +198,11 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       margin: chartMargins,
     };
 
-    const showGrid = config.showGrid && styleConfig.chart.gridStyle !== 'none';
-    const gridElement = showGrid ? (
+    const gridElement = config.showGrid ? (
       <CartesianGrid
         strokeDasharray={gridStrokeDasharray}
         stroke="currentColor"
-        strokeOpacity={styleConfig.chart.gridOpacity}
+        strokeOpacity={styleConfig.chart.gridOpacity || 0.06}
         className="chart-grid"
       />
     ) : null;

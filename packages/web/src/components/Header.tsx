@@ -1,22 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Sparkles, LayoutGrid, Home, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
+import { Plus, Sparkles, LayoutGrid, Home, Settings, CreditCard, LogOut, ChevronDown, Save } from 'lucide-react';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
-import { getTeamBranding, type TeamBranding } from '../services/api';
+import { getTeamBranding, createChartWithTeam, type TeamBranding } from '../services/api';
 import { useTeam } from '../contexts/TeamContext';
-import type { ChartData } from '../types';
+import { useToast } from '../contexts/ToastContext';
+import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import './Header.css';
 
 interface HeaderProps {
   hasData?: boolean;
   data?: ChartData | null;
+  config?: ChartConfig | null;
   chartRef?: React.RefObject<HTMLDivElement | null>;
   title?: string;
   showFeedButton?: boolean;
@@ -26,6 +28,7 @@ interface HeaderProps {
 export function Header({
   hasData,
   data,
+  config,
   chartRef,
   title,
   showFeedButton = true,
@@ -33,9 +36,12 @@ export function Header({
 }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id: chartId } = useParams<{ id?: string }>();
   const { user, isAuthenticated, logout } = useAuth();
   const { reset } = useChartStore();
+  const toast = useToast();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [branding, setBranding] = useState<TeamBranding | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +114,47 @@ export function Header({
     navigate('/settings/team');
   };
 
+  const handleSaveChart = async () => {
+    if (!data || !config || !currentTeam?.id) return;
+
+    setIsSaving(true);
+    try {
+      const savedChart = await createChartWithTeam({
+        title: config.title || data.suggestedTitle || 'Untitled Chart',
+        data: {
+          labels: data.labels,
+          series: data.series,
+          suggestedType: data.suggestedType,
+          suggestedTitle: data.suggestedTitle,
+        },
+        config: {
+          type: config.type,
+          colorScheme: config.colorScheme,
+          styleVariant: config.styleVariant,
+          showGrid: config.showGrid,
+          showLegend: config.showLegend,
+          showValues: config.showValues,
+          animate: config.animate,
+          title: config.title,
+        },
+        source_type: data.sourceType || 'paste',
+        is_public: false,
+        team_id: currentTeam.id,
+      });
+      toast.success('Chart saved to your profile!');
+      navigate(`/chart/${savedChart.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save chart');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Determine if we can show the save button
+  const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
+  const isUnsavedChart = isChartPage && !chartId && hasData;
+  const canSave = isAuthenticated && isUnsavedChart && data && config && currentTeam?.id;
+
   const initials = user?.name
     ? user.name
         .split(' ')
@@ -177,6 +224,14 @@ export function Header({
             <Button variant="primary" onClick={handleCreateNew}>
               <Plus size={16} />
               <span>Create New</span>
+            </Button>
+          )}
+
+          {/* Save button for unsaved charts */}
+          {canSave && (
+            <Button variant="primary" onClick={handleSaveChart} disabled={isSaving}>
+              <Save size={16} />
+              <span>{isSaving ? 'Saving...' : 'Save'}</span>
             </Button>
           )}
 

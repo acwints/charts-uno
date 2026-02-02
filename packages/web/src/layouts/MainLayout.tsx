@@ -34,6 +34,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           onAuthOpen={openAuthModal}
           hasData={!!chartData}
           data={chartData}
+          config={chartConfig}
           chartRef={chartRef}
           title={chartConfig.title}
           showFeedButton={!isFeedPage && !isSettingsPage}
