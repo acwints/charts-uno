@@ -79,10 +79,10 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
   const chartMargins = {
-    top: 10,
-    right: 20,
-    bottom: xAxisLabel ? 36 : 20,
-    left: yAxisLabel ? 48 : 32,
+    top: 5,
+    right: 10,
+    bottom: xAxisLabel ? 25 : 5,
+    left: yAxisLabel ? 35 : 15,
   };
 
   const pieData = useMemo(() => {
@@ -238,10 +238,11 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     const legendElement = config.showLegend ? (
       <Legend
         wrapperStyle={{
-          paddingTop: '20px',
+          paddingTop: '8px',
+          paddingBottom: '0',
         }}
         formatter={(value) => (
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{value}</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{value}</span>
         )}
       />
     ) : null;
