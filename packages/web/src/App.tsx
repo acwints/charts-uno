@@ -143,21 +143,22 @@ function AppContent() {
   const showAssistantPanel = showChart && chartData;
 
   return (
-    <div className={`app ${isAssistantOpen && showAssistantPanel ? 'with-assistant-open' : ''}`}>
-      <Header
-        onReset={handleReset}
-        hasData={!!chartData}
-        data={chartData}
-        chartRef={chartRef}
-        title={chartConfig.title}
-        onFeedClick={handleFeedClick}
-        showFeedButton={!showFeed && !showSettings}
-        onSettingsClick={handleSettingsClick}
-        onCreateTeam={handleCreateTeam}
-        showAssistantToggle={!!showChart}
-      />
+    <div className="app-wrapper">
+      <div className={`app ${isAssistantOpen && showAssistantPanel ? 'with-assistant-open' : ''}`}>
+        <Header
+          onReset={handleReset}
+          hasData={!!chartData}
+          data={chartData}
+          chartRef={chartRef}
+          title={chartConfig.title}
+          onFeedClick={handleFeedClick}
+          showFeedButton={!showFeed && !showSettings}
+          onSettingsClick={handleSettingsClick}
+          onCreateTeam={handleCreateTeam}
+          showAssistantToggle={!!showChart}
+        />
 
-      <main className="main">
+        <main className="main">
         <AnimatePresence mode="wait">
           {showSettings ? (
             <motion.div
@@ -246,14 +247,15 @@ function AppContent() {
       </main>
 
       <footer className="footer">
-        <div className="footer-content">
-          <span className="footer-brand">Epic Charts</span>
-          <span className="footer-divider">•</span>
-          <span className="footer-tagline">Data visualization, elevated</span>
-        </div>
-      </footer>
+          <div className="footer-content">
+            <span className="footer-brand">Epic Charts</span>
+            <span className="footer-divider">•</span>
+            <span className="footer-tagline">Data visualization, elevated</span>
+          </div>
+        </footer>
+      </div>
 
-      {/* AI Assistant Panel - positioned outside main content */}
+      {/* AI Assistant Panel - embedded right panel */}
       {showAssistantPanel && (
         <ChatPanel
           data={chartData}

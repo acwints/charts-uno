@@ -134,7 +134,7 @@ export function ChatPanel({
   }
 
   return (
-    <div className="assistant-panel open">
+    <div className="assistant-panel">
       {/* Header */}
       <div className="assistant-header">
         <div className="assistant-header-title">
