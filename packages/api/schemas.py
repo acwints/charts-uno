@@ -315,3 +315,21 @@ class ChartCreateWithTeam(ChartCreate):
 # Update ChartResponse to include team_id
 class ChartResponseWithTeam(ChartResponse):
     team_id: Optional[str] = None
+
+
+# ============================================
+# Team Branding Schemas
+# ============================================
+
+class TeamBrandingUpdate(BaseModel):
+    custom_logo_url: Optional[str] = None
+    watermark_enabled: Optional[bool] = None
+
+
+class TeamBrandingResponse(BaseModel):
+    custom_logo_url: Optional[str] = None
+    watermark_enabled: bool = True
+    can_customize: bool = False  # True for pro/business plans
+
+    class Config:
+        from_attributes = True

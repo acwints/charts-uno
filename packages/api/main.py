@@ -66,6 +66,9 @@ from schemas import (
     PortalResponse,
     UsageSummaryResponse,
     ChartCreateWithTeam,
+    # Branding schemas
+    TeamBrandingUpdate,
+    TeamBrandingResponse,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
@@ -1310,6 +1313,91 @@ async def remove_team_member(
         raise HTTPException(status_code=400, detail="Cannot remove team owner. Transfer ownership first.")
 
     db.delete(member)
+    db.commit()
+
+    return {"status": "ok"}
+
+
+# ============================================================================
+# Team Branding Endpoints
+# ============================================================================
+
+@app.get("/api/teams/{team_id}/branding", response_model=TeamBrandingResponse)
+async def get_team_branding(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get team branding settings"""
+    team, _ = _get_team_with_access(db, team_id, current_user)
+
+    # Check if team can customize (pro/business plan)
+    can_customize = False
+    if team.subscription and team.subscription.plan in ("pro", "business"):
+        can_customize = True
+
+    return TeamBrandingResponse(
+        custom_logo_url=team.custom_logo_url,
+        watermark_enabled=team.watermark_enabled if team.watermark_enabled is not None else True,
+        can_customize=can_customize,
+    )
+
+
+@app.patch("/api/teams/{team_id}/branding", response_model=TeamBrandingResponse)
+async def update_team_branding(
+    team_id: str,
+    branding_data: TeamBrandingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update team branding settings (requires pro/business plan)"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    # Check if team has a paid plan
+    if not team.subscription or team.subscription.plan == "free":
+        raise HTTPException(
+            status_code=403,
+            detail="Branding customization requires a Pro or Business plan"
+        )
+
+    # Validate logo if provided (check size for base64)
+    if branding_data.custom_logo_url:
+        # If it's a base64 data URL, check size (max ~500KB = ~666KB base64)
+        if branding_data.custom_logo_url.startswith("data:"):
+            # Rough size check: base64 is ~4/3 of original
+            base64_size = len(branding_data.custom_logo_url)
+            if base64_size > 700000:  # ~500KB image
+                raise HTTPException(
+                    status_code=400,
+                    detail="Logo image is too large. Maximum size is 500KB."
+                )
+
+    # Update branding settings
+    if branding_data.custom_logo_url is not None:
+        team.custom_logo_url = branding_data.custom_logo_url
+    if branding_data.watermark_enabled is not None:
+        team.watermark_enabled = branding_data.watermark_enabled
+
+    db.commit()
+    db.refresh(team)
+
+    return TeamBrandingResponse(
+        custom_logo_url=team.custom_logo_url,
+        watermark_enabled=team.watermark_enabled if team.watermark_enabled is not None else True,
+        can_customize=True,
+    )
+
+
+@app.delete("/api/teams/{team_id}/branding/logo")
+async def delete_team_logo(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove custom logo from team branding"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    team.custom_logo_url = None
     db.commit()
 
     return {"status": "ok"}

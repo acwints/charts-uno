@@ -168,6 +168,10 @@ class Team(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Branding settings
+    custom_logo_url = Column(Text, nullable=True)  # base64 data URL or external URL
+    watermark_enabled = Column(Boolean, default=True, nullable=False)
+
     # Relationships
     owner = relationship("User", back_populates="owned_teams")
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")

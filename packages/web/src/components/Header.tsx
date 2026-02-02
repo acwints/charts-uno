@@ -8,7 +8,10 @@ import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
+import { getTeamBranding, type TeamBranding } from '../services/api';
+import { useTeam } from '../contexts/TeamContext';
 import type { ChartData } from '../types';
+import type { WatermarkSettings } from '../services/exportService';
 import './Header.css';
 
 interface HeaderProps {
@@ -33,10 +36,52 @@ export function Header({
   const { user, isAuthenticated, logout } = useAuth();
   const { reset } = useChartStore();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [branding, setBranding] = useState<TeamBranding | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Get current team for branding
+  let currentTeam: { id: string; subscription?: { plan: string } | null } | null = null;
+  try {
+    const teamContext = useTeam();
+    currentTeam = teamContext.currentTeam;
+  } catch {
+    // Team context not available (not wrapped in provider)
+  }
 
   const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/team/');
   const isNewChartPage = location.pathname === '/new';
+
+  // Fetch branding settings when team changes
+  useEffect(() => {
+    if (currentTeam?.id) {
+      getTeamBranding(currentTeam.id)
+        .then(setBranding)
+        .catch(() => setBranding(null));
+    } else {
+      setBranding(null);
+    }
+  }, [currentTeam?.id]);
+
+  // Determine watermark settings based on branding and subscription
+  const watermarkSettings: WatermarkSettings = (() => {
+    const isPaidPlan = currentTeam?.subscription?.plan && currentTeam.subscription.plan !== 'free';
+
+    if (!isPaidPlan) {
+      // Free users always get watermark
+      return { enabled: true, customLogoUrl: null };
+    }
+
+    if (branding) {
+      // Paid users can customize
+      return {
+        enabled: branding.watermark_enabled,
+        customLogoUrl: branding.custom_logo_url,
+      };
+    }
+
+    // Default for paid users with no branding configured
+    return { enabled: true, customLogoUrl: null };
+  })();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -137,7 +182,7 @@ export function Header({
 
           {/* Export menu when viewing a chart */}
           {hasData && data && chartRef && (
-            <ExportMenu data={data} chartRef={chartRef} title={title} />
+            <ExportMenu data={data} chartRef={chartRef} title={title} watermark={watermarkSettings} />
           )}
 
           {isAuthenticated && user && (

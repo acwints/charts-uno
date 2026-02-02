@@ -1,21 +1,23 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Users, CreditCard } from 'lucide-react';
+import { User, Users, CreditCard, ImageIcon } from 'lucide-react';
 import { AccountSettings } from './AccountSettings';
 import { TeamSettings } from './TeamSettings';
 import { BillingSettings } from './BillingSettings';
+import { BrandingSettings } from './BrandingSettings';
 import { useAuth } from '../../hooks/useAuth';
 import './Settings.css';
 
-type SettingsTab = 'account' | 'team' | 'billing';
+type SettingsTab = 'account' | 'team' | 'billing' | 'branding';
 
 const TABS = [
   { id: 'account' as const, label: 'Account', icon: User },
   { id: 'team' as const, label: 'Team', icon: Users },
   { id: 'billing' as const, label: 'Billing', icon: CreditCard },
+  { id: 'branding' as const, label: 'Branding', icon: ImageIcon },
 ];
 
 function isValidTab(tab: string | undefined): tab is SettingsTab {
-  return tab === 'account' || tab === 'team' || tab === 'billing';
+  return tab === 'account' || tab === 'team' || tab === 'billing' || tab === 'branding';
 }
 
 export function SettingsPage() {
@@ -68,9 +70,10 @@ export function SettingsPage() {
         {activeTab === 'account' && <AccountSettings user={user} />}
         {activeTab === 'team' && <TeamSettings />}
         {activeTab === 'billing' && <BillingSettings />}
+        {activeTab === 'branding' && <BrandingSettings />}
       </div>
     </div>
   );
 }
 
-export { AccountSettings, TeamSettings, BillingSettings };
+export { AccountSettings, TeamSettings, BillingSettings, BrandingSettings };

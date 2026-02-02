@@ -425,3 +425,28 @@ export async function moveChartToTeam(chartId: string, teamId: string): Promise<
 export async function duplicateChart(chartId: string): Promise<ChartResponse> {
   return apiRequest(`/api/charts/${chartId}/duplicate`, { method: 'POST' });
 }
+
+// ============================================
+// Team Branding
+// ============================================
+
+export interface TeamBranding {
+  custom_logo_url: string | null;
+  watermark_enabled: boolean;
+  can_customize: boolean;
+}
+
+export async function getTeamBranding(teamId: string): Promise<TeamBranding> {
+  return apiRequest(`/api/teams/${teamId}/branding`);
+}
+
+export async function updateTeamBranding(
+  teamId: string,
+  data: { custom_logo_url?: string | null; watermark_enabled?: boolean }
+): Promise<TeamBranding> {
+  return apiRequest(`/api/teams/${teamId}/branding`, { method: 'PATCH', body: data });
+}
+
+export async function deleteTeamLogo(teamId: string): Promise<void> {
+  await apiRequest(`/api/teams/${teamId}/branding/logo`, { method: 'DELETE' });
+}

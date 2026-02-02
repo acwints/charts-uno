@@ -47,7 +47,7 @@ async function getBrowser(): Promise<Browser> {
         '--single-process',
       ],
     });
-    logger.info('Puppeteer browser launched', { executablePath });
+    logger.info({ executablePath }, 'Puppeteer browser launched');
   }
   return browser;
 }

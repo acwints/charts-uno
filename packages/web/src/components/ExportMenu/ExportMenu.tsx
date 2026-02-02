@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, FileSpreadsheet, Image, Copy, Check } from 'lucide-react';
-import { exportToCSV, exportToPNG, copyToClipboard } from '../../services/exportService';
+import { exportToCSV, exportToPNG, copyToClipboard, type WatermarkSettings } from '../../services/exportService';
 import { Button } from '../Button';
 import type { ChartData } from '../../types';
 import './ExportMenu.css';
@@ -10,9 +10,10 @@ interface ExportMenuProps {
   data: ChartData;
   chartRef: React.RefObject<HTMLElement | null>;
   title?: string;
+  watermark?: WatermarkSettings;
 }
 
-export function ExportMenu({ data, chartRef, title }: ExportMenuProps) {
+export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
@@ -50,7 +51,7 @@ export function ExportMenu({ data, chartRef, title }: ExportMenuProps) {
     if (!chartRef.current) return;
     setExporting('png');
     try {
-      await exportToPNG(chartRef.current, filename);
+      await exportToPNG(chartRef.current, filename, watermark);
     } finally {
       setExporting(null);
       setIsOpen(false);

@@ -2,6 +2,11 @@ import Papa from 'papaparse';
 import html2canvas from 'html2canvas';
 import type { ChartData } from '../types';
 
+export interface WatermarkSettings {
+  enabled: boolean;
+  customLogoUrl: string | null;
+}
+
 export async function exportToCSV(data: ChartData, filename: string = 'chart-data'): Promise<void> {
   // Build rows with labels as first column, series as subsequent columns
   const headers = ['Label', ...data.series.map(s => s.name)];
@@ -29,9 +34,72 @@ export async function exportToCSV(data: ChartData, filename: string = 'chart-dat
   URL.revokeObjectURL(url);
 }
 
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function drawTextWatermark(
+  ctx: CanvasRenderingContext2D,
+  canvasWidth: number,
+  canvasHeight: number
+): void {
+  const text = 'Epic Charts';
+  const fontSize = 14;
+  const padding = 16;
+
+  ctx.save();
+  ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+
+  ctx.fillText(text, canvasWidth - padding, canvasHeight - padding);
+  ctx.restore();
+}
+
+async function drawLogoWatermark(
+  ctx: CanvasRenderingContext2D,
+  logoUrl: string,
+  canvasWidth: number,
+  canvasHeight: number
+): Promise<void> {
+  try {
+    const img = await loadImage(logoUrl);
+
+    const maxHeight = 30;
+    const padding = 16;
+
+    // Scale proportionally to max height
+    const scale = maxHeight / img.height;
+    const width = img.width * scale;
+    const height = maxHeight;
+
+    // Position in bottom-right corner
+    const x = canvasWidth - width - padding;
+    const y = canvasHeight - height - padding;
+
+    // Draw with 50% opacity
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(img, x, y, width, height);
+    ctx.restore();
+  } catch (error) {
+    // If logo fails to load, fall back to text watermark
+    console.warn('Failed to load custom logo, falling back to text watermark:', error);
+    drawTextWatermark(ctx, canvasWidth, canvasHeight);
+  }
+}
+
 export async function exportToPNG(
   element: HTMLElement,
-  filename: string = 'chart'
+  filename: string = 'chart',
+  watermark?: WatermarkSettings
 ): Promise<void> {
   const canvas = await html2canvas(element, {
     backgroundColor: '#09090b',
@@ -39,6 +107,18 @@ export async function exportToPNG(
     logging: false,
     useCORS: true,
   });
+
+  // Apply watermark if enabled
+  if (watermark?.enabled !== false) {
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      if (watermark?.customLogoUrl) {
+        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width, canvas.height);
+      } else {
+        drawTextWatermark(ctx, canvas.width, canvas.height);
+      }
+    }
+  }
 
   const url = canvas.toDataURL('image/png');
   const link = document.createElement('a');
