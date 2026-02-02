@@ -82,7 +82,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const chartMargins = {
     top: 5,
     right: 5,
-    bottom: xAxisLabel ? 15 : 5,
+    bottom: xAxisLabel ? 25 : 5,
     left: yAxisLabel ? 15 : 5,
   };
 
