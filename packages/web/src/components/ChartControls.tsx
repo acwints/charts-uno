@@ -66,7 +66,8 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
-      <div className="controls-top">
+      {/* Full-width title */}
+      <div className="controls-top-row">
         <input
           type="text"
           className="control-input-title"
@@ -74,6 +75,10 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
           value={config.title}
           onChange={(e) => updateConfig({ title: e.target.value })}
         />
+      </div>
+
+      {/* Full-width chart type */}
+      <div className="controls-type-row">
         <div className="chart-type-grid">
           {CHART_TYPES.map((type) => (
             <button
@@ -95,123 +100,125 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         )}
       </div>
 
-
-      <div className="control-section">
-        <label className="control-label">
-          <Paintbrush size={14} />
-          <span>Style Variant</span>
-        </label>
-        <div className="style-variant-grid">
-          {STYLE_VARIANT_OPTIONS.map((variant) => {
-            const variantConfig = STYLE_VARIANTS[variant.id];
-            return (
-              <button
-                key={variant.id}
-                className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''}`}
-                onClick={() => updateConfig({ styleVariant: variant.id })}
-                title={variantConfig.description}
-              >
-                <variant.icon size={16} />
-                <span className="variant-label">{variant.label}</span>
-              </button>
-            );
-          })}
+      {/* Two-column grid for remaining controls */}
+      <div className="controls-grid">
+        <div className="control-section">
+          <label className="control-label">
+            <Paintbrush size={14} />
+            <span>Style Variant</span>
+          </label>
+          <div className="style-variant-grid">
+            {STYLE_VARIANT_OPTIONS.map((variant) => {
+              const variantConfig = STYLE_VARIANTS[variant.id];
+              return (
+                <button
+                  key={variant.id}
+                  className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''}`}
+                  onClick={() => updateConfig({ styleVariant: variant.id })}
+                  title={variantConfig.description}
+                >
+                  <variant.icon size={16} />
+                  <span className="variant-label">{variant.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="control-section">
-        <label className="control-label">
-          <Palette size={14} />
-          <span>Color Scheme</span>
-        </label>
-        <div className="color-scheme-list">
-          {COLOR_SCHEMES.map((scheme) => (
-            <button
-              key={scheme.id}
-              className={`color-scheme-button ${config.colorScheme === scheme.id ? 'active' : ''}`}
-              onClick={() => updateConfig({ colorScheme: scheme.id })}
-            >
-              <div className="color-preview">
-                {COLOR_PALETTES[scheme.id].slice(0, 4).map((color, idx) => (
-                  <div
-                    key={idx}
-                    className="color-dot"
-                    style={{ background: color }}
-                  />
-                ))}
-              </div>
-              <span className="scheme-label">{scheme.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="control-section">
-        <label className="control-label">
-          <Grid size={14} />
-          <span>Display Options</span>
-        </label>
-        <div className="toggle-list">
-          <label className="toggle-item">
-            <input
-              type="checkbox"
-              checked={config.showGrid}
-              onChange={(e) => updateConfig({ showGrid: e.target.checked })}
-            />
-            <span className="toggle-switch" />
-            <span className="toggle-label">Show Grid</span>
+        <div className="control-section">
+          <label className="control-label">
+            <Grid size={14} />
+            <span>Display Options</span>
           </label>
-
-          <label className="toggle-item">
-            <input
-              type="checkbox"
-              checked={config.showLegend}
-              onChange={(e) => updateConfig({ showLegend: e.target.checked })}
-            />
-            <span className="toggle-switch" />
-            <span className="toggle-label">Show Legend</span>
-          </label>
-
-          <label className="toggle-item">
-            <input
-              type="checkbox"
-              checked={config.showValues}
-              onChange={(e) => updateConfig({ showValues: e.target.checked })}
-            />
-            <span className="toggle-switch" />
-            <span className="toggle-label">Show Values</span>
-          </label>
-
-          <label className="toggle-item">
-            <input
-              type="checkbox"
-              checked={config.animate}
-              onChange={(e) => updateConfig({ animate: e.target.checked })}
-            />
-            <span className="toggle-switch" />
-            <span className="toggle-label">Animations</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="control-section data-summary">
-        <label className="control-label">
-          <Hash size={14} />
-          <span>Data Summary</span>
-        </label>
-        <div className="data-grid">
-          {data.series.map((series, idx) => (
-            <div key={series.name} className="data-series-item">
-              <div
-                className="series-color"
-                style={{ background: COLOR_PALETTES[config.colorScheme][idx % COLOR_PALETTES[config.colorScheme].length] }}
+          <div className="toggle-list">
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.showGrid}
+                onChange={(e) => updateConfig({ showGrid: e.target.checked })}
               />
-              <span className="series-name">{series.name}</span>
-              <span className="series-stats">
-                {Math.min(...series.data).toLocaleString()} — {Math.max(...series.data).toLocaleString()}
-              </span>
-            </div>
-          ))}
+              <span className="toggle-switch" />
+              <span className="toggle-label">Show Grid</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.showLegend}
+                onChange={(e) => updateConfig({ showLegend: e.target.checked })}
+              />
+              <span className="toggle-switch" />
+              <span className="toggle-label">Show Legend</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.showValues}
+                onChange={(e) => updateConfig({ showValues: e.target.checked })}
+              />
+              <span className="toggle-switch" />
+              <span className="toggle-label">Show Values</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.animate}
+                onChange={(e) => updateConfig({ animate: e.target.checked })}
+              />
+              <span className="toggle-switch" />
+              <span className="toggle-label">Animations</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="control-section">
+          <label className="control-label">
+            <Palette size={14} />
+            <span>Color Scheme</span>
+          </label>
+          <div className="color-scheme-list">
+            {COLOR_SCHEMES.map((scheme) => (
+              <button
+                key={scheme.id}
+                className={`color-scheme-button ${config.colorScheme === scheme.id ? 'active' : ''}`}
+                onClick={() => updateConfig({ colorScheme: scheme.id })}
+              >
+                <div className="color-preview">
+                  {COLOR_PALETTES[scheme.id].slice(0, 4).map((color, idx) => (
+                    <div
+                      key={idx}
+                      className="color-dot"
+                      style={{ background: color }}
+                    />
+                  ))}
+                </div>
+                <span className="scheme-label">{scheme.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-section data-summary">
+          <label className="control-label">
+            <Hash size={14} />
+            <span>Data Summary</span>
+          </label>
+          <div className="data-grid">
+            {data.series.map((series, idx) => (
+              <div key={series.name} className="data-series-item">
+                <div
+                  className="series-color"
+                  style={{ background: COLOR_PALETTES[config.colorScheme][idx % COLOR_PALETTES[config.colorScheme].length] }}
+                />
+                <span className="series-name">{series.name}</span>
+                <span className="series-stats">
+                  {Math.min(...series.data).toLocaleString()} — {Math.max(...series.data).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
