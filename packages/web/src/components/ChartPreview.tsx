@@ -22,6 +22,7 @@ import {
   Tooltip,
   Legend,
   Cell,
+  LabelList,
 } from 'recharts';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import type { ChartData, ChartConfig } from '../types';
@@ -80,7 +81,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
   const chartMargins = {
-    top: 5,
+    top: config.showValues ? 20 : 5,
     right: 5,
     bottom: xAxisLabel ? 25 : 5,
     left: yAxisLabel ? 15 : 5,
@@ -238,8 +239,9 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
 
     const legendElement = config.showLegend ? (
       <Legend
+        verticalAlign="top"
         wrapperStyle={{
-          padding: 0,
+          paddingBottom: 16,
         }}
         formatter={(value) => (
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{value}</span>
@@ -275,7 +277,16 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 radius={styleConfig.chart.barRadius}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
-              />
+              >
+                {config.showValues && (
+                  <LabelList
+                    dataKey={series.name}
+                    position="top"
+                    fill="var(--text-secondary)"
+                    fontSize={11}
+                  />
+                )}
+              </Bar>
             ))}
           </BarChart>
         );
@@ -309,7 +320,17 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 }}
                 animationDuration={config.animate ? 1200 : 0}
                 animationBegin={idx * 200}
-              />
+              >
+                {config.showValues && (
+                  <LabelList
+                    dataKey={series.name}
+                    position="top"
+                    fill="var(--text-secondary)"
+                    fontSize={11}
+                    offset={8}
+                  />
+                )}
+              </Line>
             ))}
           </LineChart>
         );
@@ -334,7 +355,17 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 strokeWidth={styleConfig.chart.strokeWidth}
                 animationDuration={config.animate ? 1000 : 0}
                 animationBegin={idx * 150}
-              />
+              >
+                {config.showValues && (
+                  <LabelList
+                    dataKey={series.name}
+                    position="top"
+                    fill="var(--text-secondary)"
+                    fontSize={11}
+                    offset={8}
+                  />
+                )}
+              </Area>
             ))}
           </AreaChart>
         );
