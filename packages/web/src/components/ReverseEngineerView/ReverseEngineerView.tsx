@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { BarChart3, Table2 } from 'lucide-react';
 import { ChartPreview } from '../ChartPreview';
 import { ChartControls } from '../ChartControls';
-import { ChatPanel } from '../ChatPanel';
 import { EditableSpreadsheet } from '../EditableSpreadsheet/EditableSpreadsheet';
 import type { ChartData, ChartConfig, EditableChartState } from '../../types';
 import './ReverseEngineerView.css';
@@ -14,6 +13,7 @@ interface ReverseEngineerViewProps {
   initialData: ChartData;
   config: ChartConfig;
   onConfigChange: (config: ChartConfig) => void;
+  onDataChange?: (data: ChartData) => void;
   chartRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -21,6 +21,7 @@ export function ReverseEngineerView({
   initialData,
   config,
   onConfigChange,
+  onDataChange,
   chartRef,
 }: ReverseEngineerViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('chart');
@@ -36,7 +37,9 @@ export function ReverseEngineerView({
       current: newData,
       isDirty: true,
     }));
-  }, []);
+    // Propagate changes up to parent for the ChatPanel
+    onDataChange?.(newData);
+  }, [onDataChange]);
 
   const handleReset = useCallback(() => {
     setEditableState((prev) => ({
@@ -48,7 +51,7 @@ export function ReverseEngineerView({
 
   return (
     <motion.div
-      className="reverse-engineer-view with-assistant"
+      className="reverse-engineer-view"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -103,13 +106,6 @@ export function ReverseEngineerView({
           </div>
         )}
       </div>
-
-      <ChatPanel
-        data={editableState.current}
-        config={config}
-        onDataChange={handleDataChange}
-        onConfigChange={onConfigChange}
-      />
     </motion.div>
   );
 }

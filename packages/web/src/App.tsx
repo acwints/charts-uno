@@ -10,7 +10,7 @@ import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEng
 import { ChartFeed } from './components/ChartFeed';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SettingsPage } from './pages/Settings';
-import { AssistantProvider } from './contexts/AssistantProvider';
+import { AssistantProvider, useAssistant } from './contexts/AssistantProvider';
 import { ToastProvider } from './contexts/ToastContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { useAuth } from './hooks/useAuth';
@@ -37,6 +37,7 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<AppView>('input');
   const [settingsTab, setSettingsTab] = useState<'account' | 'team' | 'billing'>('account');
   const chartRef = useRef<HTMLDivElement>(null);
+  const { isOpen: isAssistantOpen } = useAssistant();
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
     const updates: Partial<ChartConfig> = {};
@@ -139,8 +140,10 @@ function AppContent() {
   const showSettings = currentView === 'settings';
   const showInput = currentView === 'input' || (!chartData && !showFeed && !showSettings);
 
+  const showAssistantPanel = showChart && chartData;
+
   return (
-    <div className="app">
+    <div className={`app ${isAssistantOpen && showAssistantPanel ? 'with-assistant-open' : ''}`}>
       <Header
         onReset={handleReset}
         hasData={!!chartData}
@@ -151,6 +154,7 @@ function AppContent() {
         showFeedButton={!showFeed && !showSettings}
         onSettingsClick={handleSettingsClick}
         onCreateTeam={handleCreateTeam}
+        showAssistantToggle={!!showChart}
       />
 
       <main className="main">
@@ -205,6 +209,7 @@ function AppContent() {
                 initialData={chartData}
                 config={chartConfig}
                 onConfigChange={setChartConfig}
+                onDataChange={setChartData}
                 chartRef={chartRef}
               />
             </motion.div>
@@ -215,34 +220,26 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="chart-view with-assistant"
+              className="chart-view"
             >
-              <div className="chart-main-area">
-                <div className="chart-workspace" ref={chartRef}>
-                  <div className="chart-column">
-                    {chartData.aiSummary && (
-                      <div className="chart-ai-summary">
-                        <span className="chart-ai-label">AI Insight</span>
-                        <p className="chart-ai-text">{chartData.aiSummary}</p>
-                      </div>
-                    )}
-                    <ChartPreview data={chartData} config={chartConfig} />
-                  </div>
-                  <div className="chart-sidebar">
-                    <ChartControls
-                      config={chartConfig}
-                      onChange={setChartConfig}
-                      data={chartData}
-                    />
-                  </div>
+              <div className="chart-workspace" ref={chartRef}>
+                <div className="chart-column">
+                  {chartData.aiSummary && (
+                    <div className="chart-ai-summary">
+                      <span className="chart-ai-label">AI Insight</span>
+                      <p className="chart-ai-text">{chartData.aiSummary}</p>
+                    </div>
+                  )}
+                  <ChartPreview data={chartData} config={chartConfig} />
+                </div>
+                <div className="chart-sidebar">
+                  <ChartControls
+                    config={chartConfig}
+                    onChange={setChartConfig}
+                    data={chartData}
+                  />
                 </div>
               </div>
-              <ChatPanel
-                data={chartData}
-                config={chartConfig}
-                onDataChange={setChartData}
-                onConfigChange={setChartConfig}
-              />
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -255,6 +252,16 @@ function AppContent() {
           <span className="footer-tagline">Data visualization, elevated</span>
         </div>
       </footer>
+
+      {/* AI Assistant Panel - positioned outside main content */}
+      {showAssistantPanel && (
+        <ChatPanel
+          data={chartData}
+          config={chartConfig}
+          onDataChange={setChartData}
+          onConfigChange={setChartConfig}
+        />
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
   Sparkles,
   Loader2,
   RotateCcw,
-  PanelRightClose,
+  X,
   Database,
   Settings,
   Lightbulb,
@@ -33,7 +33,7 @@ export function ChatPanel({
   onDataChange,
   onConfigChange,
 }: ChatPanelProps) {
-  const { isOpen, open, close } = useAssistant();
+  const { isOpen, close } = useAssistant();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -128,23 +128,13 @@ export function ChatPanel({
     "Which category is performing best?",
   ];
 
-  // Collapsed state - thin sidebar with open button
+  // Don't render if not open (toggle is in the header)
   if (!isOpen) {
-    return (
-      <div className="assistant-panel collapsed">
-        <button
-          className="assistant-open-btn"
-          onClick={open}
-          title="Open Assistant"
-        >
-          <Sparkles size={20} />
-        </button>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="assistant-panel">
+    <div className="assistant-panel open">
       {/* Header */}
       <div className="assistant-header">
         <div className="assistant-header-title">
@@ -166,7 +156,7 @@ export function ChatPanel({
             onClick={close}
             title="Close panel"
           >
-            <PanelRightClose size={16} />
+            <X size={16} />
           </button>
         </div>
       </div>

@@ -41,23 +41,22 @@
   min-height: 0;
 }
 
-/* Chart view with assistant panel - full width flex layout */
-.chart-view.with-assistant {
-  flex-direction: row;
-  max-width: none;
-  width: 100%;
-  padding: 0;
-  gap: 0;
-  margin: 0;
+/* Adjust main content when assistant panel is open */
+.app.with-assistant-open .main {
+  margin-right: 420px;
+  transition: margin-right 0.3s ease-in-out;
 }
 
-.chart-main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-4) var(--space-6);
-  overflow-y: auto;
-  min-width: 0;
+@media (max-width: 1200px) {
+  .app.with-assistant-open .main {
+    margin-right: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app.with-assistant-open .main {
+    margin-right: 0;
+  }
 }
 
 .chart-toolbar {
@@ -126,15 +125,6 @@
     grid-template-rows: auto auto;
     height: auto;
     min-height: auto;
-  }
-
-  .chart-view.with-assistant {
-    flex-direction: column;
-  }
-
-  .chart-main-area {
-    flex: none;
-    height: auto;
   }
 }
 

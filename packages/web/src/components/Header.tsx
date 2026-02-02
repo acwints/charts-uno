@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RotateCcw, Sparkles, LayoutGrid, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
+import { RotateCcw, Sparkles, LayoutGrid, Settings, CreditCard, LogOut, ChevronDown, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
+import { useAssistant } from '../contexts/AssistantProvider';
 import type { ChartData } from '../types';
 import './Header.css';
 
@@ -18,6 +19,7 @@ interface HeaderProps {
   showFeedButton?: boolean;
   onSettingsClick?: (tab?: 'account' | 'team' | 'billing') => void;
   onCreateTeam?: () => void;
+  showAssistantToggle?: boolean;
 }
 
 export function Header({
@@ -30,8 +32,10 @@ export function Header({
   showFeedButton = true,
   onSettingsClick,
   onCreateTeam,
+  showAssistantToggle = false,
 }: HeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
+  const { isOpen: isAssistantOpen, toggle: toggleAssistant } = useAssistant();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +109,18 @@ export function Header({
                 <ExportMenu data={data} chartRef={chartRef} title={title} />
               )}
             </>
+          )}
+
+          {showAssistantToggle && (
+            <button
+              className={`nav-button assistant-toggle ${isAssistantOpen ? 'active' : ''}`}
+              onClick={toggleAssistant}
+              title={isAssistantOpen ? 'Close Assistant' : 'Open Assistant'}
+            >
+              {isAssistantOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              <span>Assistant</span>
+              <Sparkles size={12} className="assistant-toggle-sparkle" />
+            </button>
           )}
 
           {isAuthenticated && user && (
