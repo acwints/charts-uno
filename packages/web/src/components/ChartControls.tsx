@@ -9,7 +9,6 @@ import {
   Grid,
   Hash,
   Palette,
-  Type,
   Sparkles,
   Briefcase,
   Smile,
@@ -67,30 +66,14 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
-      <div className="controls-header">
-        <h3 className="controls-title">Customize</h3>
-        <span className="controls-badge">{data.series.length} series</span>
-      </div>
-
-      <div className="control-section">
-        <label className="control-label">
-          <Type size={14} />
-          <span>Chart Title</span>
-        </label>
+      <div className="controls-top">
         <input
           type="text"
-          className="control-input"
-          placeholder="Enter a title..."
+          className="control-input-title"
+          placeholder="Chart title..."
           value={config.title}
           onChange={(e) => updateConfig({ title: e.target.value })}
         />
-      </div>
-
-      <div className="control-section">
-        <label className="control-label">
-          <BarChart3 size={14} />
-          <span>Chart Type</span>
-        </label>
         <div className="chart-type-grid">
           {CHART_TYPES.map((type) => (
             <button
@@ -99,7 +82,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               onClick={() => updateConfig({ type: type.id })}
               title={type.label}
             >
-              <type.icon size={20} />
+              <type.icon size={18} />
               <span className="type-label">{type.label}</span>
             </button>
           ))}
