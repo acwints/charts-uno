@@ -212,33 +212,6 @@
   text-align: center;
 }
 
-/* Submit Button */
-.submit-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--bg-primary);
-  background: var(--text-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.submit-button:hover:not(:disabled) {
-  background: var(--text-secondary);
-}
-
-.submit-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 /* Prompt Input */
 .prompt-input-wrapper {
   display: flex;

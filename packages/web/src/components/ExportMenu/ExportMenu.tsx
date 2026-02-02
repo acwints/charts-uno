@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, FileSpreadsheet, Image, Copy, Check } from 'lucide-react';
 import { exportToCSV, exportToPNG, copyToClipboard } from '../../services/exportService';
+import { Button } from '../Button';
 import type { ChartData } from '../../types';
 import './ExportMenu.css';
 
@@ -70,13 +71,14 @@ export function ExportMenu({ data, chartRef, title }: ExportMenuProps) {
 
   return (
     <div className="export-menu" ref={menuRef}>
-      <button
-        className="nav-button primary export-trigger"
+      <Button
+        variant="primary"
+        className="export-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Download size={16} />
         <span>Export</span>
-      </button>
+      </Button>
 
       <AnimatePresence>
         {isOpen && (

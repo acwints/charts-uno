@@ -42,37 +42,3 @@
   gap: 0.75rem;
   justify-content: center;
 }
-
-.error-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.error-button.primary {
-  background: var(--accent);
-  color: white;
-  border: none;
-}
-
-.error-button.primary:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-}
-
-.error-button.secondary {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-default);
-}
-
-.error-button.secondary:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}

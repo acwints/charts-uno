@@ -27,6 +27,7 @@ import { RefreshCw, Sparkles } from 'lucide-react';
 import type { ChartData, ChartConfig } from '../types';
 import { COLOR_PALETTES, COLOR_GRADIENTS, STYLE_VARIANTS } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
+import { Button } from './Button';
 import './ChartPreview.css';
 
 interface ChartPreviewProps {
@@ -129,10 +130,10 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       return (
         <div className="infographic-error">
           <span>{infographicError}</span>
-          <button className="retry-button" onClick={regenerateInfographic}>
+          <Button size="sm" onClick={regenerateInfographic}>
             <RefreshCw size={16} />
             Try Again
-          </button>
+          </Button>
         </div>
       );
     }
@@ -144,10 +145,10 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
             className="infographic-svg"
             dangerouslySetInnerHTML={{ __html: infographicSvg }}
           />
-          <button className="regenerate-button" onClick={regenerateInfographic}>
+          <Button size="sm" className="regenerate-button" onClick={regenerateInfographic}>
             <RefreshCw size={14} />
             Regenerate
-          </button>
+          </Button>
         </div>
       );
     }

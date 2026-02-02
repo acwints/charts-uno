@@ -259,18 +259,6 @@
   box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
-.settings-button {
-  padding: 10px 16px;
-  background: var(--bg-elevated);
-  border: var(--border-default);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
 .settings-button__icon {
   margin-right: 6px;
   vertical-align: middle;
@@ -281,36 +269,9 @@
   vertical-align: middle;
 }
 
-.settings-button:hover:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-.settings-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.settings-button--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-.settings-button--primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.settings-button--danger {
-  background: transparent;
-  border-color: var(--error);
-  color: var(--error);
-}
-
-.settings-button--danger:hover:not(:disabled) {
-  background: var(--error);
-  color: white;
+.settings-icon-button {
+  padding: var(--space-1);
+  min-width: 28px;
 }
 
 /* User Avatar */

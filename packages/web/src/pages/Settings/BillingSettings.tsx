@@ -3,6 +3,7 @@ import { ExternalLink, CreditCard, TrendingUp } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { PlanSelector } from '../../components/PlanSelector';
+import { Button } from '../../components/Button';
 import { getPortalUrl } from '../../services/api';
 
 export function BillingSettings() {
@@ -83,14 +84,13 @@ export function BillingSettings() {
         <div className="settings-card__header">
           <h3 className="settings-card__title">Current Plan</h3>
           {isPaid && (
-            <button
-              className="settings-button"
+            <Button
               onClick={handleManageSubscription}
               disabled={isLoadingPortal}
             >
               <ExternalLink size={14} className="settings-button__icon" />
               {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
-            </button>
+            </Button>
           )}
         </div>
         <div className="settings-card__content">

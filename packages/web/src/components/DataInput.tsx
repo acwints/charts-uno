@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
+import { Button } from './Button';
 import './DataInput.css';
 
 type InputMode = 'upload' | 'paste' | 'image' | 'sheets';
@@ -271,8 +272,9 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 onChange={(e) => setPasteContent(e.target.value)}
                 spellCheck={false}
               />
-              <button
-                className="submit-button"
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={handlePasteSubmit}
                 disabled={isProcessing || !pasteContent.trim()}
               >
@@ -287,7 +289,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                     <ArrowRight size={18} />
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -306,8 +308,9 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               <p className="sheets-hint">
                 Make sure your sheet is publicly accessible or shared with view permissions.
               </p>
-              <button
-                className="submit-button"
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={handleSheetsSubmit}
                 disabled={isProcessing || !sheetsUrl.trim()}
               >
@@ -322,7 +325,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                     <ArrowRight size={18} />
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
         </motion.div>

@@ -281,26 +281,6 @@
   font-size: 0.9rem;
 }
 
-.retry-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  border: var(--border-subtle);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.retry-button:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
 .infographic-container {
   position: relative;
   width: 100%;
@@ -329,24 +309,12 @@
   position: absolute;
   top: 0;
   right: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  background: var(--bg-tertiary);
-  border: var(--border-subtle);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
   opacity: 0.6;
-  transition: all var(--transition-fast);
 }
 
 .regenerate-button:hover {
   opacity: 1;
-  color: var(--text-primary);
 }
 
 /* Recharts overrides */

@@ -3,6 +3,7 @@ import { Users, UserPlus, Trash2, Shield } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { InviteModal } from '../../components/InviteModal';
+import { Button } from '../../components/Button';
 import {
   getTeamMembers,
   getInvitations,
@@ -134,13 +135,13 @@ export function TeamSettings() {
             />
           </div>
           {isAdmin && !currentTeam.is_personal && teamName !== currentTeam.name && (
-            <button
-              className="settings-button settings-button--primary"
+            <Button
+              variant="primary"
               onClick={handleUpdateTeamName}
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           )}
           {currentTeam.is_personal && (
             <p className="settings-muted-text">
@@ -154,14 +155,13 @@ export function TeamSettings() {
         <div className="settings-card__header">
           <h3 className="settings-card__title">Members ({members.length})</h3>
           {isAdmin && (
-            <button
-              className="settings-button"
+            <Button
               onClick={() => setIsInviteOpen(true)}
               disabled={!canInviteMember}
             >
               <UserPlus size={16} className="settings-button__icon" />
               Invite
-            </button>
+            </Button>
           )}
         </div>
 
@@ -201,13 +201,16 @@ export function TeamSettings() {
                 </span>
                 {isAdmin && member.role !== 'owner' && member.user_id !== user?.id && (
                   <div className="member-item__actions">
-                    <button
-                      className="settings-button settings-button--danger"
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="settings-icon-button"
                       onClick={() => handleRemoveMember(member.id, member.user_id)}
                       title="Remove member"
+                      aria-label="Remove member"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -236,13 +239,16 @@ export function TeamSettings() {
                 <span className="member-item__role">{invitation.role}</span>
                 {isAdmin && (
                   <div className="member-item__actions">
-                    <button
-                      className="settings-button settings-button--danger"
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="settings-icon-button"
                       onClick={() => handleCancelInvitation(invitation.id)}
                       title="Cancel invitation"
+                      aria-label="Cancel invitation"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -259,7 +265,7 @@ export function TeamSettings() {
             </p>
             <a
               href="/settings/billing"
-              className="settings-button settings-button--primary settings-warning-link"
+              className="button button--primary button--md settings-warning-link"
             >
               Upgrade Plan
             </a>

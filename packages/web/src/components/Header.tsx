@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Sparkles, LayoutGrid, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
 import { ExportMenu } from './ExportMenu/ExportMenu';
+import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
@@ -18,6 +19,7 @@ interface HeaderProps {
   showFeedButton?: boolean;
   onSettingsClick?: (tab?: 'account' | 'team' | 'billing') => void;
   onCreateTeam?: () => void;
+  onAuthOpen?: () => void;
 }
 
 export function Header({
@@ -30,6 +32,7 @@ export function Header({
   showFeedButton = true,
   onSettingsClick,
   onCreateTeam,
+  onAuthOpen,
 }: HeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -88,19 +91,25 @@ export function Header({
 
           <ThemeToggle />
 
+          {!isAuthenticated && onAuthOpen && (
+            <Button variant="primary" onClick={onAuthOpen}>
+              Sign in
+            </Button>
+          )}
+
           {showFeedButton && onFeedClick && (
-            <button className="nav-button" onClick={onFeedClick}>
+            <Button onClick={onFeedClick}>
               <LayoutGrid size={16} />
               <span>Feed</span>
-            </button>
+            </Button>
           )}
 
           {hasData && (
             <>
-              <button className="nav-button" onClick={onReset}>
+              <Button onClick={onReset}>
                 <RotateCcw size={16} />
                 <span>New Chart</span>
-              </button>
+              </Button>
               {data && chartRef && (
                 <ExportMenu data={data} chartRef={chartRef} title={title} />
               )}

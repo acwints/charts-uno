@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Button } from './Button';
 import './ErrorBoundary.css';
 
 interface Props {
@@ -51,13 +52,13 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <div className="error-actions">
-              <button className="error-button primary" onClick={this.handleReset}>
+              <Button variant="primary" size="lg" onClick={this.handleReset}>
                 <RefreshCw size={16} />
                 Try Again
-              </button>
-              <button className="error-button secondary" onClick={this.handleReload}>
+              </Button>
+              <Button size="lg" onClick={this.handleReload}>
                 Reload Page
-              </button>
+              </Button>
             </div>
           </div>
         </div>

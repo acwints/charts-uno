@@ -2,12 +2,6 @@
   position: relative;
 }
 
-.export-trigger {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .export-dropdown {
   position: absolute;
   top: calc(100% + 8px);

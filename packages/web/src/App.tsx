@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/Header';
 import { DataInput } from './components/DataInput';
@@ -6,6 +6,7 @@ import { ChartPreview } from './components/ChartPreview';
 import { ChartControls } from './components/ChartControls';
 import { ChatPanel } from './components/ChatPanel';
 import { Hero } from './components/Hero';
+import { AuthModal } from './components/AuthModal';
 import { ReverseEngineerView } from './components/ReverseEngineerView/ReverseEngineerView';
 import { ChartFeed } from './components/ChartFeed';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -38,6 +39,8 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<AppView>('input');
   const [settingsTab, setSettingsTab] = useState<'account' | 'team' | 'billing'>('account');
   const chartRef = useRef<HTMLDivElement>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
     const updates: Partial<ChartConfig> = {};
@@ -105,6 +108,14 @@ function AppContent() {
     setCurrentView(chartData ? 'chart' : 'input');
   }, [chartData]);
 
+  const handleAuthOpen = useCallback(() => {
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const handleAuthClose = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
+
   const handleCreateTeam = useCallback(() => {
     setSettingsTab('team');
     setCurrentView('settings');
@@ -142,6 +153,12 @@ function AppContent() {
 
   const showAssistantPanel = showChart && chartData;
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsAuthModalOpen(false);
+    }
+  }, [isAuthenticated]);
+
   return (
     <div className="app-wrapper">
       <div className="app">
@@ -155,6 +172,7 @@ function AppContent() {
           showFeedButton={!showFeed && !showSettings}
           onSettingsClick={handleSettingsClick}
           onCreateTeam={handleCreateTeam}
+          onAuthOpen={handleAuthOpen}
         />
 
         <main className="main">
@@ -193,7 +211,7 @@ function AppContent() {
               transition={{ duration: 0.3 }}
               className="input-view"
             >
-              <Hero />
+              <Hero showAuthCta={!isAuthenticated} onAuthOpen={handleAuthOpen} />
               <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
             </motion.div>
           ) : showChart && isImageSource ? (
@@ -252,6 +270,8 @@ function AppContent() {
           </div>
         </footer>
       </div>
+
+      <AuthModal isOpen={showInput && !isAuthenticated && isAuthModalOpen} onClose={handleAuthClose} />
 
       {/* AI Assistant Panel - persistent right sidebar */}
       {showAssistantPanel && (

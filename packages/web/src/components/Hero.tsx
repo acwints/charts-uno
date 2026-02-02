@@ -1,7 +1,13 @@
 import { motion } from 'motion/react';
+import { Button } from './Button';
 import './Hero.css';
 
-export function Hero() {
+interface HeroProps {
+  showAuthCta?: boolean;
+  onAuthOpen?: () => void;
+}
+
+export function Hero({ showAuthCta = false, onAuthOpen }: HeroProps) {
   return (
     <div className="hero">
       <motion.div
@@ -20,6 +26,15 @@ export function Hero() {
           Drop in your data — CSV, spreadsheet, or a screenshot of an existing chart.
           AI generates beautiful charts instantly.
         </p>
+
+        {showAuthCta && onAuthOpen && (
+          <div className="hero-actions">
+            <Button variant="primary" size="lg" onClick={onAuthOpen}>
+              Sign in to save charts
+            </Button>
+            <p className="hero-note">Billing and account setup happen after you sign in.</p>
+          </div>
+        )}
       </motion.div>
     </div>
   );
