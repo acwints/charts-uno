@@ -1,4 +1,9 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables BEFORE other imports
+load_dotenv()
+
 import json
 import base64
 import secrets
@@ -8,7 +13,6 @@ from typing import Optional, List
 import re
 
 import httpx
-from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -65,9 +69,6 @@ from schemas import (
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
-
-# Load environment variables
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(
