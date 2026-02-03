@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Sun, Moon, RotateCcw, ChevronDown } from 'lucide-react';
+import { Sun, Moon, RotateCcw, ChevronDown, Palette, Sliders } from 'lucide-react';
 import type { ChartConfig, CustomColors, ColorScheme } from '../types';
 import { COLOR_PALETTES, PRESET_PALETTES, getTheme } from '../types';
+import { SectionHeader } from './SectionHeader';
 import './ColorStudio.css';
 
 interface ColorStudioProps {
@@ -64,7 +65,7 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
       {/* ── Section 1: Theme ── */}
       <div className="cstudio-section">
         <div className="cstudio-section-head">
-          <span className="section-label">Theme</span>
+          <SectionHeader icon={Palette} label="Theme" />
           <div className="cstudio-mode">
             <button
               className={`cstudio-mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
@@ -113,7 +114,7 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
           onClick={() => setShowCustom(!showCustom)}
           aria-expanded={showCustom}
         >
-        <span className="section-label">Customize</span>
+          <SectionHeader icon={Sliders} label="Customize" as="span" />
           <div className="cstudio-section-right">
             {hasCustomColors && (
               <button

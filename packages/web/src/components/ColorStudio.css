@@ -20,6 +20,10 @@
   padding: 6px 10px;
 }
 
+.cstudio-section-head .control-label {
+  margin-bottom: 0;
+}
+
 /* Toggle header for Customize */
 .cstudio-section-toggle {
   background: var(--bg-secondary);

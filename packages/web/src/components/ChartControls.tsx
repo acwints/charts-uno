@@ -20,6 +20,7 @@ import {
 import type { ChartConfig, ChartType, StyleVariant, ChartData } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
+import { SectionHeader } from './SectionHeader';
 import './ChartControls.css';
 
 interface ChartControlsProps {
@@ -105,10 +106,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       {/* Two-column grid for remaining controls */}
       <div className="controls-grid">
         <div className="control-section">
-          <label className="control-label section-label">
-            <Paintbrush size={14} />
-            <span>Style Variant</span>
-          </label>
+          <SectionHeader icon={Paintbrush} label="Style Variant" />
           <div className="style-variant-grid">
             {STYLE_VARIANT_OPTIONS.map((variant) => {
               const variantConfig = STYLE_VARIANTS[variant.id];
@@ -128,10 +126,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         </div>
 
         <div className="control-section">
-          <label className="control-label section-label">
-            <Grid size={14} />
-            <span>Display Options</span>
-          </label>
+          <SectionHeader icon={Grid} label="Display Options" />
           <div className="toggle-list">
             <label className="toggle-item">
               <input
@@ -188,10 +183,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         </div>
 
         <div className="control-section data-summary full-width">
-          <label className="control-label section-label">
-            <Hash size={14} />
-            <span>Data Summary</span>
-          </label>
+          <SectionHeader icon={Hash} label="Data Summary" />
           <div className="data-grid">
             {data.series.map((series, idx) => (
               <div key={series.name} className="data-series-item">
