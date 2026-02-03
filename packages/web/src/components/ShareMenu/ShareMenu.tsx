@@ -10,12 +10,14 @@ interface ShareMenuProps {
   title?: string;
   watermark?: WatermarkSettings;
   shareUrl?: string | null;
+  onRequestShareUrl?: () => Promise<string | null>;
 }
 
-export function ShareMenu({ chartRef, title, watermark, shareUrl }: ShareMenuProps) {
+export function ShareMenu({ chartRef, title, watermark, shareUrl, onRequestShareUrl }: ShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedImage, setCopiedImage] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [resolvingShare, setResolvingShare] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,9 +49,23 @@ export function ShareMenu({ chartRef, title, watermark, shareUrl }: ShareMenuPro
     }
   };
 
-  const handleSocialShare = (platform: 'twitter' | 'linkedin') => {
-    if (!shareUrl) return;
-    const encodedUrl = encodeURIComponent(shareUrl);
+  const isShareDisabled = copying || resolvingShare;
+
+  const ensureShareUrl = async () => {
+    if (shareUrl) return shareUrl;
+    if (!onRequestShareUrl) return null;
+    setResolvingShare(true);
+    try {
+      return await onRequestShareUrl();
+    } finally {
+      setResolvingShare(false);
+    }
+  };
+
+  const handleSocialShare = async (platform: 'twitter' | 'linkedin') => {
+    const resolvedUrl = await ensureShareUrl();
+    if (!resolvedUrl) return;
+    const encodedUrl = encodeURIComponent(resolvedUrl);
     const encodedText = encodeURIComponent(title ? `Check out "${title}"` : 'Check out this chart');
     const targetUrl =
       platform === 'twitter'
@@ -83,11 +99,11 @@ export function ShareMenu({ chartRef, title, watermark, shareUrl }: ShareMenuPro
             <button
               className="share-option"
               onClick={handleCopyImage}
-              disabled={copying}
+              disabled={isShareDisabled}
             >
               {copiedImage ? <Check size={16} className="copied-icon" /> : <Clipboard size={16} />}
               <span>{copiedImage ? 'Copied Image!' : 'Copy Image'}</span>
-              {copying && <span className="share-loading">...</span>}
+              {(copying || resolvingShare) && <span className="share-loading">...</span>}
             </button>
 
             <div className="share-divider" />
@@ -95,19 +111,19 @@ export function ShareMenu({ chartRef, title, watermark, shareUrl }: ShareMenuPro
             <button
               className="share-option"
               onClick={() => handleSocialShare('twitter')}
-              disabled={!shareUrl}
+              disabled={resolvingShare}
             >
               <ExternalLink size={16} />
-              <span>Post on Twitter</span>
+              <span>{resolvingShare ? 'Preparing share...' : 'Post on Twitter'}</span>
             </button>
 
             <button
               className="share-option"
               onClick={() => handleSocialShare('linkedin')}
-              disabled={!shareUrl}
+              disabled={resolvingShare}
             >
               <ExternalLink size={16} />
-              <span>Post on LinkedIn</span>
+              <span>{resolvingShare ? 'Preparing share...' : 'Post on LinkedIn'}</span>
             </button>
           </motion.div>
         )}

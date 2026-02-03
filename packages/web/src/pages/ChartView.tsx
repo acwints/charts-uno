@@ -54,8 +54,13 @@ export function ChartView() {
     }
   }, [currentTeam?.id]);
 
-  const handleSaveChart = async () => {
-    if (!chartData || !isAuthenticated) return;
+  const saveChart = async () => {
+    if (!chartData) return null;
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save and share charts');
+      return null;
+    }
+    if (id) return id;
 
     setIsSaving(true);
     try {
@@ -73,12 +78,18 @@ export function ChartView() {
       });
       toast.success('Chart saved to your profile');
       navigate(`/chart/${result.id}`);
+      return result.id;
     } catch (err) {
       console.error('Failed to save chart:', err);
       toast.error('Failed to save chart');
+      return null;
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveChart = async () => {
+    await saveChart();
   };
 
   const handleCreateNew = () => {
@@ -252,6 +263,7 @@ export function ChartView() {
                 title={chartConfig.title}
                 watermark={watermarkSettings}
                 shareUrl={shareUrl}
+                onRequestShareUrl={saveChart}
               />
             </>
           )}
