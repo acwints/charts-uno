@@ -35,6 +35,10 @@ export async function analyzeImage(file: File): Promise<ChartData> {
     suggestedType: parsed.suggestedType,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
+    sourceImage: {
+      base64: base64Data,
+      mimeType: file.type,
+    },
   };
 }
 

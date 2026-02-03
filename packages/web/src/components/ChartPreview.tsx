@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import type { ChartData, ChartConfig } from '../types';
-import { COLOR_PALETTES, COLOR_GRADIENTS, STYLE_VARIANTS } from '../types';
+import { COLOR_PALETTES, COLOR_GRADIENTS, COLOR_THEMES, STYLE_VARIANTS } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { Button } from './Button';
 import './ChartPreview.css';
@@ -39,6 +39,7 @@ interface ChartPreviewProps {
 export function ChartPreview({ data, config }: ChartPreviewProps) {
   const colors = COLOR_PALETTES[config.colorScheme];
   const gradients = COLOR_GRADIENTS[config.colorScheme];
+  const theme = COLOR_THEMES[config.colorScheme];
   const styleConfig = STYLE_VARIANTS[config.styleVariant];
   const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
   const [infographicLoading, setInfographicLoading] = useState(false);
@@ -54,7 +55,12 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     setInfographicLoading(true);
     setInfographicError(null);
     try {
-      const svg = await generateInfographic(data, config.title, config.colorScheme);
+      const svg = await generateInfographic(
+        data,
+        config.title,
+        config.colorScheme,
+        data.sourceImage
+      );
       setInfographicSvg(svg);
     } catch (err) {
       setInfographicError(err instanceof Error ? err.message : 'Failed to generate infographic');
@@ -201,8 +207,8 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     const gridElement = config.showGrid ? (
       <CartesianGrid
         strokeDasharray={gridStrokeDasharray}
-        stroke="currentColor"
-        strokeOpacity={styleConfig.chart.gridOpacity || 0.06}
+        stroke={theme.grid}
+        strokeOpacity={theme.gridOpacity}
         className="chart-grid"
       />
     ) : null;
@@ -211,7 +217,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       value: xAxisLabel,
       position: 'insideBottom' as const,
       offset: -10,
-      fill: 'var(--text-muted)',
+      fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
     } : undefined;
@@ -221,19 +227,19 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         type="number"
         dataKey="x"
         domain={numericDomain}
-        stroke="var(--text-muted)"
-        tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-        tickLine={{ stroke: 'var(--text-muted)' }}
-        axisLine={{ stroke: 'var(--border-default)', strokeOpacity: 0.5 }}
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         label={xAxisLabelConfig}
       />
     ) : (
       <XAxis
         dataKey="name"
-        stroke="var(--text-muted)"
-        tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-        tickLine={{ stroke: 'var(--text-muted)' }}
-        axisLine={{ stroke: 'var(--border-default)', strokeOpacity: 0.5 }}
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         padding={{ left: 20, right: 20 }}
         label={xAxisLabelConfig}
       />
@@ -241,16 +247,16 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
 
     const yAxisElement = (
       <YAxis
-        stroke="var(--text-muted)"
-        tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-        tickLine={{ stroke: 'var(--text-muted)' }}
-        axisLine={{ stroke: 'var(--border-default)', strokeOpacity: 0.5 }}
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         label={yAxisLabel ? {
           value: yAxisLabel,
           angle: -90,
           position: 'insideLeft',
           offset: 12,
-          fill: 'var(--text-muted)',
+          fill: theme.textMuted,
           fontSize: 11,
           fontFamily: 'var(--font-mono)',
         } : undefined}
@@ -260,13 +266,13 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     const tooltipElement = (
       <Tooltip
         contentStyle={{
-          background: 'var(--bg-elevated)',
-          border: 'var(--border-subtle)',
+          background: theme.cardBackground,
+          border: `1px solid ${theme.border}`,
           borderRadius: 'var(--radius-md)',
           boxShadow: 'var(--shadow-card)',
         }}
-        labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
-        itemStyle={{ color: 'var(--text-secondary)' }}
+        labelStyle={{ color: theme.text, fontWeight: 600 }}
+        itemStyle={{ color: theme.textMuted }}
       />
     );
 
@@ -277,7 +283,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
           paddingBottom: 16,
         }}
         formatter={(value) => (
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{value}</span>
+          <span style={{ color: theme.textMuted, fontSize: '0.8rem' }}>{value}</span>
         )}
       />
     ) : null;
@@ -315,7 +321,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                   <LabelList
                     dataKey={series.name}
                     position="top"
-                    fill="var(--text-secondary)"
+                    fill={theme.textMuted}
                     fontSize={11}
                   />
                 )}
@@ -349,7 +355,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                   r: styleConfig.chart.activeDotRadius,
                   stroke: colors[idx % colors.length],
                   strokeWidth: 2,
-                  fill: 'var(--bg-primary)'
+                  fill: theme.background
                 }}
                 animationDuration={config.animate ? 1200 : 0}
                 animationBegin={idx * 200}
@@ -358,7 +364,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                   <LabelList
                     dataKey={series.name}
                     position="top"
-                    fill="var(--text-secondary)"
+                    fill={theme.textMuted}
                     fontSize={11}
                     offset={8}
                   />
@@ -393,7 +399,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                   <LabelList
                     dataKey={series.name}
                     position="top"
-                    fill="var(--text-secondary)"
+                    fill={theme.textMuted}
                     fontSize={11}
                     offset={8}
                   />
@@ -434,10 +440,10 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       case 'radar':
         return (
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-            <PolarGrid stroke="var(--text-muted)" strokeOpacity={styleConfig.chart.gridOpacity * 2} />
+            <PolarGrid stroke={theme.grid} strokeOpacity={theme.gridOpacity * 2} />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+              tick={{ fill: theme.textMuted, fontSize: 12 }}
             />
             {tooltipElement}
             {legendElement}
@@ -483,6 +489,14 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
 
   const previewClassName = `chart-preview ${styleConfig.decorations.useGlow ? 'chart-preview--glow' : ''} ${styleConfig.decorations.useShadows ? 'chart-preview--shadow' : ''}`;
 
+  const themeStyles = {
+    '--chart-bg': theme.background,
+    '--chart-card-bg': theme.cardBackground,
+    '--chart-text': theme.text,
+    '--chart-text-muted': theme.textMuted,
+    '--chart-border': theme.border,
+  } as React.CSSProperties;
+
   return (
     <motion.div
       className={previewClassName}
@@ -490,6 +504,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
       data-style-variant={config.styleVariant}
+      style={themeStyles}
     >
       <div className="chart-header">
         <div className="chart-header-top">

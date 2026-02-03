@@ -177,6 +177,8 @@ class InfographicRequest(BaseModel):
     title: str
     color_scheme: str
     theme: str = "dark"  # 'dark' or 'light'
+    source_image_base64: Optional[str] = None
+    source_image_mime_type: Optional[str] = None
 
 
 class InfographicResponse(BaseModel):

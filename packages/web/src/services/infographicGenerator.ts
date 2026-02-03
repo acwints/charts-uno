@@ -10,9 +10,12 @@ function getTheme(): 'dark' | 'light' {
 export async function generateInfographic(
   data: ChartData,
   title: string,
-  colorScheme: ColorScheme
+  colorScheme: ColorScheme,
+  sourceImage?: { base64: string; mimeType: string }
 ): Promise<string> {
   const theme = getTheme();
+
+  const hasSourceImage = Boolean(sourceImage?.base64 && sourceImage?.mimeType);
 
   const response = await fetch(`${API_URL}/api/ai/infographic`, {
     method: 'POST',
@@ -30,6 +33,12 @@ export async function generateInfographic(
       title: title || 'Data Visualization',
       color_scheme: colorScheme,
       theme: theme,
+      ...(hasSourceImage
+        ? {
+            source_image_base64: sourceImage?.base64,
+            source_image_mime_type: sourceImage?.mimeType,
+          }
+        : {}),
     }),
   });
 

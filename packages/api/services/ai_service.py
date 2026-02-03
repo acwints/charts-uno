@@ -375,6 +375,8 @@ async def generate_infographic(
     title: str,
     color_scheme: str,
     theme: str = "dark",
+    source_image_base64: Optional[str] = None,
+    source_image_mime_type: Optional[str] = None,
 ) -> str:
     """Generate an SVG infographic for the given data."""
     model = get_model()
@@ -390,6 +392,17 @@ Labels: {', '.join(labels)}
 Series:
 {chr(10).join(f"  - {s.get('name')}: {', '.join(str(v) for v in s.get('data', []))}" for s in series)}
     """.strip()
+
+    data_json = json.dumps(
+        {
+            "labels": labels,
+            "series": [
+                {"name": s.get("name"), "data": s.get("data", [])}
+                for s in series
+            ],
+        },
+        indent=2,
+    )
 
     theme_colors = {
         "light": {
@@ -408,6 +421,13 @@ Series:
         "secondaryText": "#8888a0",
     })
 
+    image_guidance = ""
+    if source_image_base64 and source_image_mime_type:
+        image_guidance = """
+- Use the provided reference image for overall layout and styling cues.
+- Do NOT copy text or values from the image; the JSON data is the source of truth.
+"""
+
     prompt = f"""You are an expert data visualization designer. Create a beautiful, unique SVG infographic.
 
 Your SVG should be:
@@ -416,7 +436,10 @@ Your SVG should be:
 - Include the actual data values displayed elegantly
 - Use smooth gradients, rounded shapes, subtle shadows
 - Be self-contained with no external dependencies
-- Fixed viewBox of "0 0 800 600"
+- High-detail, crisp rendering (avoid thin/jagged lines)
+- Prioritize legibility: avoid tiny text, keep labels readable and mostly horizontal
+- Fixed viewBox of "0 0 1600 1200"
+{image_guidance}
 
 Color palette to use (in order of preference):
 {chr(10).join(f"  {i + 1}. {c}" for i, c in enumerate(colors))}
@@ -431,9 +454,21 @@ Create a unique, creative SVG infographic for this data:
 
 {data_description}
 
+Data (JSON):
+{data_json}
+
 Return ONLY the SVG code, no markdown code blocks, no explanation. The SVG should be complete and render standalone. Start with <svg and end with </svg>."""
 
-    response = model.generate_content(prompt)
+    if source_image_base64 and source_image_mime_type:
+        response = model.generate_content([
+            prompt,
+            {
+                "mime_type": source_image_mime_type,
+                "data": source_image_base64,
+            },
+        ])
+    else:
+        response = model.generate_content(prompt)
     content = response.text
 
     if not content:

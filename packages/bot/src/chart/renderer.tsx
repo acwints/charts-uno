@@ -336,8 +336,9 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
   const page = await browserInstance.newPage();
 
   try {
-    // Set viewport to match chart size
-    await page.setViewport({ width: 800, height: 600 });
+    // Set viewport to match chart size (retina for crisp output)
+    const viewport = { width: 800, height: 600, deviceScaleFactor: 2 };
+    await page.setViewport(viewport);
 
     // Render the React component to HTML string
     const chartHtml = renderToString(<ChartPreviewServer data={data} config={config} />);
@@ -369,7 +370,7 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
     // Take screenshot
     const screenshot = await page.screenshot({
       type: 'png',
-      clip: { x: 0, y: 0, width: 800, height: 600 },
+      clip: { x: 0, y: 0, width: viewport.width, height: viewport.height },
     });
 
     logger.info('Chart rendered to PNG successfully');

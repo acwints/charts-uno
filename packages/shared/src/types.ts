@@ -14,6 +14,10 @@ export interface ChartData {
   xAxisLabel?: string;
   yAxisLabel?: string;
   userPrompt?: string;
+  sourceImage?: {
+    base64: string;
+    mimeType: string;
+  };
 }
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic';

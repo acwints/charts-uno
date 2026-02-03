@@ -895,6 +895,8 @@ async def infographic_endpoint(
             title=data.title,
             color_scheme=data.color_scheme,
             theme=data.theme,
+            source_image_base64=data.source_image_base64,
+            source_image_mime_type=data.source_image_mime_type,
         )
         return InfographicResponse(svg=svg)
     except ValueError as e:

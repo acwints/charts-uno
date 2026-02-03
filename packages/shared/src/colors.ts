@@ -1,5 +1,73 @@
 import type { ColorScheme } from './types.js';
 
+// Theme colors for chart backgrounds, text, and grid
+export interface ColorTheme {
+  background: string;
+  cardBackground: string;
+  text: string;
+  textMuted: string;
+  grid: string;
+  gridOpacity: number;
+  border: string;
+}
+
+export const COLOR_THEMES: Record<ColorScheme, ColorTheme> = {
+  default: {
+    background: '#09090b',
+    cardBackground: '#18181b',
+    text: '#fafafa',
+    textMuted: '#a1a1aa',
+    grid: '#ffffff',
+    gridOpacity: 0.06,
+    border: '#27272a',
+  },
+  monochrome: {
+    background: '#0a0a0a',
+    cardBackground: '#141414',
+    text: '#ffffff',
+    textMuted: '#737373',
+    grid: '#ffffff',
+    gridOpacity: 0.08,
+    border: '#262626',
+  },
+  warm: {
+    background: '#0c0a09',
+    cardBackground: '#1c1917',
+    text: '#fef3c7',
+    textMuted: '#d6d3d1',
+    grid: '#fef3c7',
+    gridOpacity: 0.05,
+    border: '#292524',
+  },
+  cool: {
+    background: '#020617',
+    cardBackground: '#0f172a',
+    text: '#e0f2fe',
+    textMuted: '#94a3b8',
+    grid: '#e0f2fe',
+    gridOpacity: 0.06,
+    border: '#1e293b',
+  },
+  editorial: {
+    background: '#0f0f0f',
+    cardBackground: '#1a1a1a',
+    text: '#f5f5dc',
+    textMuted: '#a0a0a0',
+    grid: '#f5f5dc',
+    gridOpacity: 0.04,
+    border: '#2a2a2a',
+  },
+  muted: {
+    background: '#0e0e0e',
+    cardBackground: '#171717',
+    text: '#d4d4d4',
+    textMuted: '#737373',
+    grid: '#d4d4d4',
+    gridOpacity: 0.05,
+    border: '#262626',
+  },
+};
+
 export const COLOR_PALETTES: Record<ColorScheme, string[]> = {
   default: ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'],
   monochrome: ['#fafafa', '#a1a1aa', '#71717a', '#52525b', '#3f3f46', '#27272a'],
