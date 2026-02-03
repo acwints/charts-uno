@@ -141,6 +141,7 @@
 .chart-data-editor {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
   height: clamp(360px, 70vh, 600px);
   min-height: 0;
 }
@@ -153,6 +154,52 @@
 .chart-data-editor .spreadsheet-container {
   max-height: none;
   height: 100%;
+}
+
+/* Source image panel in data editor */
+.source-image-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  max-height: 40%;
+}
+
+.source-image-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.source-image-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.source-image-preview {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  overflow: hidden;
+}
+
+.source-image-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
 }
 
 

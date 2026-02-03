@@ -18,6 +18,7 @@ export function ChartFeedPage() {
         sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
         suggestedTitle: chart.data.suggestedTitle,
         suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
+        ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
       };
 
       const newConfig: ChartConfig = {

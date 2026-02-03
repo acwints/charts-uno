@@ -26,6 +26,8 @@ class ChartDataSeries(BaseModel):
 
 
 class ChartData(BaseModel):
+    model_config = {"extra": "allow"}
+
     labels: List[str]
     series: List[ChartDataSeries]
     suggestedType: Optional[str] = None

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Save, Plus, BarChart3, Table2 } from 'lucide-react';
+import { Save, Plus, BarChart3, Table2, Image } from 'lucide-react';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
@@ -70,6 +70,7 @@ export function ChartView() {
           labels: chartData.labels,
           series: chartData.series,
           suggestedType: chartData.suggestedType,
+          ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
         },
         config: chartConfig,
         source_type: chartData.sourceType || 'paste',
@@ -110,6 +111,7 @@ export function ChartView() {
             sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
             suggestedTitle: chart.title || chart.config.title,
             suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
+            ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
           };
           setChartData(data);
           // Ensure themeMode has a default value for charts created before it was added
@@ -271,6 +273,21 @@ export function ChartView() {
 
       {editorView === 'data' ? (
         <div className="chart-data-editor">
+          {chartData.sourceImage && (
+            <div className="source-image-panel">
+              <div className="source-image-header">
+                <Image size={14} />
+                <span className="source-image-label">SOURCE</span>
+              </div>
+              <div className="source-image-preview">
+                <img
+                  src={`data:${chartData.sourceImage.mimeType};base64,${chartData.sourceImage.base64}`}
+                  alt="Original chart source"
+                  className="source-image-img"
+                />
+              </div>
+            </div>
+          )}
           <EditableSpreadsheet
             data={chartData}
             colorScheme={chartConfig.colorScheme}
