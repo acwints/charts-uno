@@ -1,19 +1,15 @@
-import type { ChartData, ColorScheme } from '../types';
+import type { ChartData, ColorScheme, ThemeMode } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-function getTheme(): 'dark' | 'light' {
-  if (typeof document === 'undefined') return 'dark';
-  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-}
 
 export async function generateInfographic(
   data: ChartData,
   title: string,
   colorScheme: ColorScheme,
+  themeMode: ThemeMode,
   sourceImage?: { base64: string; mimeType: string }
 ): Promise<string> {
-  const theme = getTheme();
+  const theme = themeMode;
 
   const hasSourceImage = Boolean(sourceImage?.base64 && sourceImage?.mimeType);
 

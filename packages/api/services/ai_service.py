@@ -406,17 +406,17 @@ Series:
 
     theme_colors = {
         "light": {
-            "background": "#ffffff or transparent",
+            "background": "#ffffff",
             "primaryText": "#0f172a",
             "secondaryText": "#64748b",
         },
         "dark": {
-            "background": "#0a0a0f or transparent",
+            "background": "#0a0a0f",
             "primaryText": "#f0f0f5",
             "secondaryText": "#8888a0",
         },
     }.get(theme, {
-        "background": "#0a0a0f or transparent",
+        "background": "#0a0a0f",
         "primaryText": "#f0f0f5",
         "secondaryText": "#8888a0",
     })
@@ -424,40 +424,41 @@ Series:
     image_guidance = ""
     if source_image_base64 and source_image_mime_type:
         image_guidance = """
-- Use the provided reference image for overall layout and styling cues.
-- Do NOT copy text or values from the image; the JSON data is the source of truth.
-"""
+REFERENCE IMAGE: A source image is attached. Use it ONLY as a loose visual reference for layout inspiration. Do NOT copy text, labels, or values from the image. The JSON data below is the ONLY source of truth for all numbers and labels."""
 
-    prompt = f"""You are an expert data visualization designer. Create a beautiful, unique SVG infographic.
+    prompt = f"""You are an expert data visualization designer. Create a clean, polished SVG infographic.
 
-Your SVG should be:
-- Creative and visually striking (not a standard bar/line/pie chart)
-- Use interesting layouts: circular, radial, isometric, organic shapes, creative arrangements
-- Include the actual data values displayed elegantly
-- Use smooth gradients, rounded shapes, subtle shadows
-- Be self-contained with no external dependencies
-- High-detail, crisp rendering (avoid thin/jagged lines)
-- Prioritize legibility: avoid tiny text, keep labels readable and mostly horizontal
-- Fixed viewBox of "0 0 1600 1200"
-{image_guidance}
+STRICT RULES:
+1. Use FLAT 2D design only. No 3D effects, no isometric perspective, no skewing, no perspective transforms.
+2. The title "{title or 'Data Visualization'}" must appear EXACTLY ONCE at the top of the SVG. Do not repeat it.
+3. Every data value from the JSON must be represented accurately. Do not invent or omit data.
+4. All text must be horizontal and legible (minimum 14px for labels, 20px for title).
+5. Use clean geometric shapes: rectangles, circles, arcs, lines. No organic/blob shapes.
+6. Fixed viewBox="0 0 1600 1200". The SVG must be self-contained with no external dependencies.
+7. Use font-family 'Manrope', sans-serif for ALL text elements.
 
-Color palette to use (in order of preference):
+LAYOUT GUIDELINES:
+- Title at top (28-36px, bold, color: {theme_colors["primaryText"]})
+- Clear visual hierarchy: title > data values > labels > secondary info
+- Use one of these layouts: horizontal bars, vertical bars, donut/ring chart, proportional circles, icon array, or grid cards
+- Include a subtle legend if there are multiple series
+- Add adequate spacing between elements (no cramped layouts)
+
+COLOR PALETTE (use these exact colors in order):
 {chr(10).join(f"  {i + 1}. {c}" for i, c in enumerate(colors))}
 
-Theme: {theme.upper()} MODE
-Background: {theme_colors["background"]}
-Primary text color: {theme_colors["primaryText"]}
-Secondary text color: {theme_colors["secondaryText"]}
-Use the font-family: 'Manrope', sans-serif for text.
+THEME: {theme.upper()} MODE
+- Background: {theme_colors["background"]}
+- Primary text: {theme_colors["primaryText"]}
+- Secondary text: {theme_colors["secondaryText"]}
+- Use the palette colors above for data elements (bars, segments, circles, etc.)
+- Subtle gradients within palette colors are OK, but keep them flat (no 3D shading)
+{image_guidance}
 
-Create a unique, creative SVG infographic for this data:
-
-{data_description}
-
-Data (JSON):
+DATA (use this as the ONLY source of truth):
 {data_json}
 
-Return ONLY the SVG code, no markdown code blocks, no explanation. The SVG should be complete and render standalone. Start with <svg and end with </svg>."""
+Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start with <svg and end with </svg>."""
 
     if source_image_base64 and source_image_mime_type:
         response = model.generate_content([

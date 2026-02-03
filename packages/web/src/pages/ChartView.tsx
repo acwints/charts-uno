@@ -167,6 +167,33 @@ export function ChartView() {
         transition={{ duration: 0.4 }}
         className="chart-view"
       >
+        <div className="chart-toolbar">
+          <div className="chart-toolbar-left">
+            <Button variant="default" size="sm" onClick={handleCreateNew}>
+              <Plus size={16} />
+              New Chart
+            </Button>
+          </div>
+          <div className="chart-toolbar-right">
+            <ExportMenu
+              data={chartData}
+              chartRef={chartRef}
+              title={chartConfig.title}
+              watermark={watermarkSettings}
+            />
+            {isAuthenticated && !id && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveChart}
+                disabled={isSaving}
+              >
+                <Save size={16} />
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+          </div>
+        </div>
         <ReverseEngineerView
           initialData={chartData}
           config={chartConfig}

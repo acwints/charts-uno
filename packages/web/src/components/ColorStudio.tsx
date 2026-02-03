@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sun, Moon, RotateCcw } from 'lucide-react';
+import { Sun, Moon, RotateCcw, ChevronDown } from 'lucide-react';
 import type { ChartConfig, CustomColors, ColorScheme } from '../types';
 import { COLOR_PALETTES, PRESET_PALETTES, getTheme } from '../types';
 import './ColorStudio.css';
@@ -47,124 +47,130 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
 
   return (
     <div className="cstudio">
-      {/* ── Row 1: Theme mode ── */}
-      <div className="cstudio-mode">
-        <button
-          className={`cstudio-mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
-          onClick={() => update({ themeMode: 'light' })}
-          aria-label="Light theme"
-          aria-pressed={config.themeMode === 'light'}
-        >
-          <Sun size={13} />
-          Light
-        </button>
-        <button
-          className={`cstudio-mode-btn ${config.themeMode === 'dark' ? 'active' : ''}`}
-          onClick={() => update({ themeMode: 'dark' })}
-          aria-label="Dark theme"
-          aria-pressed={config.themeMode === 'dark'}
-        >
-          <Moon size={13} />
-          Dark
-        </button>
+      {/* ── Section 1: Theme ── */}
+      <div className="cstudio-section">
+        <div className="cstudio-section-head">
+          <span className="cstudio-section-label">Theme</span>
+          <div className="cstudio-mode">
+            <button
+              className={`cstudio-mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
+              onClick={() => update({ themeMode: 'light' })}
+              aria-label="Light theme"
+              aria-pressed={config.themeMode === 'light'}
+            >
+              <Sun size={11} />
+              Light
+            </button>
+            <button
+              className={`cstudio-mode-btn ${config.themeMode === 'dark' ? 'active' : ''}`}
+              onClick={() => update({ themeMode: 'dark' })}
+              aria-label="Dark theme"
+              aria-pressed={config.themeMode === 'dark'}
+            >
+              <Moon size={11} />
+              Dark
+            </button>
+          </div>
+        </div>
+        <div className="cstudio-schemes">
+          {SCHEMES.map((s) => (
+            <button
+              key={s.id}
+              className={`cstudio-scheme ${config.colorScheme === s.id ? 'active' : ''}`}
+              onClick={() => update({ colorScheme: s.id })}
+              aria-label={`${s.label} color scheme`}
+              aria-pressed={config.colorScheme === s.id}
+            >
+              <span className="cstudio-scheme-dots">
+                {COLOR_PALETTES[s.id].slice(0, 4).map((c, i) => (
+                  <span key={i} className="cstudio-dot" style={{ background: c }} />
+                ))}
+              </span>
+              <span className="cstudio-scheme-label">{s.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Row 2: Color scheme pills ── */}
-      <div className="cstudio-schemes">
-        {SCHEMES.map((s) => (
-          <button
-            key={s.id}
-            className={`cstudio-scheme ${config.colorScheme === s.id ? 'active' : ''}`}
-            onClick={() => update({ colorScheme: s.id })}
-            aria-label={`${s.label} color scheme`}
-            aria-pressed={config.colorScheme === s.id}
-          >
-            <span className="cstudio-scheme-dots">
-              {COLOR_PALETTES[s.id].slice(0, 4).map((c, i) => (
-                <span key={i} className="cstudio-dot" style={{ background: c }} />
+      {/* ── Section 2: Data Palette ── */}
+      <div className="cstudio-section">
+        <span className="cstudio-section-label">Data Palette</span>
+        <div className="cstudio-series">
+          {seriesNames.slice(0, 8).map((name, i) => (
+            <label key={i} className="cstudio-swatch" title={name}>
+              <input
+                type="color"
+                value={palette[i % palette.length]}
+                onChange={(e) => setSeriesColor(i, e.target.value)}
+                className="cstudio-color-input"
+              />
+              <span className="cstudio-swatch-name">{name}</span>
+            </label>
+          ))}
+        </div>
+        <div className="cstudio-presets">
+          {PRESET_PALETTES.map((p) => (
+            <button
+              key={p.id}
+              className="cstudio-preset"
+              onClick={() => applyPreset(p.colors)}
+              title={p.name}
+              aria-label={`Apply ${p.name} palette`}
+            >
+              {p.colors.slice(0, 5).map((c, i) => (
+                <span key={i} className="cstudio-preset-dot" style={{ background: c }} />
               ))}
-            </span>
-            <span className="cstudio-scheme-label">{s.label}</span>
-          </button>
-        ))}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Row 3: Series colors (always visible) ── */}
-      <div className="cstudio-series">
-        {seriesNames.slice(0, 8).map((name, i) => (
-          <label key={i} className="cstudio-swatch" title={name}>
-            <input
-              type="color"
-              value={palette[i % palette.length]}
-              onChange={(e) => setSeriesColor(i, e.target.value)}
-              className="cstudio-color-input"
-            />
-            <span className="cstudio-swatch-name">{name}</span>
-          </label>
-        ))}
-      </div>
-
-      {/* ── Row 4: Presets strip ── */}
-      <div className="cstudio-presets">
-        {PRESET_PALETTES.map((p) => (
-          <button
-            key={p.id}
-            className="cstudio-preset"
-            onClick={() => applyPreset(p.colors)}
-            title={p.name}
-            aria-label={`Apply ${p.name} palette`}
-          >
-            {p.colors.slice(0, 5).map((c, i) => (
-              <span key={i} className="cstudio-preset-dot" style={{ background: c }} />
-            ))}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Row 5: Customize bg/text toggle ── */}
-      <div className="cstudio-actions">
+      {/* ── Section 3: Customize ── */}
+      <div className="cstudio-section">
         <button
-          className={`cstudio-customize-btn ${showCustom ? 'active' : ''}`}
+          className="cstudio-section-head cstudio-section-toggle"
           onClick={() => setShowCustom(!showCustom)}
+          aria-expanded={showCustom}
         >
-          Customize Background & Text
+          <span className="cstudio-section-label">Customize</span>
+          <div className="cstudio-section-right">
+            {hasCustomColors && (
+              <button
+                className="cstudio-reset"
+                onClick={(e) => { e.stopPropagation(); resetColors(); }}
+                aria-label="Reset to defaults"
+              >
+                <RotateCcw size={11} />
+              </button>
+            )}
+            <ChevronDown size={12} className={`cstudio-chevron ${showCustom ? 'open' : ''}`} />
+          </div>
         </button>
-        {hasCustomColors && (
-          <button
-            className="cstudio-reset"
-            onClick={resetColors}
-            aria-label="Reset to defaults"
-          >
-            <RotateCcw size={12} />
-          </button>
+        {showCustom && (
+          <div className="cstudio-custom">
+            <ColorField
+              label="BG"
+              value={config.customColors?.background || theme.background}
+              onChange={(v) => setCustom({ background: v })}
+            />
+            <ColorField
+              label="Card"
+              value={config.customColors?.cardBackground || theme.cardBackground}
+              onChange={(v) => setCustom({ cardBackground: v })}
+            />
+            <ColorField
+              label="Text"
+              value={config.customColors?.text || theme.text}
+              onChange={(v) => setCustom({ text: v })}
+            />
+            <ColorField
+              label="Grid"
+              value={config.customColors?.grid || theme.grid}
+              onChange={(v) => setCustom({ grid: v })}
+            />
+          </div>
         )}
       </div>
-
-      {/* ── Row 6: Custom bg/text (shown on demand) ── */}
-      {showCustom && (
-        <div className="cstudio-custom">
-          <ColorField
-            label="BG"
-            value={config.customColors?.background || theme.background}
-            onChange={(v) => setCustom({ background: v })}
-          />
-          <ColorField
-            label="Card"
-            value={config.customColors?.cardBackground || theme.cardBackground}
-            onChange={(v) => setCustom({ cardBackground: v })}
-          />
-          <ColorField
-            label="Text"
-            value={config.customColors?.text || theme.text}
-            onChange={(v) => setCustom({ text: v })}
-          />
-          <ColorField
-            label="Grid"
-            value={config.customColors?.grid || theme.grid}
-            onChange={(v) => setCustom({ grid: v })}
-          />
-        </div>
-      )}
     </div>
   );
 }

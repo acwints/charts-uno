@@ -1,4 +1,4 @@
-/* ── Color Studio: compact, dense, always-visible ── */
+/* ── Color Studio ── */
 .cstudio {
   display: flex;
   flex-direction: column;
@@ -6,25 +6,79 @@
   background: var(--bg-tertiary);
 }
 
-/* ── Theme mode toggle ── */
+/* ── Sections ── */
+.cstudio-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+.cstudio-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+}
+
+.cstudio-section-label {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Toggle header for Customize */
+.cstudio-section-toggle {
+  background: var(--bg-secondary);
+  border: none;
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.cstudio-section-toggle:hover .cstudio-section-label {
+  color: var(--text-secondary);
+}
+
+.cstudio-section-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cstudio-section-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cstudio-chevron {
+  color: var(--text-muted);
+  transition: transform 200ms;
+}
+
+.cstudio-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* ── Theme mode (inline with section head) ── */
 .cstudio-mode {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--bg-tertiary);
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--bg-hover);
 }
 
 .cstudio-mode-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
+  gap: 4px;
+  padding: 3px 8px;
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   font-weight: 600;
   color: var(--text-muted);
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   border: none;
   cursor: pointer;
   transition: color 150ms, background-color 150ms;
@@ -56,7 +110,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 8px;
+  padding: 6px 8px;
   font-family: var(--font-body);
   color: var(--text-muted);
   background: var(--bg-secondary);
@@ -93,7 +147,7 @@
 }
 
 .cstudio-scheme-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -103,8 +157,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 8px 10px;
-  background: var(--bg-secondary);
+  padding: 4px 10px 6px;
 }
 
 .cstudio-swatch {
@@ -115,23 +168,23 @@
 }
 
 .cstudio-color-input {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 2px solid var(--bg-hover);
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .cstudio-color-input::-webkit-color-swatch-wrapper { padding: 0; }
-.cstudio-color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+.cstudio-color-input::-webkit-color-swatch { border: none; border-radius: 1px; }
 
 .cstudio-swatch-name {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 500;
   color: var(--text-muted);
-  max-width: 56px;
+  max-width: 52px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -140,9 +193,8 @@
 /* ── Preset palette strip ── */
 .cstudio-presets {
   display: flex;
-  gap: 4px;
-  padding: 6px 10px;
-  background: var(--bg-secondary);
+  gap: 3px;
+  padding: 0 10px 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -152,10 +204,10 @@
 .cstudio-preset {
   display: flex;
   gap: 2px;
-  padding: 4px 6px;
+  padding: 3px 5px;
   background: var(--bg-tertiary);
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   flex-shrink: 0;
   transition: border-color 150ms;
@@ -171,53 +223,22 @@
 }
 
 .cstudio-preset-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 2px;
 }
 
-/* ── Actions row ── */
-.cstudio-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  background: var(--bg-secondary);
-}
-
-.cstudio-customize-btn {
-  flex: 1;
-  padding: 5px 8px;
-  font-family: var(--font-body);
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: var(--bg-tertiary);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: left;
-  transition: color 150ms, border-color 150ms;
-}
-
-.cstudio-customize-btn:hover { color: var(--text-secondary); }
-.cstudio-customize-btn.active { color: var(--accent); border-color: var(--accent); }
-
-.cstudio-customize-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-}
-
+/* ── Reset button ── */
 .cstudio-reset {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: var(--text-muted);
   background: var(--bg-tertiary);
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   flex-shrink: 0;
   transition: color 150ms;
@@ -238,24 +259,24 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   background: var(--bg-secondary);
   cursor: pointer;
 }
 
 .cstudio-field-label {
-  font-size: 0.6rem;
-  font-weight: 600;
+  font-size: 0.55rem;
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  width: 28px;
+  width: 26px;
   flex-shrink: 0;
 }
 
 .cstudio-field-color {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: 2px solid var(--bg-hover);
   border-radius: 3px;
@@ -271,7 +292,7 @@
   min-width: 0;
   padding: 2px 4px;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   background: var(--bg-tertiary);
@@ -290,8 +311,9 @@
   .cstudio-mode-btn,
   .cstudio-scheme,
   .cstudio-preset,
-  .cstudio-customize-btn,
-  .cstudio-reset {
+  .cstudio-section-toggle,
+  .cstudio-reset,
+  .cstudio-chevron {
     transition: none;
   }
 }
