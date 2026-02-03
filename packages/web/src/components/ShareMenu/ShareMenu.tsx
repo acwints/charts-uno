@@ -11,9 +11,17 @@ interface ShareMenuProps {
   watermark?: WatermarkSettings;
   shareUrl?: string | null;
   onRequestShareUrl?: () => Promise<string | null>;
+  isAuthenticated?: boolean;
 }
 
-export function ShareMenu({ chartRef, title, watermark, shareUrl, onRequestShareUrl }: ShareMenuProps) {
+export function ShareMenu({
+  chartRef,
+  title,
+  watermark,
+  shareUrl,
+  onRequestShareUrl,
+  isAuthenticated = false,
+}: ShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedImage, setCopiedImage] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -49,7 +57,7 @@ export function ShareMenu({ chartRef, title, watermark, shareUrl, onRequestShare
     }
   };
 
-  const isShareDisabled = copying || resolvingShare;
+  const isShareDisabled = copying || resolvingShare || !isAuthenticated;
 
   const ensureShareUrl = async () => {
     if (shareUrl) return shareUrl;
@@ -82,6 +90,7 @@ export function ShareMenu({ chartRef, title, watermark, shareUrl, onRequestShare
         size="sm"
         className="share-trigger"
         onClick={() => setIsOpen(!isOpen)}
+        disabled={!isAuthenticated}
       >
         <Share2 size={16} />
         <span>Share</span>

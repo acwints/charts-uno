@@ -257,6 +257,7 @@ export function ChartView() {
                 chartRef={chartRef}
                 title={chartConfig.title}
                 watermark={watermarkSettings}
+                isAuthenticated={isAuthenticated}
               />
               <ShareMenu
                 chartRef={chartRef}
@@ -264,6 +265,7 @@ export function ChartView() {
                 watermark={watermarkSettings}
                 shareUrl={shareUrl}
                 onRequestShareUrl={saveChart}
+                isAuthenticated={isAuthenticated}
               />
             </>
           )}

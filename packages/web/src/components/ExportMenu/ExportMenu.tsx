@@ -15,9 +15,10 @@ interface ExportMenuProps {
   chartRef: React.RefObject<HTMLElement | null>;
   title?: string;
   watermark?: WatermarkSettings;
+  isAuthenticated?: boolean;
 }
 
-export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps) {
+export function ExportMenu({ data, chartRef, title, watermark, isAuthenticated = false }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -68,6 +69,7 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
         size="sm"
         className="export-trigger"
         onClick={() => setIsOpen(!isOpen)}
+        disabled={!isAuthenticated}
       >
         <Download size={16} />
         <span>Download</span>
@@ -85,7 +87,7 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
             <button
               className="export-option"
               onClick={handleCSV}
-              disabled={exporting !== null}
+              disabled={exporting !== null || !isAuthenticated}
             >
               <FileSpreadsheet size={16} />
               <span>Download CSV</span>
@@ -95,7 +97,7 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
             <button
               className="export-option"
               onClick={handlePNG}
-              disabled={exporting !== null}
+              disabled={exporting !== null || !isAuthenticated}
             >
               <Image size={16} />
               <span>Download PNG</span>
