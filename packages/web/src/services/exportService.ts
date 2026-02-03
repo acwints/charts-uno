@@ -101,8 +101,9 @@ export async function exportToPNG(
   filename: string = 'chart',
   watermark?: WatermarkSettings
 ): Promise<void> {
+  // Use null to capture the element's actual background color
   const canvas = await html2canvas(element, {
-    backgroundColor: '#09090b',
+    backgroundColor: null,
     scale: 2,
     logging: false,
     useCORS: true,

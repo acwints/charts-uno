@@ -1,8 +1,9 @@
-import { useRef, useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
+import { ChatPanel } from '../components/ChatPanel';
 import { useAuth } from '../hooks/useAuth';
 import { useAuthModal } from '../hooks/useAuthModal';
 import { useChartStore } from '../stores/chartStore';
@@ -15,11 +16,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
-  const { chartData, chartConfig } = useChartStore();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
 
   const isSettingsPage = location.pathname.startsWith('/settings');
   const isFeedPage = location.pathname === '/feed';
+  const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -32,17 +33,12 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="app">
         <Header
           onAuthOpen={openAuthModal}
-          hasData={!!chartData}
-          data={chartData}
-          config={chartConfig}
-          chartRef={chartRef}
-          title={chartConfig.title}
           showFeedButton={!isFeedPage && !isSettingsPage}
         />
 
         <main className="main">
           <AnimatePresence mode="wait">
-            {children || <Outlet context={{ openAuthModal, chartRef }} />}
+            {children || <Outlet context={{ openAuthModal }} />}
           </AnimatePresence>
         </main>
 
@@ -54,6 +50,16 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </footer>
       </div>
+
+      {/* ChatPanel as sidebar - only show on chart pages with data */}
+      {isChartPage && chartData && (
+        <ChatPanel
+          data={chartData}
+          config={chartConfig}
+          onDataChange={setChartData}
+          onConfigChange={setChartConfig}
+        />
+      )}
 
       <AuthModal isOpen={!isAuthenticated && isAuthModalOpen} onClose={closeAuthModal} />
     </div>

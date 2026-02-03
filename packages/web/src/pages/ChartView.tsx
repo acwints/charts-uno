@@ -1,23 +1,84 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { Save, Plus } from 'lucide-react';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
-import { ChatPanel } from '../components/ChatPanel';
 import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ExportMenu } from '../components/ExportMenu';
+import { Button } from '../components/Button';
 import { useChartStore } from '../stores/chartStore';
-import { getChart } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import { useTeam } from '../contexts/TeamContext';
+import { useToast } from '../contexts/ToastContext';
+import { getChart, createChartWithTeam, getTeamBranding } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
+import type { WatermarkSettings } from '../services/exportService';
 
 export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const chartRef = useRef<HTMLDivElement>(null);
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
+  const { isAuthenticated } = useAuth();
+  const { currentTeam } = useTeam();
+  const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
+
+  // Fetch branding settings for watermark
+  useEffect(() => {
+    if (currentTeam?.id) {
+      getTeamBranding(currentTeam.id)
+        .then((branding) => {
+          // For free plans, always enable watermark
+          const canCustomize = branding.can_customize;
+          setWatermarkSettings({
+            enabled: canCustomize ? branding.watermark_enabled : true,
+            customLogoUrl: canCustomize ? branding.custom_logo_url : null,
+          });
+        })
+        .catch(() => {
+          // Default to watermark enabled if fetch fails
+          setWatermarkSettings({ enabled: true, customLogoUrl: null });
+        });
+    }
+  }, [currentTeam?.id]);
+
+  const handleSaveChart = async () => {
+    if (!chartData || !isAuthenticated) return;
+
+    setIsSaving(true);
+    try {
+      const result = await createChartWithTeam({
+        title: chartConfig.title || 'Untitled Chart',
+        data: {
+          labels: chartData.labels,
+          series: chartData.series,
+          suggestedType: chartData.suggestedType,
+        },
+        config: chartConfig,
+        source_type: chartData.sourceType || 'paste',
+        is_public: false,
+        team_id: currentTeam?.id,
+      });
+      toast.success('Chart saved to your profile');
+      navigate(`/chart/${result.id}`);
+    } catch (err) {
+      console.error('Failed to save chart:', err);
+      toast.error('Failed to save chart');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateNew = () => {
+    navigate('/new');
+  };
 
   // If we have an ID in the URL, fetch the chart
   useEffect(() => {
@@ -110,40 +171,61 @@ export function ChartView() {
   }
 
   return (
-    <>
-      <motion.div
-        key="chart"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
-        className="chart-view"
-      >
-        <div className="chart-workspace" ref={chartRef}>
-          <div className="chart-column">
-            {chartData.aiSummary && (
-              <div className="chart-ai-summary">
-                <span className="chart-ai-label">AI Insight</span>
-                <p className="chart-ai-text">{chartData.aiSummary}</p>
-              </div>
-            )}
-            <ChartPreview data={chartData} config={chartConfig} />
-          </div>
-          <div className="chart-sidebar">
-            <ChartControls
-              config={chartConfig}
-              onChange={setChartConfig}
-              data={chartData}
-            />
-          </div>
+    <motion.div
+      key="chart"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="chart-view"
+    >
+      {/* Chart toolbar with actions */}
+      <div className="chart-toolbar">
+        <div className="chart-toolbar-left">
+          <Button variant="default" size="sm" onClick={handleCreateNew}>
+            <Plus size={16} />
+            New Chart
+          </Button>
         </div>
-      </motion.div>
-      <ChatPanel
-        data={chartData}
-        config={chartConfig}
-        onDataChange={setChartData}
-        onConfigChange={setChartConfig}
-      />
-    </>
+        <div className="chart-toolbar-right">
+          <ExportMenu
+            data={chartData}
+            chartRef={chartRef}
+            title={chartConfig.title}
+            watermark={watermarkSettings}
+          />
+          {isAuthenticated && !id && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSaveChart}
+              disabled={isSaving}
+            >
+              <Save size={16} />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="chart-workspace" ref={chartRef}>
+        <div className="chart-column">
+          {chartData.aiSummary && (
+            <div className="chart-ai-summary">
+              <span className="chart-ai-label">AI Insight</span>
+              <p className="chart-ai-text">{chartData.aiSummary}</p>
+            </div>
+          )}
+          <ChartPreview data={chartData} config={chartConfig} />
+        </div>
+        <div className="chart-sidebar">
+          <ChartControls
+            config={chartConfig}
+            onChange={setChartConfig}
+            data={chartData}
+          />
+        </div>
+      </div>
+    </motion.div>
   );
 }

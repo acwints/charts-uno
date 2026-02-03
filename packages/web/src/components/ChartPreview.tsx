@@ -489,14 +489,6 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
 
   const previewClassName = `chart-preview ${styleConfig.decorations.useGlow ? 'chart-preview--glow' : ''} ${styleConfig.decorations.useShadows ? 'chart-preview--shadow' : ''}`;
 
-  const themeStyles = {
-    '--chart-bg': theme.background,
-    '--chart-card-bg': theme.cardBackground,
-    '--chart-text': theme.text,
-    '--chart-text-muted': theme.textMuted,
-    '--chart-border': theme.border,
-  } as React.CSSProperties;
-
   return (
     <motion.div
       className={previewClassName}
@@ -504,33 +496,33 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
       data-style-variant={config.styleVariant}
-      style={themeStyles}
+      style={{ background: theme.background, borderColor: theme.border }}
     >
-      <div className="chart-header">
+      <div className="chart-header" style={{ background: theme.cardBackground, borderColor: theme.border }}>
         <div className="chart-header-top">
           {config.title ? (
-            <h2 className="chart-title">{config.title}</h2>
+            <h2 className="chart-title" style={{ color: theme.text }}>{config.title}</h2>
           ) : (
-            <h2 className="chart-title-placeholder">Your Chart</h2>
+            <h2 className="chart-title-placeholder" style={{ color: theme.textMuted }}>Your Chart</h2>
           )}
         </div>
         <div className="chart-meta">
           <span className="chart-meta-item">
-            <span className="meta-label">Source:</span>
-            <span className="meta-value">{data.sourceType.toUpperCase()}</span>
+            <span className="meta-label" style={{ color: theme.textMuted }}>Source:</span>
+            <span className="meta-value" style={{ color: theme.text }}>{data.sourceType.toUpperCase()}</span>
           </span>
           <span className="chart-meta-item">
-            <span className="meta-label">Points:</span>
-            <span className="meta-value">{data.labels.length}</span>
+            <span className="meta-label" style={{ color: theme.textMuted }}>Points:</span>
+            <span className="meta-value" style={{ color: theme.text }}>{data.labels.length}</span>
           </span>
           <span className="chart-meta-item">
-            <span className="meta-label">Series:</span>
-            <span className="meta-value">{data.series.length}</span>
+            <span className="meta-label" style={{ color: theme.textMuted }}>Series:</span>
+            <span className="meta-value" style={{ color: theme.text }}>{data.series.length}</span>
           </span>
         </div>
       </div>
 
-      <div className="chart-container chart-container--no-scroll">
+      <div className="chart-container chart-container--no-scroll" style={{ background: theme.background }}>
         {config.type === 'infographic' ? (
           renderInfographic()
         ) : (
