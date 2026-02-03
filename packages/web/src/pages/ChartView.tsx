@@ -22,7 +22,7 @@ export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
+  const { chartData, chartConfig, setChartData, setChartConfig, setInfographicSvg } = useChartStore();
   const { isAuthenticated } = useAuth();
   const { currentTeam } = useTeam();
   const toast = useToast();
@@ -34,6 +34,7 @@ export function ChartView() {
   const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
   const [originalData, setOriginalData] = useState<ChartData | null>(null);
   const initTokenRef = useRef<string | null>(null);
+  const justSavedIdRef = useRef<string | null>(null);
 
   // Fetch branding settings for watermark
   useEffect(() => {
@@ -78,7 +79,8 @@ export function ChartView() {
         team_id: currentTeam?.id,
       });
       toast.success('Chart saved to your profile');
-      navigate(`/chart/${result.id}`);
+      justSavedIdRef.current = result.id;
+      navigate(`/chart/${result.id}`, { replace: true });
       return result.id;
     } catch (err) {
       console.error('Failed to save chart:', err);
@@ -97,9 +99,14 @@ export function ChartView() {
     navigate('/new');
   };
 
-  // If we have an ID in the URL, fetch the chart
+  // If we have an ID in the URL, fetch the chart (skip if we just saved it)
   useEffect(() => {
     if (id) {
+      if (justSavedIdRef.current === id) {
+        justSavedIdRef.current = null;
+        return;
+      }
+      setInfographicSvg(null);
       setIsLoading(true);
       setError(null);
       getChart(id)

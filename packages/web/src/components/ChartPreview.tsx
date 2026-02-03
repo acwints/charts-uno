@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
   ResponsiveContainer,
@@ -28,6 +28,7 @@ import { RefreshCw, ExternalLink } from 'lucide-react';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
+import { useChartStore } from '../stores/chartStore';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './ChartPreview.css';
@@ -49,17 +50,11 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const gradients = COLOR_GRADIENTS[config.colorScheme];
   const styleConfig = STYLE_VARIANTS[config.styleVariant];
 
-  const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
+  const { infographicSvg, setInfographicSvg } = useChartStore();
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
-      generateInfographicSvg();
-    }
-  }, [config.type]);
-
-  const generateInfographicSvg = async () => {
+  const generateInfographicSvg = useCallback(async () => {
     setInfographicLoading(true);
     setInfographicError(null);
     try {
@@ -76,11 +71,16 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     } finally {
       setInfographicLoading(false);
     }
-  };
+  }, [data, config.title, config.colorScheme, config.themeMode, setInfographicSvg]);
+
+  useEffect(() => {
+    if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
+      generateInfographicSvg();
+    }
+  }, [config.type, infographicSvg, infographicLoading, generateInfographicSvg]);
 
   const regenerateInfographic = () => {
     setInfographicSvg(null);
-    generateInfographicSvg();
   };
 
   // Check if all labels can be parsed as numbers
