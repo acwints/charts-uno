@@ -9,8 +9,6 @@ interface ShareMenuProps {
   chartRef: React.RefObject<HTMLElement | null>;
   title?: string;
   watermark?: WatermarkSettings;
-  shareUrl?: string | null;
-  onRequestShareUrl?: () => Promise<string | null>;
   isAuthenticated?: boolean;
 }
 
@@ -18,14 +16,12 @@ export function ShareMenu({
   chartRef,
   title,
   watermark,
-  shareUrl,
-  onRequestShareUrl,
   isAuthenticated = false,
 }: ShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedImage, setCopiedImage] = useState(false);
   const [copying, setCopying] = useState(false);
-  const [resolvingShare, setResolvingShare] = useState(false);
+  const [pasteHint, setPasteHint] = useState<'twitter' | 'linkedin' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,31 +53,35 @@ export function ShareMenu({
     }
   };
 
-  const isShareDisabled = copying || resolvingShare || !isAuthenticated;
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const pasteShortcut = isMac ? '⌘V' : 'Ctrl+V';
 
-  const ensureShareUrl = async () => {
-    if (shareUrl) return shareUrl;
-    if (!onRequestShareUrl) return null;
-    setResolvingShare(true);
+  const handleSocialShare = async (platform: 'twitter' | 'linkedin') => {
+    if (!chartRef.current) return;
+    setCopying(true);
     try {
-      return await onRequestShareUrl();
+      // Copy chart image to clipboard first
+      await copyImageToClipboard(chartRef.current, watermark);
+
+      // Open the compose window
+      const text = title ? `Check out "${title}"` : 'Check out this chart';
+      const encodedText = encodeURIComponent(text);
+      const composeUrl =
+        platform === 'twitter'
+          ? `https://twitter.com/intent/tweet?text=${encodedText}`
+          : `https://www.linkedin.com/feed/?shareActive=true`;
+      window.open(composeUrl, '_blank', 'noopener,noreferrer');
+
+      // Show paste hint
+      setPasteHint(platform);
+      setTimeout(() => setPasteHint(null), 4000);
     } finally {
-      setResolvingShare(false);
+      setCopying(false);
+      setIsOpen(false);
     }
   };
 
-  const handleSocialShare = async (platform: 'twitter' | 'linkedin') => {
-    const resolvedUrl = await ensureShareUrl();
-    if (!resolvedUrl) return;
-    const encodedUrl = encodeURIComponent(resolvedUrl);
-    const encodedText = encodeURIComponent(title ? `Check out "${title}"` : 'Check out this chart');
-    const targetUrl =
-      platform === 'twitter'
-        ? `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`
-        : `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    setIsOpen(false);
-  };
+  const isShareDisabled = copying || !isAuthenticated;
 
   return (
     <div className="share-menu" ref={menuRef}>
@@ -95,6 +95,21 @@ export function ShareMenu({
         <Share2 size={16} />
         <span>Share</span>
       </Button>
+
+      <AnimatePresence>
+        {pasteHint && (
+          <motion.div
+            className="share-paste-hint"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+          >
+            <Check size={14} className="paste-hint-icon" />
+            <span>Image copied — paste into your {pasteHint === 'twitter' ? 'tweet' : 'post'} with {pasteShortcut}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isOpen && (
@@ -112,7 +127,7 @@ export function ShareMenu({
             >
               {copiedImage ? <Check size={16} className="copied-icon" /> : <Clipboard size={16} />}
               <span>{copiedImage ? 'Copied Image!' : 'Copy Image'}</span>
-              {(copying || resolvingShare) && <span className="share-loading">...</span>}
+              {copying && <span className="share-loading">...</span>}
             </button>
 
             <div className="share-divider" />
@@ -120,19 +135,19 @@ export function ShareMenu({
             <button
               className="share-option"
               onClick={() => handleSocialShare('twitter')}
-              disabled={resolvingShare}
+              disabled={isShareDisabled}
             >
               <ExternalLink size={16} />
-              <span>{resolvingShare ? 'Preparing share...' : 'Post on Twitter'}</span>
+              <span>{copying ? 'Copying image...' : 'Post on X / Twitter'}</span>
             </button>
 
             <button
               className="share-option"
               onClick={() => handleSocialShare('linkedin')}
-              disabled={resolvingShare}
+              disabled={isShareDisabled}
             >
               <ExternalLink size={16} />
-              <span>{resolvingShare ? 'Preparing share...' : 'Post on LinkedIn'}</span>
+              <span>{copying ? 'Copying image...' : 'Post on LinkedIn'}</span>
             </button>
           </motion.div>
         )}

@@ -139,7 +139,6 @@ export function ChartView() {
   }, [id, chartData, navigate]);
 
   const isImageSource = chartData?.sourceType === 'image';
-  const shareUrl = id && typeof window !== 'undefined' ? `${window.location.origin}/chart/${id}` : null;
 
   useEffect(() => {
     if (!chartData) {
@@ -263,8 +262,6 @@ export function ChartView() {
                 chartRef={chartRef}
                 title={chartConfig.title}
                 watermark={watermarkSettings}
-                shareUrl={shareUrl}
-                onRequestShareUrl={saveChart}
                 isAuthenticated={isAuthenticated}
               />
             </>
