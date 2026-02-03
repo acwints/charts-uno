@@ -12,9 +12,47 @@
 
 /* Full-width title row */
 .controls-top-row {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   width: 100%;
   padding: var(--space-3) var(--space-3) 0 var(--space-3);
+}
+
+.control-source-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  transition: border-color var(--transition-fast);
+}
+
+.control-source-link:focus-within {
+  border-color: var(--accent);
+}
+
+.source-link-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.control-input-source {
+  flex: 1;
+  padding: var(--space-1) 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.control-input-source::placeholder {
+  color: var(--text-muted);
+  font-family: var(--font-body);
 }
 
 .control-input-title {

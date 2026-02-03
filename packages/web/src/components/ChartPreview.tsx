@@ -24,7 +24,7 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ExternalLink } from 'lucide-react';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
@@ -590,6 +590,25 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
           </ResponsiveContainer>
         )}
       </div>
+
+      {config.sourceLink && (
+        <div className="chart-source" style={{ borderColor: theme.border }}>
+          <a
+            href={config.sourceLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="chart-source-link"
+            style={{ color: theme.textMuted }}
+          >
+            <span className="chart-source-label">Source:</span>
+            <span className="chart-source-domain">{(() => {
+              try { return new URL(config.sourceLink).hostname.replace(/^www\./, ''); }
+              catch { return config.sourceLink; }
+            })()}</span>
+            <ExternalLink size={10} />
+          </a>
+        </div>
+      )}
 
       {config.type !== 'infographic' && config.type !== 'table' && (
         <div className="chart-color-bar">

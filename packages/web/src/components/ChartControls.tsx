@@ -10,6 +10,7 @@ import {
   Grid,
   Hash,
   Sparkles,
+  ExternalLink,
   Briefcase,
   Smile,
   Newspaper,
@@ -62,7 +63,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
-      {/* Full-width title */}
+      {/* Full-width title + source link */}
       <div className="controls-top-row">
         <input
           type="text"
@@ -71,6 +72,17 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
           value={config.title}
           onChange={(e) => updateConfig({ title: e.target.value })}
         />
+        <div className="control-source-link">
+          <ExternalLink size={14} className="source-link-icon" />
+          <input
+            type="url"
+            className="control-input-source"
+            placeholder="Source URL (optional)"
+            value={config.sourceLink ?? ''}
+            onChange={(e) => updateConfig({ sourceLink: e.target.value || undefined })}
+            spellCheck={false}
+          />
+        </div>
       </div>
 
       {/* Full-width chart type */}

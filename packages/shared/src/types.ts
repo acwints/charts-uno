@@ -63,6 +63,7 @@ export interface ChartConfig {
   animate: boolean;
   title: string;
   stacked: boolean;
+  sourceLink?: string;
   // Custom color overrides - when set, these take precedence
   customColors?: CustomColors;
 }
