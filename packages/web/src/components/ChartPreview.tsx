@@ -24,7 +24,7 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, BarChart3, Table2 } from 'lucide-react';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
@@ -49,6 +49,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   const gradients = COLOR_GRADIENTS[config.colorScheme];
   const styleConfig = STYLE_VARIANTS[config.styleVariant];
 
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
@@ -531,6 +532,28 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
           ) : (
             <h2 className="chart-title-placeholder" style={{ color: theme.textMuted }}>Your Chart</h2>
           )}
+          {config.type !== 'infographic' && (
+            <div className="view-toggle">
+              <button
+                className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+                onClick={() => setViewMode('chart')}
+                aria-label="Chart view"
+                aria-pressed={viewMode === 'chart'}
+              >
+                <BarChart3 size={14} />
+                Chart
+              </button>
+              <button
+                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                aria-label="Table view"
+                aria-pressed={viewMode === 'table'}
+              >
+                <Table2 size={14} />
+                Data
+              </button>
+            </div>
+          )}
         </div>
         <div className="chart-meta">
           <span className="chart-meta-item">
@@ -548,8 +571,39 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         </div>
       </div>
 
-      <div className="chart-container chart-container--no-scroll" style={{ background: theme.background }}>
-        {config.type === 'infographic' ? (
+      <div
+        className={`chart-container ${viewMode === 'table' ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
+        style={{ background: theme.background }}
+      >
+        {viewMode === 'table' ? (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="table-header-cell sticky-col" style={{ color: theme.textMuted, background: theme.cardBackground }}>{data.xAxisLabel || 'Label'}</th>
+                  {data.series.map((series, idx) => (
+                    <th key={series.name} className="table-header-cell" style={{ color: theme.textMuted, background: theme.cardBackground }}>
+                      <span className="series-indicator" style={{ display: 'inline-block', background: colors[idx % colors.length] }} />
+                      {' '}{series.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.labels.map((label, rowIdx) => (
+                  <tr key={label}>
+                    <td className="table-cell sticky-col" style={{ color: theme.text, background: theme.background, fontWeight: 500 }}>{label}</td>
+                    {data.series.map((series) => (
+                      <td key={series.name} className="table-cell" style={{ color: theme.textMuted, borderColor: theme.border }}>
+                        {typeof series.data[rowIdx] === 'number' ? series.data[rowIdx].toLocaleString() : series.data[rowIdx]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : config.type === 'infographic' ? (
           renderInfographic()
         ) : (
           <ResponsiveContainer width="100%" height="100%">

@@ -84,8 +84,17 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 # Environment configuration
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-ALLOWED_FRONTEND_DOMAINS = os.environ.get("ALLOWED_FRONTEND_DOMAINS", "").split(",")
+DEFAULT_PROD_FRONTEND = "https://epic-charts.vercel.app"
+DEFAULT_DEV_FRONTEND = "http://localhost:5173"
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    DEFAULT_PROD_FRONTEND if IS_PRODUCTION else DEFAULT_DEV_FRONTEND,
+)
+ALLOWED_FRONTEND_DOMAINS = [
+    d.strip()
+    for d in os.environ.get("ALLOWED_FRONTEND_DOMAINS", "").split(",")
+    if d.strip()
+]
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:8080/auth/callback")
@@ -104,7 +113,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS configuration
 allowed_origins = [FRONTEND_URL]
 if ALLOWED_FRONTEND_DOMAINS:
-    allowed_origins.extend([d.strip() for d in ALLOWED_FRONTEND_DOMAINS if d.strip()])
+    allowed_origins.extend(ALLOWED_FRONTEND_DOMAINS)
+
+# Ensure production defaults are allowed even if env vars are missing
+if IS_PRODUCTION:
+    for origin in (DEFAULT_PROD_FRONTEND, "https://www.epic-charts.vercel.app"):
+        if origin not in allowed_origins:
+            allowed_origins.append(origin)
 
 # Add common development origins
 if not IS_PRODUCTION:
