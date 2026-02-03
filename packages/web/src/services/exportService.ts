@@ -130,6 +130,42 @@ export async function exportToPNG(
   document.body.removeChild(link);
 }
 
+export async function copyImageToClipboard(
+  element: HTMLElement,
+  watermark?: WatermarkSettings
+): Promise<void> {
+  const canvas = await html2canvas(element, {
+    backgroundColor: null,
+    scale: 2,
+    logging: false,
+    useCORS: true,
+  });
+
+  if (watermark?.enabled !== false) {
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      if (watermark?.customLogoUrl) {
+        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width, canvas.height);
+      } else {
+        drawTextWatermark(ctx, canvas.width, canvas.height);
+      }
+    }
+  }
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(createdBlob => {
+      if (createdBlob) {
+        resolve(createdBlob);
+      } else {
+        reject(new Error('Failed to create PNG blob.'));
+      }
+    }, 'image/png');
+  });
+
+  const clipboardItem = new ClipboardItem({ 'image/png': blob });
+  await navigator.clipboard.write([clipboardItem]);
+}
+
 export async function copyToClipboard(data: ChartData): Promise<void> {
   // Build tab-separated values for Excel/Sheets paste
   const headers = ['', ...data.labels].join('\t');

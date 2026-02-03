@@ -29,37 +29,37 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [isAuthenticated, closeAuthModal]);
 
   return (
-    <div className="app-wrapper">
-      <div className="app">
-        <Header
-          onAuthOpen={openAuthModal}
-          showFeedButton={!isFeedPage && !isSettingsPage}
-        />
+    <div className="app">
+      <Header
+        onAuthOpen={openAuthModal}
+        showFeedButton={!isFeedPage && !isSettingsPage}
+      />
 
+      <div className="app-body">
         <main className="main">
           <AnimatePresence mode="wait">
             {children || <Outlet context={{ openAuthModal }} />}
           </AnimatePresence>
         </main>
 
-        <footer className="footer">
-          <div className="footer-content">
-            <span className="footer-brand">Epic Charts</span>
-            <span className="footer-divider">•</span>
-            <span className="footer-tagline">Data visualization, elevated</span>
-          </div>
-        </footer>
+        {/* ChatPanel as sidebar - only show on chart pages with data */}
+        {isChartPage && chartData && (
+          <ChatPanel
+            data={chartData}
+            config={chartConfig}
+            onDataChange={setChartData}
+            onConfigChange={setChartConfig}
+          />
+        )}
       </div>
 
-      {/* ChatPanel as sidebar - only show on chart pages with data */}
-      {isChartPage && chartData && (
-        <ChatPanel
-          data={chartData}
-          config={chartConfig}
-          onDataChange={setChartData}
-          onConfigChange={setChartConfig}
-        />
-      )}
+      <footer className="footer">
+        <div className="footer-content">
+          <span className="footer-brand">Epic Charts</span>
+          <span className="footer-divider">•</span>
+          <span className="footer-tagline">Data visualization, elevated</span>
+        </div>
+      </footer>
 
       <AuthModal isOpen={!isAuthenticated && isAuthModalOpen} onClose={closeAuthModal} />
     </div>

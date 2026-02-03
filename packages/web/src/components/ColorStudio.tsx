@@ -28,6 +28,20 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
 
   const update = (u: Partial<ChartConfig>) => onChange({ ...config, ...u });
 
+  const updateTheme = (scheme: ColorScheme) => {
+    if (!config.customColors?.seriesColors) {
+      update({ colorScheme: scheme });
+      return;
+    }
+
+    const nextCustom = { ...config.customColors };
+    delete nextCustom.seriesColors;
+    update({
+      colorScheme: scheme,
+      customColors: Object.keys(nextCustom).length > 0 ? nextCustom : undefined,
+    });
+  };
+
   const setCustom = (u: Partial<CustomColors>) => {
     const merged = { ...config.customColors, ...u };
     update({ customColors: merged });
@@ -50,7 +64,7 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
       {/* ── Section 1: Theme ── */}
       <div className="cstudio-section">
         <div className="cstudio-section-head">
-          <span className="cstudio-section-label">Theme</span>
+          <span className="section-label">Theme</span>
           <div className="cstudio-mode">
             <button
               className={`cstudio-mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
@@ -77,7 +91,7 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
             <button
               key={s.id}
               className={`cstudio-scheme ${config.colorScheme === s.id ? 'active' : ''}`}
-              onClick={() => update({ colorScheme: s.id })}
+              onClick={() => updateTheme(s.id)}
               aria-label={`${s.label} color scheme`}
               aria-pressed={config.colorScheme === s.id}
             >
@@ -92,47 +106,14 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
         </div>
       </div>
 
-      {/* ── Section 2: Data Palette ── */}
-      <div className="cstudio-section">
-        <span className="cstudio-section-label">Data Palette</span>
-        <div className="cstudio-series">
-          {seriesNames.slice(0, 8).map((name, i) => (
-            <label key={i} className="cstudio-swatch" title={name}>
-              <input
-                type="color"
-                value={palette[i % palette.length]}
-                onChange={(e) => setSeriesColor(i, e.target.value)}
-                className="cstudio-color-input"
-              />
-              <span className="cstudio-swatch-name">{name}</span>
-            </label>
-          ))}
-        </div>
-        <div className="cstudio-presets">
-          {PRESET_PALETTES.map((p) => (
-            <button
-              key={p.id}
-              className="cstudio-preset"
-              onClick={() => applyPreset(p.colors)}
-              title={p.name}
-              aria-label={`Apply ${p.name} palette`}
-            >
-              {p.colors.slice(0, 5).map((c, i) => (
-                <span key={i} className="cstudio-preset-dot" style={{ background: c }} />
-              ))}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section 3: Customize ── */}
+      {/* ── Section 2: Customize ── */}
       <div className="cstudio-section">
         <button
           className="cstudio-section-head cstudio-section-toggle"
           onClick={() => setShowCustom(!showCustom)}
           aria-expanded={showCustom}
         >
-          <span className="cstudio-section-label">Customize</span>
+        <span className="section-label">Customize</span>
           <div className="cstudio-section-right">
             {hasCustomColors && (
               <button
@@ -148,26 +129,56 @@ export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps)
         </button>
         {showCustom && (
           <div className="cstudio-custom">
-            <ColorField
-              label="BG"
-              value={config.customColors?.background || theme.background}
-              onChange={(v) => setCustom({ background: v })}
-            />
-            <ColorField
-              label="Card"
-              value={config.customColors?.cardBackground || theme.cardBackground}
-              onChange={(v) => setCustom({ cardBackground: v })}
-            />
-            <ColorField
-              label="Text"
-              value={config.customColors?.text || theme.text}
-              onChange={(v) => setCustom({ text: v })}
-            />
-            <ColorField
-              label="Grid"
-              value={config.customColors?.grid || theme.grid}
-              onChange={(v) => setCustom({ grid: v })}
-            />
+            <div className="cstudio-series">
+              {seriesNames.slice(0, 8).map((name, i) => (
+                <label key={i} className="cstudio-swatch" title={name}>
+                  <input
+                    type="color"
+                    value={palette[i % palette.length]}
+                    onChange={(e) => setSeriesColor(i, e.target.value)}
+                    className="cstudio-color-input"
+                  />
+                  <span className="cstudio-swatch-name">{name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="cstudio-presets">
+              {PRESET_PALETTES.map((p) => (
+                <button
+                  key={p.id}
+                  className="cstudio-preset"
+                  onClick={() => applyPreset(p.colors)}
+                  title={p.name}
+                  aria-label={`Apply ${p.name} palette`}
+                >
+                  {p.colors.slice(0, 5).map((c, i) => (
+                    <span key={i} className="cstudio-preset-dot" style={{ background: c }} />
+                  ))}
+                </button>
+              ))}
+            </div>
+            <div className="cstudio-custom-fields">
+              <ColorField
+                label="BG"
+                value={config.customColors?.background || theme.background}
+                onChange={(v) => setCustom({ background: v })}
+              />
+              <ColorField
+                label="Card"
+                value={config.customColors?.cardBackground || theme.cardBackground}
+                onChange={(v) => setCustom({ cardBackground: v })}
+              />
+              <ColorField
+                label="Text"
+                value={config.customColors?.text || theme.text}
+                onChange={(v) => setCustom({ text: v })}
+              />
+              <ColorField
+                label="Grid"
+                value={config.customColors?.grid || theme.grid}
+                onChange={(v) => setCustom({ grid: v })}
+              />
+            </div>
           </div>
         )}
       </div>

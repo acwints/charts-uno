@@ -105,7 +105,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       {/* Two-column grid for remaining controls */}
       <div className="controls-grid">
         <div className="control-section">
-          <label className="control-label">
+          <label className="control-label section-label">
             <Paintbrush size={14} />
             <span>Style Variant</span>
           </label>
@@ -128,7 +128,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         </div>
 
         <div className="control-section">
-          <label className="control-label">
+          <label className="control-label section-label">
             <Grid size={14} />
             <span>Display Options</span>
           </label>
@@ -176,7 +176,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         </div>
 
         <div className="control-section data-summary full-width">
-          <label className="control-label">
+          <label className="control-label section-label">
             <Hash size={14} />
             <span>Data Summary</span>
           </label>

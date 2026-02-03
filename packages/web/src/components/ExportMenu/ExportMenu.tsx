@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, FileSpreadsheet, Image, Copy, Check } from 'lucide-react';
-import { exportToCSV, exportToPNG, copyToClipboard, type WatermarkSettings } from '../../services/exportService';
+import { Download, FileSpreadsheet, Image, Copy, Check, ClipboardImage } from 'lucide-react';
+import {
+  exportToCSV,
+  exportToPNG,
+  copyToClipboard,
+  copyImageToClipboard,
+  type WatermarkSettings,
+} from '../../services/exportService';
 import { Button } from '../Button';
 import type { ChartData } from '../../types';
 import './ExportMenu.css';
@@ -16,6 +22,7 @@ interface ExportMenuProps {
 export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +77,19 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
     }
   };
 
+  const handleCopyImage = async () => {
+    if (!chartRef.current) return;
+    setExporting('copy-image');
+    try {
+      await copyImageToClipboard(chartRef.current, watermark);
+      setCopiedImage(true);
+      setTimeout(() => setCopiedImage(false), 2000);
+    } finally {
+      setExporting(null);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className="export-menu" ref={menuRef}>
       <Button
@@ -111,6 +131,16 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
             </button>
 
             <div className="export-divider" />
+
+            <button
+              className="export-option"
+              onClick={handleCopyImage}
+              disabled={exporting !== null}
+            >
+              {copiedImage ? <Check size={16} className="copied-icon" /> : <ClipboardImage size={16} />}
+              <span>{copiedImage ? 'Copied Image!' : 'Copy Image to Clipboard'}</span>
+              {exporting === 'copy-image' && <span className="export-loading">...</span>}
+            </button>
 
             <button
               className="export-option"

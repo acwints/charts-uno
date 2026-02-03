@@ -61,7 +61,7 @@ export function ChartStylePicker({ data, config, onStyleSelect }: ChartStylePick
       transition={{ duration: 0.3 }}
     >
       <div className="style-picker-header">
-        <span className="style-picker-label">CHART STYLE</span>
+        <span className="section-label">Chart Style</span>
       </div>
       <div className="style-cards">
         {styleOptions.map((option, index) => (

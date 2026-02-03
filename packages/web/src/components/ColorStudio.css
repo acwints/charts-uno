@@ -20,15 +20,6 @@
   padding: 6px 10px;
 }
 
-.cstudio-section-label {
-  font-family: var(--font-body);
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 /* Toggle header for Customize */
 .cstudio-section-toggle {
   background: var(--bg-secondary);
@@ -37,7 +28,7 @@
   transition: color 150ms;
 }
 
-.cstudio-section-toggle:hover .cstudio-section-label {
+.cstudio-section-toggle:hover .section-label {
   color: var(--text-secondary);
 }
 
@@ -249,6 +240,13 @@
 
 /* ── Custom bg/text fields ── */
 .cstudio-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 6px;
+}
+
+.cstudio-custom-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;

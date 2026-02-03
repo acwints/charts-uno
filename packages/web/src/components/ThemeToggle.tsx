@@ -17,11 +17,11 @@ export function ThemeToggle() {
       <div className="theme-toggle-track">
         <motion.div
           className="theme-toggle-thumb"
-          animate={{ x: theme === 'dark' ? 0 : 22 }}
+          animate={{ x: theme === 'dark' ? 0 : 28 }}
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         />
-        <Sun className="theme-icon theme-icon--sun" size={12} />
-        <Moon className="theme-icon theme-icon--moon" size={12} />
+        <Sun className="theme-icon theme-icon--sun" size={13} />
+        <Moon className="theme-icon theme-icon--moon" size={13} />
       </div>
     </motion.button>
   );

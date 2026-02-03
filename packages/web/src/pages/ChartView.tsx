@@ -202,9 +202,11 @@ export function ChartView() {
             <Plus size={16} />
             New Chart
           </Button>
-          <div className="view-toggle">
+        </div>
+        <div className="chart-toolbar-center">
+          <div className="chart-view-toggle">
             <button
-              className={`view-toggle-btn ${editorView === 'chart' ? 'active' : ''}`}
+              className={`chart-view-toggle-btn ${editorView === 'chart' ? 'is-active' : ''}`}
               onClick={() => setEditorView('chart')}
               aria-label="Chart view"
               aria-pressed={editorView === 'chart'}
@@ -213,7 +215,7 @@ export function ChartView() {
               Chart
             </button>
             <button
-              className={`view-toggle-btn ${editorView === 'data' ? 'active' : ''}`}
+              className={`chart-view-toggle-btn ${editorView === 'data' ? 'is-active' : ''}`}
               onClick={() => setEditorView('data')}
               aria-label="Data editor view"
               aria-pressed={editorView === 'data'}
@@ -268,7 +270,7 @@ export function ChartView() {
           <div className="chart-column">
             {chartData.aiSummary && (
               <div className="chart-ai-summary">
-                <span className="chart-ai-label">AI Insight</span>
+                <span className="section-label chart-ai-label">AI Insight</span>
                 <p className="chart-ai-text">{chartData.aiSummary}</p>
               </div>
             )}
