@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, FileSpreadsheet, Image, Copy, Check, ClipboardImage } from 'lucide-react';
+import { Download, FileSpreadsheet, Image, Copy, Check, Clipboard } from 'lucide-react';
 import {
   exportToCSV,
   exportToPNG,
@@ -137,7 +137,7 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
               onClick={handleCopyImage}
               disabled={exporting !== null}
             >
-              {copiedImage ? <Check size={16} className="copied-icon" /> : <ClipboardImage size={16} />}
+              {copiedImage ? <Check size={16} className="copied-icon" /> : <Clipboard size={16} />}
               <span>{copiedImage ? 'Copied Image!' : 'Copy Image to Clipboard'}</span>
               {exporting === 'copy-image' && <span className="export-loading">...</span>}
             </button>
