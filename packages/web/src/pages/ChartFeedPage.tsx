@@ -30,6 +30,7 @@ export function ChartFeedPage() {
         showValues: chart.config.showValues ?? false,
         showBorder: (chart.config as Record<string, unknown>).showBorder as boolean ?? true,
         animate: chart.config.animate ?? true,
+        stacked: (chart.config as Record<string, unknown>).stacked as boolean ?? false,
         title: chart.config.title || chart.title || '',
       };
 

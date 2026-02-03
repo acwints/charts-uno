@@ -19,6 +19,7 @@ const defaultConfig: ChartConfig = {
   showValues: false,
   showBorder: true,
   animate: true,
+  stacked: false,
   title: '',
 };
 
