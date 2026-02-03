@@ -257,8 +257,40 @@ class Subscription(Base):
 
 
 def init_db():
-    """Initialize database tables"""
+    """Initialize database tables via Alembic migrations.
+
+    Falls back to create_all() for fresh databases (e.g. local SQLite dev),
+    then stamps the alembic version so future migrations are tracked.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Always run create_all first to handle truly fresh databases
+    # (creates tables that don't exist yet — harmless if they already exist)
     Base.metadata.create_all(bind=engine)
+
+    # Now run alembic migrations to apply any column additions / data migrations
+    # that create_all can't handle
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        alembic_ini = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'alembic.ini')
+        if os.path.exists(alembic_ini):
+            alembic_cfg = Config(alembic_ini)
+            # Override the script location to be absolute so it works from any cwd
+            alembic_dir = os.path.join(os.path.dirname(alembic_ini), 'alembic')
+            alembic_cfg.set_main_option('script_location', alembic_dir)
+            alembic_cfg.set_main_option('sqlalchemy.url', DATABASE_URL)
+
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Alembic migrations applied successfully")
+        else:
+            logger.warning("alembic.ini not found, skipping migrations")
+    except Exception as e:
+        logger.error(f"Alembic migration failed: {e}")
+        # Don't crash the app — create_all already set up the base schema
+        logger.info("Continuing with create_all schema (some features may be limited)")
 
 
 def get_db():
