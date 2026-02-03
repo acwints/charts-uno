@@ -15,7 +15,8 @@
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  padding: 0 6px;
+  padding: 0 8px;
+  gap: 8px;
   transition: background var(--transition-base), border-color var(--transition-base);
 }
 
@@ -42,12 +43,12 @@
 }
 
 .theme-icon--sun {
-  margin-left: auto;
+  margin-left: 0;
   color: var(--text-muted);
 }
 
 .theme-icon--moon {
-  margin-right: auto;
+  margin-right: 0;
   color: var(--text-primary);
 }
 
