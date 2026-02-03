@@ -1,15 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import {
-  Palette,
-  Sun,
-  Moon,
-  Pipette,
-  RotateCcw,
-  Sparkles,
-  ChevronDown,
-  Check,
-} from 'lucide-react';
+import { Sun, Moon, RotateCcw } from 'lucide-react';
 import type { ChartConfig, CustomColors, ColorScheme } from '../types';
 import { COLOR_PALETTES, PRESET_PALETTES, getTheme } from '../types';
 import './ColorStudio.css';
@@ -17,10 +7,10 @@ import './ColorStudio.css';
 interface ColorStudioProps {
   config: ChartConfig;
   onChange: (config: ChartConfig) => void;
-  seriesCount: number;
+  seriesNames: string[];
 }
 
-const COLOR_SCHEMES: { id: ColorScheme; label: string }[] = [
+const SCHEMES: { id: ColorScheme; label: string }[] = [
   { id: 'default', label: 'Default' },
   { id: 'cool', label: 'Cool' },
   { id: 'warm', label: 'Warm' },
@@ -29,358 +19,174 @@ const COLOR_SCHEMES: { id: ColorScheme; label: string }[] = [
   { id: 'muted', label: 'Muted' },
 ];
 
-export function ColorStudio({ config, onChange, seriesCount }: ColorStudioProps) {
-  const [expandedSection, setExpandedSection] = useState<string | null>('palette');
-  const [showPresets, setShowPresets] = useState(false);
+export function ColorStudio({ config, onChange, seriesNames }: ColorStudioProps) {
+  const [showCustom, setShowCustom] = useState(false);
 
   const theme = getTheme(config.colorScheme, config.themeMode);
-  const currentColors = config.customColors?.seriesColors || COLOR_PALETTES[config.colorScheme];
+  const palette = config.customColors?.seriesColors || COLOR_PALETTES[config.colorScheme];
+  const hasCustomColors = !!config.customColors && Object.keys(config.customColors).length > 0;
 
-  const updateConfig = (updates: Partial<ChartConfig>) => {
-    onChange({ ...config, ...updates });
+  const update = (u: Partial<ChartConfig>) => onChange({ ...config, ...u });
+
+  const setCustom = (u: Partial<CustomColors>) => {
+    const merged = { ...config.customColors, ...u };
+    update({ customColors: merged });
   };
 
-  const updateCustomColors = (updates: Partial<CustomColors>) => {
-    const newCustomColors = { ...config.customColors, ...updates };
-    // Clean up empty values
-    Object.keys(newCustomColors).forEach(key => {
-      if (newCustomColors[key as keyof CustomColors] === undefined) {
-        delete newCustomColors[key as keyof CustomColors];
-      }
-    });
-    updateConfig({ customColors: Object.keys(newCustomColors).length > 0 ? newCustomColors : undefined });
+  const setSeriesColor = (i: number, color: string) => {
+    const next = [...palette];
+    next[i] = color;
+    setCustom({ seriesColors: next });
   };
 
-  const updateSeriesColor = (index: number, color: string) => {
-    const newColors = [...currentColors];
-    newColors[index] = color;
-    updateCustomColors({ seriesColors: newColors });
-  };
+  const resetColors = () => update({ customColors: undefined });
 
-  const resetToDefaults = () => {
-    updateConfig({ customColors: undefined });
-  };
-
-  const applyPreset = (presetColors: string[]) => {
-    updateCustomColors({ seriesColors: presetColors.slice(0, seriesCount) });
-    setShowPresets(false);
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
+  const applyPreset = (colors: string[]) => {
+    setCustom({ seriesColors: colors.slice(0, Math.max(seriesNames.length, 4)) });
   };
 
   return (
-    <div className="color-studio">
-      {/* Theme Mode Toggle */}
-      <div className="studio-header">
-        <div className="studio-title">
-          <Sparkles size={14} />
-          <span>Color Studio</span>
-        </div>
-        <div className="theme-mode-toggle">
+    <div className="cstudio">
+      {/* ── Row 1: Theme mode ── */}
+      <div className="cstudio-mode">
+        <button
+          className={`cstudio-mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
+          onClick={() => update({ themeMode: 'light' })}
+          aria-label="Light theme"
+          aria-pressed={config.themeMode === 'light'}
+        >
+          <Sun size={13} />
+          Light
+        </button>
+        <button
+          className={`cstudio-mode-btn ${config.themeMode === 'dark' ? 'active' : ''}`}
+          onClick={() => update({ themeMode: 'dark' })}
+          aria-label="Dark theme"
+          aria-pressed={config.themeMode === 'dark'}
+        >
+          <Moon size={13} />
+          Dark
+        </button>
+      </div>
+
+      {/* ── Row 2: Color scheme pills ── */}
+      <div className="cstudio-schemes">
+        {SCHEMES.map((s) => (
           <button
-            className={`mode-btn ${config.themeMode === 'light' ? 'active' : ''}`}
-            onClick={() => updateConfig({ themeMode: 'light' })}
-            title="Light Mode"
+            key={s.id}
+            className={`cstudio-scheme ${config.colorScheme === s.id ? 'active' : ''}`}
+            onClick={() => update({ colorScheme: s.id })}
+            aria-label={`${s.label} color scheme`}
+            aria-pressed={config.colorScheme === s.id}
           >
-            <Sun size={14} />
+            <span className="cstudio-scheme-dots">
+              {COLOR_PALETTES[s.id].slice(0, 4).map((c, i) => (
+                <span key={i} className="cstudio-dot" style={{ background: c }} />
+              ))}
+            </span>
+            <span className="cstudio-scheme-label">{s.label}</span>
           </button>
+        ))}
+      </div>
+
+      {/* ── Row 3: Series colors (always visible) ── */}
+      <div className="cstudio-series">
+        {seriesNames.slice(0, 8).map((name, i) => (
+          <label key={i} className="cstudio-swatch" title={name}>
+            <input
+              type="color"
+              value={palette[i % palette.length]}
+              onChange={(e) => setSeriesColor(i, e.target.value)}
+              className="cstudio-color-input"
+            />
+            <span className="cstudio-swatch-name">{name}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* ── Row 4: Presets strip ── */}
+      <div className="cstudio-presets">
+        {PRESET_PALETTES.map((p) => (
           <button
-            className={`mode-btn ${config.themeMode === 'dark' ? 'active' : ''}`}
-            onClick={() => updateConfig({ themeMode: 'dark' })}
-            title="Dark Mode"
+            key={p.id}
+            className="cstudio-preset"
+            onClick={() => applyPreset(p.colors)}
+            title={p.name}
+            aria-label={`Apply ${p.name} palette`}
           >
-            <Moon size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Color Scheme Selection */}
-      <div className="studio-section">
-        <button
-          className="section-header"
-          onClick={() => toggleSection('scheme')}
-        >
-          <div className="section-title">
-            <Palette size={14} />
-            <span>Color Scheme</span>
-          </div>
-          <ChevronDown
-            size={14}
-            className={`section-chevron ${expandedSection === 'scheme' ? 'expanded' : ''}`}
-          />
-        </button>
-        <AnimatePresence>
-          {expandedSection === 'scheme' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="section-content"
-            >
-              <div className="scheme-grid">
-                {COLOR_SCHEMES.map((scheme) => (
-                  <button
-                    key={scheme.id}
-                    className={`scheme-btn ${config.colorScheme === scheme.id ? 'active' : ''}`}
-                    onClick={() => updateConfig({ colorScheme: scheme.id })}
-                  >
-                    <div className="scheme-preview">
-                      {COLOR_PALETTES[scheme.id].slice(0, 4).map((color, idx) => (
-                        <div
-                          key={idx}
-                          className="preview-dot"
-                          style={{ background: color }}
-                        />
-                      ))}
-                    </div>
-                    <span className="scheme-name">{scheme.label}</span>
-                    {config.colorScheme === scheme.id && (
-                      <Check size={12} className="scheme-check" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Series Colors */}
-      <div className="studio-section">
-        <button
-          className="section-header"
-          onClick={() => toggleSection('palette')}
-        >
-          <div className="section-title">
-            <Pipette size={14} />
-            <span>Data Colors</span>
-          </div>
-          <ChevronDown
-            size={14}
-            className={`section-chevron ${expandedSection === 'palette' ? 'expanded' : ''}`}
-          />
-        </button>
-        <AnimatePresence>
-          {expandedSection === 'palette' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="section-content"
-            >
-              {/* Quick Presets */}
-              <div className="presets-row">
-                <button
-                  className="presets-btn"
-                  onClick={() => setShowPresets(!showPresets)}
-                >
-                  <Sparkles size={12} />
-                  <span>Quick Presets</span>
-                  <ChevronDown
-                    size={12}
-                    className={showPresets ? 'rotated' : ''}
-                  />
-                </button>
-                <button
-                  className="reset-btn"
-                  onClick={resetToDefaults}
-                  title="Reset to defaults"
-                >
-                  <RotateCcw size={12} />
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {showPresets && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="presets-grid"
-                  >
-                    {PRESET_PALETTES.map((preset) => (
-                      <button
-                        key={preset.id}
-                        className="preset-btn"
-                        onClick={() => applyPreset(preset.colors)}
-                        title={preset.name}
-                      >
-                        <div className="preset-colors">
-                          {preset.colors.slice(0, 6).map((color, idx) => (
-                            <div
-                              key={idx}
-                              className="preset-dot"
-                              style={{ background: color }}
-                            />
-                          ))}
-                        </div>
-                        <span className="preset-name">{preset.name}</span>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Individual Color Pickers */}
-              <div className="color-pickers">
-                {currentColors.slice(0, Math.max(seriesCount, 4)).map((color, idx) => (
-                  <div key={idx} className="color-picker-item">
-                    <div className="picker-label">Series {idx + 1}</div>
-                    <div className="picker-controls">
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => updateSeriesColor(idx, e.target.value)}
-                        className="color-input"
-                      />
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => updateSeriesColor(idx, e.target.value)}
-                        className="hex-input"
-                        placeholder="#000000"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Background & Theme Colors */}
-      <div className="studio-section">
-        <button
-          className="section-header"
-          onClick={() => toggleSection('background')}
-        >
-          <div className="section-title">
-            <Sun size={14} />
-            <span>Background</span>
-          </div>
-          <ChevronDown
-            size={14}
-            className={`section-chevron ${expandedSection === 'background' ? 'expanded' : ''}`}
-          />
-        </button>
-        <AnimatePresence>
-          {expandedSection === 'background' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="section-content"
-            >
-              <div className="bg-color-grid">
-                <div className="bg-color-item">
-                  <span className="bg-label">Background</span>
-                  <div className="bg-controls">
-                    <input
-                      type="color"
-                      value={config.customColors?.background || theme.background}
-                      onChange={(e) => updateCustomColors({ background: e.target.value })}
-                      className="color-input"
-                    />
-                    <input
-                      type="text"
-                      value={config.customColors?.background || theme.background}
-                      onChange={(e) => updateCustomColors({ background: e.target.value })}
-                      className="hex-input"
-                    />
-                  </div>
-                </div>
-                <div className="bg-color-item">
-                  <span className="bg-label">Card</span>
-                  <div className="bg-controls">
-                    <input
-                      type="color"
-                      value={config.customColors?.cardBackground || theme.cardBackground}
-                      onChange={(e) => updateCustomColors({ cardBackground: e.target.value })}
-                      className="color-input"
-                    />
-                    <input
-                      type="text"
-                      value={config.customColors?.cardBackground || theme.cardBackground}
-                      onChange={(e) => updateCustomColors({ cardBackground: e.target.value })}
-                      className="hex-input"
-                    />
-                  </div>
-                </div>
-                <div className="bg-color-item">
-                  <span className="bg-label">Text</span>
-                  <div className="bg-controls">
-                    <input
-                      type="color"
-                      value={config.customColors?.text || theme.text}
-                      onChange={(e) => updateCustomColors({ text: e.target.value })}
-                      className="color-input"
-                    />
-                    <input
-                      type="text"
-                      value={config.customColors?.text || theme.text}
-                      onChange={(e) => updateCustomColors({ text: e.target.value })}
-                      className="hex-input"
-                    />
-                  </div>
-                </div>
-                <div className="bg-color-item">
-                  <span className="bg-label">Grid</span>
-                  <div className="bg-controls">
-                    <input
-                      type="color"
-                      value={config.customColors?.grid || theme.grid}
-                      onChange={(e) => updateCustomColors({ grid: e.target.value })}
-                      className="color-input"
-                    />
-                    <input
-                      type="text"
-                      value={config.customColors?.grid || theme.grid}
-                      onChange={(e) => updateCustomColors({ grid: e.target.value })}
-                      className="hex-input"
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Live Preview Bar */}
-      <div className="studio-preview">
-        <div
-          className="preview-card"
-          style={{
-            background: config.customColors?.cardBackground || theme.cardBackground,
-            borderColor: config.customColors?.border || theme.border
-          }}
-        >
-          <div
-            className="preview-title"
-            style={{ color: config.customColors?.text || theme.text }}
-          >
-            Preview
-          </div>
-          <div className="preview-bars">
-            {currentColors.slice(0, seriesCount || 3).map((color, idx) => (
-              <div
-                key={idx}
-                className="preview-bar"
-                style={{
-                  background: color,
-                  height: `${40 + Math.random() * 40}%`
-                }}
-              />
+            {p.colors.slice(0, 5).map((c, i) => (
+              <span key={i} className="cstudio-preset-dot" style={{ background: c }} />
             ))}
-          </div>
-        </div>
+          </button>
+        ))}
       </div>
+
+      {/* ── Row 5: Customize bg/text toggle ── */}
+      <div className="cstudio-actions">
+        <button
+          className={`cstudio-customize-btn ${showCustom ? 'active' : ''}`}
+          onClick={() => setShowCustom(!showCustom)}
+        >
+          Customize Background & Text
+        </button>
+        {hasCustomColors && (
+          <button
+            className="cstudio-reset"
+            onClick={resetColors}
+            aria-label="Reset to defaults"
+          >
+            <RotateCcw size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* ── Row 6: Custom bg/text (shown on demand) ── */}
+      {showCustom && (
+        <div className="cstudio-custom">
+          <ColorField
+            label="BG"
+            value={config.customColors?.background || theme.background}
+            onChange={(v) => setCustom({ background: v })}
+          />
+          <ColorField
+            label="Card"
+            value={config.customColors?.cardBackground || theme.cardBackground}
+            onChange={(v) => setCustom({ cardBackground: v })}
+          />
+          <ColorField
+            label="Text"
+            value={config.customColors?.text || theme.text}
+            onChange={(v) => setCustom({ text: v })}
+          />
+          <ColorField
+            label="Grid"
+            value={config.customColors?.grid || theme.grid}
+            onChange={(v) => setCustom({ grid: v })}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Compact inline color field: [swatch] #hex */
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="cstudio-field">
+      <span className="cstudio-field-label">{label}</span>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cstudio-field-color"
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cstudio-field-hex"
+        spellCheck={false}
+      />
+    </label>
   );
 }

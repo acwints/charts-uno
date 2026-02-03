@@ -97,9 +97,11 @@ export function ChartView() {
           };
           setChartData(data);
           // Ensure themeMode has a default value for charts created before it was added
+          const rawConfig = chart.config as Record<string, unknown>;
           const configWithDefaults: ChartConfig = {
             ...chart.config as ChartConfig,
-            themeMode: (chart.config as Record<string, unknown>).themeMode as ChartConfig['themeMode'] || 'dark',
+            themeMode: rawConfig.themeMode as ChartConfig['themeMode'] || 'dark',
+            showBorder: rawConfig.showBorder as boolean ?? true,
           };
           setChartConfig(configWithDefaults);
         })

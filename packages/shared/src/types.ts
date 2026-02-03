@@ -58,6 +58,7 @@ export interface ChartConfig {
   showGrid: boolean;
   showLegend: boolean;
   showValues: boolean;
+  showBorder: boolean;
   animate: boolean;
   title: string;
   // Custom color overrides - when set, these take precedence
@@ -73,6 +74,7 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
   showGrid: true,
   showLegend: true,
   showValues: false,
+  showBorder: true,
   animate: true,
   title: '',
 };

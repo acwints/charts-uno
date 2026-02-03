@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3,
@@ -16,11 +15,9 @@ import {
   Minus,
   Paintbrush,
   Zap,
-  Palette,
-  ChevronRight,
 } from 'lucide-react';
 import type { ChartConfig, ChartType, StyleVariant, ChartData } from '../types';
-import { STYLE_VARIANTS, getTheme, getEffectiveColors } from '../types';
+import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
 import './ChartControls.css';
 
@@ -49,13 +46,10 @@ const STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: 
 ];
 
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
-  const [showColorStudio, setShowColorStudio] = useState(false);
-
   const updateConfig = (updates: Partial<ChartConfig>) => {
     onChange({ ...config, ...updates });
   };
 
-  const theme = getTheme(config.colorScheme, config.themeMode);
   const effectiveColors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
 
   return (
@@ -99,49 +93,12 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         )}
       </div>
 
-      {/* Color Studio Toggle Button */}
-      <div className="color-studio-toggle">
-        <button
-          className={`studio-toggle-btn ${showColorStudio ? 'active' : ''}`}
-          onClick={() => setShowColorStudio(!showColorStudio)}
-        >
-          <Palette size={16} />
-          <span>Color Studio</span>
-          <div className="studio-preview-dots">
-            {effectiveColors.slice(0, 4).map((color, idx) => (
-              <span
-                key={idx}
-                className="studio-dot"
-                style={{ background: color }}
-              />
-            ))}
-          </div>
-          <ChevronRight
-            size={14}
-            className={`studio-chevron ${showColorStudio ? 'expanded' : ''}`}
-          />
-        </button>
-        <div className="theme-badge" style={{ background: theme.background, color: theme.text }}>
-          {config.themeMode === 'light' ? 'Light' : 'Dark'}
-        </div>
-      </div>
-
-      {/* Color Studio Panel */}
-      {showColorStudio && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="color-studio-container"
-        >
-          <ColorStudio
-            config={config}
-            onChange={onChange}
-            seriesCount={data.series.length}
-          />
-        </motion.div>
-      )}
+      {/* Color Studio (always visible) */}
+      <ColorStudio
+        config={config}
+        onChange={onChange}
+        seriesNames={data.series.map(s => s.name)}
+      />
 
       {/* Two-column grid for remaining controls */}
       <div className="controls-grid">
@@ -207,11 +164,11 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             <label className="toggle-item">
               <input
                 type="checkbox"
-                checked={config.animate}
-                onChange={(e) => updateConfig({ animate: e.target.checked })}
+                checked={config.showBorder}
+                onChange={(e) => updateConfig({ showBorder: e.target.checked })}
               />
               <span className="toggle-switch" />
-              <span className="toggle-label">Animations</span>
+              <span className="toggle-label">Border</span>
             </label>
           </div>
         </div>

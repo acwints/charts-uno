@@ -24,10 +24,11 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
+import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './ChartPreview.css';
 
@@ -153,9 +154,18 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     if (infographicLoading) {
       return (
         <div className="infographic-loading">
-          <Sparkles size={48} className="sparkle-icon" />
-          <span className="loading-text">AI is creating your infographic...</span>
-          <span className="loading-hint">This may take a few seconds</span>
+          <AIProcessingIndicator
+            size="lg"
+            label="Creating your infographic..."
+            hint="This may take a few seconds"
+            statusMessages={[
+              'Designing layout...',
+              'Generating visual elements...',
+              'Applying color scheme...',
+              'Adding finishing touches...',
+              'Rendering final output...',
+            ]}
+          />
         </div>
       );
     }
@@ -504,9 +514,16 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       transition={{ duration: 0.4 }}
       data-style-variant={config.styleVariant}
       data-theme-mode={config.themeMode}
-      style={{ background: theme.background, borderColor: theme.border }}
+      style={{
+        background: theme.background,
+        borderColor: config.showBorder ? theme.border : 'transparent',
+        borderWidth: config.showBorder ? 1 : 0,
+      }}
     >
-      <div className="chart-header" style={{ background: theme.cardBackground, borderColor: theme.border }}>
+      <div className="chart-header" style={{
+        background: theme.cardBackground,
+        borderColor: config.showBorder ? theme.border : 'transparent',
+      }}>
         <div className="chart-header-top">
           {config.title ? (
             <h2 className="chart-title" style={{ color: theme.text }}>{config.title}</h2>

@@ -1,0 +1,257 @@
+.ai-processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+/* ─── Orbital spinner ─── */
+.ai-processing-orb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-processing--sm .ai-processing-orb { width: 56px; height: 56px; }
+.ai-processing--md .ai-processing-orb { width: 80px; height: 80px; }
+.ai-processing--lg .ai-processing-orb { width: 104px; height: 104px; }
+
+/* Rings */
+.orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.orb-ring--outer {
+  border-top-color: var(--accent);
+  border-right-color: rgba(59, 130, 246, 0.2);
+  animation: orb-spin 2.5s linear infinite;
+}
+
+.orb-ring--middle {
+  inset: 8px;
+  border-bottom-color: #8b5cf6;
+  border-left-color: rgba(139, 92, 246, 0.2);
+  animation: orb-spin-reverse 2s linear infinite;
+}
+
+.orb-ring--inner {
+  inset: 16px;
+  border-top-color: #06b6d4;
+  border-right-color: rgba(6, 182, 212, 0.15);
+  animation: orb-spin 1.5s linear infinite;
+}
+
+.ai-processing--sm .orb-ring--middle { inset: 6px; }
+.ai-processing--sm .orb-ring--inner  { inset: 12px; }
+.ai-processing--lg .orb-ring--middle { inset: 12px; }
+.ai-processing--lg .orb-ring--inner  { inset: 24px; }
+
+/* Core icon */
+.orb-core {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  animation: orb-pulse 2s ease-in-out infinite;
+}
+
+/* Orbiting dots */
+.orb-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.orb-dot--1 {
+  animation: orbit-1 3s linear infinite;
+  background: #3b82f6;
+  box-shadow: 0 0 6px #3b82f6;
+}
+
+.orb-dot--2 {
+  animation: orbit-2 4s linear infinite;
+  background: #8b5cf6;
+  box-shadow: 0 0 6px #8b5cf6;
+}
+
+.orb-dot--3 {
+  animation: orbit-3 3.5s linear infinite;
+  background: #06b6d4;
+  box-shadow: 0 0 6px #06b6d4;
+}
+
+/* ─── Text ─── */
+.ai-processing-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.ai-processing--sm .ai-processing-label {
+  font-size: 0.85rem;
+}
+
+.ai-processing-status {
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-align: center;
+  min-height: 1.2em;
+  animation: status-fade 0.4s ease-out;
+}
+
+.ai-processing-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ─── Progress bar ─── */
+.ai-processing-progress {
+  width: 100%;
+  max-width: 220px;
+}
+
+.ai-processing--sm .ai-processing-progress {
+  max-width: 160px;
+}
+
+.progress-track {
+  position: relative;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: visible;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s linear infinite;
+  transition: width 0.15s ease-out;
+}
+
+.progress-glow {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px var(--accent), 0 0 24px rgba(59, 130, 246, 0.3);
+  opacity: 0.8;
+  transition: left 0.15s ease-out;
+}
+
+/* ─── Keyframes ─── */
+@keyframes orb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orb-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes orbit-1 {
+  0%   { transform: rotate(0deg)   translateX(28px) rotate(0deg);   opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(360deg) translateX(28px) rotate(-360deg); opacity: 1; }
+}
+
+@keyframes orbit-2 {
+  0%   { transform: rotate(120deg) translateX(36px) rotate(-120deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(480deg) translateX(36px) rotate(-480deg); opacity: 1; }
+}
+
+@keyframes orbit-3 {
+  0%   { transform: rotate(240deg) translateX(32px) rotate(-240deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(600deg) translateX(32px) rotate(-600deg); opacity: 1; }
+}
+
+.ai-processing--sm .orb-dot--1 { animation-name: orbit-sm-1; }
+.ai-processing--sm .orb-dot--2 { animation-name: orbit-sm-2; }
+.ai-processing--sm .orb-dot--3 { animation-name: orbit-sm-3; }
+
+@keyframes orbit-sm-1 {
+  0%   { transform: rotate(0deg)   translateX(20px) rotate(0deg);   opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(360deg) translateX(20px) rotate(-360deg); opacity: 1; }
+}
+
+@keyframes orbit-sm-2 {
+  0%   { transform: rotate(120deg) translateX(24px) rotate(-120deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(480deg) translateX(24px) rotate(-480deg); opacity: 1; }
+}
+
+@keyframes orbit-sm-3 {
+  0%   { transform: rotate(240deg) translateX(22px) rotate(-240deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(600deg) translateX(22px) rotate(-600deg); opacity: 1; }
+}
+
+.ai-processing--lg .orb-dot--1 { animation-name: orbit-lg-1; }
+.ai-processing--lg .orb-dot--2 { animation-name: orbit-lg-2; }
+.ai-processing--lg .orb-dot--3 { animation-name: orbit-lg-3; }
+
+@keyframes orbit-lg-1 {
+  0%   { transform: rotate(0deg)   translateX(40px) rotate(0deg);   opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(360deg) translateX(40px) rotate(-360deg); opacity: 1; }
+}
+
+@keyframes orbit-lg-2 {
+  0%   { transform: rotate(120deg) translateX(48px) rotate(-120deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(480deg) translateX(48px) rotate(-480deg); opacity: 1; }
+}
+
+@keyframes orbit-lg-3 {
+  0%   { transform: rotate(240deg) translateX(44px) rotate(-240deg); opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(600deg) translateX(44px) rotate(-600deg); opacity: 1; }
+}
+
+@keyframes progress-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes status-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .orb-ring,
+  .orb-core,
+  .orb-dot,
+  .progress-fill {
+    animation: none;
+  }
+
+  .progress-glow {
+    display: none;
+  }
+}

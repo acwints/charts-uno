@@ -17,6 +17,7 @@ const defaultConfig: ChartConfig = {
   showGrid: true,
   showLegend: true,
   showValues: false,
+  showBorder: true,
   animate: true,
   title: '',
 };

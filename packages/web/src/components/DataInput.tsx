@@ -8,14 +8,13 @@ import {
   Link2,
   Clipboard,
   ArrowRight,
-  Loader2,
   Check,
   AlertCircle,
-  Sparkles,
   MessageSquare,
 } from 'lucide-react';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
+import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './DataInput.css';
 
@@ -222,20 +221,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               />
 
               {(isProcessing || isAnalyzing) ? (
-                <div className="drop-zone-processing">
-                  {mode === 'image' ? (
-                    <>
-                      <Sparkles size={32} className="pulse" />
-                      <span>AI analyzing image...</span>
-                      <span className="processing-hint">Extracting data with GPT-4o Vision</span>
-                    </>
-                  ) : (
-                    <>
-                      <Loader2 size={32} className="spin" />
-                      <span>Processing file...</span>
-                    </>
-                  )}
-                </div>
+                <AIProcessingIndicator
+                  size="md"
+                  label={mode === 'image' ? 'Analyzing your image...' : 'Processing your data...'}
+                  hint={mode === 'image' ? 'Extracting data with GPT-4o Vision' : undefined}
+                  statusMessages={mode === 'image'
+                    ? ['Reading chart elements...', 'Extracting data points...', 'Identifying patterns...', 'Building your chart...']
+                    : ['Parsing columns...', 'Detecting data types...', 'Choosing the best chart...', 'Almost ready...']
+                  }
+                />
               ) : fileName ? (
                 <div className="drop-zone-success">
                   <Check size={32} />
@@ -272,24 +266,23 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 onChange={(e) => setPasteContent(e.target.value)}
                 spellCheck={false}
               />
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handlePasteSubmit}
-                disabled={isProcessing || !pasteContent.trim()}
-              >
-                {isProcessing ? (
-                  <>
-                    <Sparkles size={18} className="pulse" />
-                    <span>AI selecting best chart...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Generate Chart</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </Button>
+              {isProcessing ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label="Generating your chart..."
+                  statusMessages={['Analyzing data structure...', 'Selecting chart type...', 'Optimizing layout...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handlePasteSubmit}
+                  disabled={!pasteContent.trim()}
+                >
+                  <span>Generate Chart</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
             </div>
           )}
 
@@ -308,24 +301,23 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               <p className="sheets-hint">
                 Make sure your sheet is publicly accessible or shared with view permissions.
               </p>
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleSheetsSubmit}
-                disabled={isProcessing || !sheetsUrl.trim()}
-              >
-                {isProcessing ? (
-                  <>
-                    <Sparkles size={18} className="pulse" />
-                    <span>AI selecting best chart...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Import & Generate</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </Button>
+              {isProcessing ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label="Importing & generating..."
+                  statusMessages={['Fetching spreadsheet...', 'Parsing data...', 'Selecting chart type...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleSheetsSubmit}
+                  disabled={!sheetsUrl.trim()}
+                >
+                  <span>Import & Generate</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
             </div>
           )}
         </motion.div>
