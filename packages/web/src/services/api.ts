@@ -53,6 +53,23 @@ export async function getCurrentUser(): Promise<User> {
 }
 
 // Charts
+export interface ChartConfigData {
+  type: string;
+  colorScheme: string;
+  styleVariant: string;
+  themeMode: string;
+  showGrid: boolean;
+  showLegend: boolean;
+  showValues: boolean;
+  showBorder: boolean;
+  animate: boolean;
+  stacked: boolean;
+  title?: string;
+  sourceLink?: string;
+  customColors?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface ChartResponse {
   id: string;
   user_id: string;
@@ -64,7 +81,7 @@ export interface ChartResponse {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: Record<string, unknown>;
+  config: ChartConfigData;
   source_type: string | null;
   is_public: boolean;
   view_count: number;
@@ -91,7 +108,7 @@ export interface CreateChartData {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: Record<string, unknown>;
+  config: ChartConfigData;
   source_type?: string;
   is_public?: boolean;
 }
