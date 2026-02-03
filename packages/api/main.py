@@ -115,11 +115,10 @@ allowed_origins = [FRONTEND_URL]
 if ALLOWED_FRONTEND_DOMAINS:
     allowed_origins.extend(ALLOWED_FRONTEND_DOMAINS)
 
-# Ensure production defaults are allowed even if env vars are missing
-if IS_PRODUCTION:
-    for origin in (DEFAULT_PROD_FRONTEND, "https://www.epic-charts.vercel.app"):
-        if origin not in allowed_origins:
-            allowed_origins.append(origin)
+# Always allow the deployed frontend URLs to prevent env misconfig CORS failures
+for origin in (DEFAULT_PROD_FRONTEND, "https://www.epic-charts.vercel.app"):
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
 
 # Add common development origins
 if not IS_PRODUCTION:
@@ -835,6 +834,7 @@ async def analyze_image_endpoint(
             series=result["series"],
             suggestedTitle=result.get("suggestedTitle"),
             suggestedType=result.get("suggestedType"),
+            stacked=result.get("stacked"),
             xAxisLabel=result.get("xAxisLabel"),
             yAxisLabel=result.get("yAxisLabel"),
         )

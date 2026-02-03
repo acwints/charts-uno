@@ -131,6 +131,7 @@ class ImageAnalysisResponse(BaseModel):
     series: List[ChartDataSeries]
     suggestedTitle: Optional[str] = None
     suggestedType: Optional[str] = None
+    stacked: Optional[bool] = None
     xAxisLabel: Optional[str] = None
     yAxisLabel: Optional[str] = None
 

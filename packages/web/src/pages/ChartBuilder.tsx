@@ -35,6 +35,7 @@ export function ChartBuilder() {
         ...prev,
         title: data.suggestedTitle || prev.title,
         type: chosenType,
+        ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
       }));
       navigate('/chart');
     } catch (error) {
@@ -45,6 +46,7 @@ export function ChartBuilder() {
         ...prev,
         title: data.suggestedTitle || prev.title,
         type: fallbackType,
+        ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
       }));
       navigate('/chart');
     } finally {

@@ -172,6 +172,18 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               <span className="toggle-switch" />
               <span className="toggle-label">Border</span>
             </label>
+
+            {config.type === 'bar' && (
+              <label className="toggle-item">
+                <input
+                  type="checkbox"
+                  checked={config.stacked}
+                  onChange={(e) => updateConfig({ stacked: e.target.checked })}
+                />
+                <span className="toggle-switch" />
+                <span className="toggle-label">Stacked</span>
+              </label>
+            )}
           </div>
         </div>
 

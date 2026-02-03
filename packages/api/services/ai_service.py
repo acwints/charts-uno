@@ -41,6 +41,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   ],
   "suggestedTitle": "A title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
+  "stacked": true | false,
   "xAxisLabel": "Label for the x-axis (if visible)",
   "yAxisLabel": "Label for the y-axis (if visible)"
 }
@@ -50,7 +51,12 @@ Rules:
 - All data values must be numbers (convert scores like "-27" to -27)
 - If there are multiple numeric columns, create multiple series
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
-- If you can't find chartable data, return: {"error": "No chartable data found"}"""
+- If you can't find chartable data, return: {"error": "No chartable data found"}
+- Extract the PRIMARY PLOTTED DATA — bar heights, line points, area values. Ignore supplementary annotations (CAGR labels, growth percentages, footnotes) unless they ARE the primary data being plotted.
+- Preserve the original axis orientation — if the x-axis shows time periods (years, dates, quarters, months), those MUST become the labels[] array. Categories or groups become separate series. Never pivot time values into series names.
+- If the chart has a time-based x-axis (years, months, dates), labels MUST be the time values and each category/group must be a separate series.
+- Recognize chart structure — for stacked or grouped bar charts, each color/segment = a series, each x-axis position = a label. Estimate segment values from visual proportions if exact numbers aren't labeled.
+- Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable."""
 
     response = model.generate_content([
         prompt,
@@ -134,7 +140,7 @@ CURRENT CONFIG:
 - Color Scheme: {current_config.get('colorScheme')}
 - Style: {current_config.get('styleVariant')}
 - Title: {current_config.get('title') or '(none)'}
-- Show Grid: {current_config.get('showGrid')}, Legend: {current_config.get('showLegend')}, Values: {current_config.get('showValues')}
+- Show Grid: {current_config.get('showGrid')}, Legend: {current_config.get('showLegend')}, Values: {current_config.get('showValues')}, Stacked: {current_config.get('stacked', False)}
 
 Available chart types: bar, line, area, pie, radar, scatter, table
 Available color schemes: default, cool, warm, editorial, monochrome, muted
@@ -158,7 +164,8 @@ Respond with JSON only (no markdown):
     "title": "New Title" | null,
     "showGrid": true | null,
     "showLegend": true | null,
-    "showValues": true | null
+    "showValues": true | null,
+    "stacked": true | null
   }},
   "reasoning": "Brief explanation (only for modifications)"
 }}
@@ -247,7 +254,7 @@ Guidelines:
         config_changes = parsed["configChanges"]
         updated_config = {}
 
-        for key in ["type", "colorScheme", "styleVariant", "title", "showGrid", "showLegend", "showValues", "animate"]:
+        for key in ["type", "colorScheme", "styleVariant", "title", "showGrid", "showLegend", "showValues", "animate", "stacked"]:
             if config_changes.get(key) is not None:
                 updated_config[key] = config_changes[key]
                 config_modified = True

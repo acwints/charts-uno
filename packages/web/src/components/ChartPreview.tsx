@@ -334,6 +334,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 radius={styleConfig.chart.barRadius}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
+                {...(config.stacked ? { stackId: 'stack' } : {})}
               >
                 {config.showValues && (
                   <LabelList

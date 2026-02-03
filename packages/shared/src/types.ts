@@ -9,6 +9,7 @@ export interface ChartData {
   sourceType: 'csv' | 'paste' | 'image' | 'sheets';
   suggestedTitle?: string;
   suggestedType?: ChartType;
+  suggestedStacked?: boolean;
   aiReasoning?: string;
   aiSummary?: string;
   xAxisLabel?: string;
@@ -61,6 +62,7 @@ export interface ChartConfig {
   showBorder: boolean;
   animate: boolean;
   title: string;
+  stacked: boolean;
   // Custom color overrides - when set, these take precedence
   customColors?: CustomColors;
 }
@@ -76,5 +78,6 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
   showValues: false,
   showBorder: true,
   animate: true,
+  stacked: false,
   title: '',
 };
