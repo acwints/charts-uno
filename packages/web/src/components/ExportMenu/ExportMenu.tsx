@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, FileSpreadsheet, Image, Copy, Check, Clipboard } from 'lucide-react';
+import { Download, FileSpreadsheet, Image } from 'lucide-react';
 import {
   exportToCSV,
   exportToPNG,
-  copyToClipboard,
-  copyImageToClipboard,
   type WatermarkSettings,
 } from '../../services/exportService';
 import { Button } from '../Button';
@@ -21,8 +19,6 @@ interface ExportMenuProps {
 
 export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [copiedImage, setCopiedImage] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -65,40 +61,16 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
     }
   };
 
-  const handleCopy = async () => {
-    setExporting('copy');
-    try {
-      await copyToClipboard(data);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } finally {
-      setExporting(null);
-      setIsOpen(false);
-    }
-  };
-
-  const handleCopyImage = async () => {
-    if (!chartRef.current) return;
-    setExporting('copy-image');
-    try {
-      await copyImageToClipboard(chartRef.current, watermark);
-      setCopiedImage(true);
-      setTimeout(() => setCopiedImage(false), 2000);
-    } finally {
-      setExporting(null);
-      setIsOpen(false);
-    }
-  };
-
   return (
     <div className="export-menu" ref={menuRef}>
       <Button
-        variant="primary"
+        variant="default"
+        size="sm"
         className="export-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Download size={16} />
-        <span>Export</span>
+        <span>Download</span>
       </Button>
 
       <AnimatePresence>
@@ -128,27 +100,6 @@ export function ExportMenu({ data, chartRef, title, watermark }: ExportMenuProps
               <Image size={16} />
               <span>Download PNG</span>
               {exporting === 'png' && <span className="export-loading">...</span>}
-            </button>
-
-            <div className="export-divider" />
-
-            <button
-              className="export-option"
-              onClick={handleCopyImage}
-              disabled={exporting !== null}
-            >
-              {copiedImage ? <Check size={16} className="copied-icon" /> : <Clipboard size={16} />}
-              <span>{copiedImage ? 'Copied Image!' : 'Copy Image to Clipboard'}</span>
-              {exporting === 'copy-image' && <span className="export-loading">...</span>}
-            </button>
-
-            <button
-              className="export-option"
-              onClick={handleCopy}
-              disabled={exporting !== null}
-            >
-              {copied ? <Check size={16} className="copied-icon" /> : <Copy size={16} />}
-              <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
             </button>
           </motion.div>
         )}

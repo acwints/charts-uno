@@ -8,6 +8,7 @@ import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableS
 import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ExportMenu } from '../components/ExportMenu';
+import { ShareMenu } from '../components/ShareMenu';
 import { Button } from '../components/Button';
 import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
@@ -127,6 +128,7 @@ export function ChartView() {
   }, [id, chartData, navigate]);
 
   const isImageSource = chartData?.sourceType === 'image';
+  const shareUrl = id && typeof window !== 'undefined' ? `${window.location.origin}/chart/${id}` : null;
 
   useEffect(() => {
     if (!chartData) {
@@ -226,17 +228,9 @@ export function ChartView() {
           </div>
         </div>
         <div className="chart-toolbar-right">
-          {editorView === 'chart' && (
-            <ExportMenu
-              data={chartData}
-              chartRef={chartRef}
-              title={chartConfig.title}
-              watermark={watermarkSettings}
-            />
-          )}
           {isAuthenticated && !id && (
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               onClick={handleSaveChart}
               disabled={isSaving}
@@ -244,6 +238,22 @@ export function ChartView() {
               <Save size={16} />
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
+          )}
+          {editorView === 'chart' && (
+            <>
+              <ExportMenu
+                data={chartData}
+                chartRef={chartRef}
+                title={chartConfig.title}
+                watermark={watermarkSettings}
+              />
+              <ShareMenu
+                chartRef={chartRef}
+                title={chartConfig.title}
+                watermark={watermarkSettings}
+                shareUrl={shareUrl}
+              />
+            </>
           )}
         </div>
       </div>
