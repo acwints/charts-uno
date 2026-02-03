@@ -54,6 +54,7 @@ export async function getCurrentUser(): Promise<User> {
 
 // Charts
 export interface ChartConfigData {
+  [key: string]: unknown;
   type: string;
   colorScheme: string;
   styleVariant: string;
@@ -66,8 +67,6 @@ export interface ChartConfigData {
   stacked: boolean;
   title?: string;
   sourceLink?: string;
-  customColors?: Record<string, unknown>;
-  [key: string]: unknown;
 }
 
 export interface ChartResponse {
