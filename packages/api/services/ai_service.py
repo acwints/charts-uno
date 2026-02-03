@@ -80,6 +80,9 @@ Rules:
     if not parsed.get("labels") or not parsed.get("series"):
         raise ValueError("Invalid data structure returned")
 
+    # Coerce labels to strings — Gemini sometimes returns numeric labels as ints
+    parsed["labels"] = [str(label) for label in parsed["labels"]]
+
     return parsed
 
 
