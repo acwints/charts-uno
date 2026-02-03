@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3,
@@ -8,7 +9,6 @@ import {
   Circle,
   Grid,
   Hash,
-  Palette,
   Sparkles,
   Briefcase,
   Smile,
@@ -16,9 +16,12 @@ import {
   Minus,
   Paintbrush,
   Zap,
+  Palette,
+  ChevronRight,
 } from 'lucide-react';
-import type { ChartConfig, ChartType, ColorScheme, StyleVariant, ChartData } from '../types';
-import { COLOR_PALETTES, STYLE_VARIANTS } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData } from '../types';
+import { STYLE_VARIANTS, getTheme, getEffectiveColors } from '../types';
+import { ColorStudio } from './ColorStudio';
 import './ChartControls.css';
 
 interface ChartControlsProps {
@@ -37,15 +40,6 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
 ];
 
-const COLOR_SCHEMES: { id: ColorScheme; label: string }[] = [
-  { id: 'default', label: 'Default' },
-  { id: 'cool', label: 'Cool' },
-  { id: 'warm', label: 'Warm' },
-  { id: 'editorial', label: 'Editorial' },
-  { id: 'monochrome', label: 'Mono' },
-  { id: 'muted', label: 'Muted' },
-];
-
 const STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: string }[] = [
   { id: 'professional', icon: Briefcase, label: 'Professional' },
   { id: 'playful', icon: Smile, label: 'Playful' },
@@ -55,9 +49,14 @@ const STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: 
 ];
 
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
+  const [showColorStudio, setShowColorStudio] = useState(false);
+
   const updateConfig = (updates: Partial<ChartConfig>) => {
     onChange({ ...config, ...updates });
   };
+
+  const theme = getTheme(config.colorScheme, config.themeMode);
+  const effectiveColors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
 
   return (
     <motion.div
@@ -99,6 +98,50 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
           </div>
         )}
       </div>
+
+      {/* Color Studio Toggle Button */}
+      <div className="color-studio-toggle">
+        <button
+          className={`studio-toggle-btn ${showColorStudio ? 'active' : ''}`}
+          onClick={() => setShowColorStudio(!showColorStudio)}
+        >
+          <Palette size={16} />
+          <span>Color Studio</span>
+          <div className="studio-preview-dots">
+            {effectiveColors.slice(0, 4).map((color, idx) => (
+              <span
+                key={idx}
+                className="studio-dot"
+                style={{ background: color }}
+              />
+            ))}
+          </div>
+          <ChevronRight
+            size={14}
+            className={`studio-chevron ${showColorStudio ? 'expanded' : ''}`}
+          />
+        </button>
+        <div className="theme-badge" style={{ background: theme.background, color: theme.text }}>
+          {config.themeMode === 'light' ? 'Light' : 'Dark'}
+        </div>
+      </div>
+
+      {/* Color Studio Panel */}
+      {showColorStudio && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="color-studio-container"
+        >
+          <ColorStudio
+            config={config}
+            onChange={onChange}
+            seriesCount={data.series.length}
+          />
+        </motion.div>
+      )}
 
       {/* Two-column grid for remaining controls */}
       <div className="controls-grid">
@@ -173,34 +216,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
           </div>
         </div>
 
-        <div className="control-section">
-          <label className="control-label">
-            <Palette size={14} />
-            <span>Color Scheme</span>
-          </label>
-          <div className="color-scheme-list">
-            {COLOR_SCHEMES.map((scheme) => (
-              <button
-                key={scheme.id}
-                className={`color-scheme-button ${config.colorScheme === scheme.id ? 'active' : ''}`}
-                onClick={() => updateConfig({ colorScheme: scheme.id })}
-              >
-                <div className="color-preview">
-                  {COLOR_PALETTES[scheme.id].slice(0, 4).map((color, idx) => (
-                    <div
-                      key={idx}
-                      className="color-dot"
-                      style={{ background: color }}
-                    />
-                  ))}
-                </div>
-                <span className="scheme-label">{scheme.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="control-section data-summary">
+        <div className="control-section data-summary full-width">
           <label className="control-label">
             <Hash size={14} />
             <span>Data Summary</span>
@@ -210,7 +226,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               <div key={series.name} className="data-series-item">
                 <div
                   className="series-color"
-                  style={{ background: COLOR_PALETTES[config.colorScheme][idx % COLOR_PALETTES[config.colorScheme].length] }}
+                  style={{ background: effectiveColors[idx % effectiveColors.length] }}
                 />
                 <span className="series-name">{series.name}</span>
                 <span className="series-stats">

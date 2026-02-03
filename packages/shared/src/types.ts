@@ -39,13 +39,40 @@ export interface EditableChartState {
   isDirty: boolean;
 }
 
+// Custom colors that users can override for full creative control
+export interface CustomColors {
+  background?: string;
+  cardBackground?: string;
+  text?: string;
+  textMuted?: string;
+  grid?: string;
+  border?: string;
+  seriesColors?: string[];
+}
+
 export interface ChartConfig {
   type: ChartType;
   colorScheme: ColorScheme;
   styleVariant: StyleVariant;
+  themeMode: ThemeMode;
   showGrid: boolean;
   showLegend: boolean;
   showValues: boolean;
   animate: boolean;
   title: string;
+  // Custom color overrides - when set, these take precedence
+  customColors?: CustomColors;
 }
+
+// Default chart config
+export const DEFAULT_CHART_CONFIG: ChartConfig = {
+  type: 'bar',
+  colorScheme: 'default',
+  styleVariant: 'professional',
+  themeMode: 'dark',
+  showGrid: true,
+  showLegend: true,
+  showValues: false,
+  animate: true,
+  title: '',
+};

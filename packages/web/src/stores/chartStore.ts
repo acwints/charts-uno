@@ -13,6 +13,7 @@ const defaultConfig: ChartConfig = {
   type: 'bar',
   colorScheme: 'default',
   styleVariant: 'professional',
+  themeMode: 'dark',
   showGrid: true,
   showLegend: true,
   showValues: false,

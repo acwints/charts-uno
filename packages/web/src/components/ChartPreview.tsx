@@ -25,8 +25,8 @@ import {
   LabelList,
 } from 'recharts';
 import { RefreshCw, Sparkles } from 'lucide-react';
-import type { ChartData, ChartConfig } from '../types';
-import { COLOR_PALETTES, COLOR_GRADIENTS, COLOR_THEMES, STYLE_VARIANTS } from '../types';
+import type { ChartData, ChartConfig, ColorTheme } from '../types';
+import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { Button } from './Button';
 import './ChartPreview.css';
@@ -37,10 +37,17 @@ interface ChartPreviewProps {
 }
 
 export function ChartPreview({ data, config }: ChartPreviewProps) {
-  const colors = COLOR_PALETTES[config.colorScheme];
+  // Get base theme based on scheme and mode
+  const baseTheme = getTheme(config.colorScheme, config.themeMode);
+
+  // Apply custom color overrides
+  const theme: ColorTheme = applyCustomColors(baseTheme, config.customColors);
+
+  // Get effective colors for series (custom or from palette)
+  const colors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
   const gradients = COLOR_GRADIENTS[config.colorScheme];
-  const theme = COLOR_THEMES[config.colorScheme];
   const styleConfig = STYLE_VARIANTS[config.styleVariant];
+
   const [infographicSvg, setInfographicSvg] = useState<string | null>(null);
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
@@ -289,7 +296,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     ) : null;
 
     const getBarFill = (idx: number) => {
-      if (styleConfig.decorations.useGradients) {
+      if (styleConfig.decorations.useGradients && !config.customColors?.seriesColors) {
         return `url(#gradient-${idx})`;
       }
       return colors[idx % colors.length];
@@ -389,7 +396,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 type="monotone"
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
-                fill={styleConfig.decorations.useGradients ? `url(#gradient-${idx})` : colors[idx % colors.length]}
+                fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : colors[idx % colors.length]}
                 fillOpacity={styleConfig.decorations.useGradients ? 0.6 : 0.3}
                 strokeWidth={styleConfig.chart.strokeWidth}
                 animationDuration={config.animate ? 1000 : 0}
@@ -430,7 +437,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
               {pieData.map((_, idx) => (
                 <Cell
                   key={`cell-${idx}`}
-                  fill={styleConfig.decorations.useGradients ? `url(#gradient-${idx})` : colors[idx % colors.length]}
+                  fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : colors[idx % colors.length]}
                 />
               ))}
             </Pie>
@@ -496,6 +503,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
       data-style-variant={config.styleVariant}
+      data-theme-mode={config.themeMode}
       style={{ background: theme.background, borderColor: theme.border }}
     >
       <div className="chart-header" style={{ background: theme.cardBackground, borderColor: theme.border }}>
@@ -538,7 +546,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
             <div
               key={idx}
               className="color-segment"
-              style={{ background: styleConfig.decorations.useGradients ? `linear-gradient(90deg, ${gradients[idx % gradients.length][0]}, ${gradients[idx % gradients.length][1]})` : color }}
+              style={{ background: styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `linear-gradient(90deg, ${gradients[idx % gradients.length][0]}, ${gradients[idx % gradients.length][1]})` : color }}
             />
           ))}
         </div>

@@ -96,7 +96,12 @@ export function ChartView() {
             suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
           };
           setChartData(data);
-          setChartConfig(chart.config as ChartConfig);
+          // Ensure themeMode has a default value for charts created before it was added
+          const configWithDefaults: ChartConfig = {
+            ...chart.config as ChartConfig,
+            themeMode: (chart.config as Record<string, unknown>).themeMode as ChartConfig['themeMode'] || 'dark',
+          };
+          setChartConfig(configWithDefaults);
         })
         .catch((err) => {
           console.error('Failed to load chart:', err);

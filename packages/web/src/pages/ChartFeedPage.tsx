@@ -24,6 +24,7 @@ export function ChartFeedPage() {
         type: (chart.config.type as ChartConfig['type']) || 'bar',
         colorScheme: (chart.config.colorScheme as ChartConfig['colorScheme']) || 'default',
         styleVariant: (chart.config.styleVariant as ChartConfig['styleVariant']) || 'professional',
+        themeMode: ((chart.config as Record<string, unknown>).themeMode as ChartConfig['themeMode']) || 'dark',
         showGrid: chart.config.showGrid ?? true,
         showLegend: chart.config.showLegend ?? true,
         showValues: chart.config.showValues ?? false,
