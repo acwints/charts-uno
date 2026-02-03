@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Save, Plus } from 'lucide-react';
+import { Save, Plus, BarChart3, Table2 } from 'lucide-react';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
@@ -29,6 +29,7 @@ export function ChartView() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   // Fetch branding settings for watermark
   useEffect(() => {
@@ -124,6 +125,12 @@ export function ChartView() {
 
   const isImageSource = chartData?.sourceType === 'image';
 
+  useEffect(() => {
+    if (chartConfig?.type === 'infographic' && viewMode !== 'chart') {
+      setViewMode('chart');
+    }
+  }, [chartConfig?.type, viewMode]);
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
@@ -173,6 +180,28 @@ export function ChartView() {
               <Plus size={16} />
               New Chart
             </Button>
+            {chartConfig.type !== 'infographic' && (
+              <div className="view-toggle">
+                <button
+                  className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+                  onClick={() => setViewMode('chart')}
+                  aria-label="Chart view"
+                  aria-pressed={viewMode === 'chart'}
+                >
+                  <BarChart3 size={14} />
+                  Chart
+                </button>
+                <button
+                  className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                  aria-label="Table view"
+                  aria-pressed={viewMode === 'table'}
+                >
+                  <Table2 size={14} />
+                  Data
+                </button>
+              </div>
+            )}
           </div>
           <div className="chart-toolbar-right">
             <ExportMenu
@@ -199,6 +228,7 @@ export function ChartView() {
           config={chartConfig}
           onConfigChange={setChartConfig}
           chartRef={chartRef}
+          viewMode={viewMode}
         />
       </motion.div>
     );
@@ -220,6 +250,28 @@ export function ChartView() {
             <Plus size={16} />
             New Chart
           </Button>
+          {chartConfig.type !== 'infographic' && (
+            <div className="view-toggle">
+              <button
+                className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+                onClick={() => setViewMode('chart')}
+                aria-label="Chart view"
+                aria-pressed={viewMode === 'chart'}
+              >
+                <BarChart3 size={14} />
+                Chart
+              </button>
+              <button
+                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                aria-label="Table view"
+                aria-pressed={viewMode === 'table'}
+              >
+                <Table2 size={14} />
+                Data
+              </button>
+            </div>
+          )}
         </div>
         <div className="chart-toolbar-right">
           <ExportMenu
@@ -250,7 +302,7 @@ export function ChartView() {
               <p className="chart-ai-text">{chartData.aiSummary}</p>
             </div>
           )}
-          <ChartPreview data={chartData} config={chartConfig} />
+          <ChartPreview data={chartData} config={chartConfig} viewMode={viewMode} />
         </div>
         <div className="chart-sidebar">
           <ChartControls
