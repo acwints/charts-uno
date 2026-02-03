@@ -170,16 +170,6 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               <span className="toggle-label">Show Values</span>
             </label>
 
-            <label className="toggle-item">
-              <input
-                type="checkbox"
-                checked={config.showBorder}
-                onChange={(e) => updateConfig({ showBorder: e.target.checked })}
-              />
-              <span className="toggle-switch" />
-              <span className="toggle-label">Border</span>
-            </label>
-
             {config.type === 'bar' && (
               <label className="toggle-item">
                 <input

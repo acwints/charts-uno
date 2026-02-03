@@ -222,14 +222,14 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       margin: chartMargins,
     };
 
-    const gridElement = config.showGrid ? (
+    const gridElement = (
       <CartesianGrid
         strokeDasharray={gridStrokeDasharray}
         stroke={theme.grid}
-        strokeOpacity={theme.gridOpacity}
+        strokeOpacity={config.showGrid ? theme.gridOpacity : 0}
         className="chart-grid"
       />
-    ) : null;
+    );
 
     const xAxisLabelConfig = xAxisLabel ? {
       value: xAxisLabel,
@@ -519,13 +519,12 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       data-theme-mode={config.themeMode}
       style={{
         background: theme.background,
-        borderColor: config.showBorder ? theme.border : 'transparent',
-        borderWidth: config.showBorder ? 1 : 0,
+        borderColor: theme.border,
       }}
     >
       <div className="chart-header" style={{
         background: theme.cardBackground,
-        borderColor: config.showBorder ? theme.border : 'transparent',
+        borderColor: theme.border,
       }}>
         <div className="chart-header-top">
           {config.title ? (
