@@ -52,23 +52,9 @@ export async function getCurrentUser(): Promise<User> {
   return apiRequest('/api/user/me');
 }
 
-// Charts
-export interface ChartConfigData {
-  [key: string]: unknown;
-  type: string;
-  colorScheme: string;
-  styleVariant: string;
-  themeMode: string;
-  showGrid: boolean;
-  showLegend: boolean;
-  showValues: boolean;
-  showBorder: boolean;
-  animate: boolean;
-  stacked: boolean;
-  title?: string;
-  sourceLink?: string;
-}
-
+// Charts — config is typed loosely at the API boundary since the server
+// may return fields the frontend doesn't know about yet and vice-versa.
+// Consumers cast to ChartConfig from shared types as needed.
 export interface ChartResponse {
   id: string;
   user_id: string;
@@ -80,7 +66,8 @@ export interface ChartResponse {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: ChartConfigData;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any;
   source_type: string | null;
   is_public: boolean;
   view_count: number;
@@ -107,7 +94,8 @@ export interface CreateChartData {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: ChartConfigData;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any;
   source_type?: string;
   is_public?: boolean;
 }
