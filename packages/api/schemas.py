@@ -33,15 +33,34 @@ class ChartData(BaseModel):
     aiReasoning: Optional[str] = None
 
 
+class CustomColors(BaseModel):
+    model_config = {"extra": "allow"}
+
+    background: Optional[str] = None
+    cardBackground: Optional[str] = None
+    text: Optional[str] = None
+    textMuted: Optional[str] = None
+    grid: Optional[str] = None
+    border: Optional[str] = None
+    seriesColors: Optional[List[str]] = None
+
+
 class ChartConfig(BaseModel):
+    model_config = {"extra": "allow"}
+
     type: str = "bar"
     colorScheme: str = "default"
     styleVariant: str = "professional"
+    themeMode: str = "dark"
     showGrid: bool = True
     showLegend: bool = True
     showValues: bool = False
+    showBorder: bool = True
     animate: bool = True
+    stacked: bool = False
     title: Optional[str] = None
+    sourceLink: Optional[str] = None
+    customColors: Optional[CustomColors] = None
 
 
 class ChartCreate(BaseModel):

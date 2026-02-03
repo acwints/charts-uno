@@ -64,16 +64,7 @@ export interface ChartResponse {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: {
-    type: string;
-    colorScheme: string;
-    styleVariant: string;
-    showGrid: boolean;
-    showLegend: boolean;
-    showValues: boolean;
-    animate: boolean;
-    title?: string;
-  };
+  config: Record<string, unknown>;
   source_type: string | null;
   is_public: boolean;
   view_count: number;
@@ -100,16 +91,7 @@ export interface CreateChartData {
     suggestedType?: string;
     suggestedTitle?: string;
   };
-  config: {
-    type: string;
-    colorScheme: string;
-    styleVariant: string;
-    showGrid: boolean;
-    showLegend: boolean;
-    showValues: boolean;
-    animate: boolean;
-    title?: string;
-  };
+  config: Record<string, unknown>;
   source_type?: string;
   is_public?: boolean;
 }
