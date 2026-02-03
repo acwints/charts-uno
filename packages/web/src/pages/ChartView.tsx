@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Save, Plus, BarChart3, Table2 } from 'lucide-react';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
+import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
 import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ExportMenu } from '../components/ExportMenu';
@@ -29,7 +30,9 @@ export function ChartView() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
+  const [originalData, setOriginalData] = useState<ChartData | null>(null);
+  const initTokenRef = useRef<string | null>(null);
 
   // Fetch branding settings for watermark
   useEffect(() => {
@@ -126,10 +129,29 @@ export function ChartView() {
   const isImageSource = chartData?.sourceType === 'image';
 
   useEffect(() => {
-    if (chartConfig?.type === 'infographic' && viewMode !== 'chart') {
-      setViewMode('chart');
+    if (!chartData) {
+      setOriginalData(null);
+      initTokenRef.current = null;
+      return;
     }
-  }, [chartConfig?.type, viewMode]);
+
+    const token = id ?? 'new';
+    if (initTokenRef.current !== token) {
+      setOriginalData(chartData);
+      initTokenRef.current = token;
+    }
+  }, [chartData, id]);
+
+  const isDataDirty = useMemo(() => {
+    if (!chartData || !originalData) return false;
+    return JSON.stringify(chartData) !== JSON.stringify(originalData);
+  }, [chartData, originalData]);
+
+  const handleDataReset = () => {
+    if (originalData) {
+      setChartData(originalData);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -164,79 +186,9 @@ export function ChartView() {
     return null;
   }
 
-  if (isImageSource) {
-    return (
-      <motion.div
-        key="reverse-engineer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
-        className="chart-view"
-      >
-        <div className="chart-toolbar">
-          <div className="chart-toolbar-left">
-            <Button variant="default" size="sm" onClick={handleCreateNew}>
-              <Plus size={16} />
-              New Chart
-            </Button>
-            {chartConfig.type !== 'infographic' && (
-              <div className="view-toggle">
-                <button
-                  className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
-                  onClick={() => setViewMode('chart')}
-                  aria-label="Chart view"
-                  aria-pressed={viewMode === 'chart'}
-                >
-                  <BarChart3 size={14} />
-                  Chart
-                </button>
-                <button
-                  className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                  onClick={() => setViewMode('table')}
-                  aria-label="Table view"
-                  aria-pressed={viewMode === 'table'}
-                >
-                  <Table2 size={14} />
-                  Data
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="chart-toolbar-right">
-            <ExportMenu
-              data={chartData}
-              chartRef={chartRef}
-              title={chartConfig.title}
-              watermark={watermarkSettings}
-            />
-            {isAuthenticated && !id && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSaveChart}
-                disabled={isSaving}
-              >
-                <Save size={16} />
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-            )}
-          </div>
-        </div>
-        <ReverseEngineerView
-          initialData={chartData}
-          config={chartConfig}
-          onConfigChange={setChartConfig}
-          chartRef={chartRef}
-          viewMode={viewMode}
-        />
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
-      key="chart"
+      key={isImageSource ? 'reverse-engineer' : 'chart'}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
@@ -250,36 +202,36 @@ export function ChartView() {
             <Plus size={16} />
             New Chart
           </Button>
-          {chartConfig.type !== 'infographic' && (
-            <div className="view-toggle">
-              <button
-                className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
-                onClick={() => setViewMode('chart')}
-                aria-label="Chart view"
-                aria-pressed={viewMode === 'chart'}
-              >
-                <BarChart3 size={14} />
-                Chart
-              </button>
-              <button
-                className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-                aria-label="Table view"
-                aria-pressed={viewMode === 'table'}
-              >
-                <Table2 size={14} />
-                Data
-              </button>
-            </div>
-          )}
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn ${editorView === 'chart' ? 'active' : ''}`}
+              onClick={() => setEditorView('chart')}
+              aria-label="Chart view"
+              aria-pressed={editorView === 'chart'}
+            >
+              <BarChart3 size={14} />
+              Chart
+            </button>
+            <button
+              className={`view-toggle-btn ${editorView === 'data' ? 'active' : ''}`}
+              onClick={() => setEditorView('data')}
+              aria-label="Data editor view"
+              aria-pressed={editorView === 'data'}
+            >
+              <Table2 size={14} />
+              Data
+            </button>
+          </div>
         </div>
         <div className="chart-toolbar-right">
-          <ExportMenu
-            data={chartData}
-            chartRef={chartRef}
-            title={chartConfig.title}
-            watermark={watermarkSettings}
-          />
+          {editorView === 'chart' && (
+            <ExportMenu
+              data={chartData}
+              chartRef={chartRef}
+              title={chartConfig.title}
+              watermark={watermarkSettings}
+            />
+          )}
           {isAuthenticated && !id && (
             <Button
               variant="primary"
@@ -294,24 +246,43 @@ export function ChartView() {
         </div>
       </div>
 
-      <div className="chart-workspace" ref={chartRef}>
-        <div className="chart-column">
-          {chartData.aiSummary && (
-            <div className="chart-ai-summary">
-              <span className="chart-ai-label">AI Insight</span>
-              <p className="chart-ai-text">{chartData.aiSummary}</p>
-            </div>
-          )}
-          <ChartPreview data={chartData} config={chartConfig} viewMode={viewMode} />
-        </div>
-        <div className="chart-sidebar">
-          <ChartControls
-            config={chartConfig}
-            onChange={setChartConfig}
+      {editorView === 'data' ? (
+        <div className="chart-data-editor">
+          <EditableSpreadsheet
             data={chartData}
+            colorScheme={chartConfig.colorScheme}
+            isDirty={isDataDirty}
+            onChange={setChartData}
+            onReset={handleDataReset}
           />
         </div>
-      </div>
+      ) : isImageSource ? (
+        <ReverseEngineerView
+          initialData={chartData}
+          config={chartConfig}
+          onConfigChange={setChartConfig}
+          chartRef={chartRef}
+        />
+      ) : (
+        <div className="chart-workspace" ref={chartRef}>
+          <div className="chart-column">
+            {chartData.aiSummary && (
+              <div className="chart-ai-summary">
+                <span className="chart-ai-label">AI Insight</span>
+                <p className="chart-ai-text">{chartData.aiSummary}</p>
+              </div>
+            )}
+            <ChartPreview data={chartData} config={chartConfig} />
+          </div>
+          <div className="chart-sidebar">
+            <ChartControls
+              config={chartConfig}
+              onChange={setChartConfig}
+              data={chartData}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

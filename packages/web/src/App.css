@@ -75,6 +75,23 @@
   align-items: stretch;
 }
 
+.chart-data-editor {
+  display: flex;
+  flex-direction: column;
+  height: clamp(360px, 70vh, 600px);
+  min-height: 0;
+}
+
+.chart-data-editor .editable-spreadsheet {
+  flex: 1;
+  min-height: 0;
+}
+
+.chart-data-editor .spreadsheet-container {
+  max-height: none;
+  height: 100%;
+}
+
 
 .chart-sidebar {
   display: flex;

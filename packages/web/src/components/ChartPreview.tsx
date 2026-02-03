@@ -35,10 +35,9 @@ import './ChartPreview.css';
 interface ChartPreviewProps {
   data: ChartData;
   config: ChartConfig;
-  viewMode: 'chart' | 'table';
 }
 
-export function ChartPreview({ data, config, viewMode }: ChartPreviewProps) {
+export function ChartPreview({ data, config }: ChartPreviewProps) {
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -507,6 +506,7 @@ export function ChartPreview({ data, config, viewMode }: ChartPreviewProps) {
   };
 
   const previewClassName = `chart-preview ${styleConfig.decorations.useGlow ? 'chart-preview--glow' : ''} ${styleConfig.decorations.useShadows ? 'chart-preview--shadow' : ''}`;
+  const isTableView = config.type === 'table';
 
   return (
     <motion.div
@@ -550,12 +550,12 @@ export function ChartPreview({ data, config, viewMode }: ChartPreviewProps) {
       </div>
 
       <div
-        className={`chart-container ${viewMode === 'table' ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
+        className={`chart-container ${isTableView ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
         style={{ background: theme.background }}
       >
         {config.type === 'infographic' ? (
           renderInfographic()
-        ) : viewMode === 'table' ? (
+        ) : isTableView ? (
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -590,7 +590,7 @@ export function ChartPreview({ data, config, viewMode }: ChartPreviewProps) {
         )}
       </div>
 
-      {config.type !== 'infographic' && (
+      {config.type !== 'infographic' && config.type !== 'table' && (
         <div className="chart-color-bar">
           {colors.slice(0, data.series.length).map((color, idx) => (
             <div

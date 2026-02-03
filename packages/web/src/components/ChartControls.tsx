@@ -4,6 +4,7 @@ import {
   LineChart,
   AreaChart,
   PieChart,
+  Table2,
   Hexagon,
   Circle,
   Grid,
@@ -34,6 +35,7 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'pie', icon: PieChart, label: 'Pie' },
   { id: 'radar', icon: Hexagon, label: 'Radar' },
   { id: 'scatter', icon: Circle, label: 'Scatter' },
+  { id: 'table', icon: Table2, label: 'Table' },
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
 ];
 
