@@ -962,7 +962,7 @@ async def stock_prices_endpoint(
 ):
     """Fetch stock price data for charting."""
     try:
-        result = await fetch_stock_prices(data.ticker, data.range)
+        result = await fetch_stock_prices(data.ticker, data.range, data.ticker2)
         return ImageAnalysisResponse(
             labels=result["labels"],
             series=result["series"],

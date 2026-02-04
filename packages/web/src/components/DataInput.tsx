@@ -13,6 +13,8 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Check from 'lucide-react/dist/esm/icons/check';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import X from 'lucide-react/dist/esm/icons/x';
+import Plus from 'lucide-react/dist/esm/icons/plus';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
@@ -55,16 +57,26 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [stockRange, setStockRange] = useState('3M');
   const [isLoadingStock, setIsLoadingStock] = useState(false);
   const [showTickerDropdown, setShowTickerDropdown] = useState(false);
+  // Second ticker for comparison (optional)
+  const [ticker2Query, setTicker2Query] = useState('');
+  const [ticker2Results, setTicker2Results] = useState<TickerResult[]>([]);
+  const [selectedTicker2, setSelectedTicker2] = useState<string | null>(null);
+  const [showTicker2Dropdown, setShowTicker2Dropdown] = useState(false);
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const ticker2DebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tickerWrapperRef = useRef<HTMLDivElement>(null);
+  const ticker2WrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Close ticker dropdown on outside click
+  // Close ticker dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (tickerWrapperRef.current && !tickerWrapperRef.current.contains(e.target as Node)) {
         setShowTickerDropdown(false);
+      }
+      if (ticker2WrapperRef.current && !ticker2WrapperRef.current.contains(e.target as Node)) {
+        setShowTicker2Dropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -104,20 +116,61 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     setTickerResults([]);
   }, []);
 
+  // Second ticker handlers
+  const handleTicker2Search = useCallback((query: string) => {
+    setTicker2Query(query);
+    setSelectedTicker2(null);
+
+    if (ticker2DebounceRef.current) {
+      clearTimeout(ticker2DebounceRef.current);
+    }
+
+    if (!query.trim()) {
+      setTicker2Results([]);
+      setShowTicker2Dropdown(false);
+      return;
+    }
+
+    ticker2DebounceRef.current = setTimeout(async () => {
+      try {
+        const results = await searchTickers(query.trim());
+        setTicker2Results(results);
+        setShowTicker2Dropdown(results.length > 0);
+      } catch {
+        setTicker2Results([]);
+        setShowTicker2Dropdown(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleTicker2Select = useCallback((symbol: string) => {
+    setSelectedTicker2(symbol);
+    setTicker2Query(symbol);
+    setShowTicker2Dropdown(false);
+    setTicker2Results([]);
+  }, []);
+
+  const clearTicker2 = useCallback(() => {
+    setSelectedTicker2(null);
+    setTicker2Query('');
+    setTicker2Results([]);
+    setShowTicker2Dropdown(false);
+  }, []);
+
   const handleStockSubmit = useCallback(async () => {
     if (!selectedTicker) return;
     setError(null);
     setIsLoadingStock(true);
 
     try {
-      const data = await fetchStockData(selectedTicker, stockRange);
+      const data = await fetchStockData(selectedTicker, stockRange, selectedTicker2 || undefined);
       onSubmit(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
     } finally {
       setIsLoadingStock(false);
     }
-  }, [selectedTicker, stockRange, onSubmit]);
+  }, [selectedTicker, selectedTicker2, stockRange, onSubmit]);
 
   const parseCSVData = useCallback((content: string, sourceType: 'csv' | 'paste'): ChartData | null => {
     const result = Papa.parse(content, {
@@ -382,19 +435,21 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'sheets' && (
             <div className="sheets-input">
-              <div className="sheets-url-wrapper">
-                <Link2 size={20} className="sheets-url-icon" />
-                <input
-                  type="url"
-                  className="sheets-url-input"
-                  placeholder="Paste your Google Sheets URL"
-                  value={sheetsUrl}
-                  onChange={(e) => setSheetsUrl(e.target.value)}
-                />
+              <div className="sheets-input-top">
+                <div className="sheets-url-wrapper">
+                  <Link2 size={20} className="sheets-url-icon" />
+                  <input
+                    type="url"
+                    className="sheets-url-input"
+                    placeholder="Paste your Google Sheets URL"
+                    value={sheetsUrl}
+                    onChange={(e) => setSheetsUrl(e.target.value)}
+                  />
+                </div>
+                <p className="sheets-hint">
+                  Make sure your sheet is publicly accessible or shared with view permissions.
+                </p>
               </div>
-              <p className="sheets-hint">
-                Make sure your sheet is publicly accessible or shared with view permissions.
-              </p>
               {isProcessing ? (
                 <AIProcessingIndicator
                   size="sm"
@@ -447,36 +502,86 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'stocks' && (
             <div className="stocks-input">
-              <div className="stocks-col-left" ref={tickerWrapperRef}>
-                <div className="stocks-ticker-wrapper">
-                  <Search size={20} className="stocks-ticker-icon" />
-                  <input
-                    type="text"
-                    className="stocks-ticker-input"
-                    placeholder="Search for a ticker (e.g. AAPL, MSFT, TSLA)"
-                    value={tickerQuery}
-                    onChange={(e) => handleTickerSearch(e.target.value)}
-                    spellCheck={false}
-                    aria-label="Search ticker symbol"
-                  />
-                </div>
-                {showTickerDropdown && tickerResults.length > 0 && (
-                  <div className="stocks-dropdown">
-                    {tickerResults.map((result) => (
-                      <button
-                        key={result.symbol}
-                        className="stocks-dropdown-item"
-                        onClick={() => handleTickerSelect(result.symbol)}
-                      >
-                        <span className="stocks-dropdown-symbol">{result.symbol}</span>
-                        <span className="stocks-dropdown-desc">{result.description}</span>
-                      </button>
-                    ))}
+              <div className="stocks-input-top">
+                <div className="stocks-col-left">
+                  <div className="stocks-ticker-row" ref={tickerWrapperRef}>
+                    <div className="stocks-ticker-wrapper">
+                      <Search size={20} className="stocks-ticker-icon" />
+                      <input
+                        type="text"
+                        className="stocks-ticker-input"
+                        placeholder="Search for a ticker (e.g. AAPL)"
+                        value={tickerQuery}
+                        onChange={(e) => handleTickerSearch(e.target.value)}
+                        spellCheck={false}
+                        aria-label="Search ticker symbol"
+                      />
+                    </div>
+                    {showTickerDropdown && tickerResults.length > 0 && (
+                      <div className="stocks-dropdown">
+                        {tickerResults.map((result) => (
+                          <button
+                            key={result.symbol}
+                            className="stocks-dropdown-item"
+                            onClick={() => handleTickerSelect(result.symbol)}
+                          >
+                            <span className="stocks-dropdown-symbol">{result.symbol}</span>
+                            <span className="stocks-dropdown-desc">{result.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="stocks-col-right">
+                  {/* Second ticker - optional comparison */}
+                  {selectedTicker && (
+                    <div className="stocks-ticker-row stocks-ticker-row--compare" ref={ticker2WrapperRef}>
+                      {selectedTicker2 ? (
+                        <div className="stocks-ticker-selected">
+                          <span className="stocks-ticker-selected-label">vs</span>
+                          <span className="stocks-ticker-selected-symbol">{selectedTicker2}</span>
+                          <button
+                            className="stocks-ticker-clear"
+                            onClick={clearTicker2}
+                            aria-label="Remove comparison ticker"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="stocks-ticker-wrapper stocks-ticker-wrapper--compare">
+                            <Plus size={18} className="stocks-ticker-icon stocks-ticker-icon--muted" />
+                            <input
+                              type="text"
+                              className="stocks-ticker-input"
+                              placeholder="Compare with another stock (optional)"
+                              value={ticker2Query}
+                              onChange={(e) => handleTicker2Search(e.target.value)}
+                              spellCheck={false}
+                              aria-label="Search comparison ticker"
+                            />
+                          </div>
+                          {showTicker2Dropdown && ticker2Results.length > 0 && (
+                            <div className="stocks-dropdown">
+                              {ticker2Results.map((result) => (
+                                <button
+                                  key={result.symbol}
+                                  className="stocks-dropdown-item"
+                                  onClick={() => handleTicker2Select(result.symbol)}
+                                >
+                                  <span className="stocks-dropdown-symbol">{result.symbol}</span>
+                                  <span className="stocks-dropdown-desc">{result.description}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="stocks-range-bar">
                   {STOCK_RANGES.map((range) => (
                     <button
@@ -489,26 +594,26 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                     </button>
                   ))}
                 </div>
-
-                {(isProcessing || isLoadingStock) ? (
-                  <AIProcessingIndicator
-                    size="sm"
-                    label="Fetching stock data..."
-                    statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
-                  />
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleStockSubmit}
-                    disabled={!selectedTicker}
-                  >
-                    <TrendingUp size={18} />
-                    <span>Chart Stock</span>
-                    <ArrowRight size={18} />
-                  </Button>
-                )}
               </div>
+
+              {(isProcessing || isLoadingStock) ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label="Fetching stock data..."
+                  statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleStockSubmit}
+                  disabled={!selectedTicker}
+                >
+                  <TrendingUp size={18} />
+                  <span>{selectedTicker2 ? 'Compare Stocks' : 'Chart Stock'}</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
             </div>
           )}
         </motion.div>

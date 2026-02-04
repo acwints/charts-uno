@@ -20,6 +20,24 @@ export function ChartBuilder() {
   const { setChartData, setChartConfig } = useChartStore();
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
+    // For structured data sources (stocks, sheets), skip AI recommendation
+    // These sources already have a known chart type and don't need analysis
+    const skipAI = data.sourceType === 'stocks' || data.sourceType === 'sheets';
+
+    if (skipAI) {
+      const chartType = data.suggestedType ?? 'line';
+      setChartData(data);
+      setChartConfig((prev) => ({
+        ...prev,
+        title: data.suggestedTitle || prev.title,
+        type: chartType,
+        ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
+        ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
+      }));
+      navigate('/chart');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const recommendation = await recommendChartType(data, { preferredType: data.suggestedType });

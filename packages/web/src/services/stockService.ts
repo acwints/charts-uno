@@ -30,14 +30,14 @@ export async function searchTickers(query: string): Promise<TickerResult[]> {
   return response.json();
 }
 
-export async function fetchStockData(ticker: string, range: string): Promise<ChartData> {
+export async function fetchStockData(ticker: string, range: string, ticker2?: string): Promise<ChartData> {
   const response = await fetch(`${API_URL}/api/stocks/prices`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify({ ticker, range }),
+    body: JSON.stringify({ ticker, range, ticker2: ticker2 || null }),
   });
 
   if (!response.ok) {
@@ -46,6 +46,7 @@ export async function fetchStockData(ticker: string, range: string): Promise<Cha
   }
 
   const parsed = await response.json();
+  const symbol = ticker.toUpperCase();
 
   return {
     labels: parsed.labels,
@@ -55,5 +56,6 @@ export async function fetchStockData(ticker: string, range: string): Promise<Cha
     suggestedType: parsed.suggestedType,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
+    sourceLink: `https://finance.yahoo.com/quote/${symbol}`,
   };
 }

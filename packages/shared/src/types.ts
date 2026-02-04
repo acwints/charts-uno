@@ -3,6 +3,9 @@ export interface DataSeries {
   data: number[];
 }
 
+export type XAxisType = 'year' | 'date' | 'category' | 'number';
+export type YAxisFormat = 'currency' | 'percentage' | 'number';
+
 export interface ChartData {
   labels: string[];
   series: DataSeries[];
@@ -15,10 +18,16 @@ export interface ChartData {
   xAxisLabel?: string;
   yAxisLabel?: string;
   userPrompt?: string;
+  sourceLink?: string;
   sourceImage?: {
     base64: string;
     mimeType: string;
   };
+  // Axis formatting hints (from AI or auto-detected)
+  xAxisType?: XAxisType;
+  yAxisFormat?: YAxisFormat;
+  yAxisPrefix?: string;
+  yAxisSuffix?: string;
 }
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic';

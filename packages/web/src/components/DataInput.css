@@ -173,6 +173,14 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-6);
+  min-height: 240px;
+  justify-content: space-between;
+}
+
+.sheets-input-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .sheets-url-wrapper {
@@ -288,16 +296,21 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-6);
+  min-height: 240px;
+  justify-content: space-between;
+}
+
+.stocks-input-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .stocks-col-left {
   position: relative;
-}
-
-.stocks-col-right {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .stocks-ticker-wrapper {
@@ -413,6 +426,74 @@
 .stocks-range-btn.active {
   color: var(--text-primary);
   background: var(--bg-secondary);
+}
+
+/* Second ticker (comparison) */
+.stocks-ticker-row {
+  position: relative;
+}
+
+.stocks-ticker-row--compare {
+  margin-top: var(--space-3);
+}
+
+.stocks-ticker-wrapper--compare {
+  background: var(--bg-secondary);
+  border-style: dashed;
+}
+
+.stocks-ticker-icon--muted {
+  opacity: 0.6;
+}
+
+.stocks-ticker-selected {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.stocks-ticker-selected-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: lowercase;
+}
+
+.stocks-ticker-selected-symbol {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.stocks-ticker-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.stocks-ticker-clear:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.stocks-ticker-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* Error Message */

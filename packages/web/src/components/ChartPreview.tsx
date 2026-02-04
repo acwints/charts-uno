@@ -90,6 +90,88 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       data.labels.every(label => !isNaN(parseFloat(label)) && isFinite(Number(label)));
   }, [data.labels]);
 
+  // Detect if labels are years (4-digit integers like 1999, 2000, 2023)
+  const isYearLabels = useMemo(() => {
+    // Explicit type hint takes precedence
+    if (data.xAxisType === 'year') return true;
+    if (data.xAxisType === 'date' || data.xAxisType === 'category' || data.xAxisType === 'number') return false;
+    // Auto-detect: all labels are 4-digit years in reasonable range
+    return data.labels.length > 0 &&
+      data.labels.every(label => {
+        const trimmed = label.trim();
+        if (!/^\d{4}$/.test(trimmed)) return false;
+        const year = parseInt(trimmed, 10);
+        return year >= 1800 && year <= 2100;
+      });
+  }, [data.labels, data.xAxisType]);
+
+  // Detect Y-axis format from data hints or infer from yAxisLabel
+  const yAxisFormat = useMemo(() => {
+    if (data.yAxisFormat) return data.yAxisFormat;
+    // Infer from axis label text
+    const label = (data.yAxisLabel || '').toLowerCase();
+    if (/(\$|usd|eur|gbp|price|cost|revenue|salary|income|spend|budget|dollar|euro|pound)/.test(label)) {
+      return 'currency';
+    }
+    if (/(percent|%|rate|ratio|share|proportion)/.test(label)) {
+      return 'percentage';
+    }
+    return 'number';
+  }, [data.yAxisFormat, data.yAxisLabel]);
+
+  // Get prefix/suffix for Y-axis values
+  const yAxisPrefix = useMemo(() => {
+    if (data.yAxisPrefix) return data.yAxisPrefix;
+    if (yAxisFormat === 'currency') {
+      // Try to infer currency symbol from label
+      const label = (data.yAxisLabel || '').toLowerCase();
+      if (/eur|euro|€/.test(label)) return '€';
+      if (/gbp|pound|£/.test(label)) return '£';
+      return '$'; // Default to USD
+    }
+    return '';
+  }, [data.yAxisPrefix, yAxisFormat, data.yAxisLabel]);
+
+  const yAxisSuffix = useMemo(() => {
+    if (data.yAxisSuffix) return data.yAxisSuffix;
+    if (yAxisFormat === 'percentage') return '%';
+    return '';
+  }, [data.yAxisSuffix, yAxisFormat]);
+
+  // Format Y-axis tick values with compact notation for large numbers
+  const formatYAxisTick = useCallback((value: number): string => {
+    const absValue = Math.abs(value);
+    let formatted: string;
+
+    if (absValue >= 1_000_000_000) {
+      formatted = `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+    } else if (absValue >= 1_000_000) {
+      formatted = `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    } else if (absValue >= 10_000) {
+      formatted = `${(value / 1_000).toFixed(0)}K`;
+    } else if (absValue >= 1_000) {
+      formatted = `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    } else {
+      formatted = value.toLocaleString();
+    }
+
+    return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
+  }, [yAxisPrefix, yAxisSuffix]);
+
+  // Format tooltip values with full precision
+  const formatTooltipValue = useCallback((value: number): string => {
+    const formatted = value.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+    return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
+  }, [yAxisPrefix, yAxisSuffix]);
+
+  // Format X-axis year ticks as integers (no decimals)
+  const formatXAxisYearTick = useCallback((value: number): string => {
+    return String(Math.round(value));
+  }, []);
+
   const chartData = useMemo(() => {
     return data.labels.map((label, idx) => {
       const point: Record<string, string | number> = {
@@ -241,7 +323,19 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       fontFamily: 'var(--font-mono)',
     } : undefined;
 
-    const xAxisElement = isNumericLabels ? (
+    // For year labels, treat as categorical to avoid decimal interpolation (2020.3)
+    // For other numeric labels, use continuous numeric axis
+    const xAxisElement = isYearLabels ? (
+      <XAxis
+        dataKey="name"
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        padding={{ left: 20, right: 20 }}
+        label={xAxisLabelConfig}
+      />
+    ) : isNumericLabels ? (
       <XAxis
         type="number"
         dataKey="x"
@@ -250,6 +344,8 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         tick={{ fill: theme.textMuted, fontSize: 12 }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        allowDecimals={false}
+        tickFormatter={formatXAxisYearTick}
         label={xAxisLabelConfig}
       />
     ) : (
@@ -270,6 +366,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         tick={{ fill: theme.textMuted, fontSize: 12 }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        tickFormatter={formatYAxisTick}
         label={yAxisLabel ? {
           value: yAxisLabel,
           angle: -90,
@@ -292,6 +389,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         }}
         labelStyle={{ color: theme.text, fontWeight: 600 }}
         itemStyle={{ color: theme.textMuted }}
+        formatter={(value) => typeof value === 'number' ? [formatTooltipValue(value), undefined] : value}
       />
     );
 
@@ -576,7 +674,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                     <td className="table-cell sticky-col" style={{ color: theme.text, background: theme.background, fontWeight: 500 }}>{label}</td>
                     {data.series.map((series) => (
                       <td key={series.name} className="table-cell" style={{ color: theme.textMuted, borderColor: theme.border }}>
-                        {typeof series.data[rowIdx] === 'number' ? series.data[rowIdx].toLocaleString() : series.data[rowIdx]}
+                        {typeof series.data[rowIdx] === 'number' ? formatTooltipValue(series.data[rowIdx]) : series.data[rowIdx]}
                       </td>
                     ))}
                   </tr>

@@ -163,6 +163,7 @@ class PromptGenerateRequest(BaseModel):
 
 class StockPriceRequest(BaseModel):
     ticker: str
+    ticker2: str | None = None  # Optional second ticker for comparison
     range: str = "3M"  # 1W, 1M, 3M, 6M, 1Y, YTD
 
 

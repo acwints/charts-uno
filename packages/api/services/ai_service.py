@@ -387,7 +387,11 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
   "stacked": true | false,
   "xAxisLabel": "Label for the x-axis",
-  "yAxisLabel": "Label for the y-axis"
+  "yAxisLabel": "Label for the y-axis",
+  "xAxisType": "year" | "date" | "category" | "number",
+  "yAxisFormat": "currency" | "percentage" | "number",
+  "yAxisPrefix": "" | "$" | "€" | "£" | etc,
+  "yAxisSuffix": "" | "%" | " units" | etc
 }}
 
 Rules:
@@ -398,7 +402,16 @@ Rules:
 - Choose suggestedType based on what best represents the data (trends = line, comparisons = bar, proportions = pie, etc.)
 - Include 5-15 data points unless the user specifies otherwise
 - Set stacked to true only if the data naturally represents stacked categories
-- If the prompt is too vague, make reasonable assumptions and generate something useful"""
+- If the prompt is too vague, make reasonable assumptions and generate something useful
+
+Axis formatting rules:
+- When labels represent years (e.g., 1999, 2000, 2023), set xAxisType to "year" and use integer year values as labels (never decimals)
+- When labels represent dates, set xAxisType to "date"
+- When labels are text categories (e.g., product names, countries), set xAxisType to "category"
+- When values represent money/prices/revenue/cost/salary, set yAxisFormat to "currency" and yAxisPrefix to the appropriate symbol ("$" for USD, "€" for EUR, etc.)
+- When values represent percentages, set yAxisFormat to "percentage" and yAxisSuffix to "%"
+- For large currency values (millions), the chart will auto-format to compact notation (e.g., $1.5M) - just provide raw numbers
+- Default to yAxisFormat "number" with empty prefix/suffix if no special formatting needed"""
 
     response = model.generate_content(system_prompt)
     content = response.text
