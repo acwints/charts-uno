@@ -280,14 +280,27 @@
 
 /* Stocks Input */
 .stocks-input {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  min-height: 200px;
+}
+
+.stocks-col-left {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.stocks-col-right {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-6);
+  justify-content: center;
 }
 
 .stocks-ticker-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -323,7 +336,7 @@
 
 .stocks-dropdown {
   position: absolute;
-  top: 100%;
+  top: 48px;
   left: 0;
   right: 0;
   margin-top: var(--space-1);
@@ -423,6 +436,10 @@
 @media (max-width: 600px) {
   .mode-tab span {
     display: none;
+  }
+
+  .stocks-input {
+    grid-template-columns: 1fr;
   }
 }
 

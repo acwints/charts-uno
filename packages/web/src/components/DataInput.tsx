@@ -55,7 +55,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [stockRange, setStockRange] = useState('3M');
   const [isLoadingStock, setIsLoadingStock] = useState(false);
   const [showTickerDropdown, setShowTickerDropdown] = useState(false);
-  const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tickerWrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -447,17 +447,19 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'stocks' && (
             <div className="stocks-input">
-              <div className="stocks-ticker-wrapper" ref={tickerWrapperRef}>
-                <Search size={20} className="stocks-ticker-icon" />
-                <input
-                  type="text"
-                  className="stocks-ticker-input"
-                  placeholder="Search for a ticker (e.g. AAPL, MSFT, TSLA)"
-                  value={tickerQuery}
-                  onChange={(e) => handleTickerSearch(e.target.value)}
-                  spellCheck={false}
-                  aria-label="Search ticker symbol"
-                />
+              <div className="stocks-col-left" ref={tickerWrapperRef}>
+                <div className="stocks-ticker-wrapper">
+                  <Search size={20} className="stocks-ticker-icon" />
+                  <input
+                    type="text"
+                    className="stocks-ticker-input"
+                    placeholder="Search for a ticker (e.g. AAPL, MSFT, TSLA)"
+                    value={tickerQuery}
+                    onChange={(e) => handleTickerSearch(e.target.value)}
+                    spellCheck={false}
+                    aria-label="Search ticker symbol"
+                  />
+                </div>
                 {showTickerDropdown && tickerResults.length > 0 && (
                   <div className="stocks-dropdown">
                     {tickerResults.map((result) => (
@@ -474,37 +476,39 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 )}
               </div>
 
-              <div className="stocks-range-bar">
-                {STOCK_RANGES.map((range) => (
-                  <button
-                    key={range}
-                    className={`stocks-range-btn ${stockRange === range ? 'active' : ''}`}
-                    onClick={() => setStockRange(range)}
-                    aria-pressed={stockRange === range}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
+              <div className="stocks-col-right">
+                <div className="stocks-range-bar">
+                  {STOCK_RANGES.map((range) => (
+                    <button
+                      key={range}
+                      className={`stocks-range-btn ${stockRange === range ? 'active' : ''}`}
+                      onClick={() => setStockRange(range)}
+                      aria-pressed={stockRange === range}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
 
-              {(isProcessing || isLoadingStock) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label="Fetching stock data..."
-                  statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
-                />
-              ) : (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleStockSubmit}
-                  disabled={!selectedTicker}
-                >
-                  <TrendingUp size={18} />
-                  <span>Chart Stock</span>
-                  <ArrowRight size={18} />
-                </Button>
-              )}
+                {(isProcessing || isLoadingStock) ? (
+                  <AIProcessingIndicator
+                    size="sm"
+                    label="Fetching stock data..."
+                    statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
+                  />
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleStockSubmit}
+                    disabled={!selectedTicker}
+                  >
+                    <TrendingUp size={18} />
+                    <span>Chart Stock</span>
+                    <ArrowRight size={18} />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </motion.div>
