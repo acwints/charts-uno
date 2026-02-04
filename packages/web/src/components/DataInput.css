@@ -1,26 +1,27 @@
 .data-input {
   width: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
   gap: var(--space-4);
 }
 
 .input-mode-tabs {
   display: flex;
+  flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-1);
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: var(--border-subtle);
+  grid-row: 1 / 2;
 }
 
 .mode-tab {
-  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 500;
@@ -29,6 +30,7 @@
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  white-space: nowrap;
   transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
@@ -46,6 +48,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  grid-row: 1 / 2;
 }
 
 /* Drop Zone */
@@ -245,6 +248,7 @@
 
 /* Prompt Input */
 .prompt-input-wrapper {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -280,24 +284,20 @@
 
 /* Stocks Input */
 .stocks-input {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-6);
-  min-height: 200px;
 }
 
 .stocks-col-left {
   position: relative;
-  display: flex;
-  flex-direction: column;
 }
 
 .stocks-col-right {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  justify-content: center;
 }
 
 .stocks-ticker-wrapper {
@@ -417,6 +417,7 @@
 
 /* Error Message */
 .error-message {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -434,12 +435,17 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  .mode-tab span {
-    display: none;
+  .data-input {
+    grid-template-columns: 1fr;
   }
 
-  .stocks-input {
-    grid-template-columns: 1fr;
+  .input-mode-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .mode-tab span {
+    display: none;
   }
 }
 

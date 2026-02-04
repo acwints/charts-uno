@@ -2,7 +2,9 @@
 .env
 .env.local
 .env.*.local
-packages/bot/.env
+
+# Database
+*.db
 
 # Vercel - track project.json but not other files
 .vercel/*
@@ -17,10 +19,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies and build output
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -32,4 +34,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env*.local
+
+# Python
+__pycache__
+*.pyc
