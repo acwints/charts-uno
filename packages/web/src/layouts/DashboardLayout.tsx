@@ -22,7 +22,6 @@ export function DashboardLayout() {
     <div className="dashboard-wrapper">
       <Header
         onAuthOpen={openAuthModal}
-        showFeedButton={true}
       />
 
       <div className="dashboard-body">
