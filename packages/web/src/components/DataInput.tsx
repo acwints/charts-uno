@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Papa from 'papaparse';
 import Upload from 'lucide-react/dist/esm/icons/upload';
@@ -6,17 +6,24 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Image from 'lucide-react/dist/esm/icons/image';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Search from 'lucide-react/dist/esm/icons/search';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Check from 'lucide-react/dist/esm/icons/check';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
+import { generateChartFromPrompt } from '../services/promptGenerate';
+import { searchTickers, fetchStockData, type TickerResult } from '../services/stockService';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './DataInput.css';
 
-type InputMode = 'upload' | 'paste' | 'image' | 'sheets';
+type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks';
+
+const STOCK_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD'] as const;
 
 interface DataInputProps {
   onSubmit: (data: ChartData) => void;
@@ -28,6 +35,8 @@ const INPUT_MODES = [
   { id: 'paste' as const, icon: Clipboard, label: 'Paste Data' },
   { id: 'image' as const, icon: Image, label: 'Upload Image' },
   { id: 'sheets' as const, icon: Link2, label: 'Google Sheets' },
+  { id: 'prompt' as const, icon: Sparkles, label: 'Describe' },
+  { id: 'stocks' as const, icon: TrendingUp, label: 'Stocks' },
 ];
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
@@ -35,11 +44,80 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [pasteContent, setPasteContent] = useState('');
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [tickerQuery, setTickerQuery] = useState('');
+  const [tickerResults, setTickerResults] = useState<TickerResult[]>([]);
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [stockRange, setStockRange] = useState('3M');
+  const [isLoadingStock, setIsLoadingStock] = useState(false);
+  const [showTickerDropdown, setShowTickerDropdown] = useState(false);
+  const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const tickerWrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Close ticker dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (tickerWrapperRef.current && !tickerWrapperRef.current.contains(e.target as Node)) {
+        setShowTickerDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleTickerSearch = useCallback((query: string) => {
+    setTickerQuery(query);
+    setSelectedTicker(null);
+
+    if (tickerDebounceRef.current) {
+      clearTimeout(tickerDebounceRef.current);
+    }
+
+    if (!query.trim()) {
+      setTickerResults([]);
+      setShowTickerDropdown(false);
+      return;
+    }
+
+    tickerDebounceRef.current = setTimeout(async () => {
+      try {
+        const results = await searchTickers(query.trim());
+        setTickerResults(results);
+        setShowTickerDropdown(results.length > 0);
+      } catch {
+        setTickerResults([]);
+        setShowTickerDropdown(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleTickerSelect = useCallback((symbol: string) => {
+    setSelectedTicker(symbol);
+    setTickerQuery(symbol);
+    setShowTickerDropdown(false);
+    setTickerResults([]);
+  }, []);
+
+  const handleStockSubmit = useCallback(async () => {
+    if (!selectedTicker) return;
+    setError(null);
+    setIsLoadingStock(true);
+
+    try {
+      const data = await fetchStockData(selectedTicker, stockRange);
+      onSubmit(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
+    } finally {
+      setIsLoadingStock(false);
+    }
+  }, [selectedTicker, stockRange, onSubmit]);
 
   const parseCSVData = useCallback((content: string, sourceType: 'csv' | 'paste'): ChartData | null => {
     const result = Papa.parse(content, {
@@ -166,6 +244,24 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       onSubmit(demoData);
     }, 1200);
   }, [sheetsUrl, onSubmit, userPrompt]);
+
+  const handlePromptSubmit = useCallback(async () => {
+    setError(null);
+    if (!promptText.trim()) {
+      setError('Please describe the chart you want to create.');
+      return;
+    }
+
+    setIsGeneratingPrompt(true);
+    try {
+      const data = await generateChartFromPrompt(promptText.trim());
+      onSubmit(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate chart');
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  }, [promptText, onSubmit]);
 
   return (
     <div className="data-input">
@@ -318,9 +414,103 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               )}
             </div>
           )}
+
+          {mode === 'prompt' && (
+            <div className="prompt-generate">
+              <textarea
+                className="prompt-generate-textarea"
+                placeholder={`Describe the chart you want to create...\n\nExamples:\n- "Monthly revenue for a SaaS startup growing 15% MoM"\n- "Top 10 programming languages by popularity in 2024"\n- "US vs China GDP comparison from 2000 to 2023"`}
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                spellCheck={false}
+              />
+              {(isProcessing || isGeneratingPrompt) ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label="Generating your chart..."
+                  statusMessages={['Interpreting your description...', 'Generating realistic data...', 'Choosing chart type...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handlePromptSubmit}
+                  disabled={!promptText.trim()}
+                >
+                  <Sparkles size={18} />
+                  <span>Generate Chart</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {mode === 'stocks' && (
+            <div className="stocks-input">
+              <div className="stocks-ticker-wrapper" ref={tickerWrapperRef}>
+                <Search size={20} className="stocks-ticker-icon" />
+                <input
+                  type="text"
+                  className="stocks-ticker-input"
+                  placeholder="Search for a ticker (e.g. AAPL, MSFT, TSLA)"
+                  value={tickerQuery}
+                  onChange={(e) => handleTickerSearch(e.target.value)}
+                  spellCheck={false}
+                  aria-label="Search ticker symbol"
+                />
+                {showTickerDropdown && tickerResults.length > 0 && (
+                  <div className="stocks-dropdown">
+                    {tickerResults.map((result) => (
+                      <button
+                        key={result.symbol}
+                        className="stocks-dropdown-item"
+                        onClick={() => handleTickerSelect(result.symbol)}
+                      >
+                        <span className="stocks-dropdown-symbol">{result.symbol}</span>
+                        <span className="stocks-dropdown-desc">{result.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="stocks-range-bar">
+                {STOCK_RANGES.map((range) => (
+                  <button
+                    key={range}
+                    className={`stocks-range-btn ${stockRange === range ? 'active' : ''}`}
+                    onClick={() => setStockRange(range)}
+                    aria-pressed={stockRange === range}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+
+              {(isProcessing || isLoadingStock) ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label="Fetching stock data..."
+                  statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleStockSubmit}
+                  disabled={!selectedTicker}
+                >
+                  <TrendingUp size={18} />
+                  <span>Chart Stock</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
+      {mode !== 'prompt' && mode !== 'stocks' && (
       <div className="prompt-input-wrapper">
         <MessageSquare size={18} className="prompt-icon" />
         <input
@@ -331,6 +521,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
           onChange={(e) => setUserPrompt(e.target.value)}
         />
       </div>
+      )}
 
       <AnimatePresence>
         {error && (

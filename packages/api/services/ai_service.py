@@ -369,6 +369,58 @@ Analyze this data and recommend the best chart type:
         }
 
 
+async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
+    """Generate plausible chart data from a natural language prompt."""
+    model = get_model()
+
+    system_prompt = f"""You are a data visualization expert. The user will describe a chart they want to see. Your job is to invent plausible, realistic data that matches their description.
+
+User prompt: {prompt}
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "labels": ["label1", "label2", ...],
+  "series": [
+    {{"name": "Series Name", "data": [num1, num2, ...]}}
+  ],
+  "suggestedTitle": "A clear, descriptive title for the chart",
+  "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
+  "stacked": true | false,
+  "xAxisLabel": "Label for the x-axis",
+  "yAxisLabel": "Label for the y-axis"
+}}
+
+Rules:
+- labels array must match the length of each data array
+- All data values must be numbers
+- Generate realistic, plausible data that matches the user's description
+- Use real-world knowledge to make the data convincing (e.g., actual programming language popularity rankings, typical SaaS growth curves, realistic market share percentages)
+- Choose suggestedType based on what best represents the data (trends = line, comparisons = bar, proportions = pie, etc.)
+- Include 5-15 data points unless the user specifies otherwise
+- Set stacked to true only if the data naturally represents stacked categories
+- If the prompt is too vague, make reasonable assumptions and generate something useful"""
+
+    response = model.generate_content(system_prompt)
+    content = response.text
+
+    if not content:
+        raise ValueError("No response from AI")
+
+    clean_content = content.replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+    parsed = json.loads(clean_content)
+
+    if "error" in parsed:
+        raise ValueError(parsed["error"])
+
+    if not parsed.get("labels") or not parsed.get("series"):
+        raise ValueError("Invalid data structure returned")
+
+    # Coerce labels to strings
+    parsed["labels"] = [str(label) for label in parsed["labels"]]
+
+    return parsed
+
+
 # Color palettes matching the frontend
 COLOR_PALETTES = {
     "default": ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"],

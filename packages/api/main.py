@@ -43,6 +43,9 @@ from schemas import (
     TokenResponse,
     ImageAnalysisRequest,
     ImageAnalysisResponse,
+    PromptGenerateRequest,
+    StockPriceRequest,
+    StockSearchRequest,
     ChatRequest,
     ChatResponse,
     ChartRecommendRequest,
@@ -70,7 +73,8 @@ from schemas import (
     TeamBrandingUpdate,
     TeamBrandingResponse,
 )
-from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic
+from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt
+from services.stock_service import fetch_stock_prices, search_tickers
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 
 # Configure logging
@@ -919,6 +923,76 @@ async def infographic_endpoint(
     except Exception as e:
         logger.error(f"Infographic generation failed: {e}")
         raise HTTPException(status_code=500, detail="Infographic generation failed")
+
+
+@app.post("/api/ai/generate", response_model=ImageAnalysisResponse)
+@limiter.limit("10/minute")
+async def generate_from_prompt_endpoint(
+    request: Request,
+    data: PromptGenerateRequest,
+):
+    """Generate chart data from a natural language prompt using AI."""
+    try:
+        result = await generate_chart_from_prompt(data.prompt)
+        return ImageAnalysisResponse(
+            labels=result["labels"],
+            series=result["series"],
+            suggestedTitle=result.get("suggestedTitle"),
+            suggestedType=result.get("suggestedType"),
+            stacked=result.get("stacked"),
+            xAxisLabel=result.get("xAxisLabel"),
+            yAxisLabel=result.get("yAxisLabel"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Prompt generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Chart generation failed")
+
+
+# ============================================================================
+# Stock Data Endpoints
+# ============================================================================
+
+@app.post("/api/stocks/prices", response_model=ImageAnalysisResponse)
+@limiter.limit("20/minute")
+async def stock_prices_endpoint(
+    request: Request,
+    data: StockPriceRequest,
+):
+    """Fetch stock price data for charting."""
+    try:
+        result = await fetch_stock_prices(data.ticker, data.range)
+        return ImageAnalysisResponse(
+            labels=result["labels"],
+            series=result["series"],
+            suggestedTitle=result.get("suggestedTitle"),
+            suggestedType=result.get("suggestedType"),
+            xAxisLabel=result.get("xAxisLabel"),
+            yAxisLabel=result.get("yAxisLabel"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Stock price fetch failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch stock data")
+
+
+@app.post("/api/stocks/search")
+@limiter.limit("30/minute")
+async def stock_search_endpoint(
+    request: Request,
+    data: StockSearchRequest,
+):
+    """Search for ticker symbols."""
+    try:
+        results = await search_tickers(data.query)
+        return results
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Stock search failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search tickers")
 
 
 # ============================================================================

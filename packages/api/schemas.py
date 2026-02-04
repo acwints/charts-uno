@@ -157,6 +157,19 @@ class ImageAnalysisResponse(BaseModel):
     yAxisLabel: Optional[str] = None
 
 
+class PromptGenerateRequest(BaseModel):
+    prompt: str
+
+
+class StockPriceRequest(BaseModel):
+    ticker: str
+    range: str = "3M"  # 1W, 1M, 3M, 6M, 1Y, YTD
+
+
+class StockSearchRequest(BaseModel):
+    query: str
+
+
 class ChatMessageHistory(BaseModel):
     role: str  # 'user' or 'assistant'
     content: str

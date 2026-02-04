@@ -6,7 +6,7 @@ export interface DataSeries {
 export interface ChartData {
   labels: string[];
   series: DataSeries[];
-  sourceType: 'csv' | 'paste' | 'image' | 'sheets';
+  sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks';
   suggestedTitle?: string;
   suggestedType?: ChartType;
   suggestedStacked?: boolean;
