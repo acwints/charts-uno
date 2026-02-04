@@ -3,7 +3,7 @@
 }
 
 .team-switcher--loading {
-  width: 140px;
+  width: 220px;
 }
 
 .team-switcher__skeleton {
@@ -22,15 +22,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 6px 14px;
   background: var(--bg-elevated);
   border: var(--border-default);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 150ms, border-color 150ms;
   font-size: 13px;
   color: var(--text-primary);
-  min-width: 140px;
+  min-width: 220px;
 }
 
 .team-switcher__trigger:hover {
@@ -52,7 +52,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 120px;
 }
 
 .team-switcher__plan {
@@ -87,8 +86,9 @@
 .team-switcher__dropdown {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
-  min-width: 240px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 280px;
   background: var(--bg-secondary);
   border: var(--border-default);
   border-radius: 8px;
@@ -203,7 +203,7 @@
   cursor: pointer;
   font-size: 13px;
   color: var(--text-secondary);
-  transition: all 0.15s ease;
+  transition: background-color 150ms, color 150ms;
 }
 
 .team-switcher__create:hover {

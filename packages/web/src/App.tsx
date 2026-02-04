@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
-import { DashboardLayout } from './layouts/DashboardLayout';
 import { ChartBuilder } from './pages/ChartBuilder';
 import { ChartView } from './pages/ChartView';
 import { ChartFeedPage } from './pages/ChartFeedPage';
@@ -45,7 +44,7 @@ function AppWithTeam() {
 
         {/* Auth-required dashboard routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<MainLayout />}>
             <Route index element={<UserDashboardPage tab="all" />} />
             <Route path="published" element={<UserDashboardPage tab="published" />} />
             <Route path="drafts" element={<UserDashboardPage tab="drafts" />} />
@@ -53,7 +52,7 @@ function AppWithTeam() {
             <Route path="saved" element={<UserDashboardPage tab="saved" />} />
           </Route>
 
-          <Route path="/team/:slug" element={<DashboardLayout />}>
+          <Route path="/team/:slug" element={<MainLayout />}>
             <Route index element={<TeamDashboardPage />} />
             <Route path="activity" element={<TeamActivityPage />} />
           </Route>

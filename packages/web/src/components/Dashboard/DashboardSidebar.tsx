@@ -7,8 +7,11 @@ import {
   Bookmark,
   Users,
   Plus,
+  Compass,
+  Sparkles,
 } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
+import { useChartStore } from '../../stores/chartStore';
 import { UsageWidget } from './UsageWidget';
 import './DashboardSidebar.css';
 
@@ -37,8 +40,14 @@ function NavItem({ to, icon, label, end }: NavItemProps) {
 export function DashboardSidebar() {
   const navigate = useNavigate();
   const { teams, currentTeam, usage } = useTeam();
+  const { reset } = useChartStore();
 
   const nonPersonalTeams = teams.filter((t) => !t.is_personal);
+
+  const handleCreateNew = () => {
+    reset();
+    navigate('/new');
+  };
 
   const handleCreateTeam = () => {
     navigate('/settings/team');
@@ -47,6 +56,17 @@ export function DashboardSidebar() {
   return (
     <aside className="dashboard-sidebar">
       <nav className="sidebar-nav">
+        <div className="sidebar-section">
+          <button className="sidebar-create-btn" onClick={handleCreateNew}>
+            <Sparkles size={16} />
+            <span>Create New</span>
+          </button>
+        </div>
+
+        <div className="sidebar-section">
+          <NavItem to="/feed" icon={<Compass size={18} />} label="Explore" />
+        </div>
+
         <div className="sidebar-section">
           <div className="sidebar-section-header">Personal</div>
           <NavItem to="/dashboard" icon={<LayoutGrid size={18} />} label="My Charts" end />

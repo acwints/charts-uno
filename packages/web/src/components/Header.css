@@ -9,12 +9,18 @@
 }
 
 .header-content {
-  max-width: 1400px;
+  position: relative;
   margin: 0 auto;
   padding: var(--space-3) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .logo-container {

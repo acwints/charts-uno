@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import { Header } from '../components/Header';
+import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
 import { AuthModal } from '../components/AuthModal';
 import { ChatPanel } from '../components/ChatPanel';
 import { useAuth } from '../hooks/useAuth';
@@ -18,8 +19,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
 
-  const isSettingsPage = location.pathname.startsWith('/settings');
-  const isFeedPage = location.pathname === '/feed';
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
 
   useEffect(() => {
@@ -30,12 +29,11 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="app">
-      <Header
-        onAuthOpen={openAuthModal}
-        showFeedButton={!isFeedPage && !isSettingsPage}
-      />
+      <Header onAuthOpen={openAuthModal} />
 
       <div className="app-body">
+        {isAuthenticated && <DashboardSidebar />}
+
         <main className="main">
           <AnimatePresence mode="wait">
             {children || <Outlet context={{ openAuthModal }} />}

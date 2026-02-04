@@ -1,33 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Sparkles, LayoutGrid, Home, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
+import { Sparkles, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
-import { useChartStore } from '../stores/chartStore';
 import './Header.css';
 
 interface HeaderProps {
-  showFeedButton?: boolean;
   onAuthOpen?: () => void;
 }
 
 export function Header({
-  showFeedButton = true,
   onAuthOpen,
 }: HeaderProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { reset } = useChartStore();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-
-  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/team/');
-  const isNewChartPage = location.pathname === '/new';
-  const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -43,15 +34,6 @@ export function Header({
     setIsUserMenuOpen(false);
     await logout();
     navigate('/');
-  };
-
-  const handleCreateNew = () => {
-    reset();
-    navigate('/new');
-  };
-
-  const handleCreateTeam = () => {
-    navigate('/settings/team');
   };
 
   const initials = user?.name
@@ -81,48 +63,23 @@ export function Header({
           </Link>
         </motion.div>
 
+        {isAuthenticated && (
+          <div className="header-center">
+            <TeamSwitcher onCreateTeam={() => navigate('/settings/team')} />
+          </div>
+        )}
+
         <motion.nav
           className="header-nav"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          {isAuthenticated && (
-            <TeamSwitcher onCreateTeam={handleCreateTeam} />
-          )}
-
           <ThemeToggle />
 
           {!isAuthenticated && onAuthOpen && (
             <Button variant="primary" onClick={onAuthOpen}>
               Sign in
-            </Button>
-          )}
-
-          {/* Dashboard link for authenticated users when not on dashboard */}
-          {isAuthenticated && !isDashboard && (
-            <Link to="/dashboard">
-              <Button>
-                <Home size={16} />
-                <span>Dashboard</span>
-              </Button>
-            </Link>
-          )}
-
-          {showFeedButton && (
-            <Link to="/feed">
-              <Button>
-                <LayoutGrid size={16} />
-                <span>Feed</span>
-              </Button>
-            </Link>
-          )}
-
-          {/* Create New button for authenticated users (except on chart pages where it's in the body) */}
-          {isAuthenticated && !isNewChartPage && !isChartPage && (
-            <Button variant="primary" onClick={handleCreateNew}>
-              <Plus size={16} />
-              <span>Create New</span>
             </Button>
           )}
 
