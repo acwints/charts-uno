@@ -78,7 +78,7 @@
   color: var(--text-muted);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .toast-close:hover {
@@ -96,5 +96,12 @@
   .toast {
     min-width: auto;
     max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-close {
+    transition: none;
+    animation: none;
   }
 }

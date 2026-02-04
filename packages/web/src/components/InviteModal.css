@@ -49,7 +49,7 @@
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 6px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .invite-modal__close:hover {
@@ -93,14 +93,14 @@
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .invite-modal__input::placeholder {
   color: var(--text-muted);
 }
 
-.invite-modal__input:focus {
+.invite-modal__input:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-subtle);
@@ -120,7 +120,7 @@
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .invite-modal__role:hover {
@@ -174,7 +174,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .invite-modal__submit:hover:not(:disabled) {
@@ -225,11 +225,38 @@
   border-radius: 6px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .invite-modal__copy:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-modal__close {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-modal__input {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-modal__role {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-modal__submit {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-modal__copy {
+    transition: none;
+    animation: none;
+  }
 }

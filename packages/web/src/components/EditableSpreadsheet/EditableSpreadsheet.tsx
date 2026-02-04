@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Trash2, RotateCcw } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import { EditableCell } from './EditableCell';
 import type { ChartData, ColorScheme } from '../../types';
 import { COLOR_PALETTES } from '../../types';
@@ -148,6 +150,7 @@ export function EditableSpreadsheet({
                         className="delete-btn column-delete"
                         onClick={() => deleteColumn(idx)}
                         title="Delete column"
+                        aria-label="Delete column"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -171,6 +174,7 @@ export function EditableSpreadsheet({
                         className="delete-btn row-delete"
                         onClick={() => deleteRow(rowIdx)}
                         title="Delete row"
+                        aria-label="Delete row"
                       >
                         <Trash2 size={12} />
                       </button>

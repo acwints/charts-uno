@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, TrendingUp, Bookmark, Heart, RefreshCw, ChevronLeft } from 'lucide-react';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { ChartCard } from './ChartCard';
 import type { ChartResponse } from '../../services/api';
 import { getPublicCharts, getSavedCharts, getLikedCharts } from '../../services/api';

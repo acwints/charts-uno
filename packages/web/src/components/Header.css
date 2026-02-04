@@ -91,7 +91,7 @@
   border: none;
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .user-menu-trigger:hover {
@@ -173,7 +173,7 @@
   cursor: pointer;
   font-size: 13px;
   color: var(--text-secondary);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   text-align: left;
   text-decoration: none;
 }
@@ -192,3 +192,19 @@
   color: #ef4444;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .user-menu-trigger {
+    transition: none;
+    animation: none;
+  }
+
+  .user-menu-chevron {
+    transition: none;
+    animation: none;
+  }
+
+  .user-menu-item {
+    transition: none;
+    animation: none;
+  }
+}

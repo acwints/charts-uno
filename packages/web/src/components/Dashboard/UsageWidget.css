@@ -54,3 +54,10 @@
   color: var(--error);
   font-weight: 600;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-bar-fill {
+    transition: none;
+    animation: none;
+  }
+}

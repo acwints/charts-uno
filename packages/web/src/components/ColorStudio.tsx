@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { Sun, Moon, RotateCcw, ChevronDown, Palette, Sliders } from 'lucide-react';
+import Sun from 'lucide-react/dist/esm/icons/sun';
+import Moon from 'lucide-react/dist/esm/icons/moon';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Palette from 'lucide-react/dist/esm/icons/palette';
+import Sliders from 'lucide-react/dist/esm/icons/sliders';
 import type { ChartConfig, CustomColors, ColorScheme } from '../types';
 import { COLOR_PALETTES, PRESET_PALETTES, getTheme } from '../types';
 import { SectionHeader } from './SectionHeader';

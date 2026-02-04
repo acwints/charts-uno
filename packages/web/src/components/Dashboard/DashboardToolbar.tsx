@@ -1,5 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Globe, Lock } from 'lucide-react';
+import X from 'lucide-react/dist/esm/icons/x';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import { useDashboardStore } from '../../stores/dashboardStore';
 import { batchDeleteCharts, batchPublishCharts } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';

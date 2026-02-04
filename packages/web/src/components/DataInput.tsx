@@ -1,17 +1,15 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Papa from 'papaparse';
-import {
-  Upload,
-  FileSpreadsheet,
-  Image,
-  Link2,
-  Clipboard,
-  ArrowRight,
-  Check,
-  AlertCircle,
-  MessageSquare,
-} from 'lucide-react';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Image from 'lucide-react/dist/esm/icons/image';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Check from 'lucide-react/dist/esm/icons/check';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
 import { AIProcessingIndicator } from './AIProcessingIndicator';

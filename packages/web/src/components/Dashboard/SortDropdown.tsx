@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ArrowUp, ArrowDown, Check } from 'lucide-react';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import Check from 'lucide-react/dist/esm/icons/check';
 import './SortDropdown.css';
 
 type SortField = 'created_at' | 'updated_at' | 'title' | 'view_count';
@@ -57,7 +60,7 @@ export function SortDropdown({ sort, order, onSort }: SortDropdownProps) {
         aria-expanded={isOpen}
       >
         <span className="sort-dropdown-label">{currentOption?.label}</span>
-        <button className="sort-dropdown-order" onClick={toggleOrder} title={`Sort ${order === 'asc' ? 'ascending' : 'descending'}`}>
+        <button className="sort-dropdown-order" onClick={toggleOrder} title={`Sort ${order === 'asc' ? 'ascending' : 'descending'}`} aria-label={`Sort ${order === 'asc' ? 'ascending' : 'descending'}`}>
           {order === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
         </button>
         <ChevronDown size={14} className={`sort-dropdown-chevron ${isOpen ? 'sort-dropdown-chevron--open' : ''}`} />

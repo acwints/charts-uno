@@ -23,14 +23,14 @@
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   outline: none;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .search-input::placeholder {
   color: var(--text-muted);
 }
 
-.search-input:focus {
+.search-input:focus-visible {
   border-color: var(--accent);
   background: var(--bg-secondary);
 }
@@ -49,10 +49,22 @@
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .search-input-clear:hover {
   background: var(--bg-hover);
   color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-input {
+    transition: none;
+    animation: none;
+  }
+
+  .search-input-clear {
+    transition: none;
+    animation: none;
+  }
 }

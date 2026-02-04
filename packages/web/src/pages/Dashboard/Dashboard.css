@@ -54,3 +54,10 @@
   margin-left: auto;
   padding: var(--space-2) 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .team-dashboard-tab {
+    transition: none;
+    animation: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
-import { Sun, Moon } from 'lucide-react';
+import Sun from 'lucide-react/dist/esm/icons/sun';
+import Moon from 'lucide-react/dist/esm/icons/moon';
 import { useTheme } from '../contexts/ThemeContext';
 import './ThemeToggle.css';
 

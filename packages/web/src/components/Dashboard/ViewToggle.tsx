@@ -1,4 +1,5 @@
-import { LayoutGrid, List } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import List from 'lucide-react/dist/esm/icons/list';
 import './ViewToggle.css';
 
 type ViewMode = 'grid' | 'list';

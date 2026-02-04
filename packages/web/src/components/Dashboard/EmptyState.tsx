@@ -1,5 +1,10 @@
 import { Link } from 'react-router-dom';
-import { BarChart3, Heart, Bookmark, Globe, FileText, Plus } from 'lucide-react';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Plus from 'lucide-react/dist/esm/icons/plus';
 import { Button } from '../Button';
 import './EmptyState.css';
 

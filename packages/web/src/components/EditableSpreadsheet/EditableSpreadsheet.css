@@ -59,7 +59,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .spreadsheet-action:hover {
@@ -231,7 +231,7 @@
   border-radius: 3px;
   cursor: pointer;
   opacity: 0;
-  transition: all var(--transition-fast);
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -279,5 +279,12 @@
   .label-cell {
     min-width: 100px;
     width: 100px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spreadsheet-action {
+    transition: none;
+    animation: none;
   }
 }

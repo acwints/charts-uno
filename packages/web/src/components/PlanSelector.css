@@ -159,7 +159,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .plan-card__button:hover:not(:disabled) {
@@ -199,4 +199,11 @@
   font-size: 13px;
   color: var(--text-muted);
   margin-top: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card__button {
+    transition: none;
+    animation: none;
+  }
 }

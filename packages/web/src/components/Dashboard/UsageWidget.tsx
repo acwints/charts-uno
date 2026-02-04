@@ -1,4 +1,4 @@
-import { BarChart3 } from 'lucide-react';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import './UsageWidget.css';
 
 interface UsageWidgetProps {

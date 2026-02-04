@@ -18,7 +18,7 @@
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .view-toggle-btn:hover {
@@ -34,4 +34,11 @@
 .view-toggle-btn--active:hover {
   background: var(--accent-subtle);
   color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-toggle-btn {
+    transition: none;
+    animation: none;
+  }
 }

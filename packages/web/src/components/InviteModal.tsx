@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { X, Mail, UserPlus, Copy, Check } from 'lucide-react';
+import X from 'lucide-react/dist/esm/icons/x';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { motion, AnimatePresence } from 'motion/react';
 import { createInvitation, type TeamInvitation } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -100,7 +104,7 @@ export function InviteModal({
                 <UserPlus size={20} />
                 <span>Invite to {teamName}</span>
               </div>
-              <button className="invite-modal__close" onClick={handleClose}>
+              <button className="invite-modal__close" onClick={handleClose} aria-label="Close">
                 <X size={18} />
               </button>
             </div>

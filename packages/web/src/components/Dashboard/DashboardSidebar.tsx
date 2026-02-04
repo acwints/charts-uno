@@ -1,15 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import {
-  LayoutGrid,
-  Globe,
-  FileText,
-  Heart,
-  Bookmark,
-  Users,
-  Plus,
-  Compass,
-  Sparkles,
-} from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Compass from 'lucide-react/dist/esm/icons/compass';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { useTeam } from '../../contexts/TeamContext';
 import { useChartStore } from '../../stores/chartStore';
 import { UsageWidget } from './UsageWidget';

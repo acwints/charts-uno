@@ -423,3 +423,40 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .control-source-link {
+    transition: none;
+    animation: none;
+  }
+
+  .control-input-title {
+    transition: none;
+    animation: none;
+  }
+
+  .type-button {
+    transition: none;
+    animation: none;
+  }
+
+  .style-variant-button {
+    transition: none;
+    animation: none;
+  }
+
+  .toggle-switch {
+    transition: none;
+    animation: none;
+  }
+
+  .toggle-switch::after {
+    transition: none;
+    animation: none;
+  }
+
+  .color-scheme-button {
+    transition: none;
+    animation: none;
+  }
+}

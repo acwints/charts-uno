@@ -29,7 +29,7 @@
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .mode-tab:hover {
@@ -61,7 +61,7 @@
   border-radius: var(--radius-md);
   margin: var(--space-4);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
 .drop-zone:hover,
@@ -84,7 +84,7 @@
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
   color: var(--text-muted);
-  transition: all var(--transition-base);
+  transition: color var(--transition-base);
 }
 
 .drop-zone:hover .drop-zone-icon {
@@ -159,7 +159,7 @@
   color: var(--text-muted);
 }
 
-.paste-textarea:focus {
+.paste-textarea:focus-visible {
   outline: none;
   border-color: var(--accent);
 }
@@ -268,5 +268,37 @@
 @media (max-width: 600px) {
   .mode-tab span {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tab {
+    transition: none;
+    animation: none;
+  }
+
+  .drop-zone-icon {
+    transition: none;
+    animation: none;
+  }
+
+  .pulse {
+    transition: none;
+    animation: none;
+  }
+
+  .paste-textarea {
+    transition: none;
+    animation: none;
+  }
+
+  .sheets-url-wrapper {
+    transition: none;
+    animation: none;
+  }
+
+  .spin {
+    transition: none;
+    animation: none;
   }
 }

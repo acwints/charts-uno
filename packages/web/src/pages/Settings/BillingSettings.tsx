@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink, CreditCard, TrendingUp } from 'lucide-react';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { PlanSelector } from '../../components/PlanSelector';

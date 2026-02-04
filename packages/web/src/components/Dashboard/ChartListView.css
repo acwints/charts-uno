@@ -74,7 +74,7 @@
   color: white;
   cursor: pointer;
   opacity: 0;
-  transition: all var(--transition-fast);
+  transition: opacity var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .chart-list-checkbox--visible,
@@ -171,5 +171,17 @@
   .chart-list-header-date,
   .chart-list-header-views {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-list-item {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-list-checkbox {
+    transition: none;
+    animation: none;
   }
 }

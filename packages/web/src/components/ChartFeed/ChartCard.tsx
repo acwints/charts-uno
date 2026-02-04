@@ -12,7 +12,10 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Heart, Bookmark, Eye, User } from 'lucide-react';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import User from 'lucide-react/dist/esm/icons/user';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
 import { COLOR_PALETTES } from '../../types';

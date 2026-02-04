@@ -210,3 +210,30 @@
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .team-switcher__skeleton {
+    transition: none;
+    animation: none;
+  }
+
+  .team-switcher__trigger {
+    transition: none;
+    animation: none;
+  }
+
+  .team-switcher__chevron {
+    transition: none;
+    animation: none;
+  }
+
+  .team-switcher__item {
+    transition: none;
+    animation: none;
+  }
+
+  .team-switcher__create {
+    transition: none;
+    animation: none;
+  }
+}

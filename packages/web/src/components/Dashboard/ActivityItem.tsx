@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom';
-import {
-  PlusCircle,
-  Edit,
-  Globe,
-  Trash2,
-  UserPlus,
-  UserMinus,
-} from 'lucide-react';
+import PlusCircle from 'lucide-react/dist/esm/icons/plus-circle';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import UserMinus from 'lucide-react/dist/esm/icons/user-minus';
 import type { ActivityItem as ActivityItemType } from '../../services/api';
 import './ActivityItem.css';
 

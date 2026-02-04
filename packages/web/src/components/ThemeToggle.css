@@ -59,3 +59,15 @@
 [data-theme="light"] .theme-icon--moon {
   color: var(--text-muted);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-track {
+    transition: none;
+    animation: none;
+  }
+
+  .theme-icon {
+    transition: none;
+    animation: none;
+  }
+}

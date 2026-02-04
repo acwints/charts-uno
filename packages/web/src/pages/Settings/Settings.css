@@ -35,7 +35,7 @@
   color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   text-align: left;
 }
 
@@ -71,7 +71,7 @@
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 6px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .settings-page__close:hover {
@@ -250,10 +250,10 @@
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.settings-field__input:focus {
+.settings-field__input:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-subtle);
@@ -608,7 +608,7 @@
   border: 2px dashed var(--border-color);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease;
   color: var(--text-secondary);
 }
 
@@ -696,5 +696,42 @@
 
   .branding-logo-current__actions {
     margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-page__nav-item {
+    transition: none;
+    animation: none;
+  }
+
+  .settings-page__close {
+    transition: none;
+    animation: none;
+  }
+
+  .settings-field__input {
+    transition: none;
+    animation: none;
+  }
+
+  .usage-bar__fill {
+    transition: none;
+    animation: none;
+  }
+
+  .branding-toggle__switch {
+    transition: none;
+    animation: none;
+  }
+
+  .branding-toggle__switch-thumb {
+    transition: none;
+    animation: none;
+  }
+
+  .branding-logo-dropzone {
+    transition: none;
+    animation: none;
   }
 }

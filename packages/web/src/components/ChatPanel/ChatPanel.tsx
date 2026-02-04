@@ -1,16 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import {
-  Send,
-  Sparkles,
-  Loader2,
-  RotateCcw,
-  X,
-  Database,
-  Settings,
-  Lightbulb,
-  CheckCircle,
-} from 'lucide-react';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import X from 'lucide-react/dist/esm/icons/x';
+import Database from 'lucide-react/dist/esm/icons/database';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Lightbulb from 'lucide-react/dist/esm/icons/lightbulb';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import type { ChartData, ChartConfig } from '../../types';
 import {
   sendChatMessage,

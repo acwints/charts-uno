@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { ImageIcon, Upload, Trash2, Sparkles, Lock } from 'lucide-react';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/Button';

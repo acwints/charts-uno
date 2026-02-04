@@ -1,5 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, UserPlus } from 'lucide-react';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import { Button } from '../Button';
 import type { Team } from '../../services/api';
 import './TeamHeader.css';

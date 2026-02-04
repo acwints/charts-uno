@@ -24,7 +24,8 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
-import { RefreshCw, ExternalLink } from 'lucide-react';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';

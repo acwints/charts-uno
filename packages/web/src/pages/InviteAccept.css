@@ -169,3 +169,20 @@
 .invite-accept__button-spinner {
   animation: spin 1s linear infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-accept__spinner {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-accept__link {
+    transition: none;
+    animation: none;
+  }
+
+  .invite-accept__button-spinner {
+    transition: none;
+    animation: none;
+  }
+}

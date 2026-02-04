@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Check, Zap, Building2, Sparkles } from 'lucide-react';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { motion } from 'motion/react';
 import { createCheckout } from '../services/api';
 import { useToast } from '../contexts/ToastContext';

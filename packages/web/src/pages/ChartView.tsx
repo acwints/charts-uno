@@ -1,7 +1,11 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Save, Plus, BarChart3, Table2, Image } from 'lucide-react';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import Table2 from 'lucide-react/dist/esm/icons/table-2';
+import Image from 'lucide-react/dist/esm/icons/image';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';

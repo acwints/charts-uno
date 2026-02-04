@@ -46,3 +46,10 @@
 .not-found__link:hover {
   background: var(--color-primary-hover);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .not-found__link {
+    transition: none;
+    animation: none;
+  }
+}

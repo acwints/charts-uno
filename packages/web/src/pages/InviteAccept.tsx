@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
-import { Check, X, Loader2, Users } from 'lucide-react';
+import Check from 'lucide-react/dist/esm/icons/check';
+import X from 'lucide-react/dist/esm/icons/x';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Users from 'lucide-react/dist/esm/icons/users';
 import { getInvitationByToken, acceptInvitation, type TeamInvitation } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/Button';

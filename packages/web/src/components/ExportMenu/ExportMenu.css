@@ -27,7 +27,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   text-align: left;
 }
 
@@ -74,5 +74,17 @@
   }
   50% {
     opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-option {
+    transition: none;
+    animation: none;
+  }
+
+  .export-loading {
+    transition: none;
+    animation: none;
   }
 }

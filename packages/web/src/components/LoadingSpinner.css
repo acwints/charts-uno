@@ -26,3 +26,10 @@
   height: 40px;
   border-width: 3px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner-ring {
+    transition: none;
+    animation: none;
+  }
+}

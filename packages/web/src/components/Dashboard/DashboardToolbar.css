@@ -29,7 +29,7 @@
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .dashboard-toolbar-close:hover {
@@ -66,5 +66,12 @@
   .dashboard-toolbar-content {
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-toolbar-close {
+    transition: none;
+    animation: none;
   }
 }

@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Plus, Users } from 'lucide-react';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Users from 'lucide-react/dist/esm/icons/users';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTeam } from '../contexts/TeamContext';
 import './TeamSwitcher.css';

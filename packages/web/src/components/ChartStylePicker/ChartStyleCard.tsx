@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Sparkles } from 'lucide-react';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import type { ChartStyleOption, ChartData } from '../../types';
 import { COLOR_PALETTES } from '../../types';
 

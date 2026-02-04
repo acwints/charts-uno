@@ -15,7 +15,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .member-filter-trigger:hover {
@@ -57,7 +57,7 @@
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .member-filter-item:hover {
@@ -99,4 +99,21 @@
   height: 1px;
   background: var(--bg-tertiary);
   margin: var(--space-1) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-filter-trigger {
+    transition: none;
+    animation: none;
+  }
+
+  .member-filter-chevron {
+    transition: none;
+    animation: none;
+  }
+
+  .member-filter-item {
+    transition: none;
+    animation: none;
+  }
 }

@@ -13,7 +13,10 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Check, Eye, Globe, Lock } from 'lucide-react';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import { ChartActionsMenu } from './ChartActionsMenu';
 import type { ChartResponse } from '../../services/api';
 import { COLOR_PALETTES } from '../../types';

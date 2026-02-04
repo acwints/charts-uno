@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  MoreHorizontal,
-  Edit,
-  Copy,
-  Globe,
-  Lock,
-  Trash2,
-} from 'lucide-react';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import type { ChartResponse } from '../../services/api';
 import { updateChart, deleteChart, duplicateChart } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';

@@ -32,7 +32,7 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .chart-feed__back-btn:hover {
@@ -60,7 +60,7 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .chart-feed__refresh-btn:hover {
@@ -90,7 +90,7 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .chart-feed__tab:hover:not(:disabled) {
@@ -177,7 +177,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .chart-feed__retry-btn:hover {
@@ -202,7 +202,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .chart-feed__load-more-btn:hover:not(:disabled) {
@@ -240,5 +240,42 @@
 
   .chart-feed__tab {
     white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-feed__back-btn {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__refresh-btn {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__tab {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__loading .spinning, .chart-feed__refresh-btn .spinning {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__retry-btn {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__load-more-btn {
+    transition: none;
+    animation: none;
+  }
+
+  .chart-feed__load-more-btn .spinning {
+    transition: none;
+    animation: none;
   }
 }

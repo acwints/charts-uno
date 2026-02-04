@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Settings, CreditCard, LogOut, ChevronDown } from 'lucide-react';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';

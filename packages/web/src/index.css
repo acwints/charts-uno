@@ -276,7 +276,7 @@ code, pre, .mono {
   border-radius: var(--radius-md);
   cursor: pointer;
   overflow: hidden;
-  transition: all var(--transition-base);
+  transition: background-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
 }
 
 .epic-button::before {
@@ -352,7 +352,7 @@ code, pre, .mono {
   border: var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  transition: all var(--transition-base);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
 .epic-card:hover {

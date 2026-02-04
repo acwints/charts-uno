@@ -1,5 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Users, CreditCard, ImageIcon } from 'lucide-react';
+import User from 'lucide-react/dist/esm/icons/user';
+import Users from 'lucide-react/dist/esm/icons/users';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import { AccountSettings } from './AccountSettings';
 import { TeamSettings } from './TeamSettings';
 import { BillingSettings } from './BillingSettings';
@@ -63,7 +66,7 @@ export function SettingsPage() {
       </div>
 
       <div className="settings-page__content">
-        <button className="settings-page__close" onClick={handleClose}>
+        <button className="settings-page__close" onClick={handleClose} aria-label="Close settings">
           &times;
         </button>
 

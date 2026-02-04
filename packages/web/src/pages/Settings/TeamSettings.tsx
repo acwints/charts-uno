@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Trash2, Shield } from 'lucide-react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Shield from 'lucide-react/dist/esm/icons/shield';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { InviteModal } from '../../components/InviteModal';

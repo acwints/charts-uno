@@ -20,7 +20,7 @@
   color: var(--text-muted);
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .team-header-back:hover {
@@ -102,5 +102,12 @@
     width: 100%;
     justify-content: flex-end;
     margin-top: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-header-back {
+    transition: none;
+    animation: none;
   }
 }

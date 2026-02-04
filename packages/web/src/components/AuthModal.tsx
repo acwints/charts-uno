@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogIn, X } from 'lucide-react';
+import LogIn from 'lucide-react/dist/esm/icons/log-in';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 import './AuthModal.css';

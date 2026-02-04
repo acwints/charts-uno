@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Share2, Clipboard, Check, ExternalLink } from 'lucide-react';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
+import Check from 'lucide-react/dist/esm/icons/check';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { copyImageToClipboard, type WatermarkSettings } from '../../services/exportService';
 import { Button } from '../Button';
 import './ShareMenu.css';

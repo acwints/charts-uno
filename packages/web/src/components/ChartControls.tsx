@@ -1,23 +1,21 @@
 import { motion } from 'motion/react';
-import {
-  BarChart3,
-  LineChart,
-  AreaChart,
-  PieChart,
-  Table2,
-  Hexagon,
-  Circle,
-  Grid,
-  Hash,
-  Sparkles,
-  ExternalLink,
-  Briefcase,
-  Smile,
-  Newspaper,
-  Minus,
-  Paintbrush,
-  Zap,
-} from 'lucide-react';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import LineChart from 'lucide-react/dist/esm/icons/line-chart';
+import AreaChart from 'lucide-react/dist/esm/icons/area-chart';
+import PieChart from 'lucide-react/dist/esm/icons/pie-chart';
+import Table2 from 'lucide-react/dist/esm/icons/table-2';
+import Hexagon from 'lucide-react/dist/esm/icons/hexagon';
+import Circle from 'lucide-react/dist/esm/icons/circle';
+import Grid from 'lucide-react/dist/esm/icons/grid';
+import Hash from 'lucide-react/dist/esm/icons/hash';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Smile from 'lucide-react/dist/esm/icons/smile';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import Minus from 'lucide-react/dist/esm/icons/minus';
+import Paintbrush from 'lucide-react/dist/esm/icons/paintbrush';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 import type { ChartConfig, ChartType, StyleVariant, ChartData } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';

@@ -76,3 +76,10 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-item {
+    transition: none;
+    animation: none;
+  }
+}
