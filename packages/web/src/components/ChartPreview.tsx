@@ -585,7 +585,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
             </table>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
             {renderChart()}
           </ResponsiveContainer>
         )}

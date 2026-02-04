@@ -9,6 +9,10 @@ export interface TickerResult {
 }
 
 export async function searchTickers(query: string): Promise<TickerResult[]> {
+  if (!query || query.trim().length < 1) {
+    return [];
+  }
+
   const response = await fetch(`${API_URL}/api/stocks/search`, {
     method: 'POST',
     headers: {

@@ -177,7 +177,7 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
       onClick={handleCardClick}
     >
       <div className="dashboard-chart-card__preview">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           {renderMiniChart()}
         </ResponsiveContainer>
 

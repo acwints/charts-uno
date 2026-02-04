@@ -141,7 +141,7 @@ export function ChartStyleCard({
         </div>
       )}
       <div className="style-card-preview">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           {renderMiniChart()}
         </ResponsiveContainer>
       </div>

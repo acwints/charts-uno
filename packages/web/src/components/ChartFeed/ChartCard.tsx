@@ -200,7 +200,7 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
       onClick={() => onChartClick?.(chart)}
     >
       <div className="chart-card__preview">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           {renderMiniChart()}
         </ResponsiveContainer>
         <div className="chart-card__type-badge">{chart.config.type}</div>
