@@ -27,6 +27,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 var(--space-2);
+  min-height: var(--control-height-md);
   transition: border-color var(--transition-fast);
 }
 
@@ -41,9 +42,9 @@
 
 .control-input-source {
   flex: 1;
-  padding: var(--space-1) 0;
+  padding: var(--space-2) 0;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--control-font-sm);
   color: var(--text-secondary);
   background: transparent;
   border: none;
@@ -132,7 +133,7 @@
 }
 
 .type-label {
-  font-size: 0.55rem;
+  font-size: var(--control-font-xs);
   font-weight: 500;
 }
 
@@ -218,7 +219,7 @@
 }
 
 .variant-label {
-  font-size: 0.7rem;
+  font-size: var(--control-font-sm);
   font-weight: 500;
 }
 
@@ -319,7 +320,7 @@
 }
 
 .scheme-label {
-  font-size: 0.7rem;
+  font-size: var(--control-font-sm);
   font-weight: 500;
 }
 

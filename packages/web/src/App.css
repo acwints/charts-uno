@@ -131,7 +131,7 @@
 
 .chart-workspace {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 3fr 2fr;
   gap: var(--space-4);
   height: clamp(360px, 70vh, 600px);
   min-height: 0;

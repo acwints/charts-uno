@@ -68,15 +68,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: var(--space-1) var(--space-2);
   font-family: var(--font-body);
-  font-size: 0.6rem;
+  font-size: var(--control-font-xs);
   font-weight: 600;
   color: var(--text-muted);
   background: var(--bg-tertiary);
-  border: none;
+  border: var(--border-subtle);
   cursor: pointer;
-  transition: color 150ms, background-color 150ms;
+  transition: color 150ms, background-color 150ms, border-color 150ms;
 }
 
 .cstudio-mode-btn:focus-visible {
@@ -91,6 +91,7 @@
 .cstudio-mode-btn.active {
   color: var(--accent);
   background: var(--accent-subtle);
+  border-color: var(--accent);
 }
 
 /* ── Color scheme grid ── */
@@ -105,13 +106,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
+  padding: var(--space-1) var(--space-2);
   font-family: var(--font-body);
   color: var(--text-muted);
   background: var(--bg-secondary);
-  border: none;
+  border: var(--border-subtle);
   cursor: pointer;
-  transition: color 150ms, background-color 150ms;
+  transition: color 150ms, background-color 150ms, border-color 150ms;
 }
 
 .cstudio-scheme:focus-visible {
@@ -127,6 +128,7 @@
 .cstudio-scheme.active {
   color: var(--accent);
   background: var(--accent-subtle);
+  border-color: var(--accent);
 }
 
 .cstudio-scheme-dots {
@@ -142,7 +144,7 @@
 }
 
 .cstudio-scheme-label {
-  font-size: 0.6rem;
+  font-size: var(--control-font-sm);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -292,14 +294,14 @@
 .cstudio-field-hex {
   flex: 1;
   min-width: 0;
-  padding: 2px 4px;
+  padding: var(--space-1);
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: var(--control-font-xs);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   background: var(--bg-tertiary);
-  border: 1px solid transparent;
-  border-radius: 3px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
   text-transform: lowercase;
 }
 
