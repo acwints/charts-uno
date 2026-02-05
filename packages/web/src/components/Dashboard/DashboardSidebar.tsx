@@ -4,8 +4,6 @@ import Globe from 'lucide-react/dist/esm/icons/globe';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Plus from 'lucide-react/dist/esm/icons/plus';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { useTeam } from '../../contexts/TeamContext';
@@ -37,18 +35,12 @@ function NavItem({ to, icon, label, end }: NavItemProps) {
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
-  const { teams, currentTeam, usage } = useTeam();
+  const { currentTeam, usage } = useTeam();
   const { reset } = useChartStore();
-
-  const nonPersonalTeams = teams.filter((t) => !t.is_personal);
 
   const handleCreateNew = () => {
     reset();
     navigate('/new');
-  };
-
-  const handleCreateTeam = () => {
-    navigate('/settings/team');
   };
 
   return (
@@ -66,41 +58,13 @@ export function DashboardSidebar() {
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-header">Personal</div>
+          <div className="sidebar-section-header">Library</div>
           <NavItem to="/dashboard" icon={<LayoutGrid size={18} />} label="My Charts" end />
           <NavItem to="/dashboard/published" icon={<Globe size={18} />} label="Published" />
           <NavItem to="/dashboard/drafts" icon={<FileText size={18} />} label="Drafts" />
           <NavItem to="/dashboard/liked" icon={<Heart size={18} />} label="Liked" />
           <NavItem to="/dashboard/saved" icon={<Bookmark size={18} />} label="Saved" />
         </div>
-
-        {nonPersonalTeams.length > 0 && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-header">Teams</div>
-            {nonPersonalTeams.map((team) => (
-              <NavItem
-                key={team.id}
-                to={`/team/${team.slug}`}
-                icon={<Users size={18} />}
-                label={team.name}
-              />
-            ))}
-            <button className="sidebar-new-team" onClick={handleCreateTeam}>
-              <Plus size={16} />
-              <span>New Team</span>
-            </button>
-          </div>
-        )}
-
-        {nonPersonalTeams.length === 0 && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-header">Teams</div>
-            <button className="sidebar-new-team" onClick={handleCreateTeam}>
-              <Plus size={16} />
-              <span>Create a Team</span>
-            </button>
-          </div>
-        )}
       </nav>
 
       {usage && currentTeam && (
