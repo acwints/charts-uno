@@ -305,9 +305,7 @@ export function ChartView() {
           {isImageSource && (
             <ImageReasoningPanel
               data={chartData}
-              config={chartConfig}
               onDataChange={setChartData}
-              onConfigChange={setChartConfig}
             />
           )}
           <EditableSpreadsheet

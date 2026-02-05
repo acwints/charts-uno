@@ -44,6 +44,47 @@ export async function analyzeImage(file: File): Promise<ChartData> {
   };
 }
 
+export async function reanalyzeImageWithNotes(
+  sourceImage: { base64: string; mimeType: string },
+  userPrompt: string
+): Promise<ChartData> {
+  const response = await fetch(`${API_URL}/api/ai/analyze-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      image_base64: sourceImage.base64,
+      mime_type: sourceImage.mimeType,
+      user_prompt: userPrompt,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Image analysis failed' }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  const parsed = await response.json();
+
+  return {
+    labels: parsed.labels,
+    series: parsed.series,
+    sourceType: 'image',
+    suggestedTitle: parsed.suggestedTitle,
+    suggestedType: parsed.suggestedType,
+    suggestedStacked: parsed.stacked ?? undefined,
+    aiReasoning: parsed.aiReasoning,
+    xAxisLabel: parsed.xAxisLabel,
+    yAxisLabel: parsed.yAxisLabel,
+    sourceImage: {
+      base64: sourceImage.base64,
+      mimeType: sourceImage.mimeType,
+    },
+  };
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -145,6 +145,7 @@ class TokenResponse(BaseModel):
 class ImageAnalysisRequest(BaseModel):
     image_base64: str
     mime_type: str = "image/png"
+    user_prompt: Optional[str] = None
 
 
 class ImageAnalysisResponse(BaseModel):

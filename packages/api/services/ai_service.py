@@ -21,23 +21,25 @@ def get_model():
     return genai.GenerativeModel("gemini-2.5-pro")
 
 
-async def analyze_image(image_base64: str, mime_type: str) -> Dict[str, Any]:
+async def analyze_image(image_base64: str, mime_type: str, user_prompt: Optional[str] = None) -> Dict[str, Any]:
     """Analyze an image and extract chart data."""
     model = get_model()
+    user_prompt_block = f"\nUser instructions: {user_prompt}\n" if user_prompt else ""
 
-    prompt = """Analyze this image and reverse-engineer the most likely source table used to create the chart.
+    prompt = f"""Analyze this image and reverse-engineer the most likely source table used to create the chart.
 
 Look for:
 - Tables, leaderboards, rankings
 - Charts or graphs (extract the underlying data)
 - Statistics, scores, numbers with labels
 - Any structured numerical data
+{user_prompt_block}
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{
+{{
   "labels": ["label1", "label2", ...],
   "series": [
-    {"name": "Series Name", "data": [num1, num2, ...]}
+    {{"name": "Series Name", "data": [num1, num2, ...]}}
   ],
   "suggestedTitle": "A title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
@@ -45,14 +47,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   "xAxisLabel": "Label for the x-axis (if visible)",
   "yAxisLabel": "Label for the y-axis (if visible)",
   "aiReasoning": "Brief explanation (1-3 sentences) of how you reconstructed the table"
-}
+}}
 
 Rules:
 - labels array must match the length of each data array
 - All data values must be numbers (convert scores like "-27" to -27)
 - If there are multiple numeric columns, create multiple series
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
-- If you can't find chartable data, return: {"error": "No chartable data found"}
+- If you can't find chartable data, return: {{"error": "No chartable data found"}}
 - Extract the PRIMARY PLOTTED DATA — bar heights, line points, area values. Use annotations/callouts to help infer row labels or context, and summarize that in aiReasoning.
 - Preserve the original axis orientation — if the x-axis shows time periods (years, dates, quarters, months), those MUST become the labels[] array. Categories or groups become separate series. Never pivot time values into series names.
 - If the chart has a time-based x-axis (years, months, dates), labels MUST be the time values and each category/group must be a separate series.

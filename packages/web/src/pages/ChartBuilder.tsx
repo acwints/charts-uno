@@ -45,7 +45,9 @@ export function ChartBuilder() {
       const enrichedData: ChartData = {
         ...data,
         suggestedType: chosenType,
-        aiReasoning: recommendation.reasoning,
+        aiReasoning: data.sourceType === 'image' && data.aiReasoning
+          ? data.aiReasoning
+          : recommendation.reasoning,
         aiSummary: recommendation.summary,
       };
       setChartData(enrichedData);

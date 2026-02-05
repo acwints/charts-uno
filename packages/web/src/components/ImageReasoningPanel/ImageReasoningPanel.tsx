@@ -2,22 +2,18 @@ import { useEffect, useState } from 'react';
 import Send from 'lucide-react/dist/esm/icons/send';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import type { ChartConfig, ChartData } from '../../types';
-import { sendChatMessage } from '../../services/chartChatService';
+import type { ChartData } from '../../types';
+import { reanalyzeImageWithNotes } from '../../services/imageAnalysis';
 import './ImageReasoningPanel.css';
 
 interface ImageReasoningPanelProps {
   data: ChartData;
-  config: ChartConfig;
   onDataChange: (data: ChartData) => void;
-  onConfigChange: (config: ChartConfig) => void;
 }
 
 export function ImageReasoningPanel({
   data,
-  config,
   onDataChange,
-  onConfigChange,
 }: ImageReasoningPanelProps) {
   const [notes, setNotes] = useState(data.aiReasoning ?? '');
   const [initialNotes, setInitialNotes] = useState(data.aiReasoning ?? '');
@@ -38,20 +34,19 @@ export function ImageReasoningPanel({
 
   const handleApply = async () => {
     if (!canApply) return;
+    if (!data.sourceImage) {
+      setError('Missing source image for reanalysis');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await sendChatMessage(notes, data, config, []);
-      const nextData = response.updatedData ? response.updatedData : data;
-      onDataChange({ ...nextData, aiReasoning: notes });
-
-      if (response.updatedConfig) {
-        onConfigChange({ ...config, ...response.updatedConfig });
-      }
-
-      setAssistantReply(response.message);
-      setInitialNotes(notes);
+      const updated = await reanalyzeImageWithNotes(data.sourceImage, notes);
+      onDataChange({ ...updated, userPrompt: data.userPrompt });
+      setAssistantReply(updated.aiReasoning || 'Reconstruction updated.');
+      setNotes(updated.aiReasoning ?? notes);
+      setInitialNotes(updated.aiReasoning ?? notes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply changes');
     } finally {

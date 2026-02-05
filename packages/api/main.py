@@ -832,7 +832,7 @@ async def analyze_image_endpoint(
 ):
     """Analyze an image and extract chart data using AI."""
     try:
-        result = await analyze_image(data.image_base64, data.mime_type)
+        result = await analyze_image(data.image_base64, data.mime_type, data.user_prompt)
         return ImageAnalysisResponse(
             labels=result["labels"],
             series=result["series"],
