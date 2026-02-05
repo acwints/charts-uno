@@ -57,6 +57,7 @@ class ChartConfig(BaseModel):
     showGrid: bool = True
     showLegend: bool = True
     showValues: bool = False
+    showPoints: bool = True
     showBorder: bool = True
     animate: bool = True
     stacked: bool = False

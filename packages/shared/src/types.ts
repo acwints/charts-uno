@@ -69,6 +69,7 @@ export interface ChartConfig {
   showGrid: boolean;
   showLegend: boolean;
   showValues: boolean;
+  showPoints: boolean;
   showBorder: boolean;
   animate: boolean;
   title: string;
@@ -91,6 +92,7 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
   showGrid: true,
   showLegend: true,
   showValues: false,
+  showPoints: true,
   showBorder: true,
   animate: true,
   stacked: false,

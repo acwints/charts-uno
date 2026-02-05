@@ -2,6 +2,7 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import Save from 'lucide-react/dist/esm/icons/save';
+import Check from 'lucide-react/dist/esm/icons/check';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Table2 from 'lucide-react/dist/esm/icons/table-2';
@@ -19,14 +20,14 @@ import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
-import { getChart, createChartWithTeam, getTeamBranding } from '../services/api';
+import { getChart, createChartWithTeam, getTeamBranding, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 
 export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartCaptureRef = useRef<HTMLDivElement>(null);
   const { chartData, chartConfig, setChartData, setChartConfig, setInfographicSvg } = useChartStore();
   const { isAuthenticated } = useAuth();
   const { currentTeam } = useTeam();
@@ -66,16 +67,33 @@ export function ChartView() {
       toast.error('Please sign in to save and share charts');
       return null;
     }
-    if (id) return id;
 
     setIsSaving(true);
     try {
+      if (id) {
+        await updateChart(id, {
+          title: chartConfig.title || 'Untitled Chart',
+          data: {
+            labels: chartData.labels,
+            series: chartData.series,
+            suggestedType: chartData.suggestedType,
+            suggestedTitle: chartData.suggestedTitle,
+            aiReasoning: chartData.aiReasoning,
+            ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
+          },
+          config: chartConfig,
+        });
+        toast.success('Chart updated');
+        return id;
+      }
+
       const result = await createChartWithTeam({
         title: chartConfig.title || 'Untitled Chart',
         data: {
           labels: chartData.labels,
           series: chartData.series,
           suggestedType: chartData.suggestedType,
+          suggestedTitle: chartData.suggestedTitle,
             aiReasoning: chartData.aiReasoning,
           ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
         },
@@ -130,10 +148,11 @@ export function ChartView() {
           setChartData(data);
           // Ensure themeMode has a default value for charts created before it was added
           const rawConfig = chart.config as Record<string, unknown>;
-          const configWithDefaults: ChartConfig = {
+          const configWithDefaults = {
             ...chart.config as ChartConfig,
             themeMode: rawConfig.themeMode as ChartConfig['themeMode'] || 'dark',
             showBorder: rawConfig.showBorder as boolean ?? true,
+            showPoints: rawConfig.showPoints as boolean ?? true,
           };
           setChartConfig(configWithDefaults);
         })
@@ -254,28 +273,29 @@ export function ChartView() {
           </div>
         </div>
         <div className="chart-toolbar-right">
-          {isAuthenticated && !id && (
+          {isAuthenticated && (
             <Button
               variant="default"
               size="sm"
               onClick={handleSaveChart}
-              disabled={isSaving}
+              disabled={Boolean(id) || isSaving}
+              title={id ? 'Saved' : 'Save chart'}
             >
-              <Save size={16} />
-              {isSaving ? 'Saving...' : 'Save'}
+              {id ? <Check size={16} /> : <Save size={16} />}
+              {id ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
             </Button>
           )}
           {editorView === 'chart' && (
             <>
               <ExportMenu
                 data={chartData}
-                chartRef={chartRef}
+                chartRef={chartCaptureRef}
                 title={chartConfig.title}
                 watermark={watermarkSettings}
                 isAuthenticated={isAuthenticated}
               />
               <ShareMenu
-                chartRef={chartRef}
+                chartRef={chartCaptureRef}
                 title={chartConfig.title}
                 watermark={watermarkSettings}
                 isAuthenticated={isAuthenticated}
@@ -323,11 +343,11 @@ export function ChartView() {
           initialData={chartData}
           config={chartConfig}
           onConfigChange={setChartConfig}
-          chartRef={chartRef}
+          chartRef={chartCaptureRef}
         />
       ) : (
-        <div className="chart-workspace" ref={chartRef}>
-          <div className="chart-column">
+        <div className="chart-workspace">
+          <div className="chart-column" ref={chartCaptureRef}>
             {chartData.aiSummary && (
               <div className="chart-ai-summary">
                 <span className="section-label chart-ai-label">AI Insight</span>

@@ -133,8 +133,7 @@
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: var(--space-4);
-  height: clamp(360px, 70vh, 600px);
-  min-height: 0;
+  min-height: clamp(420px, 75vh, 760px);
   align-items: stretch;
 }
 

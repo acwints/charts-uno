@@ -5,6 +5,7 @@ import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Check from 'lucide-react/dist/esm/icons/check';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { copyImageToClipboard, type WatermarkSettings } from '../../services/exportService';
+import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../Button';
 import './ShareMenu.css';
 
@@ -26,6 +27,7 @@ export function ShareMenu({
   const [copying, setCopying] = useState(false);
   const [pasteHint, setPasteHint] = useState<'twitter' | 'linkedin' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,7 +51,11 @@ export function ShareMenu({
     try {
       await copyImageToClipboard(chartRef.current, watermark);
       setCopiedImage(true);
+      toast.success('Image copied. Paste it anywhere with ⌘V / Ctrl+V.');
       setTimeout(() => setCopiedImage(false), 2000);
+    } catch (error) {
+      console.error('Copy image failed:', error);
+      toast.error('Unable to copy image. Try again or use Export instead.');
     } finally {
       setCopying(false);
       setIsOpen(false);
@@ -78,6 +84,9 @@ export function ShareMenu({
       // Show paste hint
       setPasteHint(platform);
       setTimeout(() => setPasteHint(null), 4000);
+    } catch (error) {
+      console.error('Social share image copy failed:', error);
+      toast.error('Image copy blocked. Please use "Copy Image" or Export.');
     } finally {
       setCopying(false);
       setIsOpen(false);

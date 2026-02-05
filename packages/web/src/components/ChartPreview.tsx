@@ -464,6 +464,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                     position="top"
                     fill={theme.textMuted}
                     fontSize={11}
+                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
                   />
                 )}
               </Bar>
@@ -487,17 +488,17 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
                 strokeWidth={styleConfig.chart.strokeWidth}
-                dot={styleConfig.chart.dotRadius > 0 ? {
+                dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
                   fill: colors[idx % colors.length],
                   strokeWidth: 0,
                   r: styleConfig.chart.dotRadius
                 } : false}
-                activeDot={{
+                activeDot={config.showPoints ? {
                   r: styleConfig.chart.activeDotRadius,
                   stroke: colors[idx % colors.length],
                   strokeWidth: 2,
                   fill: theme.background
-                }}
+                } : false}
                 animationDuration={config.animate ? 1200 : 0}
                 animationBegin={idx * 200}
               >
@@ -508,6 +509,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                     fill={theme.textMuted}
                     fontSize={11}
                     offset={8}
+                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
                   />
                 )}
               </Line>
@@ -533,6 +535,17 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                 fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : colors[idx % colors.length]}
                 fillOpacity={styleConfig.decorations.useGradients ? 0.6 : 0.3}
                 strokeWidth={styleConfig.chart.strokeWidth}
+                dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
+                  fill: colors[idx % colors.length],
+                  strokeWidth: 0,
+                  r: styleConfig.chart.dotRadius
+                } : false}
+                activeDot={config.showPoints ? {
+                  r: styleConfig.chart.activeDotRadius,
+                  stroke: colors[idx % colors.length],
+                  strokeWidth: 2,
+                  fill: theme.background
+                } : false}
                 animationDuration={config.animate ? 1000 : 0}
                 animationBegin={idx * 150}
               >
@@ -543,6 +556,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
                     fill={theme.textMuted}
                     fontSize={11}
                     offset={8}
+                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
                   />
                 )}
               </Area>
