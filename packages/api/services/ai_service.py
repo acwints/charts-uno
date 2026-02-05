@@ -26,7 +26,7 @@ def get_client() -> genai.Client:
     return _client
 
 
-MODEL_NAME = "gemini-2.5-pro"
+MODEL_NAME = "gemini-2.5-flash"
 
 
 async def analyze_image(image_base64: str, mime_type: str, user_prompt: Optional[str] = None) -> Dict[str, Any]:
@@ -76,7 +76,7 @@ Rules:
     response = client.models.generate_content(
         model=MODEL_NAME,
         contents=[
-            types.Part.from_text(prompt),
+            prompt,
             types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
         ],
     )
@@ -592,7 +592,7 @@ Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start w
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=[
-                types.Part.from_text(prompt),
+                prompt,
                 types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
             ],
         )
