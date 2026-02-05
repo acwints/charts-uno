@@ -13,11 +13,10 @@ import {
   Cell,
 } from 'recharts';
 import Heart from 'lucide-react/dist/esm/icons/heart';
-import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import User from 'lucide-react/dist/esm/icons/user';
 import type { ChartResponse } from '../../services/api';
-import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
+import { likeChart, unlikeChart } from '../../services/api';
 import { COLOR_PALETTES } from '../../types';
 import './ChartCard.css';
 
@@ -29,10 +28,8 @@ interface ChartCardProps {
 
 export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
   const [isLiked, setIsLiked] = useState(chart.is_liked);
-  const [isSaved, setIsSaved] = useState(chart.is_saved);
   const [likeCount, setLikeCount] = useState(chart.like_count);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
-  const [isSaveLoading, setIsSaveLoading] = useState(false);
 
   const colors = COLOR_PALETTES[(chart.config.colorScheme as keyof typeof COLOR_PALETTES) || 'default'];
 
@@ -68,26 +65,6 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
       console.error('Failed to toggle like:', error);
     } finally {
       setIsLikeLoading(false);
-    }
-  };
-
-  const handleSaveClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isSaveLoading) return;
-
-    setIsSaveLoading(true);
-    try {
-      if (isSaved) {
-        await unsaveChart(chart.id);
-      } else {
-        await saveChart(chart.id);
-      }
-      setIsSaved(!isSaved);
-      onUpdate?.({ ...chart, is_saved: !isSaved });
-    } catch (error) {
-      console.error('Failed to toggle save:', error);
-    } finally {
-      setIsSaveLoading(false);
     }
   };
 
@@ -245,15 +222,6 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
         >
           <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
           <span>{likeCount}</span>
-        </button>
-
-        <button
-          className={`chart-card__action ${isSaved ? 'chart-card__action--active' : ''}`}
-          onClick={handleSaveClick}
-          disabled={isSaveLoading}
-          aria-label={isSaved ? 'Unsave' : 'Save'}
-        >
-          <Bookmark size={16} fill={isSaved ? 'currentColor' : 'none'} />
         </button>
 
         <div className="chart-card__stat">

@@ -1,9 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Globe from 'lucide-react/dist/esm/icons/globe';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Heart from 'lucide-react/dist/esm/icons/heart';
-import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { useTeam } from '../../contexts/TeamContext';
@@ -61,9 +59,7 @@ export function DashboardSidebar() {
           <div className="sidebar-section-header">Library</div>
           <NavItem to="/dashboard" icon={<LayoutGrid size={18} />} label="My Charts" end />
           <NavItem to="/dashboard/published" icon={<Globe size={18} />} label="Published" />
-          <NavItem to="/dashboard/drafts" icon={<FileText size={18} />} label="Drafts" />
           <NavItem to="/dashboard/liked" icon={<Heart size={18} />} label="Liked" />
-          <NavItem to="/dashboard/saved" icon={<Bookmark size={18} />} label="Saved" />
         </div>
       </nav>
 

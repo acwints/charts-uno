@@ -10,12 +10,11 @@ import { useDashboardStore } from '../../stores/dashboardStore';
 import {
   getMyChartsFiltered,
   getLikedCharts,
-  getSavedCharts,
   type ChartResponse,
 } from '../../services/api';
 import './Dashboard.css';
 
-type DashboardTab = 'all' | 'published' | 'drafts' | 'liked' | 'saved';
+type DashboardTab = 'all' | 'published' | 'liked';
 
 interface UserDashboardPageProps {
   tab?: DashboardTab;
@@ -24,9 +23,7 @@ interface UserDashboardPageProps {
 const TAB_CONFIG: Record<DashboardTab, { title: string; subtitle?: string }> = {
   all: { title: 'My Charts', subtitle: 'All your charts in one place' },
   published: { title: 'Published', subtitle: 'Charts visible on the public feed' },
-  drafts: { title: 'Drafts', subtitle: 'Private charts only you can see' },
   liked: { title: 'Liked', subtitle: 'Charts you\'ve liked from the feed' },
-  saved: { title: 'Saved', subtitle: 'Bookmarked charts for later' },
 };
 
 export function UserDashboardPage({ tab = 'all' }: UserDashboardPageProps) {
@@ -44,14 +41,8 @@ export function UserDashboardPage({ tab = 'all' }: UserDashboardPageProps) {
         const likedCharts = await getLikedCharts();
         setCharts(likedCharts);
         setTotal(likedCharts.length);
-      } else if (tab === 'saved') {
-        const savedResult = await getSavedCharts();
-        const savedCharts = savedResult.map((s) => s.chart);
-        setCharts(savedCharts);
-        setTotal(savedCharts.length);
       } else {
-        const isPublicFilter =
-          tab === 'published' ? true : tab === 'drafts' ? false : undefined;
+        const isPublicFilter = tab === 'published' ? true : undefined;
 
         const result = await getMyChartsFiltered({
           limit: 50,
@@ -94,9 +85,9 @@ export function UserDashboardPage({ tab = 'all' }: UserDashboardPageProps) {
 
   const config = TAB_CONFIG[tab];
 
-  // Filter charts by search (client-side for liked/saved)
+  // Filter charts by search (client-side for liked)
   const filteredCharts =
-    tab === 'liked' || tab === 'saved'
+    tab === 'liked'
       ? charts.filter(
           (c) =>
             !search ||

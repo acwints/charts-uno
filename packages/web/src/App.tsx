@@ -47,9 +47,7 @@ function AppWithTeam() {
           <Route path="/dashboard" element={<MainLayout />}>
             <Route index element={<UserDashboardPage tab="all" />} />
             <Route path="published" element={<UserDashboardPage tab="published" />} />
-            <Route path="drafts" element={<UserDashboardPage tab="drafts" />} />
             <Route path="liked" element={<UserDashboardPage tab="liked" />} />
-            <Route path="saved" element={<UserDashboardPage tab="saved" />} />
           </Route>
 
           <Route path="/team/:slug" element={<MainLayout />}>

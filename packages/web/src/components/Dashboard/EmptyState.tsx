@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Heart from 'lucide-react/dist/esm/icons/heart';
-import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
 import Globe from 'lucide-react/dist/esm/icons/globe';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import { Button } from '../Button';
 import './EmptyState.css';
 
-type EmptyStateType = 'all' | 'published' | 'drafts' | 'liked' | 'saved' | 'team' | 'search';
+type EmptyStateType = 'all' | 'published' | 'liked' | 'team' | 'search';
 
 interface EmptyStateProps {
   type: EmptyStateType;
@@ -33,22 +31,10 @@ const EMPTY_STATES: Record<EmptyStateType, {
     description: 'Charts you publish will appear here for others to discover',
     showCreateButton: true,
   },
-  drafts: {
-    icon: <FileText size={48} />,
-    title: 'No draft charts',
-    description: 'Private charts that haven\'t been published will appear here',
-    showCreateButton: true,
-  },
   liked: {
     icon: <Heart size={48} />,
     title: 'No liked charts',
     description: 'Charts you like from the feed will appear here',
-    showCreateButton: false,
-  },
-  saved: {
-    icon: <Bookmark size={48} />,
-    title: 'No saved charts',
-    description: 'Bookmark charts from the feed to save them for later',
     showCreateButton: false,
   },
   team: {
