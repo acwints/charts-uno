@@ -66,6 +66,7 @@ export interface ChartResponse {
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
+    aiReasoning?: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
@@ -95,6 +96,7 @@ export interface CreateChartData {
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
+    aiReasoning?: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;

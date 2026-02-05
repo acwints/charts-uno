@@ -1,4 +1,4 @@
-import type { ChartData, ColorScheme, ThemeMode } from '../types';
+import type { ChartData, ColorScheme, ThemeMode, AiMode } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -7,7 +7,9 @@ export async function generateInfographic(
   title: string,
   colorScheme: ColorScheme,
   themeMode: ThemeMode,
-  sourceImage?: { base64: string; mimeType: string }
+  sourceImage?: { base64: string; mimeType: string },
+  aiMode: AiMode = 'infographic',
+  customPrompt?: string
 ): Promise<string> {
   const theme = themeMode;
 
@@ -29,6 +31,8 @@ export async function generateInfographic(
       title: title || 'Data Visualization',
       color_scheme: colorScheme,
       theme: theme,
+      ai_mode: aiMode,
+      custom_prompt: customPrompt || null,
       ...(hasSourceImage
         ? {
             source_image_base64: sourceImage?.base64,

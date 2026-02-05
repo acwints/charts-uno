@@ -454,8 +454,16 @@ async def generate_infographic(
     theme: str = "dark",
     source_image_base64: Optional[str] = None,
     source_image_mime_type: Optional[str] = None,
+    ai_mode: str = "infographic",
+    custom_prompt: Optional[str] = None,
 ) -> str:
-    """Generate an SVG infographic for the given data."""
+    """Generate an SVG visualization for the given data.
+
+    ai_mode can be:
+    - 'chart': AI-enhanced chart (clean data visualization)
+    - 'infographic': Visual infographic design (more creative)
+    - 'custom': Use custom_prompt for generation guidance
+    """
     model = get_model()
 
     colors = COLOR_PALETTES.get(color_scheme, COLOR_PALETTES["default"])
@@ -503,7 +511,27 @@ Series:
         image_guidance = """
 REFERENCE IMAGE: A source image is attached. Use it ONLY as a loose visual reference for layout inspiration. Do NOT copy text, labels, or values from the image. The JSON data below is the ONLY source of truth for all numbers and labels."""
 
-    prompt = f"""You are an expert data visualization designer. Create a clean, polished SVG infographic.
+    # Customize prompt based on AI mode
+    if ai_mode == "chart":
+        mode_guidance = """STYLE: Create a clean, professional chart visualization. Focus on clarity and readability.
+- Use simple, elegant chart elements (bars, lines, areas)
+- Prioritize data accuracy and legibility
+- Minimal decorative elements
+- Professional, publication-ready appearance"""
+    elif ai_mode == "custom" and custom_prompt:
+        mode_guidance = f"""USER INSTRUCTIONS: {custom_prompt}
+
+Follow these instructions while ensuring all data is accurately represented."""
+    else:  # infographic (default)
+        mode_guidance = """STYLE: Create a visually engaging infographic design.
+- Use creative layouts and visual metaphors
+- Add icons or simple illustrations where appropriate
+- Make it visually memorable and shareable
+- Balance aesthetics with data clarity"""
+
+    prompt = f"""You are an expert data visualization designer. Create a clean, polished SVG visualization.
+
+{mode_guidance}
 
 STRICT RULES:
 1. Use FLAT 2D design only. No 3D effects, no isometric perspective, no skewing, no perspective transforms.

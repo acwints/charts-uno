@@ -16,7 +16,9 @@ import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Paintbrush from 'lucide-react/dist/esm/icons/paintbrush';
 import Zap from 'lucide-react/dist/esm/icons/zap';
-import type { ChartConfig, ChartType, StyleVariant, ChartData } from '../types';
+import Image from 'lucide-react/dist/esm/icons/image';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -45,6 +47,12 @@ const STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: 
   { id: 'editorial', icon: Newspaper, label: 'Editorial' },
   { id: 'minimalist', icon: Minus, label: 'Minimal' },
   { id: 'bold', icon: Zap, label: 'Bold' },
+];
+
+const AI_MODE_OPTIONS: { id: AiMode; icon: typeof BarChart3; label: string; description: string }[] = [
+  { id: 'chart', icon: BarChart3, label: 'Chart', description: 'AI-enhanced chart visualization' },
+  { id: 'infographic', icon: Image, label: 'Infographic', description: 'Visual infographic design' },
+  { id: 'custom', icon: MessageSquare, label: 'Custom', description: 'Custom AI generation with prompt' },
 ];
 
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
@@ -90,7 +98,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             <button
               key={type.id}
               className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
-              onClick={() => updateConfig({ type: type.id })}
+              onClick={() => updateConfig({ type: type.id, aiMode: type.id === 'infographic' ? (config.aiMode || 'infographic') : undefined })}
               title={type.label}
             >
               <type.icon size={18} />
@@ -98,13 +106,43 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             </button>
           ))}
         </div>
-        {data.aiReasoning && (
+        {data.aiReasoning && config.type !== 'infographic' && (
           <div className="ai-reasoning">
             <Sparkles size={12} />
             <span>{data.aiReasoning}</span>
           </div>
         )}
       </div>
+
+      {/* AI Mode selector (only when infographic/AI Magic is selected) */}
+      {config.type === 'infographic' && (
+        <div className="controls-ai-mode">
+          <div className="ai-mode-grid">
+            {AI_MODE_OPTIONS.map((mode) => (
+              <button
+                key={mode.id}
+                className={`ai-mode-button ${config.aiMode === mode.id ? 'active' : ''}`}
+                onClick={() => updateConfig({ aiMode: mode.id })}
+                title={mode.description}
+              >
+                <mode.icon size={16} />
+                <span className="ai-mode-label">{mode.label}</span>
+              </button>
+            ))}
+          </div>
+          {config.aiMode === 'custom' && (
+            <div className="ai-custom-prompt">
+              <textarea
+                className="ai-custom-prompt-input"
+                placeholder="Describe how you want the AI to visualize your data..."
+                value={config.aiCustomPrompt ?? ''}
+                onChange={(e) => updateConfig({ aiCustomPrompt: e.target.value })}
+                rows={3}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Color Studio (always visible) */}
       <ColorStudio

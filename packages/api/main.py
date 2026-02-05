@@ -917,6 +917,8 @@ async def infographic_endpoint(
             theme=data.theme,
             source_image_base64=data.source_image_base64,
             source_image_mime_type=data.source_image_mime_type,
+            ai_mode=data.ai_mode,
+            custom_prompt=data.custom_prompt,
         )
         return InfographicResponse(svg=svg)
     except ValueError as e:

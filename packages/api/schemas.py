@@ -216,6 +216,8 @@ class InfographicRequest(BaseModel):
     theme: str = "dark"  # 'dark' or 'light'
     source_image_base64: Optional[str] = None
     source_image_mime_type: Optional[str] = None
+    ai_mode: str = "infographic"  # 'chart', 'infographic', or 'custom'
+    custom_prompt: Optional[str] = None
 
 
 class InfographicResponse(BaseModel):

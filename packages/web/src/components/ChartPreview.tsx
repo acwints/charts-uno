@@ -64,7 +64,9 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         config.title,
         config.colorScheme,
         config.themeMode,
-        data.sourceImage
+        data.sourceImage,
+        config.aiMode || 'infographic',
+        config.aiCustomPrompt
       );
       setInfographicSvg(svg);
     } catch (err) {
@@ -72,13 +74,20 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
     } finally {
       setInfographicLoading(false);
     }
-  }, [data, config.title, config.colorScheme, config.themeMode, setInfographicSvg]);
+  }, [data, config.title, config.colorScheme, config.themeMode, config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
 
   useEffect(() => {
     if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
       generateInfographicSvg();
     }
   }, [config.type, infographicSvg, infographicLoading, generateInfographicSvg]);
+
+  // Regenerate when aiMode or customPrompt changes
+  useEffect(() => {
+    if (config.type === 'infographic' && infographicSvg) {
+      setInfographicSvg(null);
+    }
+  }, [config.aiMode, config.aiCustomPrompt, config.type, setInfographicSvg, infographicSvg]);
 
   const regenerateInfographic = () => {
     setInfographicSvg(null);

@@ -158,6 +158,76 @@
   margin-top: 1px;
 }
 
+/* AI Mode Selector */
+.controls-ai-mode {
+  padding: var(--space-3);
+  border-bottom: var(--border-subtle);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03), rgba(59, 130, 246, 0.03));
+}
+
+.ai-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.ai-mode-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.ai-mode-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.ai-mode-button.active {
+  background: rgba(139, 92, 246, 0.1);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.ai-mode-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ai-custom-prompt {
+  margin-top: var(--space-3);
+}
+
+.ai-custom-prompt-input {
+  width: 100%;
+  padding: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color var(--transition-fast);
+}
+
+.ai-custom-prompt-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ai-custom-prompt-input::placeholder {
+  color: var(--text-muted);
+}
+
 /* Two-column grid for remaining controls */
 .controls-grid {
   display: grid;
@@ -442,6 +512,16 @@
   }
 
   .style-variant-button {
+    transition: none;
+    animation: none;
+  }
+
+  .ai-mode-button {
+    transition: none;
+    animation: none;
+  }
+
+  .ai-custom-prompt-input {
     transition: none;
     animation: none;
   }

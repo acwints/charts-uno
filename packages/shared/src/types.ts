@@ -31,6 +31,7 @@ export interface ChartData {
 }
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic';
+export type AiMode = 'chart' | 'infographic' | 'custom';
 export type ColorScheme = 'default' | 'monochrome' | 'warm' | 'cool' | 'editorial' | 'muted';
 export type StyleVariant = 'professional' | 'playful' | 'editorial' | 'minimalist' | 'bold';
 export type ThemeMode = 'light' | 'dark';
@@ -75,6 +76,9 @@ export interface ChartConfig {
   sourceLink?: string;
   // Custom color overrides - when set, these take precedence
   customColors?: CustomColors;
+  // AI Magic options
+  aiMode?: AiMode;
+  aiCustomPrompt?: string;
 }
 
 // Default chart config
