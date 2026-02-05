@@ -287,26 +287,28 @@ export function ChartView() {
 
       {editorView === 'data' ? (
         <div className="chart-data-editor">
-          {chartData.sourceImage && (
-            <div className="source-image-panel">
-              <div className="source-image-header">
-                <Image size={14} />
-                <span className="source-image-label">SOURCE</span>
-              </div>
-              <div className="source-image-preview">
-                <img
-                  src={`data:${chartData.sourceImage.mimeType};base64,${chartData.sourceImage.base64}`}
-                  alt="Original chart source"
-                  className="source-image-img"
-                />
-              </div>
-            </div>
-          )}
           {isImageSource && (
-            <ImageReasoningPanel
-              data={chartData}
-              onDataChange={setChartData}
-            />
+            <div className="data-editor-top-row">
+              {chartData.sourceImage && (
+                <div className="source-image-panel">
+                  <div className="source-image-header">
+                    <Image size={14} />
+                    <span className="source-image-label">SOURCE</span>
+                  </div>
+                  <div className="source-image-preview">
+                    <img
+                      src={`data:${chartData.sourceImage.mimeType};base64,${chartData.sourceImage.base64}`}
+                      alt="Original chart source"
+                      className="source-image-img"
+                    />
+                  </div>
+                </div>
+              )}
+              <ImageReasoningPanel
+                data={chartData}
+                onDataChange={setChartData}
+              />
+            </div>
           )}
           <EditableSpreadsheet
             data={chartData}

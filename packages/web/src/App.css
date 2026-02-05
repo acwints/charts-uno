@@ -156,6 +156,15 @@
   height: 100%;
 }
 
+/* Top row with source image and reconstruction notes side by side */
+.data-editor-top-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  max-height: 200px;
+}
+
 /* Source image panel in data editor */
 .source-image-panel {
   display: flex;
@@ -164,8 +173,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
-  flex-shrink: 0;
-  max-height: 40%;
+  min-height: 0;
 }
 
 .source-image-header {
@@ -248,6 +256,11 @@
     grid-template-rows: auto auto;
     height: auto;
     min-height: auto;
+  }
+
+  .data-editor-top-row {
+    grid-template-columns: 1fr;
+    max-height: none;
   }
 }
 
