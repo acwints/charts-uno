@@ -155,6 +155,7 @@ class ImageAnalysisResponse(BaseModel):
     stacked: Optional[bool] = None
     xAxisLabel: Optional[str] = None
     yAxisLabel: Optional[str] = None
+    aiReasoning: Optional[str] = None
 
 
 class PromptGenerateRequest(BaseModel):

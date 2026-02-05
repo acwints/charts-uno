@@ -841,6 +841,7 @@ async def analyze_image_endpoint(
             stacked=result.get("stacked"),
             xAxisLabel=result.get("xAxisLabel"),
             yAxisLabel=result.get("yAxisLabel"),
+            aiReasoning=result.get("aiReasoning"),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

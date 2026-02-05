@@ -9,6 +9,7 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
+import { ImageReasoningPanel } from '../components/ImageReasoningPanel/ImageReasoningPanel';
 import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ExportMenu } from '../components/ExportMenu';
@@ -75,6 +76,7 @@ export function ChartView() {
           labels: chartData.labels,
           series: chartData.series,
           suggestedType: chartData.suggestedType,
+            aiReasoning: chartData.aiReasoning,
           ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
         },
         config: chartConfig,
@@ -116,12 +118,13 @@ export function ChartView() {
       getChart(id)
         .then((chart) => {
           // Populate the store with the loaded chart data
-          const data: ChartData = {
+        const data: ChartData = {
             labels: chart.data.labels,
             series: chart.data.series,
             sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
             suggestedTitle: chart.title || chart.config.title,
             suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
+          aiReasoning: chart.data.aiReasoning,
             ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
           };
           setChartData(data);
@@ -298,6 +301,14 @@ export function ChartView() {
                 />
               </div>
             </div>
+          )}
+          {isImageSource && (
+            <ImageReasoningPanel
+              data={chartData}
+              config={chartConfig}
+              onDataChange={setChartData}
+              onConfigChange={setChartConfig}
+            />
           )}
           <EditableSpreadsheet
             data={chartData}

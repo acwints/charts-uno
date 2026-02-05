@@ -34,6 +34,7 @@ export async function analyzeImage(file: File): Promise<ChartData> {
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     suggestedStacked: parsed.stacked ?? undefined,
+      aiReasoning: parsed.aiReasoning,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
     sourceImage: {

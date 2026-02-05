@@ -1,0 +1,130 @@
+.image-reasoning-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.image-reasoning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.image-reasoning-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.image-reasoning-help {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.image-reasoning-textarea {
+  min-height: 120px;
+  padding: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+.image-reasoning-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.image-reasoning-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.image-reasoning-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.image-reasoning-apply,
+.image-reasoning-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.image-reasoning-apply {
+  background: var(--accent);
+  color: white;
+}
+
+.image-reasoning-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-reasoning-reset {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.image-reasoning-error {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.image-reasoning-reply {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.image-reasoning-reply-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.image-reasoning-reply-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.image-reasoning-spin {
+  animation: image-reasoning-spin 0.9s linear infinite;
+}
+
+@keyframes image-reasoning-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-reasoning-spin {
+    animation: none;
+  }
+}

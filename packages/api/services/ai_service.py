@@ -25,7 +25,7 @@ async def analyze_image(image_base64: str, mime_type: str) -> Dict[str, Any]:
     """Analyze an image and extract chart data."""
     model = get_model()
 
-    prompt = """Analyze this image and extract any data that could be turned into a chart.
+    prompt = """Analyze this image and reverse-engineer the most likely source table used to create the chart.
 
 Look for:
 - Tables, leaderboards, rankings
@@ -43,7 +43,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
   "stacked": true | false,
   "xAxisLabel": "Label for the x-axis (if visible)",
-  "yAxisLabel": "Label for the y-axis (if visible)"
+  "yAxisLabel": "Label for the y-axis (if visible)",
+  "aiReasoning": "Brief explanation (1-3 sentences) of how you reconstructed the table"
 }
 
 Rules:
@@ -52,11 +53,12 @@ Rules:
 - If there are multiple numeric columns, create multiple series
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
 - If you can't find chartable data, return: {"error": "No chartable data found"}
-- Extract the PRIMARY PLOTTED DATA — bar heights, line points, area values. Ignore supplementary annotations (CAGR labels, growth percentages, footnotes) unless they ARE the primary data being plotted.
+- Extract the PRIMARY PLOTTED DATA — bar heights, line points, area values. Use annotations/callouts to help infer row labels or context, and summarize that in aiReasoning.
 - Preserve the original axis orientation — if the x-axis shows time periods (years, dates, quarters, months), those MUST become the labels[] array. Categories or groups become separate series. Never pivot time values into series names.
 - If the chart has a time-based x-axis (years, months, dates), labels MUST be the time values and each category/group must be a separate series.
 - Recognize chart structure — for stacked or grouped bar charts, each color/segment = a series, each x-axis position = a label. Estimate segment values from visual proportions if exact numbers aren't labeled.
-- Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable."""
+- Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable.
+- aiReasoning must be concise and user-facing. Do not include step-by-step internal thinking."""
 
     response = model.generate_content([
         prompt,
