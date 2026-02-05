@@ -1,29 +1,37 @@
 import os
 import json
 import logging
+import base64
 from typing import Optional, Dict, Any, List
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
+# Create client
+_client: Optional[genai.Client] = None
 
 
-def get_model():
-    """Get the Gemini model instance."""
+def get_client() -> genai.Client:
+    """Get the Gemini client instance."""
+    global _client
     if not GOOGLE_API_KEY:
         raise ValueError("GOOGLE_API_KEY not configured")
-    return genai.GenerativeModel("gemini-2.5-pro")
+    if _client is None:
+        _client = genai.Client(api_key=GOOGLE_API_KEY)
+    return _client
+
+
+MODEL_NAME = "gemini-2.5-pro"
 
 
 async def analyze_image(image_base64: str, mime_type: str, user_prompt: Optional[str] = None) -> Dict[str, Any]:
     """Analyze an image and extract chart data."""
-    model = get_model()
+    client = get_client()
     user_prompt_block = f"\nUser instructions: {user_prompt}\n" if user_prompt else ""
 
     prompt = f"""Analyze this image and reverse-engineer the most likely source table used to create the chart.
@@ -62,13 +70,16 @@ Rules:
 - Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable.
 - aiReasoning must be concise and user-facing. Do not include step-by-step internal thinking."""
 
-    response = model.generate_content([
-        prompt,
-        {
-            "mime_type": mime_type,
-            "data": image_base64,
-        },
-    ])
+    # Decode base64 to bytes for the new API
+    image_bytes = base64.b64decode(image_base64)
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=[
+            types.Part.from_text(prompt),
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+        ],
+    )
 
     content = response.text
     if not content:
@@ -97,7 +108,7 @@ async def chat_with_chart(
     chat_history: List[Dict[str, str]],
 ) -> Dict[str, Any]:
     """Process a chat message about chart data."""
-    model = get_model()
+    client = get_client()
 
     # Calculate stats
     stats = []
@@ -188,7 +199,10 @@ Guidelines:
 - Be conversational, specific, and reference actual values from the data
 - If the request is unclear, ask for clarification"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt,
+    )
     content = response.text
 
     if not content:
@@ -290,7 +304,7 @@ async def recommend_chart_type(
     user_prompt: Optional[str] = None,
 ) -> Dict[str, str]:
     """Recommend the best chart type for the given data."""
-    model = get_model()
+    client = get_client()
 
     labels = data.get("labels", [])
     series = data.get("series", [])
@@ -344,7 +358,10 @@ Analyze this data and recommend the best chart type:
 
 {json.dumps(data_description, indent=2)}"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt,
+    )
     content = response.text
 
     if not content:
@@ -375,7 +392,7 @@ Analyze this data and recommend the best chart type:
 
 async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
     """Generate plausible chart data from a natural language prompt."""
-    model = get_model()
+    client = get_client()
 
     system_prompt = f"""You are a data visualization expert. The user will describe a chart they want to see. Your job is to invent plausible, realistic data that matches their description.
 
@@ -417,7 +434,10 @@ Axis formatting rules:
 - For large currency values (millions), the chart will auto-format to compact notation (e.g., $1.5M) - just provide raw numbers
 - Default to yAxisFormat "number" with empty prefix/suffix if no special formatting needed"""
 
-    response = model.generate_content(system_prompt)
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=system_prompt,
+    )
     content = response.text
 
     if not content:
@@ -466,7 +486,7 @@ async def generate_infographic(
     - 'infographic': Visual infographic design (more creative)
     - 'custom': Use custom_prompt for generation guidance
     """
-    model = get_model()
+    client = get_client()
 
     colors = COLOR_PALETTES.get(color_scheme, COLOR_PALETTES["default"])
 
@@ -568,15 +588,19 @@ DATA (use this as the ONLY source of truth):
 Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start with <svg and end with </svg>."""
 
     if source_image_base64 and source_image_mime_type:
-        response = model.generate_content([
-            prompt,
-            {
-                "mime_type": source_image_mime_type,
-                "data": source_image_base64,
-            },
-        ])
+        image_bytes = base64.b64decode(source_image_base64)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[
+                types.Part.from_text(prompt),
+                types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
+            ],
+        )
     else:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+        )
     content = response.text
 
     if not content:

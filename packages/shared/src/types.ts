@@ -79,6 +79,7 @@ export interface ChartConfig {
   // AI Magic options
   aiMode?: AiMode;
   aiCustomPrompt?: string;
+  aiReadyToGenerate?: boolean;
 }
 
 // Default chart config

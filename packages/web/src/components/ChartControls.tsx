@@ -18,6 +18,7 @@ import Paintbrush from 'lucide-react/dist/esm/icons/paintbrush';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import Play from 'lucide-react/dist/esm/icons/play';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
@@ -98,7 +99,11 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             <button
               key={type.id}
               className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
-              onClick={() => updateConfig({ type: type.id, aiMode: type.id === 'infographic' ? (config.aiMode || 'infographic') : undefined })}
+              onClick={() => updateConfig({
+                type: type.id,
+                aiMode: type.id === 'infographic' ? (config.aiMode || 'infographic') : undefined,
+                aiReadyToGenerate: type.id === 'infographic' ? false : undefined
+              })}
               title={type.label}
             >
               <type.icon size={18} />
@@ -122,7 +127,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               <button
                 key={mode.id}
                 className={`ai-mode-button ${config.aiMode === mode.id ? 'active' : ''}`}
-                onClick={() => updateConfig({ aiMode: mode.id })}
+                onClick={() => updateConfig({ aiMode: mode.id, aiReadyToGenerate: false })}
                 title={mode.description}
               >
                 <mode.icon size={16} />
@@ -141,6 +146,14 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               />
             </div>
           )}
+          <button
+            className="ai-generate-button"
+            onClick={() => updateConfig({ aiReadyToGenerate: true })}
+            disabled={config.aiMode === 'custom' && !config.aiCustomPrompt?.trim()}
+          >
+            <Play size={16} />
+            <span>Generate</span>
+          </button>
         </div>
       )}
 

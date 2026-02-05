@@ -228,6 +228,39 @@
   color: var(--text-muted);
 }
 
+.ai-generate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.ai-generate-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.ai-generate-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ai-generate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Two-column grid for remaining controls */
 .controls-grid {
   display: grid;
@@ -524,6 +557,10 @@
   .ai-custom-prompt-input {
     transition: none;
     animation: none;
+  }
+
+  .ai-generate-button {
+    transition: none;
   }
 
   .toggle-switch {

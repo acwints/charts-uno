@@ -26,6 +26,7 @@ import {
 } from 'recharts';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
@@ -77,10 +78,10 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   }, [data, config.title, config.colorScheme, config.themeMode, config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
 
   useEffect(() => {
-    if (config.type === 'infographic' && !infographicSvg && !infographicLoading) {
+    if (config.type === 'infographic' && config.aiReadyToGenerate && !infographicSvg && !infographicLoading) {
       generateInfographicSvg();
     }
-  }, [config.type, infographicSvg, infographicLoading, generateInfographicSvg]);
+  }, [config.type, config.aiReadyToGenerate, infographicSvg, infographicLoading, generateInfographicSvg]);
 
   // Regenerate when aiMode or customPrompt changes
   useEffect(() => {
@@ -244,6 +245,19 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
   }, [styleConfig.chart.gridStyle]);
 
   const renderInfographic = () => {
+    // Show placeholder if user hasn't clicked Generate yet
+    if (!config.aiReadyToGenerate && !infographicSvg && !infographicLoading) {
+      return (
+        <div className="infographic-placeholder">
+          <div className="infographic-placeholder-content">
+            <Sparkles size={32} className="infographic-placeholder-icon" />
+            <h3>AI Magic</h3>
+            <p>Select a generation mode and click Generate to create your visualization.</p>
+          </div>
+        </div>
+      );
+    }
+
     if (infographicLoading) {
       return (
         <div className="infographic-loading">
