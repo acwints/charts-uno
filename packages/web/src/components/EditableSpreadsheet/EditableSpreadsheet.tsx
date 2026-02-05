@@ -184,7 +184,7 @@ export function EditableSpreadsheet({
                 {data.series.map((series, colIdx) => (
                   <td key={colIdx} className="spreadsheet-td value-cell">
                     <EditableCell
-                      value={series.data[rowIdx]}
+                      value={series.data?.[rowIdx] ?? 0}
                       onChange={(v) => handleValueChange(colIdx, rowIdx, v)}
                       isNumeric
                     />
