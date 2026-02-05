@@ -157,31 +157,6 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 
-# TEMPORARY: Upgrade demo teams to pro (remove after use)
-@app.post("/api/admin/upgrade-teams")
-async def upgrade_demo_teams(
-    secret: str = Query(...),
-    db: Session = Depends(get_db),
-):
-    """Upgrade demo teams to pro plan. Remove after use."""
-    if secret != "epic-charts-seed-2024":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-
-    slugs = ["winter-advisory", "bantee-golf", "tbpn", "not-boring"]
-    upgraded = []
-
-    for slug in slugs:
-        team = db.query(Team).filter(Team.slug == slug).first()
-        if team and team.subscription:
-            team.subscription.plan = "pro"
-            team.subscription.seat_limit = 5
-            team.subscription.charts_per_month = -1  # unlimited
-            upgraded.append(team.name)
-
-    db.commit()
-    return {"status": "ok", "upgraded": upgraded}
-
-
 # ============================================================================
 # Authentication Endpoints
 # ============================================================================
