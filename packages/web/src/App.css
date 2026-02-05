@@ -162,7 +162,7 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
   flex-shrink: 0;
-  max-height: 160px;
+  max-height: 200px;
 }
 
 /* Source image panel in data editor */
