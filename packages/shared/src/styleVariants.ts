@@ -140,6 +140,29 @@ export const STYLE_VARIANTS: Record<StyleVariant, StyleVariantConfig> = {
       useShadows: true,
     },
   },
+  brand: {
+    id: 'brand',
+    label: 'Brand',
+    description: 'Your brand colors',
+    fonts: {
+      display: 'Inter',
+      body: 'Inter',
+      mono: 'JetBrains Mono',
+    },
+    chart: {
+      barRadius: [6, 6, 0, 0],
+      strokeWidth: 2.5,
+      dotRadius: 5,
+      activeDotRadius: 8,
+      gridStyle: 'dashed',
+      gridOpacity: 0.06,
+    },
+    decorations: {
+      useGradients: false,
+      useGlow: false,
+      useShadows: true,
+    },
+  },
 };
 
 export function getStyleVariantConfig(variant: StyleVariant): StyleVariantConfig {

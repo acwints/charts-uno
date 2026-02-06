@@ -29,6 +29,7 @@ export function ChartFeedPage() {
         showGrid: chart.config.showGrid ?? true,
         showLegend: chart.config.showLegend ?? true,
         showValues: chart.config.showValues ?? false,
+        showPoints: (chart.config as Record<string, unknown>).showPoints as boolean ?? true,
         showBorder: (chart.config as Record<string, unknown>).showBorder as boolean ?? true,
         animate: chart.config.animate ?? true,
         stacked: (chart.config as Record<string, unknown>).stacked as boolean ?? false,

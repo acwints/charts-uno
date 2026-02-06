@@ -321,6 +321,16 @@
   border-color: var(--accent);
 }
 
+.style-variant-button.brand {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.style-variant-button.brand.active {
+  border-style: solid;
+  background: linear-gradient(135deg, var(--accent-subtle), var(--accent-subtle));
+}
+
 .variant-label {
   font-size: var(--control-font-sm);
   font-weight: 500;

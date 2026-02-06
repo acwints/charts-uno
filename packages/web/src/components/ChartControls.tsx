@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import LineChart from 'lucide-react/dist/esm/icons/line-chart';
@@ -16,6 +17,7 @@ import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Paintbrush from 'lucide-react/dist/esm/icons/paintbrush';
 import Zap from 'lucide-react/dist/esm/icons/zap';
+import Palette from 'lucide-react/dist/esm/icons/palette';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
@@ -23,6 +25,8 @@ import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode } from '..
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
+import { useTeam } from '../contexts/TeamContext';
+import { getTeamBranding, type TeamBranding } from '../services/api';
 import './ChartControls.css';
 
 interface ChartControlsProps {
@@ -42,13 +46,17 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
 ];
 
-const STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: string }[] = [
+const BASE_STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: string }[] = [
   { id: 'professional', icon: Briefcase, label: 'Professional' },
   { id: 'playful', icon: Smile, label: 'Playful' },
   { id: 'editorial', icon: Newspaper, label: 'Editorial' },
   { id: 'minimalist', icon: Minus, label: 'Minimal' },
   { id: 'bold', icon: Zap, label: 'Bold' },
 ];
+
+const BRAND_STYLE_OPTION: { id: StyleVariant; icon: typeof Palette; label: string } = {
+  id: 'brand', icon: Palette, label: 'Brand',
+};
 
 const AI_MODE_OPTIONS: { id: AiMode; icon: typeof BarChart3; label: string; description: string }[] = [
   { id: 'chart', icon: BarChart3, label: 'Chart', description: 'AI-enhanced chart visualization' },
@@ -57,7 +65,39 @@ const AI_MODE_OPTIONS: { id: AiMode; icon: typeof BarChart3; label: string; desc
 ];
 
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
+  const { currentTeam } = useTeam();
+  const [branding, setBranding] = useState<TeamBranding | null>(null);
+
+  // Fetch team branding to check for brand colors
+  useEffect(() => {
+    if (currentTeam?.id) {
+      getTeamBranding(currentTeam.id)
+        .then(setBranding)
+        .catch(() => setBranding(null));
+    }
+  }, [currentTeam?.id]);
+
+  const hasBrandColors = branding?.brand_colors && branding.brand_colors.length > 0;
+
+  // Build style variant options - add brand option if team has brand colors
+  const styleVariantOptions = hasBrandColors
+    ? [BRAND_STYLE_OPTION, ...BASE_STYLE_VARIANT_OPTIONS]
+    : BASE_STYLE_VARIANT_OPTIONS;
+
   const updateConfig = (updates: Partial<ChartConfig>) => {
+    // When switching to brand style, apply brand colors as custom colors
+    if (updates.styleVariant === 'brand' && branding?.brand_colors) {
+      updates.customColors = {
+        ...config.customColors,
+        seriesColors: branding.brand_colors.slice(0, 3), // Use first 3 colors for series
+        background: branding.brand_colors[3] || config.customColors?.background,
+        text: branding.brand_colors[4] || config.customColors?.text,
+      };
+      // Set theme based on brand
+      if (branding.brand_theme) {
+        updates.themeMode = branding.brand_theme;
+      }
+    }
     onChange({ ...config, ...updates });
   };
 
@@ -169,12 +209,13 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         <div className="control-section">
           <SectionHeader icon={Paintbrush} label="Style Variant" />
           <div className="style-variant-grid">
-            {STYLE_VARIANT_OPTIONS.map((variant) => {
+            {styleVariantOptions.map((variant) => {
               const variantConfig = STYLE_VARIANTS[variant.id];
+              const isBrand = variant.id === 'brand';
               return (
                 <button
                   key={variant.id}
-                  className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''}`}
+                  className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''} ${isBrand ? 'brand' : ''}`}
                   onClick={() => updateConfig({ styleVariant: variant.id })}
                   title={variantConfig.description}
                 >

@@ -623,3 +623,110 @@ Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start w
         svg = svg[: svg_end + 6]
 
     return svg
+
+
+async def infer_brand_from_website(domain: str) -> Dict[str, Any]:
+    """Analyze a website and extract brand colors, theme, and style.
+
+    Uses Google's favicon service to get the logo, then analyzes it along with
+    the domain name to infer brand colors and style preferences.
+    """
+    import httpx
+
+    client = get_client()
+
+    # Fetch the favicon at high resolution
+    favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
+
+    try:
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(favicon_url)
+            if response.status_code == 200:
+                favicon_base64 = base64.b64encode(response.content).decode('utf-8')
+                favicon_mime = response.headers.get('content-type', 'image/png')
+            else:
+                favicon_base64 = None
+                favicon_mime = None
+    except Exception as e:
+        logger.warning(f"Failed to fetch favicon for {domain}: {e}")
+        favicon_base64 = None
+        favicon_mime = None
+
+    prompt = f"""Analyze the brand identity for the website "{domain}".
+
+Based on the domain name and logo image (if provided), extract the brand's visual identity.
+
+Return ONLY valid JSON (no markdown):
+{{
+  "colors": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
+  "theme": "light" | "dark",
+  "fontStyle": "modern" | "classic" | "playful" | "technical" | "elegant",
+  "reasoning": "Brief explanation of why you chose these colors and style"
+}}
+
+Guidelines:
+- "colors" should be 5 hex colors in order of importance:
+  1. Primary brand color (most prominent in logo/brand)
+  2. Secondary brand color
+  3. Accent color
+  4. Background color (for charts - usually dark or light neutral)
+  5. Text color (contrasting with background)
+- "theme" should be "dark" if the brand feels modern/tech/bold, "light" if it feels clean/minimal/corporate
+- "fontStyle":
+  - "modern": clean sans-serif, tech companies, startups
+  - "classic": serif or traditional, established brands, finance
+  - "playful": rounded, fun brands, consumer products
+  - "technical": monospace vibes, developer tools, engineering
+  - "elegant": refined, luxury, high-end services
+- Extract colors directly from the logo if visible
+- If the domain suggests a specific industry, consider typical color conventions
+- Make educated guesses based on the domain name if no logo is available
+
+Example for "notboring.co":
+{{
+  "colors": ["#FF6B35", "#1A1A2E", "#F5F5DC", "#0D0D0D", "#FAFAFA"],
+  "theme": "dark",
+  "fontStyle": "modern",
+  "reasoning": "Not Boring is a tech/VC newsletter known for bold, energetic content. Orange represents energy and creativity, with dark backgrounds for a modern tech feel."
+}}"""
+
+    if favicon_base64 and favicon_mime:
+        image_bytes = base64.b64decode(favicon_base64)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type=favicon_mime),
+            ],
+        )
+    else:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+        )
+
+    content = response.text
+    if not content:
+        raise ValueError("No response from AI")
+
+    clean_content = content.replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+    parsed = json.loads(clean_content)
+
+    # Validate colors are hex format
+    colors = parsed.get("colors", [])
+    validated_colors = []
+    for color in colors:
+        if isinstance(color, str) and color.startswith("#") and len(color) in (4, 7):
+            validated_colors.append(color.upper())
+
+    if len(validated_colors) < 5:
+        # Pad with defaults if needed
+        defaults = ["#6366F1", "#22C55E", "#F59E0B", "#0A0A0F", "#F0F0F5"]
+        validated_colors.extend(defaults[len(validated_colors):5])
+
+    return {
+        "colors": validated_colors[:5],
+        "theme": parsed.get("theme", "dark"),
+        "fontStyle": parsed.get("fontStyle", "modern"),
+        "reasoning": parsed.get("reasoning", ""),
+    }

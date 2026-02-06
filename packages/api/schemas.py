@@ -367,12 +367,31 @@ class ChartResponseWithTeam(ChartResponse):
 class TeamBrandingUpdate(BaseModel):
     custom_logo_url: Optional[str] = None
     watermark_enabled: Optional[bool] = None
+    brand_domain: Optional[str] = None
+    brand_colors: Optional[List[str]] = None
+    brand_theme: Optional[str] = None
+    brand_font_style: Optional[str] = None
 
 
 class TeamBrandingResponse(BaseModel):
     custom_logo_url: Optional[str] = None
     watermark_enabled: bool = True
     can_customize: bool = False  # True for pro/business plans
+    brand_domain: Optional[str] = None
+    brand_colors: Optional[List[str]] = None
+    brand_theme: Optional[str] = None
+    brand_font_style: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class BrandInferRequest(BaseModel):
+    domain: str
+
+
+class BrandInferResponse(BaseModel):
+    colors: List[str]
+    theme: str
+    font_style: str
+    reasoning: str

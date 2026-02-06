@@ -72,8 +72,10 @@ from schemas import (
     # Branding schemas
     TeamBrandingUpdate,
     TeamBrandingResponse,
+    BrandInferRequest,
+    BrandInferResponse,
 )
-from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt
+from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 
@@ -1434,6 +1436,10 @@ async def get_team_branding(
         custom_logo_url=team.custom_logo_url,
         watermark_enabled=team.watermark_enabled if team.watermark_enabled is not None else True,
         can_customize=can_customize,
+        brand_domain=team.brand_domain,
+        brand_colors=team.brand_colors,
+        brand_theme=team.brand_theme,
+        brand_font_style=team.brand_font_style,
     )
 
 
@@ -1471,6 +1477,14 @@ async def update_team_branding(
         team.custom_logo_url = branding_data.custom_logo_url
     if branding_data.watermark_enabled is not None:
         team.watermark_enabled = branding_data.watermark_enabled
+    if branding_data.brand_domain is not None:
+        team.brand_domain = branding_data.brand_domain
+    if branding_data.brand_colors is not None:
+        team.brand_colors = branding_data.brand_colors
+    if branding_data.brand_theme is not None:
+        team.brand_theme = branding_data.brand_theme
+    if branding_data.brand_font_style is not None:
+        team.brand_font_style = branding_data.brand_font_style
 
     db.commit()
     db.refresh(team)
@@ -1479,6 +1493,10 @@ async def update_team_branding(
         custom_logo_url=team.custom_logo_url,
         watermark_enabled=team.watermark_enabled if team.watermark_enabled is not None else True,
         can_customize=True,
+        brand_domain=team.brand_domain,
+        brand_colors=team.brand_colors,
+        brand_theme=team.brand_theme,
+        brand_font_style=team.brand_font_style,
     )
 
 
@@ -1495,6 +1513,51 @@ async def delete_team_logo(
     db.commit()
 
     return {"status": "ok"}
+
+
+@app.post("/api/teams/{team_id}/branding/infer", response_model=BrandInferResponse)
+@limiter.limit("5/minute")
+async def infer_team_brand(
+    request: Request,
+    team_id: str,
+    data: BrandInferRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Infer brand colors and style from a website domain"""
+    team, _ = _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    # Check if team has a paid plan
+    if not team.subscription or team.subscription.plan == "free":
+        raise HTTPException(
+            status_code=403,
+            detail="Brand inference requires a Pro or Business plan"
+        )
+
+    try:
+        result = await infer_brand_from_website(data.domain)
+
+        # Auto-save the inferred brand to the team
+        team.brand_domain = data.domain
+        team.brand_colors = result["colors"]
+        team.brand_theme = result["theme"]
+        team.brand_font_style = result["fontStyle"]
+
+        # Also update the logo from favicon
+        logo_url = f"https://www.google.com/s2/favicons?domain={data.domain}&sz=128"
+        team.custom_logo_url = logo_url
+
+        db.commit()
+
+        return BrandInferResponse(
+            colors=result["colors"],
+            theme=result["theme"],
+            font_style=result["fontStyle"],
+            reasoning=result["reasoning"],
+        )
+    except Exception as e:
+        logger.error(f"Brand inference failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to analyze website")
 
 
 # ============================================================================

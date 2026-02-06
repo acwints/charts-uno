@@ -4,10 +4,13 @@ import Upload from 'lucide-react/dist/esm/icons/upload';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Lock from 'lucide-react/dist/esm/icons/lock';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Palette from 'lucide-react/dist/esm/icons/palette';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/Button';
-import { getTeamBranding, updateTeamBranding, deleteTeamLogo, type TeamBranding } from '../../services/api';
+import { getTeamBranding, updateTeamBranding, deleteTeamLogo, inferTeamBrand, type TeamBranding } from '../../services/api';
 import { Link } from 'react-router-dom';
 
 export function BrandingSettings() {
@@ -19,6 +22,8 @@ export function BrandingSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [domainInput, setDomainInput] = useState('');
+  const [isInferring, setIsInferring] = useState(false);
 
   const isPaidPlan = currentTeam?.subscription?.plan && currentTeam.subscription.plan !== 'free';
 
@@ -31,12 +36,34 @@ export function BrandingSettings() {
 
     setIsLoading(true);
     getTeamBranding(currentTeam.id)
-      .then(setBranding)
+      .then((data) => {
+        setBranding(data);
+        if (data.brand_domain) {
+          setDomainInput(data.brand_domain);
+        }
+      })
       .catch((err) => {
         toast.error(err instanceof Error ? err.message : 'Failed to load branding settings');
       })
       .finally(() => setIsLoading(false));
   }, [currentTeam?.id]);
+
+  const handleInferBrand = async () => {
+    if (!currentTeam?.id || !domainInput.trim()) return;
+
+    setIsInferring(true);
+    try {
+      await inferTeamBrand(currentTeam.id, domainInput.trim());
+      // Refresh branding data
+      const updated = await getTeamBranding(currentTeam.id);
+      setBranding(updated);
+      toast.success(`Brand colors extracted from ${domainInput}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to analyze website');
+    } finally {
+      setIsInferring(false);
+    }
+  };
 
   const handleToggleWatermark = async () => {
     if (!currentTeam?.id || !branding) return;
@@ -289,6 +316,69 @@ export function BrandingSettings() {
                 style={{ display: 'none' }}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Brand Style - only for paid users */}
+      {isPaidPlan && (
+        <div className="settings-card">
+          <div className="settings-card__header">
+            <h3 className="settings-card__title">
+              <Palette size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Brand Style
+            </h3>
+          </div>
+          <div className="settings-card__content">
+            <p className="settings-muted-text" style={{ marginBottom: '16px' }}>
+              Extract your brand colors from your website. This creates a custom "Brand" style
+              option when creating charts that uses your colors automatically.
+            </p>
+
+            <div className="branding-domain-input">
+              <div className="branding-domain-field">
+                <Globe size={16} className="branding-domain-icon" />
+                <input
+                  type="text"
+                  className="branding-domain-text"
+                  placeholder="yourcompany.com"
+                  value={domainInput}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleInferBrand()}
+                  spellCheck={false}
+                />
+              </div>
+              <Button
+                onClick={handleInferBrand}
+                disabled={isInferring || !domainInput.trim()}
+              >
+                <Wand2 size={16} />
+                {isInferring ? 'Analyzing...' : 'Extract Colors'}
+              </Button>
+            </div>
+
+            {branding?.brand_colors && branding.brand_colors.length > 0 && (
+              <div className="branding-colors-preview">
+                <div className="branding-colors-label">Brand Palette</div>
+                <div className="branding-colors-swatches">
+                  {branding.brand_colors.map((color, i) => (
+                    <div
+                      key={i}
+                      className="branding-color-swatch"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    >
+                      <span className="branding-color-hex">{color}</span>
+                    </div>
+                  ))}
+                </div>
+                {branding.brand_theme && (
+                  <div className="branding-theme-badge">
+                    Theme: {branding.brand_theme}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

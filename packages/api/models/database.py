@@ -172,6 +172,12 @@ class Team(Base):
     custom_logo_url = Column(Text, nullable=True)  # base64 data URL or external URL
     watermark_enabled = Column(Boolean, default=True, nullable=False)
 
+    # Brand style settings (inferred from website or manually set)
+    brand_domain = Column(String(255), nullable=True)  # e.g., "notboring.co"
+    brand_colors = Column(JSON, nullable=True)  # Array of hex colors: ["#FF6B35", "#1A1A2E", ...]
+    brand_theme = Column(String(20), nullable=True)  # "light" or "dark"
+    brand_font_style = Column(String(50), nullable=True)  # "modern", "classic", "playful", etc.
+
     # Relationships
     owner = relationship("User", back_populates="owned_teams")
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")

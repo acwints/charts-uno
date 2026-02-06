@@ -424,6 +424,17 @@ export interface TeamBranding {
   custom_logo_url: string | null;
   watermark_enabled: boolean;
   can_customize: boolean;
+  brand_domain: string | null;
+  brand_colors: string[] | null;
+  brand_theme: 'light' | 'dark' | null;
+  brand_font_style: string | null;
+}
+
+export interface BrandInferResult {
+  colors: string[];
+  theme: 'light' | 'dark';
+  font_style: string;
+  reasoning: string;
 }
 
 export async function getTeamBranding(teamId: string): Promise<TeamBranding> {
@@ -432,11 +443,25 @@ export async function getTeamBranding(teamId: string): Promise<TeamBranding> {
 
 export async function updateTeamBranding(
   teamId: string,
-  data: { custom_logo_url?: string | null; watermark_enabled?: boolean }
+  data: {
+    custom_logo_url?: string | null;
+    watermark_enabled?: boolean;
+    brand_domain?: string;
+    brand_colors?: string[];
+    brand_theme?: string;
+    brand_font_style?: string;
+  }
 ): Promise<TeamBranding> {
   return apiRequest(`/api/teams/${teamId}/branding`, { method: 'PATCH', body: data });
 }
 
 export async function deleteTeamLogo(teamId: string): Promise<void> {
   await apiRequest(`/api/teams/${teamId}/branding/logo`, { method: 'DELETE' });
+}
+
+export async function inferTeamBrand(teamId: string, domain: string): Promise<BrandInferResult> {
+  return apiRequest(`/api/teams/${teamId}/branding/infer`, {
+    method: 'POST',
+    body: { domain },
+  });
 }
