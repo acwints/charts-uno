@@ -2055,6 +2055,184 @@ async def _handle_subscription_canceled(db: Session, event_data: dict):
 
 
 # ============================================================================
+# Admin Endpoints (protected by secret)
+# ============================================================================
+
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
+
+
+def _verify_admin_secret(request: Request) -> bool:
+    """Verify admin secret from Authorization header"""
+    auth = request.headers.get("Authorization", "")
+    if not ADMIN_SECRET:
+        return False
+    if auth.startswith("Bearer "):
+        return auth[7:] == ADMIN_SECRET
+    return False
+
+
+@app.post("/api/admin/create-team")
+async def admin_create_team(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Admin endpoint to create a team with subscription and invitations.
+
+    Requires Authorization: Bearer <ADMIN_SECRET>
+
+    Body JSON:
+    {
+        "team_name": "Company Name",
+        "brand_domain": "example.com",
+        "plan": "pro",
+        "owner_email": "owner@example.com",
+        "invite_emails": ["user1@example.com", "user2@example.com"]
+    }
+    """
+    if not _verify_admin_secret(request):
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    team_name = body.get("team_name")
+    brand_domain = body.get("brand_domain")
+    plan = body.get("plan", "pro")
+    owner_email = body.get("owner_email")
+    invite_emails = body.get("invite_emails", [])
+
+    if not team_name:
+        raise HTTPException(status_code=400, detail="team_name is required")
+    if not owner_email:
+        raise HTTPException(status_code=400, detail="owner_email is required")
+    if plan not in ("free", "pro", "business"):
+        raise HTTPException(status_code=400, detail="plan must be free, pro, or business")
+
+    # Find owner user
+    owner = db.query(User).filter(User.email == owner_email).first()
+
+    if not owner:
+        # Try to find any of the invite emails as potential owner
+        for email in invite_emails:
+            potential_owner = db.query(User).filter(User.email == email).first()
+            if potential_owner:
+                owner = potential_owner
+                owner_email = email
+                break
+
+    if not owner:
+        # List existing users for debugging
+        existing_users = db.query(User).limit(10).all()
+        user_list = [{"email": u.email, "id": u.id} for u in existing_users]
+        raise HTTPException(
+            status_code=400,
+            detail=f"No user found with email {owner_email}. Available users: {user_list}"
+        )
+
+    # Check if team already exists with this name
+    existing_slug = _generate_slug(team_name, db)
+    existing_team = db.query(Team).filter(Team.name == team_name).first()
+    if existing_team:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Team '{team_name}' already exists with id {existing_team.id}"
+        )
+
+    # Create team
+    slug = _generate_slug(team_name, db)
+    team = Team(
+        name=team_name,
+        slug=slug,
+        owner_id=owner.id,
+        is_personal=False,
+        brand_domain=brand_domain,
+    )
+    db.add(team)
+    db.flush()
+
+    # Add owner as team member
+    owner_member = TeamMember(
+        team_id=team.id,
+        user_id=owner.id,
+        role="owner",
+    )
+    db.add(owner_member)
+
+    # Create subscription
+    plan_config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+    subscription = Subscription(
+        team_id=team.id,
+        plan=plan,
+        status="active",
+        seat_limit=plan_config["seat_limit"],
+        charts_per_month=plan_config["charts_per_month"],
+        charts_created_this_month=0,
+        current_period_start=datetime.utcnow(),
+        current_period_end=datetime.utcnow() + timedelta(days=365),
+    )
+    db.add(subscription)
+
+    # Create invitations for other emails
+    invitations_created = []
+    members_added = []
+
+    for email in invite_emails:
+        if email.lower() == owner_email.lower():
+            continue
+
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            # Add directly as member
+            member = TeamMember(
+                team_id=team.id,
+                user_id=existing_user.id,
+                role="admin",
+            )
+            db.add(member)
+            members_added.append(email)
+        else:
+            # Create invitation
+            invitation = TeamInvitation(
+                team_id=team.id,
+                email=email,
+                role="admin",
+                token=secrets.token_urlsafe(32),
+                invited_by=owner.id,
+                expires_at=datetime.utcnow() + timedelta(days=30),
+            )
+            db.add(invitation)
+            invitations_created.append({
+                "email": email,
+                "token": invitation.token,
+                "invite_url": f"https://epic-charts.vercel.app/invite/{invitation.token}",
+            })
+
+    db.commit()
+    db.refresh(team)
+
+    return {
+        "status": "ok",
+        "team": {
+            "id": team.id,
+            "name": team.name,
+            "slug": team.slug,
+            "brand_domain": team.brand_domain,
+        },
+        "subscription": {
+            "plan": plan,
+            "seat_limit": plan_config["seat_limit"],
+            "charts_per_month": plan_config["charts_per_month"],
+        },
+        "owner": owner_email,
+        "members_added": members_added,
+        "invitations": invitations_created,
+    }
+
+
+# ============================================================================
 # Run server
 # ============================================================================
 
