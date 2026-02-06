@@ -1,4 +1,5 @@
 .chart-preview {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--chart-bg, var(--bg-secondary));
@@ -430,6 +431,36 @@
 [data-style-variant="professional"] .chart-title {
   font-family: var(--font-professional);
   font-weight: 500;
+}
+
+/* Logo Overlay */
+.chart-logo-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.chart-logo-image {
+  height: 20px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+}
+
+.chart-logo-text {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.02em;
 }
 
 /* Responsive */

@@ -381,6 +381,7 @@ export function ChartView() {
           config={chartConfig}
           onConfigChange={setChartConfig}
           chartRef={chartCaptureRef}
+          watermark={watermarkSettings}
         />
       ) : (
         <div className="chart-workspace">
@@ -391,7 +392,7 @@ export function ChartView() {
                 <p className="chart-ai-text">{chartData.aiSummary}</p>
               </div>
             )}
-            <ChartPreview data={chartData} config={chartConfig} />
+            <ChartPreview data={chartData} config={chartConfig} watermark={watermarkSettings} />
           </div>
           <div className="chart-sidebar">
             <ChartControls
