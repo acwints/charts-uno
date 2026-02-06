@@ -8,7 +8,7 @@ export async function generateInfographic(
   colorScheme: ColorScheme,
   themeMode: ThemeMode,
   sourceImage?: { base64: string; mimeType: string },
-  aiMode: AiMode = 'infographic',
+  aiMode: AiMode = 'chart',
   customPrompt?: string
 ): Promise<string> {
   const theme = themeMode;

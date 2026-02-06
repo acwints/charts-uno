@@ -154,7 +154,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
               onClick={() => updateConfig({
                 type: type.id,
-                aiMode: type.id === 'infographic' ? (config.aiMode || 'infographic') : undefined,
+                aiMode: type.id === 'infographic' ? (config.aiMode || 'chart') : undefined,
                 aiReadyToGenerate: type.id === 'infographic' ? false : undefined,
                 mapVariant: type.id === 'map' ? (config.mapVariant || 'choropleth') : undefined,
                 mapScope: type.id === 'map' ? (config.mapScope || data.mapScope || 'us-states') : undefined,

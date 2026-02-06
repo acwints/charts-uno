@@ -67,7 +67,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         config.colorScheme,
         config.themeMode,
         data.sourceImage,
-        config.aiMode || 'infographic',
+        config.aiMode || 'chart',
         config.aiCustomPrompt
       );
       setInfographicSvg(svg);
