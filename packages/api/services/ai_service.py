@@ -394,7 +394,59 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
     """Generate plausible chart data from a natural language prompt."""
     client = get_client()
 
-    system_prompt = f"""You are a data visualization expert. The user will describe a chart they want to see. Your job is to invent plausible, realistic data that matches their description.
+    # Check if this is a geographic/map prompt
+    prompt_lower = prompt.lower()
+    is_geographic = any(kw in prompt_lower for kw in [
+        "by state", "by country", "by countries", "by region", "by province",
+        "map", "geographic", "regional", "states", "countries",
+        "us population", "world population", "gdp by", "per capita",
+        "each state", "every state", "all states", "50 states",
+        "each country", "every country", "all countries",
+    ])
+
+    if is_geographic:
+        # Determine scope
+        is_us = any(kw in prompt_lower for kw in [
+            "state", "states", "us ", "u.s.", "united states", "america",
+            "california", "texas", "new york", "florida",
+        ])
+        map_scope = "us-states" if is_us else "world"
+
+        system_prompt = f"""You are a data visualization expert. The user wants geographic/map data. Generate plausible, realistic data for a map visualization.
+
+User prompt: {prompt}
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "labels": [],
+  "series": [],
+  "suggestedTitle": "A clear, descriptive title for the map",
+  "suggestedType": "map",
+  "mapScope": "{map_scope}",
+  "mapRegions": [
+    {{"id": "XX", "name": "Region Name", "value": 123456}}
+  ],
+  "yAxisLabel": "Value label (e.g., Population, GDP, Sales)"
+}}
+
+Rules for mapRegions:
+- For US states: use 2-letter state codes as id (CA, TX, NY, FL, etc.)
+- For world countries: use ISO 3166-1 alpha-3 codes as id (USA, GBR, CHN, JPN, etc.)
+- Include 10-50 regions depending on the request
+- Generate realistic, plausible values based on real-world data
+- name should be the full region name (California, Texas, United States, etc.)
+- value must be a number
+
+Examples:
+- US state: {{"id": "CA", "name": "California", "value": 39538223}}
+- Country: {{"id": "USA", "name": "United States", "value": 331002651}}
+
+For US states prompts, include major states like CA, TX, FL, NY, PA, IL, OH, GA, NC, MI, etc.
+For world prompts, include major countries like USA, CHN, IND, BRA, RUS, JPN, DEU, GBR, FRA, etc.
+
+Use real-world knowledge to make the data convincing (actual population figures, GDP values, etc.)."""
+    else:
+        system_prompt = f"""You are a data visualization expert. The user will describe a chart they want to see. Your job is to invent plausible, realistic data that matches their description.
 
 User prompt: {prompt}
 

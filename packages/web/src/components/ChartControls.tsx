@@ -10,6 +10,8 @@ import Circle from 'lucide-react/dist/esm/icons/circle';
 import Grid from 'lucide-react/dist/esm/icons/grid';
 import Hash from 'lucide-react/dist/esm/icons/hash';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Globe from 'lucide-react/dist/esm/icons/globe';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import Smile from 'lucide-react/dist/esm/icons/smile';
@@ -21,7 +23,7 @@ import Palette from 'lucide-react/dist/esm/icons/palette';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
-import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -43,7 +45,18 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'radar', icon: Hexagon, label: 'Radar' },
   { id: 'scatter', icon: Circle, label: 'Scatter' },
   { id: 'table', icon: Table2, label: 'Table' },
+  { id: 'map', icon: Globe, label: 'Map' },
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
+];
+
+const MAP_SCOPE_OPTIONS: { id: MapScope; icon: typeof Globe; label: string; description: string }[] = [
+  { id: 'us-states', icon: MapPin, label: 'US States', description: 'United States by state' },
+  { id: 'world', icon: Globe, label: 'World', description: 'World countries' },
+];
+
+const MAP_VARIANT_OPTIONS: { id: MapVariant; label: string; description: string }[] = [
+  { id: 'choropleth', label: 'Choropleth', description: 'Color-filled regions' },
+  { id: 'bubble', label: 'Bubble', description: 'Sized circles on map' },
 ];
 
 const BASE_STYLE_VARIANT_OPTIONS: { id: StyleVariant; icon: typeof Briefcase; label: string }[] = [
@@ -142,7 +155,9 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               onClick={() => updateConfig({
                 type: type.id,
                 aiMode: type.id === 'infographic' ? (config.aiMode || 'infographic') : undefined,
-                aiReadyToGenerate: type.id === 'infographic' ? false : undefined
+                aiReadyToGenerate: type.id === 'infographic' ? false : undefined,
+                mapVariant: type.id === 'map' ? (config.mapVariant || 'choropleth') : undefined,
+                mapScope: type.id === 'map' ? (config.mapScope || data.mapScope || 'us-states') : undefined,
               })}
               title={type.label}
             >
@@ -194,6 +209,51 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             <Play size={16} />
             <span>Generate</span>
           </button>
+        </div>
+      )}
+
+      {/* Map options (only when map is selected) */}
+      {config.type === 'map' && (
+        <div className="controls-map-options">
+          <div className="map-options-row">
+            <div className="map-option-group">
+              <span className="map-option-label">Scope</span>
+              <div className="map-scope-grid">
+                {MAP_SCOPE_OPTIONS.map((scopeOpt) => (
+                  <button
+                    key={scopeOpt.id}
+                    className={`map-scope-button ${config.mapScope === scopeOpt.id ? 'active' : ''}`}
+                    onClick={() => updateConfig({ mapScope: scopeOpt.id })}
+                    title={scopeOpt.description}
+                  >
+                    <scopeOpt.icon size={14} />
+                    <span>{scopeOpt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="map-option-group">
+              <span className="map-option-label">Style</span>
+              <div className="map-variant-grid">
+                {MAP_VARIANT_OPTIONS.map((variantOpt) => (
+                  <button
+                    key={variantOpt.id}
+                    className={`map-variant-button ${config.mapVariant === variantOpt.id ? 'active' : ''}`}
+                    onClick={() => updateConfig({ mapVariant: variantOpt.id })}
+                    title={variantOpt.description}
+                  >
+                    <span>{variantOpt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {(!data.mapRegions || data.mapRegions.length === 0) && (
+            <div className="map-no-data-hint">
+              <MapPin size={14} />
+              <span>Use an AI prompt like "US population by state" to generate map data</span>
+            </div>
+          )}
         </div>
       )}
 

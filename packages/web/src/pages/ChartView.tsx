@@ -7,6 +7,8 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Table2 from 'lucide-react/dist/esm/icons/table-2';
 import Image from 'lucide-react/dist/esm/icons/image';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ImageOff from 'lucide-react/dist/esm/icons/image-off';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
@@ -20,7 +22,7 @@ import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
-import { getChart, createChartWithTeam, getTeamBranding, updateChart } from '../services/api';
+import { getChart, createChartWithTeam, getTeamBranding, updateTeamBranding, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 
@@ -37,29 +39,48 @@ export function ChartView() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
+  const [canToggleLogo, setCanToggleLogo] = useState(false);
   const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
   const [originalData, setOriginalData] = useState<ChartData | null>(null);
   const initTokenRef = useRef<string | null>(null);
   const justSavedIdRef = useRef<string | null>(null);
 
-  // Fetch branding settings for watermark
+  // Fetch branding settings for logo
   useEffect(() => {
     if (currentTeam?.id) {
       getTeamBranding(currentTeam.id)
         .then((branding) => {
-          // For free plans, always enable watermark
+          // For free plans, always enable logo and can't toggle
           const canCustomize = branding.can_customize;
+          setCanToggleLogo(canCustomize);
           setWatermarkSettings({
             enabled: canCustomize ? branding.watermark_enabled : true,
             customLogoUrl: canCustomize ? branding.custom_logo_url : null,
           });
         })
         .catch(() => {
-          // Default to watermark enabled if fetch fails
+          // Default to logo enabled if fetch fails
+          setCanToggleLogo(false);
           setWatermarkSettings({ enabled: true, customLogoUrl: null });
         });
     }
   }, [currentTeam?.id]);
+
+  const handleToggleLogo = async () => {
+    if (!currentTeam?.id || !canToggleLogo) return;
+
+    const newEnabled = !watermarkSettings.enabled;
+    // Optimistic update
+    setWatermarkSettings(prev => ({ ...prev, enabled: newEnabled }));
+
+    try {
+      await updateTeamBranding(currentTeam.id, { watermark_enabled: newEnabled });
+    } catch {
+      // Revert on error
+      setWatermarkSettings(prev => ({ ...prev, enabled: !newEnabled }));
+      toast.error('Failed to update logo setting');
+    }
+  };
 
   const saveChart = async () => {
     if (!chartData) return null;
@@ -287,6 +308,22 @@ export function ChartView() {
           )}
           {editorView === 'chart' && (
             <>
+              {isAuthenticated && (
+                <Button
+                  variant={watermarkSettings.enabled ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={handleToggleLogo}
+                  disabled={!canToggleLogo}
+                  title={canToggleLogo
+                    ? (watermarkSettings.enabled ? 'Logo on exports (click to hide)' : 'Logo hidden (click to show)')
+                    : 'Upgrade to Pro to toggle logo'
+                  }
+                  aria-pressed={watermarkSettings.enabled}
+                >
+                  {watermarkSettings.enabled ? <ImageIcon size={16} /> : <ImageOff size={16} />}
+                  Logo
+                </Button>
+              )}
               <ExportMenu
                 data={chartData}
                 chartRef={chartCaptureRef}

@@ -28,9 +28,22 @@ export interface ChartData {
   yAxisFormat?: YAxisFormat;
   yAxisPrefix?: string;
   yAxisSuffix?: string;
+  // Map-specific data (used when suggestedType === 'map')
+  mapRegions?: MapRegion[];
+  mapScope?: MapScope;
 }
 
-export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic';
+export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic' | 'map';
+
+// Map-specific types
+export type MapVariant = 'bubble' | 'choropleth';
+export type MapScope = 'us-states' | 'world';
+
+export interface MapRegion {
+  id: string;      // State code (CA, TX) or ISO country code (USA, GBR)
+  name: string;    // California, Texas, United States
+  value: number;
+}
 export type AiMode = 'chart' | 'infographic' | 'custom';
 export type ColorScheme = 'default' | 'monochrome' | 'warm' | 'cool' | 'editorial' | 'muted';
 export type StyleVariant = 'professional' | 'playful' | 'editorial' | 'minimalist' | 'bold' | 'brand';
@@ -81,6 +94,9 @@ export interface ChartConfig {
   aiMode?: AiMode;
   aiCustomPrompt?: string;
   aiReadyToGenerate?: boolean;
+  // Map options
+  mapVariant?: MapVariant;
+  mapScope?: MapScope;
 }
 
 // Default chart config

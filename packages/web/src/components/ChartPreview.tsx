@@ -33,6 +33,7 @@ import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
+import { MapChart } from './MapChart';
 import './ChartPreview.css';
 
 interface ChartPreviewProps {
@@ -437,6 +438,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
 
     switch (config.type) {
       case 'infographic':
+      case 'map':
         return null;
 
       case 'bar':
@@ -691,6 +693,8 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
       >
         {config.type === 'infographic' ? (
           renderInfographic()
+        ) : config.type === 'map' ? (
+          <MapChart data={data} config={config} theme={theme} colors={colors} />
         ) : isTableView ? (
           <div className="table-container">
             <table className="data-table">
@@ -745,7 +749,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         </div>
       )}
 
-      {config.type !== 'infographic' && config.type !== 'table' && (
+      {config.type !== 'infographic' && config.type !== 'table' && config.type !== 'map' && (
         <div className="chart-color-bar">
           {colors.slice(0, data.series.length).map((color, idx) => (
             <div

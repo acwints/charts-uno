@@ -261,6 +261,86 @@
   cursor: not-allowed;
 }
 
+/* Map Options */
+.controls-map-options {
+  padding: var(--space-3);
+  border-bottom: var(--border-subtle);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.03), rgba(59, 130, 246, 0.03));
+}
+
+.map-options-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.map-option-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.map-option-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.map-scope-grid,
+.map-variant-grid {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.map-scope-button,
+.map-variant-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.map-scope-button:hover,
+.map-variant-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.map-scope-button.active,
+.map-variant-button.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.map-no-data-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.map-no-data-hint svg {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
 /* Two-column grid for remaining controls */
 .controls-grid {
   display: grid;
@@ -586,5 +666,10 @@
   .color-scheme-button {
     transition: none;
     animation: none;
+  }
+
+  .map-scope-button,
+  .map-variant-button {
+    transition: none;
   }
 }
