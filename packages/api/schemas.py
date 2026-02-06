@@ -174,6 +174,12 @@ class StockSearchRequest(BaseModel):
     query: str
 
 
+class StockInsightsRequest(BaseModel):
+    labels: list[str]
+    series: list[dict]
+    title: str
+
+
 class ChatMessageHistory(BaseModel):
     role: str  # 'user' or 'assistant'
     content: str

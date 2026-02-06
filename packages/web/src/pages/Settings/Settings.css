@@ -754,6 +754,110 @@
   text-transform: capitalize;
 }
 
+.branding-section {
+  padding-bottom: 20px;
+  border-bottom: var(--border-subtle);
+}
+
+.branding-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.branding-section__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+/* Editable Brand Colors */
+.brand-colors-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brand-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.brand-color-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-color-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.brand-color-description {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.brand-color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.brand-color-swatch-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: border-color 150ms, transform 150ms;
+  flex-shrink: 0;
+}
+
+.brand-color-swatch-btn:hover {
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.brand-color-picker {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  width: 200px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.brand-color-hex-input {
+  width: 80px;
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.brand-color-hex-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 @media (max-width: 768px) {
   .settings-page {
     flex-direction: column;
@@ -795,6 +899,17 @@
   .branding-logo-current__actions {
     margin-left: 0;
   }
+
+  .brand-color-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .brand-color-input-wrapper {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -831,5 +946,9 @@
   .branding-logo-dropzone {
     transition: none;
     animation: none;
+  }
+
+  .brand-color-swatch-btn {
+    transition: none;
   }
 }

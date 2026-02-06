@@ -1,8 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Users from 'lucide-react/dist/esm/icons/users';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Shield from 'lucide-react/dist/esm/icons/shield';
+import Palette from 'lucide-react/dist/esm/icons/palette';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import { Link } from 'react-router-dom';
 import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { InviteModal } from '../../components/InviteModal';
@@ -13,15 +21,30 @@ import {
   updateTeam,
   removeTeamMember,
   cancelInvitation,
+  getTeamBranding,
+  updateTeamBranding,
+  deleteTeamLogo,
+  inferTeamBrand,
   type TeamMember,
   type TeamInvitation,
+  type TeamBranding,
 } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+
+// Color role definitions for brand palette
+const COLOR_ROLES = [
+  { index: 0, label: 'Primary Data', description: 'Main chart color (bars, lines)' },
+  { index: 1, label: 'Secondary Data', description: 'Second series color' },
+  { index: 2, label: 'Tertiary Data', description: 'Third series color' },
+  { index: 3, label: 'Background', description: 'Chart background color' },
+  { index: 4, label: 'Text', description: 'Labels and titles' },
+];
 
 export function TeamSettings() {
   const { currentTeam, refetchTeams, canInviteMember } = useTeam();
   const { user } = useAuth();
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
@@ -30,10 +53,20 @@ export function TeamSettings() {
   const [teamName, setTeamName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Branding state
+  const [branding, setBranding] = useState<TeamBranding | null>(null);
+  const [domainInput, setDomainInput] = useState('');
+  const [isInferring, setIsInferring] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+
+  const isPaidPlan = currentTeam?.subscription?.plan && currentTeam.subscription.plan !== 'free';
+
   useEffect(() => {
     if (currentTeam) {
       setTeamName(currentTeam.name);
       loadTeamData();
+      loadBranding();
     }
   }, [currentTeam]);
 
@@ -49,10 +82,118 @@ export function TeamSettings() {
 
       setMembers(membersData);
       setInvitations(invitationsData.invitations);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load team data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadBranding = async () => {
+    if (!currentTeam?.id) return;
+    try {
+      const data = await getTeamBranding(currentTeam.id);
+      setBranding(data);
+      if (data.brand_domain) {
+        setDomainInput(data.brand_domain);
+      }
+    } catch {
+      // Silently fail - branding is optional
+    }
+  };
+
+  const handleInferBrand = async () => {
+    if (!currentTeam?.id || !domainInput.trim()) return;
+
+    setIsInferring(true);
+    try {
+      await inferTeamBrand(currentTeam.id, domainInput.trim());
+      const updated = await getTeamBranding(currentTeam.id);
+      setBranding(updated);
+      toast.success(`Brand colors extracted from ${domainInput}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to analyze website');
+    } finally {
+      setIsInferring(false);
+    }
+  };
+
+  const handleColorChange = async (index: number, color: string) => {
+    if (!currentTeam?.id || !branding) return;
+
+    const newColors = [...(branding.brand_colors || ['#6366f1', '#22c55e', '#f59e0b', '#0a0a0f', '#f0f0f5'])];
+    newColors[index] = color;
+
+    try {
+      const updated = await updateTeamBranding(currentTeam.id, { brand_colors: newColors });
+      setBranding(updated);
+    } catch {
+      toast.error('Failed to update color');
+    }
+    setEditingColorIndex(null);
+  };
+
+  const handleToggleWatermark = async () => {
+    if (!currentTeam?.id || !branding) return;
+
+    setIsSaving(true);
+    try {
+      const updated = await updateTeamBranding(currentTeam.id, {
+        watermark_enabled: !branding.watermark_enabled,
+      });
+      setBranding(updated);
+      toast.success(updated.watermark_enabled ? 'Watermark enabled' : 'Watermark disabled');
+    } catch {
+      toast.error('Failed to update watermark setting');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentTeam?.id) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 500 * 1024) {
+      toast.error('Image must be smaller than 500KB');
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result as string;
+        const updated = await updateTeamBranding(currentTeam.id, { custom_logo_url: base64 });
+        setBranding(updated);
+        toast.success('Logo uploaded');
+      } catch {
+        toast.error('Failed to upload logo');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleDeleteLogo = async () => {
+    if (!currentTeam?.id) return;
+    try {
+      await deleteTeamLogo(currentTeam.id);
+      setBranding((prev) => prev ? { ...prev, custom_logo_url: null } : null);
+      toast.success('Logo removed');
+    } catch {
+      toast.error('Failed to remove logo');
     }
   };
 
@@ -64,7 +205,7 @@ export function TeamSettings() {
       await updateTeam(currentTeam.id, { name: teamName });
       toast.success('Team name updated');
       refetchTeams();
-    } catch (err) {
+    } catch {
       toast.error('Failed to update team name');
     } finally {
       setIsSaving(false);
@@ -93,7 +234,7 @@ export function TeamSettings() {
       toast.success('Invitation cancelled');
       setInvitations(invitations.filter((i) => i.id !== token));
       loadTeamData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to cancel invitation');
     }
   };
@@ -275,6 +416,187 @@ export function TeamSettings() {
           </div>
         </div>
       )}
+
+      {/* Branding Section */}
+      <div className="settings-card">
+        <div className="settings-card__header">
+          <h3 className="settings-card__title">
+            <Palette size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            Branding
+          </h3>
+        </div>
+
+        {!isPaidPlan ? (
+          <div className="settings-card__content">
+            <div className="branding-upgrade">
+              <div className="branding-upgrade__icon">
+                <Lock size={24} />
+              </div>
+              <div className="branding-upgrade__content">
+                <h4 className="branding-upgrade__title">Upgrade to customize branding</h4>
+                <p className="branding-upgrade__text">
+                  Free accounts include an "Epic Charts" watermark on exports.
+                  Upgrade to remove it or add your own logo and brand colors.
+                </p>
+                <Link to="/settings/billing">
+                  <Button variant="primary">
+                    <Sparkles size={16} />
+                    Upgrade Now
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="settings-card__content">
+            {/* Brand Colors */}
+            <div className="branding-section">
+              <h4 className="branding-section__title">Brand Palette</h4>
+              <p className="settings-muted-text" style={{ marginBottom: '12px' }}>
+                These colors are used when you select "Brand" style in the chart editor.
+              </p>
+
+              <div className="branding-domain-input" style={{ marginBottom: '16px' }}>
+                <div className="branding-domain-field">
+                  <Globe size={16} className="branding-domain-icon" />
+                  <input
+                    type="text"
+                    className="branding-domain-text"
+                    placeholder="yourcompany.com"
+                    value={domainInput}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInferBrand()}
+                    spellCheck={false}
+                  />
+                </div>
+                <Button onClick={handleInferBrand} disabled={isInferring || !domainInput.trim()}>
+                  <Wand2 size={16} />
+                  {isInferring ? 'Analyzing...' : 'Extract from Website'}
+                </Button>
+              </div>
+
+              <div className="brand-colors-editor">
+                {COLOR_ROLES.map((role) => {
+                  const colors = branding?.brand_colors || ['#6366f1', '#22c55e', '#f59e0b', '#0a0a0f', '#f0f0f5'];
+                  const color = colors[role.index] || '#888888';
+                  const isEditing = editingColorIndex === role.index;
+
+                  return (
+                    <div key={role.index} className="brand-color-row">
+                      <div className="brand-color-info">
+                        <span className="brand-color-label">{role.label}</span>
+                        <span className="brand-color-description">{role.description}</span>
+                      </div>
+                      <div className="brand-color-input-wrapper">
+                        <button
+                          className="brand-color-swatch-btn"
+                          style={{ backgroundColor: color }}
+                          onClick={() => setEditingColorIndex(isEditing ? null : role.index)}
+                          title="Click to edit"
+                          aria-label={`Edit ${role.label} color`}
+                        />
+                        {isEditing && (
+                          <input
+                            type="color"
+                            className="brand-color-picker"
+                            value={color}
+                            onChange={(e) => handleColorChange(role.index, e.target.value)}
+                            onBlur={() => setEditingColorIndex(null)}
+                            autoFocus
+                          />
+                        )}
+                        <input
+                          type="text"
+                          className="brand-color-hex-input"
+                          value={color.toUpperCase()}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                              handleColorChange(role.index, val);
+                            }
+                          }}
+                          spellCheck={false}
+                          maxLength={7}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {branding?.brand_theme && (
+                <div className="branding-theme-badge" style={{ marginTop: '12px' }}>
+                  Theme: {branding.brand_theme}
+                </div>
+              )}
+            </div>
+
+            {/* Watermark Settings */}
+            <div className="branding-section" style={{ marginTop: '24px' }}>
+              <h4 className="branding-section__title">Export Watermark</h4>
+              <div className="branding-toggle">
+                <div className="branding-toggle__info">
+                  <span className="branding-toggle__label">Show watermark on exports</span>
+                  <span className="branding-toggle__description">
+                    When disabled, exported images will have no watermark
+                  </span>
+                </div>
+                <button
+                  className={`branding-toggle__switch ${branding?.watermark_enabled !== false ? 'branding-toggle__switch--on' : ''}`}
+                  onClick={handleToggleWatermark}
+                  disabled={isSaving}
+                  aria-pressed={branding?.watermark_enabled !== false}
+                >
+                  <span className="branding-toggle__switch-thumb" />
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Logo */}
+            <div className="branding-section" style={{ marginTop: '24px' }}>
+              <h4 className="branding-section__title">Custom Logo</h4>
+              <p className="settings-muted-text" style={{ marginBottom: '12px' }}>
+                Replace the default watermark text with your logo. PNG with transparency recommended.
+              </p>
+
+              <div className="branding-logo-upload">
+                {branding?.custom_logo_url ? (
+                  <div className="branding-logo-current">
+                    <img src={branding.custom_logo_url} alt="Logo" className="branding-logo-current__image" />
+                    <div className="branding-logo-current__actions">
+                      <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                        <Upload size={16} />
+                        Replace
+                      </Button>
+                      <Button variant="ghost" onClick={handleDeleteLogo}>
+                        <Trash2 size={16} />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="branding-logo-dropzone"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    <ImageIcon size={24} />
+                    <span>{isUploading ? 'Uploading...' : 'Click to upload logo'}</span>
+                    <span className="branding-logo-dropzone__hint">PNG, JPG up to 500KB</span>
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <InviteModal
         teamId={currentTeam.id}

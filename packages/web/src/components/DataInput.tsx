@@ -18,7 +18,7 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
-import { searchTickers, fetchStockData, type TickerResult } from '../services/stockService';
+import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './DataInput.css';
@@ -164,7 +164,18 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
     try {
       const data = await fetchStockData(selectedTicker, stockRange, selectedTicker2 || undefined);
+      // Show chart immediately
       onSubmit(data);
+
+      // Fetch insights in background
+      fetchStockInsights(data.labels, data.series, data.suggestedTitle || '')
+        .then((insight) => {
+          // Update with insights when ready
+          onSubmit({ ...data, aiReasoning: insight });
+        })
+        .catch(() => {
+          // Silently ignore insight failures - chart still works
+        });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
     } finally {

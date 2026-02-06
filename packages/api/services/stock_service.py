@@ -1,8 +1,11 @@
 import os
-from typing import Any, Dict, List
+import json
+from typing import Any, Dict, List, Optional
 
 import httpx
 import yfinance as yf
+
+from services.ai_service import get_client, MODEL_NAME
 
 FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
@@ -87,3 +90,60 @@ async def fetch_stock_prices(ticker: str, range_key: str, ticker2: str | None = 
         "xAxisLabel": "Date",
         "yAxisLabel": "Price (USD)",
     }
+
+
+async def generate_stock_insights(
+    labels: List[str],
+    series: List[Dict[str, Any]],
+    title: str,
+) -> str:
+    """Generate AI insights about stock price data."""
+    client = get_client()
+
+    # Calculate basic stats for context
+    stats = []
+    for s in series:
+        data = s.get("data", [])
+        if len(data) >= 2:
+            start_price = data[0]
+            end_price = data[-1]
+            change = end_price - start_price
+            change_pct = (change / start_price) * 100 if start_price else 0
+            high = max(data)
+            low = min(data)
+            stats.append({
+                "symbol": s.get("name"),
+                "start": start_price,
+                "end": end_price,
+                "change": round(change, 2),
+                "changePct": round(change_pct, 2),
+                "high": high,
+                "low": low,
+            })
+
+    prompt = f"""You are a financial analyst providing brief insights about stock performance.
+
+Stock Data:
+- Title: {title}
+- Period: {labels[0]} to {labels[-1]} ({len(labels)} data points)
+- Stats: {json.dumps(stats, indent=2)}
+
+Provide a concise 2-3 sentence insight about this stock data. Include:
+1. Overall performance (up/down, by how much)
+2. One notable pattern or observation (volatility, trend direction, comparison if multiple stocks)
+
+Keep it factual and informative. No financial advice. No markdown formatting.
+Example: "AAPL gained 8.3% over this period, rising from $178.50 to $193.30. The stock showed steady upward momentum with a brief pullback in mid-month before resuming its climb."
+
+Return ONLY the insight text, nothing else."""
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt,
+    )
+
+    content = response.text
+    if not content:
+        return "Stock data loaded successfully."
+
+    return content.strip()

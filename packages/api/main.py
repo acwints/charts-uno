@@ -46,6 +46,7 @@ from schemas import (
     PromptGenerateRequest,
     StockPriceRequest,
     StockSearchRequest,
+    StockInsightsRequest,
     ChatRequest,
     ChatResponse,
     ChartRecommendRequest,
@@ -76,7 +77,7 @@ from schemas import (
     BrandInferResponse,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
-from services.stock_service import fetch_stock_prices, search_tickers
+from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 
 # Configure logging
@@ -998,6 +999,21 @@ async def stock_search_endpoint(
     except Exception as e:
         logger.error(f"Stock search failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to search tickers")
+
+
+@app.post("/api/stocks/insights")
+@limiter.limit("20/minute")
+async def stock_insights_endpoint(
+    request: Request,
+    data: StockInsightsRequest,
+):
+    """Generate AI insights for stock data."""
+    try:
+        insight = await generate_stock_insights(data.labels, data.series, data.title)
+        return {"insight": insight}
+    except Exception as e:
+        logger.error(f"Stock insights generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate insights")
 
 
 # ============================================================================

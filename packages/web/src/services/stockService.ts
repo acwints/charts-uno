@@ -59,3 +59,25 @@ export async function fetchStockData(ticker: string, range: string, ticker2?: st
     sourceLink: `https://finance.yahoo.com/quote/${symbol}`,
   };
 }
+
+export async function fetchStockInsights(
+  labels: string[],
+  series: { name: string; data: number[] }[],
+  title: string
+): Promise<string> {
+  const response = await fetch(`${API_URL}/api/stocks/insights`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ labels, series, title }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch stock insights');
+  }
+
+  const result = await response.json();
+  return result.insight;
+}
