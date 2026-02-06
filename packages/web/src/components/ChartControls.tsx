@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import BarChart2 from 'lucide-react/dist/esm/icons/bar-chart-2';
 import LineChart from 'lucide-react/dist/esm/icons/line-chart';
 import AreaChart from 'lucide-react/dist/esm/icons/area-chart';
 import PieChart from 'lucide-react/dist/esm/icons/pie-chart';
@@ -42,6 +43,7 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'line', icon: LineChart, label: 'Line' },
   { id: 'area', icon: AreaChart, label: 'Area' },
   { id: 'pie', icon: PieChart, label: 'Pie' },
+  { id: 'histogram', icon: BarChart2, label: 'Histogram' },
   { id: 'radar', icon: Hexagon, label: 'Radar' },
   { id: 'scatter', icon: Circle, label: 'Scatter' },
   { id: 'table', icon: Table2, label: 'Table' },

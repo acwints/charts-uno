@@ -90,7 +90,7 @@
 /* Chart Type Grid - Full width */
 .chart-type-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-1);
   width: 100%;
 }
@@ -590,7 +590,7 @@
   }
 
   .chart-type-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 
   .controls-grid {

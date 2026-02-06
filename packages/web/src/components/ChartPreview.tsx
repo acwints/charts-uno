@@ -476,6 +476,39 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
           </BarChart>
         );
 
+      case 'histogram':
+        return (
+          <BarChart {...commonProps} barGap={0} barCategoryGap={0}>
+            {renderGradientDefs()}
+            {gridElement}
+            {xAxisElement}
+            {yAxisElement}
+            {tooltipElement}
+            {legendElement}
+            {data.series.map((series, idx) => (
+              <Bar
+                key={series.name}
+                dataKey={series.name}
+                fill={getBarFill(idx)}
+                radius={0}
+                animationDuration={config.animate ? 800 : 0}
+                animationBegin={idx * 100}
+                {...(config.stacked ? { stackId: 'stack' } : {})}
+              >
+                {config.showValues && (
+                  <LabelList
+                    dataKey={series.name}
+                    position="top"
+                    fill={theme.textMuted}
+                    fontSize={11}
+                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
+                  />
+                )}
+              </Bar>
+            ))}
+          </BarChart>
+        );
+
       case 'line':
         return (
           <LineChart {...commonProps}>

@@ -33,7 +33,7 @@ export interface ChartData {
   mapScope?: MapScope;
 }
 
-export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'table' | 'infographic' | 'map';
+export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'histogram' | 'table' | 'infographic' | 'map';
 
 // Map-specific types
 export type MapVariant = 'bubble' | 'choropleth';
