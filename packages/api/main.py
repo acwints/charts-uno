@@ -159,44 +159,6 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 
-# TEMP: Extract brand colors for demo teams
-@app.post("/api/admin/infer-brands")
-async def infer_demo_brands(
-    secret: str = Query(...),
-    db: Session = Depends(get_db),
-):
-    """Extract brand colors for demo teams. Remove after use."""
-    if secret != "epic-charts-seed-2024":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-
-    teams_to_infer = [
-        ("winter-advisory", "winteradvisory.llc"),
-        ("bantee-golf", "banteegolf.com"),
-        ("tbpn", "tbpn.com"),
-        ("not-boring", "notboring.co"),
-    ]
-
-    results = []
-    for slug, domain in teams_to_infer:
-        team = db.query(Team).filter(Team.slug == slug).first()
-        if not team:
-            results.append({"slug": slug, "status": "not found"})
-            continue
-
-        try:
-            result = await infer_brand_from_website(domain)
-            team.brand_domain = domain
-            team.brand_colors = result["colors"]
-            team.brand_theme = result["theme"]
-            team.brand_font_style = result["fontStyle"]
-            results.append({"slug": slug, "status": "success", "colors": result["colors"]})
-        except Exception as e:
-            results.append({"slug": slug, "status": "error", "error": str(e)})
-
-    db.commit()
-    return {"results": results}
-
-
 # ============================================================================
 # Authentication Endpoints
 # ============================================================================
