@@ -234,6 +234,24 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     reader.readAsText(file);
   }, [parseCSVData, onSubmit]);
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    setError(null);
+    setFileName(file.name);
+    setIsAnalyzing(true);
+
+    try {
+      const data = await analyzeImage(file);
+      onSubmit({ ...data, userPrompt: userPrompt.trim() || undefined });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to analyze image');
+      setFileName(null);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [onSubmit, userPrompt]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
@@ -254,25 +272,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         }
       }
     }
-  }, [mode, handleFileUpload]);
-
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  const handleImageUpload = useCallback(async (file: File) => {
-    setError(null);
-    setFileName(file.name);
-    setIsAnalyzing(true);
-
-    try {
-      const data = await analyzeImage(file);
-      onSubmit({ ...data, userPrompt: userPrompt.trim() || undefined });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze image');
-      setFileName(null);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [onSubmit, userPrompt]);
+  }, [mode, handleFileUpload, handleImageUpload]);
 
   const handlePasteSubmit = useCallback(() => {
     setError(null);

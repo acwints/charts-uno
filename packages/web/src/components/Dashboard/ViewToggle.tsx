@@ -16,6 +16,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
         className={`view-toggle-btn ${view === 'grid' ? 'view-toggle-btn--active' : ''}`}
         onClick={() => onViewChange('grid')}
         aria-label="Grid view"
+        aria-pressed={view === 'grid'}
         title="Grid view"
       >
         <LayoutGrid size={16} />
@@ -24,6 +25,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
         className={`view-toggle-btn ${view === 'list' ? 'view-toggle-btn--active' : ''}`}
         onClick={() => onViewChange('list')}
         aria-label="List view"
+        aria-pressed={view === 'list'}
         title="List view"
       >
         <List size={16} />

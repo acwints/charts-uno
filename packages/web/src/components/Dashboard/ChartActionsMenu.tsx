@@ -62,7 +62,7 @@ export function ChartActionsMenu({
       const newChart = await duplicateChart(chart.id);
       showToast('success', 'Chart duplicated');
       onUpdate?.(newChart);
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to duplicate chart');
     }
   };
@@ -74,7 +74,7 @@ export function ChartActionsMenu({
       const updated = await updateChart(chart.id, { is_public: !chart.is_public });
       showToast('success', chart.is_public ? 'Chart unpublished' : 'Chart published');
       onUpdate?.(updated);
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to update chart');
     }
   };
@@ -88,7 +88,7 @@ export function ChartActionsMenu({
       await deleteChart(chart.id);
       showToast('success', 'Chart deleted');
       onDelete?.(chart.id);
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to delete chart');
     } finally {
       setIsDeleting(false);

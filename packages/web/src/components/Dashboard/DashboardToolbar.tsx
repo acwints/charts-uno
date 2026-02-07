@@ -33,7 +33,7 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
       showToast('success', `${count} chart${count > 1 ? 's' : ''} deleted`);
       clearSelection();
       onBatchAction?.();
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to delete charts');
     }
   };
@@ -45,7 +45,7 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
       showToast('success', `${count} chart${count > 1 ? 's' : ''} published`);
       clearSelection();
       onBatchAction?.();
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to publish charts');
     }
   };
@@ -57,7 +57,7 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
       showToast('success', `${count} chart${count > 1 ? 's' : ''} made private`);
       clearSelection();
       onBatchAction?.();
-    } catch (error) {
+    } catch {
       showToast('error', 'Failed to update charts');
     }
   };

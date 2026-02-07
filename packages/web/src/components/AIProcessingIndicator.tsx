@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import './AIProcessingIndicator.css';
 
@@ -28,12 +28,12 @@ export function AIProcessingIndicator({
 }: AIProcessingIndicatorProps) {
   const [progress, setProgress] = useState(0);
   const [statusIndex, setStatusIndex] = useState(0);
-  const startTime = useRef(Date.now());
 
   // Fake progress that slows down as it approaches 90%
   useEffect(() => {
+    const startTime = Date.now();
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - startTime.current) / 1000;
+      const elapsed = (Date.now() - startTime) / 1000;
       // Fast at first, then asymptotically approach 92%
       const newProgress = Math.min(92, 100 * (1 - Math.exp(-elapsed / 8)));
       setProgress(newProgress);
