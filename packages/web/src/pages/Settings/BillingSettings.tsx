@@ -25,6 +25,7 @@ export function BillingSettings() {
       toast.info('Checkout canceled');
       window.history.replaceState({}, '', window.location.pathname);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs only on mount to check URL params
   }, []);
 
   const handleManageSubscription = async () => {

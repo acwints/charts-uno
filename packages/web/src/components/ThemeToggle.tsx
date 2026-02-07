@@ -12,6 +12,7 @@ export function ThemeToggle() {
       className="theme-toggle"
       onClick={toggleTheme}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      aria-pressed={theme === 'dark'}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >

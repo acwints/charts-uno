@@ -91,6 +91,7 @@ export function PlanSelector({ teamId, currentPlan }: PlanSelectorProps) {
       const result = await createCheckout(teamId, plan.id, successUrl, cancelUrl);
 
       // Redirect to Polar checkout
+      // eslint-disable-next-line react-hooks/immutability
       window.location.href = result.checkout_url;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start checkout');

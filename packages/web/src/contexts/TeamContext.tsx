@@ -31,6 +31,7 @@ const TeamContext = createContext<TeamContextValue | null>(null);
 
 const CURRENT_TEAM_KEY = 'epic-charts-current-team';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTeam() {
   const context = useContext(TeamContext);
   if (!context) {

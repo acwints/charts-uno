@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
@@ -26,7 +26,7 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
 
   const LIMIT = 20;
 
@@ -34,7 +34,7 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
     setIsLoading(true);
     setError(null);
 
-    const currentOffset = resetOffset ? 0 : offset;
+    const currentOffset = resetOffset ? 0 : offsetRef.current;
 
     try {
       let fetchedCharts: ChartResponse[] = [];
@@ -61,10 +61,10 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
 
       if (resetOffset) {
         setCharts(fetchedCharts);
-        setOffset(LIMIT);
+        offsetRef.current = LIMIT;
       } else {
         setCharts((prev) => [...prev, ...fetchedCharts]);
-        setOffset((prev) => prev + LIMIT);
+        offsetRef.current += LIMIT;
       }
     } catch (err) {
       console.error('Failed to fetch charts:', err);
@@ -72,11 +72,11 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [offset]);
+  }, []);
 
   useEffect(() => {
     fetchCharts(activeTab, true);
-  }, [activeTab]);
+  }, [activeTab, fetchCharts]);
 
   const handleTabChange = (tab: FeedTab) => {
     if (tab !== 'explore' && !user) {

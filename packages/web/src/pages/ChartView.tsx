@@ -185,7 +185,7 @@ export function ChartView() {
           setIsLoading(false);
         });
     }
-  }, [id, setChartData, setChartConfig]);
+  }, [id, setChartData, setChartConfig, setInfographicSvg]);
 
   // If no ID and no chart data, redirect to home
   useEffect(() => {

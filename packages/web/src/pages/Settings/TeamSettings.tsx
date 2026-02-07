@@ -68,6 +68,7 @@ export function TeamSettings() {
       loadTeamData();
       loadBranding();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadTeamData and loadBranding are stable functions defined below
   }, [currentTeam]);
 
   const loadTeamData = async () => {
