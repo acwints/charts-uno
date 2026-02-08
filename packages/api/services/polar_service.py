@@ -6,6 +6,8 @@ Handles subscription management, checkout sessions, and customer portal access.
 import os
 import hmac
 import hashlib
+import base64
+import time
 from typing import Optional
 from datetime import datetime
 
@@ -215,13 +217,25 @@ class PolarService:
             return True
 
     @staticmethod
-    def verify_webhook_signature(payload: bytes, signature: str) -> bool:
+    def verify_webhook_signature(
+        payload: bytes,
+        signature: str,
+        msg_id: str,
+        timestamp: str,
+    ) -> bool:
         """
-        Verify the webhook signature from Polar.
+        Verify the webhook signature from Polar using Standard Webhooks format.
+
+        Polar uses the Standard Webhooks specification:
+        - Signs: "{msg_id}.{timestamp}.{body}"
+        - Secret is base64-encoded with optional "whsec_" prefix
+        - Signature header format: "v1,{base64_hmac_sha256}"
 
         Args:
             payload: Raw request body bytes
-            signature: Signature from webhook headers
+            signature: Signature from webhook-signature header
+            msg_id: Value from webhook-id header
+            timestamp: Value from webhook-timestamp header
 
         Returns:
             True if signature is valid
@@ -229,13 +243,46 @@ class PolarService:
         if not POLAR_WEBHOOK_SECRET:
             raise PolarServiceError("POLAR_WEBHOOK_SECRET not configured")
 
-        expected = hmac.new(
-            POLAR_WEBHOOK_SECRET.encode(),
-            payload,
-            hashlib.sha256,
-        ).hexdigest()
+        if not msg_id or not timestamp:
+            return False
 
-        return hmac.compare_digest(f"sha256={expected}", signature)
+        # Validate timestamp to prevent replay attacks (5 min tolerance)
+        try:
+            ts = int(timestamp)
+            now = int(time.time())
+            if abs(now - ts) > 300:
+                return False
+        except (ValueError, TypeError):
+            return False
+
+        # Decode the secret (Standard Webhooks uses base64 with optional "whsec_" prefix)
+        secret = POLAR_WEBHOOK_SECRET
+        if secret.startswith("whsec_"):
+            secret = secret[6:]
+        try:
+            secret_bytes = base64.b64decode(secret)
+        except Exception:
+            # Fallback: treat as raw UTF-8 secret if not base64-encoded
+            secret_bytes = secret.encode()
+
+        # Construct the signed content: "{msg_id}.{timestamp}.{body}"
+        to_sign = f"{msg_id}.{timestamp}.".encode() + payload
+
+        expected = hmac.new(
+            secret_bytes,
+            to_sign,
+            hashlib.sha256,
+        ).digest()
+        expected_b64 = base64.b64encode(expected).decode()
+
+        # Signature header may contain multiple space-separated versioned signatures
+        for sig in signature.split(" "):
+            parts = sig.split(",", 1)
+            if len(parts) == 2 and parts[0] == "v1":
+                if hmac.compare_digest(expected_b64, parts[1]):
+                    return True
+
+        return False
 
     @staticmethod
     def get_plan_config(plan: str) -> dict:
@@ -286,6 +333,11 @@ class PolarService:
 
             result["team_id"] = result["metadata"].get("team_id")
             result["plan"] = result["metadata"].get("plan")
+
+            # Extract subscription period dates if present in checkout data
+            subscription_data = checkout.get("subscription", {}) or {}
+            result["current_period_start"] = subscription_data.get("current_period_start")
+            result["current_period_end"] = subscription_data.get("current_period_end")
 
         return result
 

@@ -497,9 +497,14 @@ async def create_chart(
 
     db.add(chart)
 
-    # Increment chart count for the team's subscription
+    # Increment chart count atomically to avoid race conditions under concurrency
     if team.subscription:
-        team.subscription.charts_created_this_month += 1
+        db.query(Subscription).filter(
+            Subscription.id == team.subscription.id
+        ).update(
+            {Subscription.charts_created_this_month: Subscription.charts_created_this_month + 1},
+            synchronize_session="fetch",
+        )
 
     db.commit()
     db.refresh(chart)
@@ -1132,10 +1137,37 @@ def _team_to_response(team: Team, db: Session) -> TeamResponse:
     )
 
 
+def _enforce_subscription_status(db: Session, subscription: Subscription) -> None:
+    """
+    Enforce subscription status: if a canceled subscription has passed its
+    period end, downgrade it to free tier limits. This handles the case where
+    no scheduled job exists to process expired subscriptions.
+    """
+    if (
+        subscription.status == "canceled"
+        and subscription.current_period_end
+        and datetime.utcnow() > subscription.current_period_end
+    ):
+        free_config = PLAN_CONFIG["free"]
+        subscription.plan = "free"
+        subscription.status = "active"
+        subscription.seat_limit = free_config["seat_limit"]
+        subscription.charts_per_month = free_config["charts_per_month"]
+        subscription.polar_subscription_id = None
+        subscription.polar_customer_id = None
+        subscription.current_period_start = None
+        subscription.current_period_end = None
+        subscription.billing_cycle_start = None
+        subscription.charts_created_this_month = 0
+        db.commit()
+
+
 def _check_can_create_chart(db: Session, team: Team) -> bool:
     """Check if a team can create another chart based on their subscription"""
     if not team.subscription:
         return False
+
+    _enforce_subscription_status(db, team.subscription)
 
     # Unlimited charts
     if team.subscription.charts_per_month == -1:
@@ -1148,6 +1180,8 @@ def _check_can_invite_member(db: Session, team: Team) -> bool:
     """Check if a team can invite another member based on their subscription"""
     if not team.subscription:
         return False
+
+    _enforce_subscription_status(db, team.subscription)
 
     # Unlimited seats
     if team.subscription.seat_limit == -1:
@@ -1790,6 +1824,8 @@ async def get_subscription(
     if not team.subscription:
         raise HTTPException(status_code=404, detail="No subscription found")
 
+    _enforce_subscription_status(db, team.subscription)
+
     return SubscriptionResponse(
         id=team.subscription.id,
         plan=team.subscription.plan,
@@ -1815,6 +1851,7 @@ async def get_usage(
     if not team.subscription:
         raise HTTPException(status_code=404, detail="No subscription found")
 
+    _enforce_subscription_status(db, team.subscription)
     sub = team.subscription
     seats_used = db.query(TeamMember).filter(TeamMember.team_id == team_id).count()
 
@@ -1893,13 +1930,15 @@ async def polar_webhook(
     db: Session = Depends(get_db),
 ):
     """Handle Polar.sh webhook events"""
-    # Get raw body and signature
+    # Get raw body and Standard Webhooks headers
     body = await request.body()
     signature = request.headers.get("webhook-signature", "")
+    msg_id = request.headers.get("webhook-id", "")
+    timestamp = request.headers.get("webhook-timestamp", "")
 
-    # Verify signature
+    # Verify signature using Standard Webhooks format
     try:
-        if not polar_service.verify_webhook_signature(body, signature):
+        if not polar_service.verify_webhook_signature(body, signature, msg_id, timestamp):
             logger.warning("Invalid Polar webhook signature")
             raise HTTPException(status_code=401, detail="Invalid signature")
     except PolarServiceError as e:
@@ -1954,38 +1993,111 @@ async def _handle_checkout_completed(db: Session, event_data: dict):
     # Update subscription with Polar IDs and new plan
     plan_config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
 
+    now = datetime.utcnow()
     team.subscription.polar_subscription_id = polar_subscription_id
     team.subscription.polar_customer_id = polar_customer_id
     team.subscription.plan = plan
     team.subscription.status = "active"
     team.subscription.seat_limit = plan_config["seat_limit"]
     team.subscription.charts_per_month = plan_config["charts_per_month"]
-    team.subscription.current_period_start = datetime.utcnow()
-    team.subscription.current_period_end = datetime.utcnow() + timedelta(days=30)
+    team.subscription.charts_created_this_month = 0
+
+    # Try to use period dates from the event, fall back to calculated dates
+    period_start = event_data.get("current_period_start")
+    period_end = event_data.get("current_period_end")
+
+    if period_start:
+        try:
+            team.subscription.current_period_start = datetime.fromisoformat(
+                period_start.replace("Z", "+00:00")
+            )
+        except (ValueError, AttributeError):
+            team.subscription.current_period_start = now
+    else:
+        team.subscription.current_period_start = now
+
+    if period_end:
+        try:
+            team.subscription.current_period_end = datetime.fromisoformat(
+                period_end.replace("Z", "+00:00")
+            )
+        except (ValueError, AttributeError):
+            team.subscription.current_period_end = now + timedelta(days=30)
+    else:
+        team.subscription.current_period_end = now + timedelta(days=30)
+
+    # Set billing_cycle_start so chart count reset logic works
+    team.subscription.billing_cycle_start = team.subscription.current_period_start
 
     db.commit()
     logger.info(f"Team {team_id} upgraded to {plan}")
 
 
 async def _handle_subscription_created(db: Session, event_data: dict):
-    """Handle subscription.created event"""
-    # Usually handled by checkout.completed, but handle separately if needed
+    """Handle subscription.created event as a fallback if checkout.completed didn't fire"""
     polar_subscription_id = event_data.get("polar_subscription_id")
+    polar_customer_id = event_data.get("polar_customer_id")
     team_id = event_data.get("team_id")
+    plan = event_data.get("plan")
+    status = event_data.get("status")
 
     if not polar_subscription_id:
         return
 
-    # Check if we already have this subscription
+    # Check if already processed (checkout.completed sets polar_subscription_id)
     existing = db.query(Subscription).filter(
         Subscription.polar_subscription_id == polar_subscription_id
     ).first()
 
     if existing:
-        logger.info(f"Subscription {polar_subscription_id} already exists")
+        logger.info(f"Subscription {polar_subscription_id} already linked")
         return
 
-    logger.info(f"subscription.created for team {team_id}")
+    # If we have a team_id and plan from metadata, update the team's subscription
+    if team_id and plan:
+        team = db.query(Team).filter(Team.id == team_id).first()
+        if team and team.subscription and not team.subscription.polar_subscription_id:
+            plan_config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+            now = datetime.utcnow()
+
+            team.subscription.polar_subscription_id = polar_subscription_id
+            team.subscription.polar_customer_id = polar_customer_id
+            team.subscription.plan = plan
+            team.subscription.status = status or "active"
+            team.subscription.seat_limit = plan_config["seat_limit"]
+            team.subscription.charts_per_month = plan_config["charts_per_month"]
+            team.subscription.charts_created_this_month = 0
+
+            # Use period dates from event data if available
+            period_start = event_data.get("current_period_start")
+            period_end = event_data.get("current_period_end")
+
+            if period_start:
+                try:
+                    team.subscription.current_period_start = datetime.fromisoformat(
+                        period_start.replace("Z", "+00:00")
+                    )
+                except (ValueError, AttributeError):
+                    team.subscription.current_period_start = now
+            else:
+                team.subscription.current_period_start = now
+
+            if period_end:
+                try:
+                    team.subscription.current_period_end = datetime.fromisoformat(
+                        period_end.replace("Z", "+00:00")
+                    )
+                except (ValueError, AttributeError):
+                    team.subscription.current_period_end = now + timedelta(days=30)
+            else:
+                team.subscription.current_period_end = now + timedelta(days=30)
+
+            team.subscription.billing_cycle_start = team.subscription.current_period_start
+            db.commit()
+            logger.info(f"subscription.created: team {team_id} linked to {polar_subscription_id}")
+            return
+
+    logger.info(f"subscription.created for polar subscription {polar_subscription_id} (no team link)")
 
 
 async def _handle_subscription_updated(db: Session, event_data: dict):
@@ -2022,8 +2134,13 @@ async def _handle_subscription_updated(db: Session, event_data: dict):
             pass
 
     # Reset chart count on new billing period
-    if subscription.billing_cycle_start:
-        if subscription.current_period_start and subscription.current_period_start > subscription.billing_cycle_start:
+    if subscription.current_period_start:
+        if not subscription.billing_cycle_start:
+            # Initialize billing_cycle_start if it was never set
+            subscription.billing_cycle_start = subscription.current_period_start
+            subscription.charts_created_this_month = 0
+        elif subscription.current_period_start > subscription.billing_cycle_start:
+            # New billing period started - reset chart count
             subscription.charts_created_this_month = 0
             subscription.billing_cycle_start = subscription.current_period_start
 
@@ -2047,8 +2164,9 @@ async def _handle_subscription_canceled(db: Session, event_data: dict):
         return
 
     subscription.status = "canceled"
-    # Note: Don't downgrade immediately - let them use until period end
-    # A scheduled job should handle downgrading after current_period_end
+    # Don't downgrade immediately - let them use until period end.
+    # _enforce_subscription_status() handles lazy downgrade on next API access
+    # after current_period_end has passed.
 
     db.commit()
     logger.info(f"Subscription {polar_subscription_id} canceled")
@@ -2062,12 +2180,13 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 
 
 def _verify_admin_secret(request: Request) -> bool:
-    """Verify admin secret from Authorization header"""
+    """Verify admin secret from Authorization header using constant-time comparison"""
     auth = request.headers.get("Authorization", "")
     if not ADMIN_SECRET:
         return False
     if auth.startswith("Bearer "):
-        return auth[7:] == ADMIN_SECRET
+        import hmac as _hmac
+        return _hmac.compare_digest(auth[7:], ADMIN_SECRET)
     return False
 
 
