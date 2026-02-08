@@ -181,7 +181,7 @@ export function PlanSelector({ teamId, currentPlan }: PlanSelectorProps) {
       </div>
 
       <p className="plan-selector__note">
-        All paid plans include a 14-day free trial. Cancel anytime.
+        Cancel anytime. You'll retain access until the end of your billing period.
       </p>
     </div>
   );

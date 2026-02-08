@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
@@ -6,25 +6,62 @@ import { useTeam } from '../../contexts/TeamContext';
 import { useToast } from '../../contexts/ToastContext';
 import { PlanSelector } from '../../components/PlanSelector';
 import { Button } from '../../components/Button';
-import { getPortalUrl } from '../../services/api';
+import { getPortalUrl, getSubscription } from '../../services/api';
 
 export function BillingSettings() {
-  const { currentTeam, usage, refetchUsage } = useTeam();
+  const { currentTeam, usage, refetchUsage, refetchTeams } = useTeam();
   const toast = useToast();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Poll subscription after checkout to wait for webhook processing
+  const pollSubscriptionUpdate = useCallback(async (teamId: string, previousPlan: string) => {
+    setIsPolling(true);
+    const maxAttempts = 10;
+    const pollInterval = 2000;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const sub = await getSubscription(teamId);
+        if (sub.plan !== previousPlan && sub.status === 'active') {
+          await Promise.all([refetchUsage(), refetchTeams()]);
+          toast.success('Subscription updated successfully!');
+          setIsPolling(false);
+          return;
+        }
+      } catch {
+        // Ignore errors during polling
+      }
+      await new Promise((resolve) => {
+        pollTimerRef.current = setTimeout(resolve, pollInterval);
+      });
+    }
+
+    // Fallback: refresh anyway after max attempts
+    await Promise.all([refetchUsage(), refetchTeams()]);
+    toast.success('Subscription updated! Changes may take a moment to appear.');
+    setIsPolling(false);
+  }, [refetchUsage, refetchTeams, toast]);
 
   // Check URL params for success/canceled
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-      toast.success('Subscription updated successfully!');
-      refetchUsage();
-      // Clean up URL
+      // Clean up URL immediately
       window.history.replaceState({}, '', window.location.pathname);
+      // Poll until webhook has processed and plan has updated
+      const previousPlan = currentTeam?.subscription?.plan || 'free';
+      if (currentTeam) {
+        pollSubscriptionUpdate(currentTeam.id, previousPlan);
+      }
     } else if (params.get('canceled') === 'true') {
       toast.info('Checkout canceled');
       window.history.replaceState({}, '', window.location.pathname);
     }
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs only on mount to check URL params
   }, []);
 
@@ -81,6 +118,14 @@ export function BillingSettings() {
           Manage your subscription and monitor usage
         </p>
       </div>
+
+      {isPolling && (
+        <div className="settings-card settings-card--info">
+          <div className="settings-card__content">
+            <p className="settings-info-text">Processing your subscription update...</p>
+          </div>
+        </div>
+      )}
 
       {/* Current Plan Summary */}
       <div className="settings-card">
