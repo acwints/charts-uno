@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { logger } from '../config.js';
 
-const WATERMARK_TEXT = 'epic charts';
+const WATERMARK_TEXT = 'chartsuno';
 const WATERMARK_FONT_SIZE = 16;
 const WATERMARK_PADDING = 20;
 const WATERMARK_OPACITY = 0.6;

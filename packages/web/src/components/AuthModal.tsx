@@ -52,7 +52,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             <div className="auth-modal__header">
               <div>
-                <p className="auth-modal__eyebrow">Welcome to Epic Charts</p>
+                <p className="auth-modal__eyebrow">Welcome to Chartsuno</p>
                 <h2 id="auth-modal-title" className="auth-modal__title">
                   Sign in or create an account
                 </h2>

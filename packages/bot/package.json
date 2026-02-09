@@ -1,5 +1,5 @@
 {
-  "name": "@epic-charts/bot",
+  "name": "@chartsuno/bot",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,7 +10,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@epic-charts/shared": "workspace:*",
+    "@chartsuno/shared": "workspace:*",
     "@google/generative-ai": "^0.24.1",
     "pino": "^9.0.0",
     "pino-pretty": "^11.0.0",

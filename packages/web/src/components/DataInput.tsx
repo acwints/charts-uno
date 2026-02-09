@@ -83,30 +83,6 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle Ctrl+V paste for images in image mode
-  useEffect(() => {
-    if (mode !== 'image') return;
-
-    function handlePaste(e: ClipboardEvent) {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) {
-            handleImageUpload(file);
-          }
-          return;
-        }
-      }
-    }
-
-    document.addEventListener('paste', handlePaste);
-    return () => document.removeEventListener('paste', handlePaste);
-  }, [mode, handleImageUpload]);
-
   const handleTickerSearch = useCallback((query: string) => {
     setTickerQuery(query);
     setSelectedTicker(null);
@@ -275,6 +251,30 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       setIsAnalyzing(false);
     }
   }, [onSubmit, userPrompt]);
+
+  // Handle Ctrl+V paste for images in image mode
+  useEffect(() => {
+    if (mode !== 'image') return;
+
+    function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          return;
+        }
+      }
+    }
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [mode, handleImageUpload]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

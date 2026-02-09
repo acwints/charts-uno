@@ -1,4 +1,4 @@
-import type { MapScope } from '@epic-charts/shared';
+import type { MapScope } from '@chartsuno/shared';
 
 // TopoJSON topology type (simplified)
 interface Topology {

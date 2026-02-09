@@ -62,7 +62,7 @@ export function Header({
             <div className="logo-icon">
               <Sparkles size={20} />
             </div>
-            <span className="logo-text">Epic Charts</span>
+            <span className="logo-text">Chartsuno</span>
             <span className="logo-badge">BETA</span>
           </Link>
         </motion.div>

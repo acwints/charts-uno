@@ -35,7 +35,7 @@ async function poll(): Promise<void> {
 }
 
 async function start(): Promise<void> {
-  logger.info('Starting Epic Charts Bot...');
+  logger.info('Starting Chartsuno Bot...');
 
   try {
     validateConfig();

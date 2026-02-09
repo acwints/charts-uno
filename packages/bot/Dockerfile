@@ -19,8 +19,8 @@ COPY packages/shared/ ./packages/shared/
 COPY packages/bot/ ./packages/bot/
 
 # Build shared package first, then bot
-RUN pnpm --filter @epic-charts/shared build
-RUN pnpm --filter @epic-charts/bot build
+RUN pnpm --filter @chartsuno/shared build
+RUN pnpm --filter @chartsuno/bot build
 
 # Production stage
 FROM node:22-slim

@@ -91,7 +91,7 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 # Environment configuration
-DEFAULT_PROD_FRONTEND = "https://epic-charts.vercel.app"
+DEFAULT_PROD_FRONTEND = "https://chartsuno.vercel.app"
 DEFAULT_DEV_FRONTEND = "http://localhost:5173"
 FRONTEND_URL = os.environ.get(
     "FRONTEND_URL",
@@ -123,7 +123,7 @@ if ALLOWED_FRONTEND_DOMAINS:
     allowed_origins.extend(ALLOWED_FRONTEND_DOMAINS)
 
 # Always allow the deployed frontend URLs to prevent env misconfig CORS failures
-for origin in (DEFAULT_PROD_FRONTEND, "https://www.epic-charts.vercel.app"):
+for origin in (DEFAULT_PROD_FRONTEND, "https://www.chartsuno.vercel.app"):
     if origin not in allowed_origins:
         allowed_origins.append(origin)
 
@@ -2326,7 +2326,7 @@ async def admin_create_team(
             invitations_created.append({
                 "email": email,
                 "token": invitation.token,
-                "invite_url": f"https://epic-charts.vercel.app/invite/{invitation.token}",
+                "invite_url": f"https://chartsuno.vercel.app/invite/{invitation.token}",
             })
 
     db.commit()

@@ -101,7 +101,7 @@ export function ValueOfCharts() {
                     fontWeight: 500,
                   }}
                   offset={10}
-                  formatter={(v: string) => `${v} words`}
+                  formatter={(v: unknown) => `${v} words`}
                 />
               </Bar>
             </BarChart>

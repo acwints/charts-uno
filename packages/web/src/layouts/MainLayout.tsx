@@ -53,7 +53,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       <footer className="footer">
         <div className="footer-content">
-          <span className="footer-brand">Epic Charts</span>
+          <span className="footer-brand">Chartsuno</span>
           <span className="footer-divider">•</span>
           <span className="footer-tagline">Data visualization, elevated</span>
         </div>

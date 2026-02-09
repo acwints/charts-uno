@@ -802,7 +802,7 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
           {watermark.customLogoUrl ? (
             <img src={watermark.customLogoUrl} alt="Logo" className="chart-logo-image" />
           ) : (
-            <span className="chart-logo-text">Epic Charts</span>
+            <span className="chart-logo-text">Chartsuno</span>
           )}
         </div>
       )}

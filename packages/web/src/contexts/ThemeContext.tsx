@@ -6,9 +6,9 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import type { ThemeMode } from '@epic-charts/shared';
+import type { ThemeMode } from '@chartsuno/shared';
 
-const THEME_STORAGE_KEY = 'epic-charts-theme';
+const THEME_STORAGE_KEY = 'chartsuno-theme';
 
 function getSystemTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'dark';

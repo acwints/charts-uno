@@ -204,7 +204,7 @@ def create_team_for_company(
         for inv in invitations:
             # Assuming frontend URL pattern
             print(f"\n{inv.email}:")
-            print(f"  https://epic-charts.vercel.app/invite/{inv.token}")
+            print(f"  https://chartsuno.vercel.app/invite/{inv.token}")
         print("="*60)
 
     return {

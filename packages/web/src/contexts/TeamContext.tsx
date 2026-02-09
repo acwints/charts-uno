@@ -29,7 +29,7 @@ interface TeamContextValue {
 
 const TeamContext = createContext<TeamContextValue | null>(null);
 
-const CURRENT_TEAM_KEY = 'epic-charts-current-team';
+const CURRENT_TEAM_KEY = 'chartsuno-current-team';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useTeam() {

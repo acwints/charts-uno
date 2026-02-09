@@ -49,7 +49,7 @@ function drawTextWatermark(
   canvasWidth: number,
   canvasHeight: number
 ): void {
-  const text = 'Epic Charts';
+  const text = 'Chartsuno';
   const fontSize = 14;
   const padding = 16;
 

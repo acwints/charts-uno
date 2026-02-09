@@ -1,5 +1,5 @@
 """
-Polar.sh Integration Service for Epic Charts SaaS
+Polar.sh Integration Service for Chartsuno SaaS
 
 Handles subscription management, checkout sessions, and customer portal access.
 """

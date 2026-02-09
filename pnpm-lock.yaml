@@ -18,7 +18,7 @@ importers:
 
   packages/bot:
     dependencies:
-      '@epic-charts/shared':
+      '@chartsuno/shared':
         specifier: workspace:*
         version: link:../shared
       '@google/generative-ai':
@@ -73,7 +73,7 @@ importers:
 
   packages/web:
     dependencies:
-      '@epic-charts/shared':
+      '@chartsuno/shared':
         specifier: workspace:*
         version: link:../shared
       '@google/generative-ai':

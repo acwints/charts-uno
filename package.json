@@ -1,16 +1,16 @@
 {
-  "name": "epic-charts",
+  "name": "chartsuno",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @epic-charts/web dev",
-    "dev:bot": "pnpm --filter @epic-charts/bot dev",
+    "dev": "pnpm --filter @chartsuno/web dev",
+    "dev:bot": "pnpm --filter @chartsuno/bot dev",
     "build": "pnpm -r build",
-    "build:web": "pnpm --filter @epic-charts/shared build && pnpm --filter @epic-charts/web build",
-    "build:bot": "pnpm --filter @epic-charts/bot build",
+    "build:web": "pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/web build",
+    "build:bot": "pnpm --filter @chartsuno/bot build",
     "lint": "pnpm -r lint",
-    "preview": "pnpm --filter @epic-charts/web preview"
+    "preview": "pnpm --filter @chartsuno/web preview"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

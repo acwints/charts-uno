@@ -436,7 +436,7 @@ export function TeamSettings() {
               <div className="branding-upgrade__content">
                 <h4 className="branding-upgrade__title">Upgrade to customize branding</h4>
                 <p className="branding-upgrade__text">
-                  Free accounts include an "Epic Charts" watermark on exports.
+                  Free accounts include an "Chartsuno" watermark on exports.
                   Upgrade to remove it or add your own logo and brand colors.
                 </p>
                 <Link to="/settings/billing">

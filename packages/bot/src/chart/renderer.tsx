@@ -24,8 +24,8 @@ import {
   Legend,
   Cell,
 } from 'recharts';
-import type { ChartData, ChartConfig, ChartType } from '@epic-charts/shared';
-import { COLOR_PALETTES } from '@epic-charts/shared';
+import type { ChartData, ChartConfig, ChartType } from '@chartsuno/shared';
+import { COLOR_PALETTES } from '@chartsuno/shared';
 import { logger } from '../config.js';
 
 let browser: Browser | null = null;

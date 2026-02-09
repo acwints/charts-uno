@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { ChartData } from '@epic-charts/shared';
+import type { ChartData } from '@chartsuno/shared';
 import { config, logger } from '../config.js';
 
 let genAI: GoogleGenerativeAI | null = null;
