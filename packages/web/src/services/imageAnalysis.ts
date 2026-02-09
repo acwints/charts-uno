@@ -34,7 +34,8 @@ export async function analyzeImage(file: File): Promise<ChartData> {
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     suggestedStacked: parsed.stacked ?? undefined,
-      aiReasoning: parsed.aiReasoning,
+    suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
+    aiReasoning: parsed.aiReasoning,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
     sourceImage: {
@@ -75,6 +76,7 @@ export async function reanalyzeImageWithNotes(
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     suggestedStacked: parsed.stacked ?? undefined,
+    suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
     aiReasoning: parsed.aiReasoning,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,

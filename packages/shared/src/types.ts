@@ -5,6 +5,7 @@ export interface DataSeries {
 
 export type XAxisType = 'year' | 'date' | 'category' | 'number';
 export type YAxisFormat = 'currency' | 'percentage' | 'number';
+export type BarLayout = 'vertical' | 'horizontal';
 
 export interface ChartData {
   labels: string[];
@@ -13,6 +14,7 @@ export interface ChartData {
   suggestedTitle?: string;
   suggestedType?: ChartType;
   suggestedStacked?: boolean;
+  suggestedBarLayout?: BarLayout;
   aiReasoning?: string;
   aiSummary?: string;
   xAxisLabel?: string;
@@ -87,6 +89,7 @@ export interface ChartConfig {
   animate: boolean;
   title: string;
   stacked: boolean;
+  barLayout?: BarLayout;
   sourceLink?: string;
   // Custom color overrides - when set, these take precedence
   customColors?: CustomColors;

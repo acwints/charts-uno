@@ -231,6 +231,16 @@
   min-height: 0;
 }
 
+/* Export mode: constrain width and hide AI summary */
+.chart-column.is-exporting {
+  width: fit-content;
+  max-width: 800px;
+}
+
+.chart-column.is-exporting .chart-ai-summary {
+  display: none;
+}
+
 .chart-ai-summary {
   background: var(--bg-secondary);
   border: var(--border-subtle);

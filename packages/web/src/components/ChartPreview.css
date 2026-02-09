@@ -94,6 +94,27 @@
   opacity: 0.75;
 }
 
+/* Brand mark in header */
+.chart-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-style: italic;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: opacity 150ms;
+}
+
+.chart-brand:hover {
+  opacity: 0.8;
+}
+
+.chart-brand svg {
+  flex-shrink: 0;
+}
+
 .chart-meta {
   display: flex;
   gap: var(--space-5);
@@ -481,6 +502,11 @@
   }
 }
 
+/* Export mode: hide metadata row */
+.is-exporting .chart-meta {
+  display: none;
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   .chart-color-bar::after {
@@ -496,6 +522,10 @@
   }
 
   .chart-source-link {
+    transition: none;
+  }
+
+  .chart-brand {
     transition: none;
   }
 }

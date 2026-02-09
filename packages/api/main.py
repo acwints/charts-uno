@@ -849,6 +849,7 @@ async def analyze_image_endpoint(
             stacked=result.get("stacked"),
             xAxisLabel=result.get("xAxisLabel"),
             yAxisLabel=result.get("yAxisLabel"),
+            barLayout=result.get("barLayout"),
             aiReasoning=result.get("aiReasoning"),
         )
     except ValueError as e:
@@ -953,6 +954,7 @@ async def generate_from_prompt_endpoint(
             stacked=result.get("stacked"),
             xAxisLabel=result.get("xAxisLabel"),
             yAxisLabel=result.get("yAxisLabel"),
+            barLayout=result.get("barLayout"),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

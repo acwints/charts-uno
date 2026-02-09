@@ -345,6 +345,18 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                 <span className="toggle-label">Stacked</span>
               </label>
             )}
+
+            {config.type === 'bar' && (
+              <label className="toggle-item">
+                <input
+                  type="checkbox"
+                  checked={config.barLayout === 'horizontal'}
+                  onChange={(e) => updateConfig({ barLayout: e.target.checked ? 'horizontal' : 'vertical' })}
+                />
+                <span className="toggle-switch" />
+                <span className="toggle-label">Horizontal</span>
+              </label>
+            )}
           </div>
         </div>
 

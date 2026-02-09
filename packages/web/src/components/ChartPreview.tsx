@@ -209,14 +209,13 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
     return [min - padding, max + padding];
   }, [data.labels, isNumericLabels]);
 
+  const isHorizontal = config.type === 'bar' && config.barLayout === 'horizontal';
+
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
-  const chartMargins = {
-    top: 20,
-    right: 5,
-    bottom: xAxisLabel ? 25 : 5,
-    left: yAxisLabel ? 15 : 5,
-  };
+  const chartMargins = isHorizontal
+    ? { top: 20, right: 30, bottom: yAxisLabel ? 25 : 5, left: xAxisLabel ? 80 : 60 }
+    : { top: 20, right: 5, bottom: xAxisLabel ? 25 : 5, left: yAxisLabel ? 15 : 5 };
 
   const pieData = useMemo(() => {
     if (config.type !== 'pie') return [];
@@ -405,6 +404,47 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
       />
     );
 
+    // Horizontal bar axes: X = numeric (values), Y = category (labels)
+    const horizontalXAxis = (
+      <XAxis
+        type="number"
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        tickFormatter={formatYAxisTick}
+        label={yAxisLabel ? {
+          value: yAxisLabel,
+          position: 'insideBottom' as const,
+          offset: -10,
+          fill: theme.textMuted,
+          fontSize: 11,
+          fontFamily: 'var(--font-mono)',
+        } : undefined}
+      />
+    );
+
+    const horizontalYAxis = (
+      <YAxis
+        type="category"
+        dataKey="name"
+        width={75}
+        stroke={theme.textMuted}
+        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tickLine={{ stroke: theme.textMuted }}
+        axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        label={xAxisLabel ? {
+          value: xAxisLabel,
+          angle: -90,
+          position: 'insideLeft',
+          offset: 12,
+          fill: theme.textMuted,
+          fontSize: 11,
+          fontFamily: 'var(--font-mono)',
+        } : undefined}
+      />
+    );
+
     const tooltipElement = (
       <Tooltip
         contentStyle={{
@@ -445,11 +485,11 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
 
       case 'bar':
         return (
-          <BarChart {...commonProps}>
+          <BarChart {...commonProps} {...(isHorizontal ? { layout: 'vertical' as const } : {})}>
             {renderGradientDefs()}
             {gridElement}
-            {xAxisElement}
-            {yAxisElement}
+            {isHorizontal ? horizontalXAxis : xAxisElement}
+            {isHorizontal ? horizontalYAxis : yAxisElement}
             {tooltipElement}
             {legendElement}
             {data.series.map((series, idx) => (
@@ -465,7 +505,7 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
                 {config.showValues && (
                   <LabelList
                     dataKey={series.name}
-                    position="top"
+                    position={isHorizontal ? 'right' : 'top'}
                     fill={theme.textMuted}
                     fontSize={11}
                     formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
@@ -705,6 +745,10 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
           ) : (
             <h2 className="chart-title-placeholder" style={{ color: theme.textMuted }}>Your Chart</h2>
           )}
+          <div className="chart-brand" style={{ color: theme.textMuted }}>
+            <Sparkles size={12} />
+            <span>Chartsuno</span>
+          </div>
         </div>
         <div className="chart-meta">
           <span className="chart-meta-item">

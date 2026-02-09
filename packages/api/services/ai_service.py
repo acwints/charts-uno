@@ -52,6 +52,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   "suggestedTitle": "A title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
   "stacked": true | false,
+  "barLayout": "horizontal" | "vertical",
   "xAxisLabel": "Label for the x-axis (if visible)",
   "yAxisLabel": "Label for the y-axis (if visible)",
   "aiReasoning": "Brief explanation (1-3 sentences) of how you reconstructed the table"
@@ -68,6 +69,11 @@ Rules:
 - If the chart has a time-based x-axis (years, months, dates), labels MUST be the time values and each category/group must be a separate series.
 - Recognize chart structure — for stacked or grouped bar charts, each color/segment = a series, each x-axis position = a label. Estimate segment values from visual proportions if exact numbers aren't labeled.
 - Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable.
+- IMPORTANT: Always assign axis labels SEMANTICALLY, not positionally:
+  - "xAxisLabel" must describe the CATEGORIES (what each bar/point represents)
+  - "yAxisLabel" must describe the NUMERICAL VALUES (what is being measured)
+  - If the source is a horizontal bar chart (bars extending left-to-right), the visual y-axis shows categories but that label goes in "xAxisLabel", and the visual x-axis shows values but that label goes in "yAxisLabel".
+- If the source chart has horizontal bars (bars extending left-to-right), set "barLayout" to "horizontal". Otherwise set "barLayout" to "vertical".
 - aiReasoning must be concise and user-facing. Do not include step-by-step internal thinking."""
 
     # Decode base64 to bytes for the new API
@@ -159,6 +165,7 @@ CURRENT CONFIG:
 - Style: {current_config.get('styleVariant')}
 - Title: {current_config.get('title') or '(none)'}
 - Show Grid: {current_config.get('showGrid')}, Legend: {current_config.get('showLegend')}, Values: {current_config.get('showValues')}, Stacked: {current_config.get('stacked', False)}
+- Bar Layout: {current_config.get('barLayout', 'vertical')}
 
 Available chart types: bar, line, area, pie, radar, scatter, table
 Available color schemes: default, cool, warm, editorial, monochrome, muted
@@ -183,7 +190,8 @@ Respond with JSON only (no markdown):
     "showGrid": true | null,
     "showLegend": true | null,
     "showValues": true | null,
-    "stacked": true | null
+    "stacked": true | null,
+    "barLayout": "horizontal" | "vertical" | null
   }},
   "reasoning": "Brief explanation (only for modifications)"
 }}
@@ -275,7 +283,7 @@ Guidelines:
         config_changes = parsed["configChanges"]
         updated_config = {}
 
-        for key in ["type", "colorScheme", "styleVariant", "title", "showGrid", "showLegend", "showValues", "animate", "stacked"]:
+        for key in ["type", "colorScheme", "styleVariant", "title", "showGrid", "showLegend", "showValues", "animate", "stacked", "barLayout"]:
             if config_changes.get(key) is not None:
                 updated_config[key] = config_changes[key]
                 config_modified = True
@@ -459,6 +467,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   "suggestedTitle": "A clear, descriptive title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
   "stacked": true | false,
+  "barLayout": "horizontal" | "vertical",
   "xAxisLabel": "Label for the x-axis",
   "yAxisLabel": "Label for the y-axis",
   "xAxisType": "year" | "date" | "category" | "number",
@@ -475,6 +484,7 @@ Rules:
 - Choose suggestedType based on what best represents the data (trends = line, comparisons = bar, proportions = pie, etc.)
 - Include 5-15 data points unless the user specifies otherwise
 - Set stacked to true only if the data naturally represents stacked categories
+- For data that naturally suits horizontal bars (many categories, long names, ranked comparisons), set barLayout to "horizontal". Otherwise set "vertical".
 - If the prompt is too vague, make reasonable assumptions and generate something useful
 
 Axis formatting rules:

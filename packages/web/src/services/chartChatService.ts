@@ -60,6 +60,7 @@ export async function sendChatMessage(
         showValues: currentConfig.showValues,
         animate: currentConfig.animate,
         title: currentConfig.title,
+        barLayout: currentConfig.barLayout || 'vertical',
       },
       chat_history: recentHistory,
     }),

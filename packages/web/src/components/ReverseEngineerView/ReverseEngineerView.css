@@ -38,6 +38,16 @@
   min-height: 0;
 }
 
+/* Export mode: constrain width and hide AI summary */
+.re-chart-area.is-exporting {
+  width: fit-content;
+  max-width: 800px;
+}
+
+.re-chart-area.is-exporting .chart-ai-summary {
+  display: none;
+}
+
 .re-controls-area {
   display: flex;
   flex-direction: column;

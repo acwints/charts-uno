@@ -62,12 +62,37 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [ticker2Results, setTicker2Results] = useState<TickerResult[]>([]);
   const [selectedTicker2, setSelectedTicker2] = useState<string | null>(null);
   const [showTicker2Dropdown, setShowTicker2Dropdown] = useState(false);
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ticker2DebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tickerWrapperRef = useRef<HTMLDivElement>(null);
   const ticker2WrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Stage a file for upload/image without processing it
+  const stageFile = useCallback((file: File) => {
+    setError(null);
+    setStagedFile(file);
+    setFileName(file.name);
+
+    // Create preview URL for images
+    if (file.type.startsWith('image/')) {
+      setImagePreviewUrl(URL.createObjectURL(file));
+    } else {
+      setImagePreviewUrl(null);
+    }
+  }, []);
+
+  // Clean up preview URL when mode changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   // Close ticker dropdowns on outside click
   useEffect(() => {
@@ -265,7 +290,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
           e.preventDefault();
           const file = item.getAsFile();
           if (file) {
-            handleImageUpload(file);
+            stageFile(file);
           }
           return;
         }
@@ -274,7 +299,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [mode, handleImageUpload]);
+  }, [mode, stageFile]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -284,19 +309,19 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     if (file) {
       if (mode === 'image') {
         if (file.type.startsWith('image/')) {
-          handleImageUpload(file);
+          stageFile(file);
         } else {
           setError('Please upload an image file.');
         }
       } else {
         if (file.name.endsWith('.csv') || file.type === 'text/csv') {
-          handleFileUpload(file);
+          stageFile(file);
         } else {
           setError('Please upload a CSV file.');
         }
       }
     }
-  }, [mode, handleFileUpload, handleImageUpload]);
+  }, [mode, stageFile]);
 
   const handlePasteSubmit = useCallback(() => {
     setError(null);
@@ -362,6 +387,11 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               setMode(inputMode.id);
               setError(null);
               setFileName(null);
+              setStagedFile(null);
+              if (imagePreviewUrl) {
+                URL.revokeObjectURL(imagePreviewUrl);
+                setImagePreviewUrl(null);
+              }
             }}
           >
             <inputMode.icon size={18} />
@@ -380,31 +410,63 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
           className="input-content"
         >
           {(mode === 'upload' || mode === 'image') && (
-            <div
-              className={`drop-zone ${dragActive ? 'active' : ''} ${fileName ? 'has-file' : ''}`}
-              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-              onDragLeave={() => setDragActive(false)}
-              onDrop={handleDrop}
-              onClick={() => mode === 'image' ? imageInputRef.current?.click() : fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-                hidden
-              />
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
-                hidden
-              />
+            <div className="file-input-section">
+              <div
+                className={`drop-zone ${dragActive ? 'active' : ''} ${stagedFile ? 'has-file' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragLeave={() => setDragActive(false)}
+                onDrop={handleDrop}
+                onClick={() => mode === 'image' ? imageInputRef.current?.click() : fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => e.target.files?.[0] && stageFile(e.target.files[0])}
+                  hidden
+                />
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files?.[0] && stageFile(e.target.files[0])}
+                  hidden
+                />
+
+                {stagedFile ? (
+                  <div className="drop-zone-staged">
+                    {imagePreviewUrl ? (
+                      <img src={imagePreviewUrl} alt="Staged upload" className="drop-zone-preview-img" />
+                    ) : (
+                      <Check size={32} />
+                    )}
+                    <span className="drop-zone-staged-name">{fileName}</span>
+                    <span className="drop-zone-hint">Click to choose a different file</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="drop-zone-icon">
+                      {mode === 'image' ? <Image size={40} /> : <Upload size={40} />}
+                    </div>
+                    <p className="drop-zone-text">
+                      {mode === 'image'
+                        ? 'Drop an image, click to upload, or paste from clipboard'
+                        : 'Drop your CSV file here or click to upload'
+                      }
+                    </p>
+                    <span className="drop-zone-hint">
+                      {mode === 'image'
+                        ? 'Supports PNG, JPG, WebP — or just Ctrl+V'
+                        : 'Supports .csv files up to 10MB'
+                      }
+                    </span>
+                  </>
+                )}
+              </div>
 
               {(isProcessing || isAnalyzing) ? (
                 <AIProcessingIndicator
-                  size="md"
+                  size="sm"
                   label={mode === 'image' ? 'Analyzing your image...' : 'Processing your data...'}
                   hint={mode === 'image' ? 'Extracting data with GPT-4o Vision' : undefined}
                   statusMessages={mode === 'image'
@@ -412,29 +474,23 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                     : ['Parsing columns...', 'Detecting data types...', 'Choosing the best chart...', 'Almost ready...']
                   }
                 />
-              ) : fileName ? (
-                <div className="drop-zone-success">
-                  <Check size={32} />
-                  <span>{fileName}</span>
-                </div>
               ) : (
-                <>
-                  <div className="drop-zone-icon">
-                    {mode === 'image' ? <Image size={40} /> : <Upload size={40} />}
-                  </div>
-                  <p className="drop-zone-text">
-                    {mode === 'image'
-                      ? 'Drop an image, click to upload, or paste from clipboard'
-                      : 'Drop your CSV file here or click to upload'
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    if (!stagedFile) return;
+                    if (mode === 'image') {
+                      handleImageUpload(stagedFile);
+                    } else {
+                      handleFileUpload(stagedFile);
                     }
-                  </p>
-                  <span className="drop-zone-hint">
-                    {mode === 'image'
-                      ? 'Supports PNG, JPG, WebP — or just Ctrl+V'
-                      : 'Supports .csv files up to 10MB'
-                    }
-                  </span>
-                </>
+                  }}
+                  disabled={!stagedFile}
+                >
+                  <span>Generate Chart</span>
+                  <ArrowRight size={18} />
+                </Button>
               )}
             </div>
           )}

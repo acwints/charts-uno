@@ -26,6 +26,7 @@ export async function generateChartFromPrompt(prompt: string): Promise<ChartData
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     suggestedStacked: parsed.stacked ?? undefined,
+    suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
   };

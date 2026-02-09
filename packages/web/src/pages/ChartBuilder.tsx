@@ -33,6 +33,7 @@ export function ChartBuilder() {
         title: data.suggestedTitle || prev.title,
         type: chartType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
+        ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
       }));
       navigate('/chart');
@@ -57,6 +58,7 @@ export function ChartBuilder() {
         title: data.suggestedTitle || prev.title,
         type: chosenType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
+        ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
       }));
       navigate('/chart');
     } catch (error) {
@@ -68,6 +70,7 @@ export function ChartBuilder() {
         title: data.suggestedTitle || prev.title,
         type: fallbackType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
+        ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
       }));
       navigate('/chart');
     } finally {

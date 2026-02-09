@@ -101,6 +101,7 @@ export async function exportToPNG(
   filename: string = 'chart',
   watermark?: WatermarkSettings
 ): Promise<void> {
+  element.classList.add('is-exporting');
   // Use null to capture the element's actual background color
   const canvas = await html2canvas(element, {
     backgroundColor: null,
@@ -108,6 +109,7 @@ export async function exportToPNG(
     logging: false,
     useCORS: true,
   });
+  element.classList.remove('is-exporting');
 
   // Apply watermark if enabled
   if (watermark?.enabled !== false) {
@@ -134,12 +136,14 @@ export async function copyImageToClipboard(
   element: HTMLElement,
   watermark?: WatermarkSettings
 ): Promise<void> {
+  element.classList.add('is-exporting');
   const canvas = await html2canvas(element, {
     backgroundColor: null,
     scale: 2,
     logging: false,
     useCORS: true,
   });
+  element.classList.remove('is-exporting');
 
   if (watermark?.enabled !== false) {
     const ctx = canvas.getContext('2d');
