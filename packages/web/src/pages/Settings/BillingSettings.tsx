@@ -13,7 +13,7 @@ export function BillingSettings() {
   const toast = useToast();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Poll subscription after checkout to wait for webhook processing
   const pollSubscriptionUpdate = useCallback(async (teamId: string, previousPlan: string) => {
