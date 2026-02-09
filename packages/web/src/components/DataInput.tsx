@@ -83,6 +83,30 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handle Ctrl+V paste for images in image mode
+  useEffect(() => {
+    if (mode !== 'image') return;
+
+    function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          return;
+        }
+      }
+    }
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [mode, handleImageUpload]);
+
   const handleTickerSearch = useCallback((query: string) => {
     setTickerQuery(query);
     setSelectedTicker(null);
@@ -400,13 +424,13 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                   </div>
                   <p className="drop-zone-text">
                     {mode === 'image'
-                      ? 'Drop an image of your chart here or click to upload'
+                      ? 'Drop an image, click to upload, or paste from clipboard'
                       : 'Drop your CSV file here or click to upload'
                     }
                   </p>
                   <span className="drop-zone-hint">
                     {mode === 'image'
-                      ? 'Supports PNG, JPG, WebP'
+                      ? 'Supports PNG, JPG, WebP — or just Ctrl+V'
                       : 'Supports .csv files up to 10MB'
                     }
                   </span>
