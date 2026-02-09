@@ -1,0 +1,70 @@
+.voc {
+  position: relative;
+  padding: var(--space-16) var(--space-6) var(--space-12);
+  text-align: center;
+}
+
+.voc-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.voc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-3);
+}
+
+.voc-title {
+  font-size: clamp(1.4rem, 3vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: var(--space-10);
+}
+
+.voc-title em {
+  font-family: var(--font-display);
+  font-style: italic;
+  background: var(--gradient-epic);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.voc-chart-container {
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-2) var(--space-2);
+  box-shadow: var(--shadow-card);
+}
+
+.voc-caption {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Recharts overrides for theme compatibility */
+.voc-chart-container .recharts-cartesian-grid line {
+  stroke: var(--bg-tertiary);
+}
+
+@media (max-width: 640px) {
+  .voc {
+    padding: var(--space-12) var(--space-4) var(--space-8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voc-inner {
+    animation: none;
+  }
+}

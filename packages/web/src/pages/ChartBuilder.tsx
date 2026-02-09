@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Hero } from '../components/Hero';
 import { DataInput } from '../components/DataInput';
+import { ValueOfCharts } from '../components/ValueOfCharts';
 import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
 import { recommendChartType } from '../services/chartTypeRecommender';
@@ -85,6 +86,7 @@ export function ChartBuilder() {
     >
       <Hero showAuthCta={!isAuthenticated} onAuthOpen={context?.openAuthModal} />
       <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
+      {!isAuthenticated && <ValueOfCharts />}
     </motion.div>
   );
 }
