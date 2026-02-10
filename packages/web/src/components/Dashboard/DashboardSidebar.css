@@ -8,14 +8,62 @@
   height: calc(100vh - 57px);
   position: sticky;
   top: 57px;
+  transition: width 200ms ease, min-width 200ms ease;
 }
 
+.dashboard-sidebar--collapsed {
+  width: 56px;
+  min-width: 56px;
+}
+
+/* Toggle button area */
+.sidebar-toggle-area {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-2) 0;
+}
+
+.dashboard-sidebar--collapsed .sidebar-toggle-area {
+  justify-content: center;
+}
+
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 150ms, color 150ms;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.sidebar-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Nav */
 .sidebar-nav {
   flex: 1;
   padding: var(--space-4);
   overflow-y: auto;
 }
 
+.dashboard-sidebar--collapsed .sidebar-nav {
+  padding: var(--space-2);
+}
+
+/* Create button */
 .sidebar-create-btn {
   display: flex;
   align-items: center;
@@ -41,12 +89,25 @@
   transform: scale(0.98);
 }
 
+.sidebar-create-btn--collapsed {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Sections */
 .sidebar-section {
   margin-bottom: var(--space-6);
 }
 
 .sidebar-section:last-child {
   margin-bottom: 0;
+}
+
+.dashboard-sidebar--collapsed .sidebar-section {
+  margin-bottom: var(--space-3);
 }
 
 .sidebar-section-header {
@@ -59,6 +120,7 @@
   margin-bottom: var(--space-1);
 }
 
+/* Nav items */
 .sidebar-nav-item {
   display: flex;
   align-items: center;
@@ -87,6 +149,14 @@
   color: var(--accent);
 }
 
+.sidebar-nav-item--collapsed {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  margin: 0 auto;
+}
+
 .sidebar-nav-icon {
   display: flex;
   align-items: center;
@@ -101,6 +171,7 @@
   text-overflow: ellipsis;
 }
 
+/* Footer */
 .sidebar-footer {
   padding: var(--space-4);
   border-top: var(--border-subtle);
@@ -114,6 +185,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dashboard-sidebar {
+    transition: none;
+  }
+
+  .sidebar-toggle-btn {
+    transition: none;
+  }
+
   .sidebar-create-btn {
     transition: none;
   }

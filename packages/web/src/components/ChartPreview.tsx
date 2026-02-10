@@ -34,16 +34,14 @@ import { useChartStore } from '../stores/chartStore';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import { MapChart } from './MapChart';
-import type { WatermarkSettings } from '../services/exportService';
 import './ChartPreview.css';
 
 interface ChartPreviewProps {
   data: ChartData;
   config: ChartConfig;
-  watermark?: WatermarkSettings;
 }
 
-export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
+export function ChartPreview({ data, config }: ChartPreviewProps) {
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -840,16 +838,6 @@ export function ChartPreview({ data, config, watermark }: ChartPreviewProps) {
         </div>
       )}
 
-      {/* Logo overlay */}
-      {watermark?.enabled && (
-        <div className="chart-logo-overlay">
-          {watermark.customLogoUrl ? (
-            <img src={watermark.customLogoUrl} alt="Logo" className="chart-logo-image" />
-          ) : (
-            <span className="chart-logo-text">Chartsuno</span>
-          )}
-        </div>
-      )}
     </motion.div>
   );
 }

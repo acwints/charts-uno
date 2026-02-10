@@ -27,7 +27,7 @@ export async function addWatermark(imageBuffer: Buffer): Promise<Buffer> {
         </style>
         <text
           x="${width - WATERMARK_PADDING}"
-          y="${height - WATERMARK_PADDING}"
+          y="${WATERMARK_PADDING + WATERMARK_FONT_SIZE}"
           text-anchor="end"
           class="watermark"
         >${WATERMARK_TEXT}</text>

@@ -47,7 +47,7 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
 function drawTextWatermark(
   ctx: CanvasRenderingContext2D,
   canvasWidth: number,
-  canvasHeight: number
+  _canvasHeight: number
 ): void {
   const text = 'Chartsuno';
   const fontSize = 14;
@@ -57,9 +57,9 @@ function drawTextWatermark(
   ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
+  ctx.textBaseline = 'top';
 
-  ctx.fillText(text, canvasWidth - padding, canvasHeight - padding);
+  ctx.fillText(text, canvasWidth - padding, padding);
   ctx.restore();
 }
 
@@ -80,9 +80,9 @@ async function drawLogoWatermark(
     const width = img.width * scale;
     const height = maxHeight;
 
-    // Position in bottom-right corner
+    // Position in top-right corner
     const x = canvasWidth - width - padding;
-    const y = canvasHeight - height - padding;
+    const y = padding;
 
     // Draw with 50% opacity
     ctx.save();
