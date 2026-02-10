@@ -27,7 +27,10 @@ import {
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
+import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
@@ -39,9 +42,12 @@ import './ChartPreview.css';
 interface ChartPreviewProps {
   data: ChartData;
   config: ChartConfig;
+  watermark?: WatermarkSettings;
+  canToggleLogo?: boolean;
+  onToggleLogo?: () => void;
 }
 
-export function ChartPreview({ data, config }: ChartPreviewProps) {
+export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleLogo }: ChartPreviewProps) {
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -393,7 +399,7 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
         label={yAxisLabel ? {
           value: yAxisLabel,
           angle: -90,
-          position: 'insideLeft',
+          position: 'insideBottomLeft',
           offset: 12,
           fill: theme.textMuted,
           fontSize: 11,
@@ -743,9 +749,29 @@ export function ChartPreview({ data, config }: ChartPreviewProps) {
           ) : (
             <h2 className="chart-title-placeholder" style={{ color: theme.textMuted }}>Your Chart</h2>
           )}
-          <div className="chart-brand" style={{ color: theme.textMuted }}>
-            <Sparkles size={12} />
-            <span>Chartsuno</span>
+          <div className="chart-brand-area">
+            {watermark?.enabled !== false && (
+              <div className="chart-brand" style={{ color: theme.textMuted }}>
+                <Sparkles size={12} />
+                <span>Chartsuno</span>
+              </div>
+            )}
+            {onToggleLogo && (
+              <button
+                className="chart-brand-toggle"
+                onClick={onToggleLogo}
+                disabled={!canToggleLogo}
+                aria-label={watermark?.enabled !== false ? 'Hide logo' : 'Show logo'}
+                aria-pressed={watermark?.enabled !== false}
+                title={canToggleLogo
+                  ? (watermark?.enabled !== false ? 'Hide logo' : 'Show logo')
+                  : 'Upgrade to Pro to toggle logo'
+                }
+                style={{ color: theme.textMuted }}
+              >
+                {watermark?.enabled !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+              </button>
+            )}
           </div>
         </div>
         <div className="chart-meta">

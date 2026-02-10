@@ -7,8 +7,6 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Table2 from 'lucide-react/dist/esm/icons/table-2';
 import Image from 'lucide-react/dist/esm/icons/image';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import ImageOff from 'lucide-react/dist/esm/icons/image-off';
 import { ChartPreview } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
@@ -308,22 +306,6 @@ export function ChartView() {
           )}
           {editorView === 'chart' && (
             <>
-              {isAuthenticated && (
-                <Button
-                  variant={watermarkSettings.enabled ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={handleToggleLogo}
-                  disabled={!canToggleLogo}
-                  title={canToggleLogo
-                    ? (watermarkSettings.enabled ? 'Logo on exports (click to hide)' : 'Logo hidden (click to show)')
-                    : 'Upgrade to Pro to toggle logo'
-                  }
-                  aria-pressed={watermarkSettings.enabled}
-                >
-                  {watermarkSettings.enabled ? <ImageIcon size={16} /> : <ImageOff size={16} />}
-                  Logo
-                </Button>
-              )}
               <ExportMenu
                 data={chartData}
                 chartRef={chartCaptureRef}
@@ -381,6 +363,9 @@ export function ChartView() {
           config={chartConfig}
           onConfigChange={setChartConfig}
           chartRef={chartCaptureRef}
+          watermark={watermarkSettings}
+          canToggleLogo={canToggleLogo}
+          onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
         />
       ) : (
         <div className="chart-workspace">
@@ -391,7 +376,13 @@ export function ChartView() {
                 <p className="chart-ai-text">{chartData.aiSummary}</p>
               </div>
             )}
-            <ChartPreview data={chartData} config={chartConfig} />
+            <ChartPreview
+              data={chartData}
+              config={chartConfig}
+              watermark={watermarkSettings}
+              canToggleLogo={canToggleLogo}
+              onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
+            />
           </div>
           <div className="chart-sidebar">
             <ChartControls

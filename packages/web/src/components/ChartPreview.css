@@ -21,7 +21,7 @@
 }
 
 .chart-header {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) 0 var(--space-4);
   border-bottom: 1px solid var(--chart-border, var(--border-color));
   background: var(--chart-card-bg, var(--bg-tertiary));
   display: flex;
@@ -94,7 +94,14 @@
   opacity: 0.75;
 }
 
-/* Brand mark in header */
+/* Brand area in header */
+.chart-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .chart-brand {
   display: flex;
   align-items: center;
@@ -112,6 +119,42 @@
 }
 
 .chart-brand svg {
+  flex-shrink: 0;
+}
+
+.chart-brand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0.35;
+  flex-shrink: 0;
+  transition: opacity 150ms, background-color 150ms;
+}
+
+.chart-brand-toggle:hover {
+  opacity: 0.7;
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.chart-brand-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  opacity: 0.7;
+}
+
+.chart-brand-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.15;
+}
+
+.chart-brand-toggle svg {
   flex-shrink: 0;
 }
 
@@ -497,6 +540,10 @@
   }
 
   .chart-brand {
+    transition: none;
+  }
+
+  .chart-brand-toggle {
     transition: none;
   }
 }

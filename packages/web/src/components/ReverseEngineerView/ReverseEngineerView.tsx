@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ChartPreview } from '../ChartPreview';
 import { ChartControls } from '../ChartControls';
 import type { ChartData, ChartConfig } from '../../types';
+import type { WatermarkSettings } from '../../services/exportService';
 import './ReverseEngineerView.css';
 
 interface ReverseEngineerViewProps {
@@ -9,6 +10,9 @@ interface ReverseEngineerViewProps {
   config: ChartConfig;
   onConfigChange: (config: ChartConfig) => void;
   chartRef: React.RefObject<HTMLDivElement | null>;
+  watermark?: WatermarkSettings;
+  canToggleLogo?: boolean;
+  onToggleLogo?: () => void;
 }
 
 export function ReverseEngineerView({
@@ -16,6 +20,9 @@ export function ReverseEngineerView({
   config,
   onConfigChange,
   chartRef,
+  watermark,
+  canToggleLogo,
+  onToggleLogo,
 }: ReverseEngineerViewProps) {
   return (
     <motion.div
@@ -33,7 +40,13 @@ export function ReverseEngineerView({
                 <p className="chart-ai-text">{initialData.aiSummary}</p>
               </div>
             )}
-            <ChartPreview data={initialData} config={config} />
+            <ChartPreview
+              data={initialData}
+              config={config}
+              watermark={watermark}
+              canToggleLogo={canToggleLogo}
+              onToggleLogo={onToggleLogo}
+            />
           </div>
           <div className="re-controls-area">
             <ChartControls
