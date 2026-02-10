@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any, List
 
 from google import genai
 from google.genai import types
+from services.research_service import research_chart_from_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -399,7 +400,17 @@ Analyze this data and recommend the best chart type:
 
 
 async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
-    """Generate plausible chart data from a natural language prompt."""
+    """Generate chart data from a natural language prompt.
+
+    Pipeline:
+    1) Try real-data research providers (FRED, BigQuery public datasets)
+    2) Fall back to synthetic/plausible generation
+    """
+    # First pass: attempt grounded research from external datasets.
+    researched = await research_chart_from_prompt(prompt)
+    if researched and researched.get("labels") and researched.get("series"):
+        return researched
+
     client = get_client()
 
     # Check if this is a geographic/map prompt

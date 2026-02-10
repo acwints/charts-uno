@@ -29,6 +29,7 @@ import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Check from 'lucide-react/dist/esm/icons/check';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
@@ -224,6 +225,18 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const sourceDomain = useMemo(() => {
+    const link = config.sourceLink || data.sourceLink;
+    if (!link) return null;
+    try {
+      return new URL(link).hostname.replace(/^www\./, '');
+    } catch {
+      return link;
+    }
+  }, [config.sourceLink, data.sourceLink]);
+  const verifiedLabel = sourceDomain
+    ? `Verified real data source (${sourceDomain})`
+    : 'Verified real data source';
   const adaptiveBottom = adaptiveAxis.angle !== 0
     ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
     : (xAxisLabel ? 25 : 5);
@@ -795,6 +808,17 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
             <span className="meta-label" style={{ color: theme.textMuted }}>Source:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.sourceType.toUpperCase()}</span>
           </span>
+          {data.verifiedData && (
+            <span
+              className="chart-meta-item chart-meta-item--verified"
+              style={{ borderColor: theme.border, color: theme.text }}
+              aria-label={verifiedLabel}
+              title={verifiedLabel}
+            >
+              <Check size={12} />
+              <span>Verified</span>
+            </span>
+          )}
           <span className="chart-meta-item">
             <span className="meta-label" style={{ color: theme.textMuted }}>Points:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.labels.length}</span>

@@ -23,11 +23,18 @@ export async function generateChartFromPrompt(prompt: string): Promise<ChartData
     labels: parsed.labels,
     series: parsed.series,
     sourceType: 'prompt',
+    verifiedData: parsed.verifiedData === true,
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     suggestedStacked: parsed.stacked ?? undefined,
     suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
+    aiReasoning: parsed.aiReasoning,
+    sourceLink: parsed.sourceLink,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
+    xAxisType: parsed.xAxisType,
+    yAxisFormat: parsed.yAxisFormat,
+    yAxisPrefix: parsed.yAxisPrefix,
+    yAxisSuffix: parsed.yAxisSuffix,
   };
 }

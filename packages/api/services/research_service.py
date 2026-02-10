@@ -1,0 +1,375 @@
+import json
+import logging
+import os
+import re
+from collections import defaultdict
+from typing import Any, Dict, List, Optional
+
+import httpx
+from google import genai
+
+logger = logging.getLogger(__name__)
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
+FRED_BASE_URL = "https://api.stlouisfed.org/fred"
+ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").lower() in {"1", "true", "yes", "on"}
+BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
+
+_client: Optional[genai.Client] = None
+_MODEL_NAME = "gemini-2.5-flash"
+
+
+def _get_client() -> genai.Client:
+    global _client
+    if not GOOGLE_API_KEY:
+        raise ValueError("GOOGLE_API_KEY not configured")
+    if _client is None:
+        _client = genai.Client(api_key=GOOGLE_API_KEY)
+    return _client
+
+
+def _clean_json(content: str) -> Dict[str, Any]:
+    clean = content.replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+    return json.loads(clean)
+
+
+async def _infer_research_intent(prompt: str) -> Dict[str, Any]:
+    """Infer structured research intent from a natural-language prompt."""
+    client = _get_client()
+    intent_prompt = f"""Extract chart-research intent from this user prompt.
+
+User prompt: {prompt}
+
+Return ONLY valid JSON:
+{{
+  "topic": "short topic",
+  "metric": "what should be measured",
+  "geography": "global|usa|country|state|city|unknown",
+  "timeframe_years": number | null,
+  "start_year": number | null,
+  "end_year": number | null,
+  "frequency": "daily|monthly|quarterly|annual|unknown",
+  "preferred_sources": ["fred", "bigquery", "other"],
+  "keywords": ["keyword1", "keyword2"]
+}}
+"""
+    response = client.models.generate_content(
+        model=_MODEL_NAME,
+        contents=intent_prompt,
+    )
+    text = response.text or ""
+    try:
+        parsed = _clean_json(text)
+    except Exception:
+        # Lightweight fallback parser if LLM parsing fails.
+        lower = prompt.lower()
+        years = None
+        match = re.search(r"(\d+)\s+years?", lower)
+        if match:
+            years = int(match.group(1))
+        return {
+            "topic": prompt[:80],
+            "metric": prompt,
+            "geography": "usa" if any(k in lower for k in [" usa", " united states", " u.s."]) else "unknown",
+            "timeframe_years": years,
+            "start_year": None,
+            "end_year": None,
+            "frequency": "unknown",
+            "preferred_sources": ["fred", "bigquery"],
+            "keywords": [w for w in re.split(r"\W+", lower) if w][:10],
+        }
+
+    return {
+        "topic": parsed.get("topic", ""),
+        "metric": parsed.get("metric", prompt),
+        "geography": parsed.get("geography", "unknown"),
+        "timeframe_years": parsed.get("timeframe_years"),
+        "start_year": parsed.get("start_year"),
+        "end_year": parsed.get("end_year"),
+        "frequency": parsed.get("frequency", "unknown"),
+        "preferred_sources": parsed.get("preferred_sources", ["fred", "bigquery"]),
+        "keywords": parsed.get("keywords", []),
+    }
+
+
+def _is_fred_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
+    lower = prompt.lower()
+    economic_terms = [
+        "price", "inflation", "gdp", "unemployment", "mortgage", "home",
+        "housing", "income", "wage", "cpi", "rate", "index", "sales",
+    ]
+    if "fred" in intent.get("preferred_sources", []):
+        return True
+    return any(term in lower for term in economic_terms)
+
+
+def _is_bigquery_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
+    lower = prompt.lower()
+    trigger_terms = ["imdb", "movie", "film", "census", "bigquery", "public dataset"]
+    if "bigquery" in intent.get("preferred_sources", []):
+        return True
+    return any(term in lower for term in trigger_terms)
+
+
+async def _fred_search_and_fetch(prompt: str, intent: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if not FRED_API_KEY:
+        return None
+
+    query_parts = [intent.get("metric", ""), intent.get("topic", ""), intent.get("geography", ""), prompt]
+    search_text = " ".join(part for part in query_parts if part).strip()
+    if not search_text:
+        return None
+
+    async with httpx.AsyncClient() as client:
+        search_resp = await client.get(
+            f"{FRED_BASE_URL}/series/search",
+            params={
+                "api_key": FRED_API_KEY,
+                "file_type": "json",
+                "search_text": search_text,
+                "limit": 12,
+                "sort_order": "desc",
+            },
+            timeout=12.0,
+        )
+        search_resp.raise_for_status()
+        search_data = search_resp.json()
+
+    series_list = search_data.get("seriess", []) or []
+    if not series_list:
+        return None
+
+    # Simple lexical ranking to favor best match.
+    keywords = [k.lower() for k in intent.get("keywords", []) if isinstance(k, str)]
+    if not keywords:
+        keywords = [w for w in re.split(r"\W+", prompt.lower()) if len(w) > 2][:8]
+
+    def score(item: Dict[str, Any]) -> float:
+        title = str(item.get("title", "")).lower()
+        units = str(item.get("units", "")).lower()
+        notes = str(item.get("notes", "")).lower()
+        hay = f"{title} {units} {notes}"
+        lexical = sum(1 for kw in keywords if kw in hay)
+        popularity = float(item.get("popularity", 0) or 0)
+        frequency = str(item.get("frequency_short", "")).lower()
+        freq_bonus = 1.0 if frequency in {"a", "q", "m"} else 0.0
+        return lexical * 3.0 + popularity * 0.05 + freq_bonus
+
+    chosen = max(series_list, key=score)
+    series_id = chosen.get("id")
+    if not series_id:
+        return None
+
+    async with httpx.AsyncClient() as client:
+        obs_resp = await client.get(
+            f"{FRED_BASE_URL}/series/observations",
+            params={
+                "api_key": FRED_API_KEY,
+                "file_type": "json",
+                "series_id": series_id,
+            },
+            timeout=12.0,
+        )
+        obs_resp.raise_for_status()
+        obs_data = obs_resp.json()
+
+    observations = obs_data.get("observations", []) or []
+    points: List[tuple[str, float]] = []
+    for obs in observations:
+        value = obs.get("value")
+        date = obs.get("date")
+        if not value or value == "." or not date:
+            continue
+        try:
+            points.append((str(date), float(value)))
+        except (TypeError, ValueError):
+            continue
+
+    if len(points) < 3:
+        return None
+
+    # If we have many points, downsample to annual averages for chart readability.
+    if len(points) > 60:
+        grouped: Dict[str, List[float]] = defaultdict(list)
+        for date, value in points:
+            grouped[date[:4]].append(value)
+        annual = sorted((year, sum(vals) / len(vals)) for year, vals in grouped.items())
+        points = annual
+
+    timeframe_years = intent.get("timeframe_years")
+    if isinstance(timeframe_years, int) and timeframe_years > 0:
+        points = points[-timeframe_years:]
+
+    labels = [p[0][:4] if len(p[0]) >= 4 and p[0][4:5] == "-" else p[0] for p in points]
+    data = [round(p[1], 2) for p in points]
+    if len(labels) < 3:
+        return None
+
+    title = str(chosen.get("title", "FRED Series"))
+    units = str(chosen.get("units", "")).strip()
+    source_link = f"https://fred.stlouisfed.org/series/{series_id}"
+    reasoning = f"Retrieved real data from FRED series {series_id} ({title})."
+
+    return {
+        "labels": labels,
+        "series": [{"name": units or "Value", "data": data}],
+        "verifiedData": True,
+        "suggestedTitle": title,
+        "suggestedType": "line",
+        "xAxisLabel": "Year" if all(re.match(r"^\d{4}$", lab) for lab in labels) else "Date",
+        "yAxisLabel": units or "Value",
+        "xAxisType": "year" if all(re.match(r"^\d{4}$", lab) for lab in labels) else "date",
+        "sourceLink": source_link,
+        "aiReasoning": reasoning,
+        "sourceProvider": "fred",
+    }
+
+
+def _is_safe_bigquery_sql(sql: str) -> bool:
+    sql_l = sql.lower()
+    blocked = ["insert ", "update ", "delete ", "merge ", "drop ", "alter ", "create "]
+    if any(token in sql_l for token in blocked):
+        return False
+    if ";" in sql.strip().rstrip(";"):
+        return False
+    if "bigquery-public-data." not in sql_l:
+        return False
+    return sql_l.strip().startswith("select")
+
+
+async def _generate_bigquery_sql(prompt: str) -> Optional[str]:
+    client = _get_client()
+    schema_prompt = f"""Write ONE BigQuery SQL query for a chart from this prompt:
+"{prompt}"
+
+Constraints:
+- Use ONLY BigQuery public datasets.
+- Prefer IMDb tables when the prompt is about movies:
+  - `bigquery-public-data.imdb.title_basics`
+  - `bigquery-public-data.imdb.title_ratings`
+  - `bigquery-public-data.imdb.name_basics`
+- Use SELECT only (no DDL/DML), no semicolons.
+- Return at most 50 rows.
+- Output exactly two to four columns where:
+  - first column is a label/date/category
+  - remaining columns are numeric metrics
+
+Return ONLY SQL, no markdown.
+"""
+    resp = client.models.generate_content(model=_MODEL_NAME, contents=schema_prompt)
+    sql = (resp.text or "").replace("```sql", "").replace("```", "").strip()
+    return sql or None
+
+
+async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
+    if not ENABLE_BIGQUERY_PUBLIC_DATA:
+        return None
+
+    try:
+        from google.cloud import bigquery  # type: ignore
+    except Exception:
+        logger.info("BigQuery provider skipped: google-cloud-bigquery not installed")
+        return None
+
+    sql = await _generate_bigquery_sql(prompt)
+    if not sql or not _is_safe_bigquery_sql(sql):
+        return None
+
+    try:
+        client = bigquery.Client(project=BIGQUERY_PROJECT_ID or None)
+        job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
+        rows = list(client.query(sql, job_config=job_config).result(max_results=50))
+        if not rows:
+            return None
+
+        columns = list(rows[0].keys())
+        row_dicts = [{k: r[k] for k in columns} for r in rows]
+    except Exception as e:
+        logger.info(f"BigQuery provider failed: {e}")
+        return None
+
+    # Infer label + numeric fields from result schema.
+    numeric_cols = []
+    label_col = None
+    for col in columns:
+        sample = next((r.get(col) for r in row_dicts if r.get(col) is not None), None)
+        if isinstance(sample, (int, float)):
+            numeric_cols.append(col)
+        elif label_col is None:
+            label_col = col
+
+    if label_col is None and columns:
+        label_col = columns[0]
+    if not label_col or not numeric_cols:
+        return None
+
+    labels: List[str] = []
+    series_data: Dict[str, List[float]] = {col: [] for col in numeric_cols[:3]}
+    for row in row_dicts[:40]:
+        label_val = row.get(label_col)
+        if label_val is None:
+            continue
+        labels.append(str(label_val))
+        for col in series_data:
+            val = row.get(col)
+            try:
+                series_data[col].append(float(val))
+            except (TypeError, ValueError):
+                series_data[col].append(0.0)
+
+    if len(labels) < 3:
+        return None
+
+    # Keep aligned rows only.
+    min_len = min([len(labels)] + [len(v) for v in series_data.values()])
+    labels = labels[:min_len]
+    series = [{"name": name, "data": [round(v, 3) for v in vals[:min_len]]} for name, vals in series_data.items()]
+
+    source_link = "https://console.cloud.google.com/marketplace/product/bigquery-public-data"
+    return {
+        "labels": labels,
+        "series": series,
+        "verifiedData": True,
+        "suggestedTitle": "Public dataset query result",
+        "suggestedType": "bar",
+        "xAxisLabel": label_col,
+        "yAxisLabel": series[0]["name"],
+        "sourceLink": source_link,
+        "aiReasoning": "Retrieved data from BigQuery public datasets.",
+        "sourceProvider": "bigquery",
+    }
+
+
+async def research_chart_from_prompt(prompt: str) -> Optional[Dict[str, Any]]:
+    """Try to resolve real data for a prompt from trusted sources."""
+    try:
+        intent = await _infer_research_intent(prompt)
+    except Exception as e:
+        logger.info(f"Intent inference failed, skipping research pipeline: {e}")
+        intent = {
+            "topic": prompt,
+            "metric": prompt,
+            "geography": "unknown",
+            "timeframe_years": None,
+            "preferred_sources": ["fred", "bigquery"],
+            "keywords": [],
+        }
+
+    if _is_fred_candidate(prompt, intent):
+        try:
+            result = await _fred_search_and_fetch(prompt, intent)
+            if result:
+                return result
+        except Exception as e:
+            logger.info(f"FRED provider failed: {e}")
+
+    if _is_bigquery_candidate(prompt, intent):
+        try:
+            result = await _bigquery_search_and_fetch(prompt)
+            if result:
+                return result
+        except Exception as e:
+            logger.info(f"BigQuery provider failed: {e}")
+
+    return None

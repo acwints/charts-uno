@@ -52,6 +52,7 @@ export async function fetchStockData(ticker: string, range: string, ticker2?: st
     labels: parsed.labels,
     series: parsed.series,
     sourceType: 'stocks',
+    verifiedData: true,
     suggestedTitle: parsed.suggestedTitle,
     suggestedType: parsed.suggestedType,
     xAxisLabel: parsed.xAxisLabel,

@@ -47,9 +47,7 @@ export function ChartBuilder() {
       const enrichedData: ChartData = {
         ...data,
         suggestedType: chosenType,
-        aiReasoning: data.sourceType === 'image' && data.aiReasoning
-          ? data.aiReasoning
-          : recommendation.reasoning,
+        aiReasoning: data.aiReasoning || recommendation.reasoning,
         aiSummary: recommendation.summary,
       };
       setChartData(enrichedData);
@@ -59,6 +57,7 @@ export function ChartBuilder() {
         type: chosenType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
       }));
       navigate('/chart');
     } catch (error) {
@@ -71,6 +70,7 @@ export function ChartBuilder() {
         type: fallbackType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
       }));
       navigate('/chart');
     } finally {

@@ -152,6 +152,7 @@ class ImageAnalysisRequest(BaseModel):
 class ImageAnalysisResponse(BaseModel):
     labels: List[str]
     series: List[ChartDataSeries]
+    verifiedData: Optional[bool] = None
     suggestedTitle: Optional[str] = None
     suggestedType: Optional[str] = None
     stacked: Optional[bool] = None
@@ -159,6 +160,11 @@ class ImageAnalysisResponse(BaseModel):
     yAxisLabel: Optional[str] = None
     barLayout: Optional[str] = None
     aiReasoning: Optional[str] = None
+    sourceLink: Optional[str] = None
+    xAxisType: Optional[str] = None
+    yAxisFormat: Optional[str] = None
+    yAxisPrefix: Optional[str] = None
+    yAxisSuffix: Optional[str] = None
 
 
 class PromptGenerateRequest(BaseModel):

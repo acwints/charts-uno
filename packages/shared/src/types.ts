@@ -11,6 +11,7 @@ export interface ChartData {
   labels: string[];
   series: DataSeries[];
   sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks';
+  verifiedData?: boolean;
   suggestedTitle?: string;
   suggestedType?: ChartType;
   suggestedStacked?: boolean;

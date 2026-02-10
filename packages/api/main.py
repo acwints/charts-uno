@@ -854,6 +854,7 @@ async def analyze_image_endpoint(
         return ImageAnalysisResponse(
             labels=result["labels"],
             series=result["series"],
+            verifiedData=result.get("verifiedData"),
             suggestedTitle=result.get("suggestedTitle"),
             suggestedType=result.get("suggestedType"),
             stacked=result.get("stacked"),
@@ -965,6 +966,12 @@ async def generate_from_prompt_endpoint(
             xAxisLabel=result.get("xAxisLabel"),
             yAxisLabel=result.get("yAxisLabel"),
             barLayout=result.get("barLayout"),
+            aiReasoning=result.get("aiReasoning"),
+            sourceLink=result.get("sourceLink"),
+            xAxisType=result.get("xAxisType"),
+            yAxisFormat=result.get("yAxisFormat"),
+            yAxisPrefix=result.get("yAxisPrefix"),
+            yAxisSuffix=result.get("yAxisSuffix"),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
