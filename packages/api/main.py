@@ -123,7 +123,13 @@ if ALLOWED_FRONTEND_DOMAINS:
     allowed_origins.extend(ALLOWED_FRONTEND_DOMAINS)
 
 # Always allow the deployed frontend URLs to prevent env misconfig CORS failures
-for origin in (DEFAULT_PROD_FRONTEND, "https://www.chartsuno.vercel.app"):
+PROD_ORIGINS = [
+    DEFAULT_PROD_FRONTEND,
+    "https://www.chartsuno.vercel.app",
+    "https://www.chartsuno.com",
+    "https://chartsuno.com",
+]
+for origin in PROD_ORIGINS:
     if origin not in allowed_origins:
         allowed_origins.append(origin)
 
@@ -169,8 +175,12 @@ def _safe_frontend_target(target: Optional[str]) -> str:
     if not target:
         return FRONTEND_URL
 
-    # Check against allowed domains
-    allowed = [FRONTEND_URL] + [d.strip() for d in ALLOWED_FRONTEND_DOMAINS if d.strip()]
+    # Check against allowed domains (includes CORS prod origins)
+    allowed = (
+        [FRONTEND_URL]
+        + [d.strip() for d in ALLOWED_FRONTEND_DOMAINS if d.strip()]
+        + PROD_ORIGINS
+    )
 
     # Allow localhost in development
     if not IS_PRODUCTION:
