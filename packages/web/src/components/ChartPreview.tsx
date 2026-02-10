@@ -364,14 +364,19 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
     // For year labels, treat as categorical to avoid decimal interpolation (2020.3)
     // For other numeric labels, use continuous numeric axis
+    const adaptiveTick = adaptiveAxis.needsCustomTick
+      ? <AdaptiveXAxisTick fill={theme.textMuted} config={adaptiveAxis} />
+      : undefined;
+
     const xAxisElement = isYearLabels ? (
       <XAxis
         dataKey="name"
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         padding={{ left: 20, right: 20 }}
+        interval={adaptiveAxis.tickInterval ?? 0}
         label={xAxisLabelConfig}
       />
     ) : isNumericLabels ? (
@@ -380,7 +385,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         dataKey="x"
         domain={numericDomain}
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tick={{ fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         allowDecimals={false}
@@ -391,10 +396,11 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       <XAxis
         dataKey="name"
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         padding={{ left: 20, right: 20 }}
+        interval={adaptiveAxis.tickInterval ?? 0}
         label={xAxisLabelConfig}
       />
     );
