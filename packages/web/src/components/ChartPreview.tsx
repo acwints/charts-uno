@@ -34,6 +34,8 @@ import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
+import { computeAdaptiveAxisConfig } from '../utils/adaptiveAxis';
+import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import { MapChart } from './MapChart';
@@ -215,11 +217,19 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const isHorizontal = config.type === 'bar' && config.barLayout === 'horizontal';
 
+  const adaptiveAxis = useMemo(
+    () => computeAdaptiveAxisConfig(data.labels, isHorizontal),
+    [data.labels, isHorizontal],
+  );
+
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const adaptiveBottom = adaptiveAxis.angle !== 0
+    ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
+    : (xAxisLabel ? 25 : 5);
   const chartMargins = isHorizontal
     ? { top: 20, right: 30, bottom: yAxisLabel ? 25 : 5, left: xAxisLabel ? 80 : 60 }
-    : { top: 20, right: 5, bottom: xAxisLabel ? 25 : 5, left: yAxisLabel ? 15 : 5 };
+    : { top: 20, right: 5, bottom: adaptiveBottom, left: yAxisLabel ? 15 : 5 };
 
   const pieData = useMemo(() => {
     if (config.type !== 'pie') return [];
@@ -346,7 +356,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     const xAxisLabelConfig = xAxisLabel ? {
       value: xAxisLabel,
       position: 'insideBottom' as const,
-      offset: -10,
+      offset: adaptiveAxis.angle !== 0 ? -14 : -10,
       fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
