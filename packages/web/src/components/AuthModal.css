@@ -80,6 +80,25 @@
   text-align: center;
 }
 
+@media (max-width: 480px) {
+  .auth-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .auth-modal {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .auth-modal__close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-modal__close {
     transition: none;

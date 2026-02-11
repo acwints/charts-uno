@@ -63,7 +63,8 @@
   transition: color 150ms, background-color 150ms, box-shadow 150ms;
 }
 
-.view-toggle-btn:hover:not(.active) {
+.view-toggle-btn:hover:not(.active),
+.view-toggle-btn:active:not(.active) {
   color: var(--text-secondary);
   background: var(--bg-hover);
 }
@@ -126,8 +127,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   background: none;
   border: none;
@@ -138,7 +139,8 @@
   transition: opacity 150ms, background-color 150ms;
 }
 
-.chart-brand-toggle:hover {
+.chart-brand-toggle:hover,
+.chart-brand-toggle:active {
   opacity: 0.7;
   background: rgba(128, 128, 128, 0.1);
 }
@@ -522,6 +524,25 @@
 
   .chart-preview {
     min-height: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-preview {
+    min-height: 280px;
+  }
+
+  .chart-header {
+    padding: var(--space-2) var(--space-3) 0 var(--space-3);
+  }
+
+  .chart-meta {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .view-toggle-btn {
+    min-height: 44px;
   }
 }
 

@@ -111,7 +111,8 @@
   transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.type-button:hover {
+.type-button:hover,
+.type-button:active {
   background: var(--bg-hover);
   color: var(--text-secondary);
 }
@@ -185,7 +186,8 @@
   transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.ai-mode-button:hover {
+.ai-mode-button:hover,
+.ai-mode-button:active {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
@@ -311,7 +313,9 @@
 }
 
 .map-scope-button:hover,
-.map-variant-button:hover {
+.map-scope-button:active,
+.map-variant-button:hover,
+.map-variant-button:active {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
@@ -390,7 +394,8 @@
   transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.style-variant-button:hover {
+.style-variant-button:hover,
+.style-variant-button:active {
   background: var(--bg-hover);
   color: var(--text-secondary);
 }
@@ -491,7 +496,8 @@
   transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.color-scheme-button:hover {
+.color-scheme-button:hover,
+.color-scheme-button:active {
   background: var(--bg-hover);
   color: var(--text-secondary);
 }
@@ -615,6 +621,24 @@
 
   .toggle-list {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-type-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .color-scheme-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ai-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .map-options-row {
+    flex-direction: column;
   }
 }
 

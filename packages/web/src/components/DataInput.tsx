@@ -411,12 +411,25 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         >
           {(mode === 'upload' || mode === 'image') && (
             <div className="file-input-section">
+              {(isProcessing || isAnalyzing) && (
+                <div className="file-input-overlay" aria-busy="true" aria-live="polite">
+                  <AIProcessingIndicator
+                    size="sm"
+                    label={mode === 'image' ? 'Analyzing your image...' : 'Processing your data...'}
+                    hint={mode === 'image' ? 'Extracting data with GPT-4o Vision' : undefined}
+                    statusMessages={mode === 'image'
+                      ? ['Reading chart elements...', 'Extracting data points...', 'Identifying patterns...', 'Building your chart...']
+                      : ['Parsing columns...', 'Detecting data types...', 'Choosing the best chart...', 'Almost ready...']
+                    }
+                  />
+                </div>
+              )}
               <div
                 className={`drop-zone ${dragActive ? 'active' : ''} ${stagedFile ? 'has-file' : ''}`}
                 onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                 onDragLeave={() => setDragActive(false)}
                 onDrop={handleDrop}
-                onClick={() => mode === 'image' ? imageInputRef.current?.click() : fileInputRef.current?.click()}
+                onClick={() => !(isProcessing || isAnalyzing) && (mode === 'image' ? imageInputRef.current?.click() : fileInputRef.current?.click())}
               >
                 <input
                   ref={fileInputRef}
@@ -464,17 +477,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 )}
               </div>
 
-              {(isProcessing || isAnalyzing) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label={mode === 'image' ? 'Analyzing your image...' : 'Processing your data...'}
-                  hint={mode === 'image' ? 'Extracting data with GPT-4o Vision' : undefined}
-                  statusMessages={mode === 'image'
-                    ? ['Reading chart elements...', 'Extracting data points...', 'Identifying patterns...', 'Building your chart...']
-                    : ['Parsing columns...', 'Detecting data types...', 'Choosing the best chart...', 'Almost ready...']
-                  }
-                />
-              ) : (
+              {!(isProcessing || isAnalyzing) && (
                 <Button
                   variant="primary"
                   size="lg"

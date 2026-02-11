@@ -39,7 +39,7 @@ export function ChartStyleCard({
       .filter((_, idx) => idx % step === 0)
       .slice(0, maxPoints)
       .map((label, idx) => {
-        const point: Record<string, string | number> = { name: label };
+        const point: Record<string, string | number | null> = { name: label };
         data.series.forEach((series) => {
           point[series.name] = series.data[idx * step];
         });

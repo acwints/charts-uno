@@ -9,6 +9,7 @@ import PanelLeftClose from 'lucide-react/dist/esm/icons/panel-left-close';
 import PanelLeftOpen from 'lucide-react/dist/esm/icons/panel-left-open';
 import { useTeam } from '../../contexts/TeamContext';
 import { useChartStore } from '../../stores/chartStore';
+import { useMobileNav } from '../../hooks/useMobileNav';
 import { UsageWidget } from './UsageWidget';
 import './DashboardSidebar.css';
 
@@ -21,6 +22,7 @@ interface NavItemProps {
 }
 
 function NavItem({ to, icon, label, end, collapsed }: NavItemProps) {
+  const closeMobileNav = useMobileNav((s) => s.close);
   return (
     <NavLink
       to={to}
@@ -29,6 +31,7 @@ function NavItem({ to, icon, label, end, collapsed }: NavItemProps) {
         `sidebar-nav-item ${isActive ? 'sidebar-nav-item--active' : ''} ${collapsed ? 'sidebar-nav-item--collapsed' : ''}`
       }
       title={collapsed ? label : undefined}
+      onClick={closeMobileNav}
     >
       <span className="sidebar-nav-icon">{icon}</span>
       {!collapsed && <span className="sidebar-nav-label">{label}</span>}
@@ -41,6 +44,7 @@ export function DashboardSidebar() {
   const { currentTeam, usage } = useTeam();
   const { reset } = useChartStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isOpen: isMobileNavOpen, close: closeMobileNav } = useMobileNav();
 
   const handleCreateNew = () => {
     reset();
@@ -48,7 +52,11 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className={`dashboard-sidebar ${isCollapsed ? 'dashboard-sidebar--collapsed' : ''}`}>
+    <>
+      {isMobileNavOpen && (
+        <div className="sidebar-backdrop" onClick={closeMobileNav} />
+      )}
+      <aside className={`dashboard-sidebar ${isCollapsed ? 'dashboard-sidebar--collapsed' : ''} ${isMobileNavOpen ? 'dashboard-sidebar--mobile-open' : ''}`}>
       <div className="sidebar-toggle-area">
         <button
           className="sidebar-toggle-btn"
@@ -93,5 +101,6 @@ export function DashboardSidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

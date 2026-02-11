@@ -31,7 +31,8 @@
   text-align: left;
 }
 
-.export-option:hover:not(:disabled) {
+.export-option:hover:not(:disabled),
+.export-option:active:not(:disabled) {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
@@ -46,7 +47,8 @@
   color: var(--text-muted);
 }
 
-.export-option:hover:not(:disabled) svg {
+.export-option:hover:not(:disabled) svg,
+.export-option:active:not(:disabled) svg {
   color: var(--text-secondary);
 }
 
@@ -74,6 +76,24 @@
   }
   50% {
     opacity: 0.4;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .export-option {
+    min-height: 44px;
   }
 }
 

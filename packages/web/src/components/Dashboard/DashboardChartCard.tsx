@@ -40,17 +40,19 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
   const colors = COLOR_PALETTES[(chart.config.colorScheme as keyof typeof COLOR_PALETTES) || 'default'];
 
   const chartData = chart.data.labels.map((label, idx) => {
-    const point: Record<string, string | number> = { name: label };
+    const point: Record<string, string | number | null> = { name: label };
     chart.data.series.forEach((series) => {
       point[series.name] = series.data[idx];
     });
     return point;
   });
 
-  const pieData = chart.data.series[0]?.data.map((value, idx) => ({
-    name: chart.data.labels[idx],
-    value,
-  })) || [];
+  const pieData = chart.data.series[0]?.data
+    .map((value, idx) => ({
+      name: chart.data.labels[idx],
+      value,
+    }))
+    .filter((point): point is { name: string; value: number } => typeof point.value === 'number') || [];
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isSelecting || e.ctrlKey || e.metaKey) {

@@ -194,7 +194,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const chartData = useMemo(() => {
     return data.labels.map((label, idx) => {
-      const point: Record<string, string | number> = {
+      const point: Record<string, string | number | null> = {
         name: label,
         x: isNumericLabels ? parseFloat(label) : idx,
       };
@@ -246,16 +246,18 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const pieData = useMemo(() => {
     if (config.type !== 'pie') return [];
-    return data.series[0].data.map((value, idx) => ({
-      name: data.labels[idx],
-      value,
-    }));
+    return data.series[0].data
+      .map((value, idx) => ({
+        name: data.labels[idx],
+        value,
+      }))
+      .filter((point): point is { name: string; value: number } => typeof point.value === 'number');
   }, [data, config.type]);
 
   const radarData = useMemo(() => {
     if (config.type !== 'radar') return [];
     return data.labels.map((label, idx) => {
-      const point: Record<string, string | number> = { subject: label };
+      const point: Record<string, string | number | null> = { subject: label };
       data.series.forEach((series) => {
         point[series.name] = series.data[idx];
       });
@@ -739,7 +741,9 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
               <Scatter
                 key={series.name}
                 name={series.name}
-                data={series.data.map((value, i) => ({ x: i + 1, y: value, name: data.labels[i] }))}
+                data={series.data
+                  .map((value, i) => ({ x: i + 1, y: value, name: data.labels[i] }))
+                  .filter((point): point is { x: number; y: number; name: string } => typeof point.y === 'number')}
                 fill={colors[idx % colors.length]}
                 animationDuration={config.animate ? 800 : 0}
               />
@@ -858,7 +862,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
                     <td className="table-cell sticky-col" style={{ color: theme.text, background: theme.background, fontWeight: 500 }}>{label}</td>
                     {data.series.map((series) => (
                       <td key={series.name} className="table-cell" style={{ color: theme.textMuted, borderColor: theme.border }}>
-                        {typeof series.data[rowIdx] === 'number' ? formatTooltipValue(series.data[rowIdx]) : series.data[rowIdx]}
+                        {typeof series.data[rowIdx] === 'number' ? formatTooltipValue(series.data[rowIdx]) : 'N/A'}
                       </td>
                     ))}
                   </tr>

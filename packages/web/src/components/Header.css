@@ -87,6 +87,8 @@
   align-items: center;
   gap: 6px;
   padding: 4px;
+  min-width: 44px;
+  min-height: 44px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -94,20 +96,21 @@
   transition: background-color var(--transition-fast);
 }
 
-.user-menu-trigger:hover {
+.user-menu-trigger:hover,
+.user-menu-trigger:active {
   background: var(--bg-tertiary);
 }
 
 .user-menu-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .user-menu-avatar-placeholder {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
@@ -178,7 +181,8 @@
   text-decoration: none;
 }
 
-.user-menu-item:hover {
+.user-menu-item:hover,
+.user-menu-item:active {
   background: var(--bg-tertiary);
   color: var(--text-primary);
 }
@@ -187,12 +191,69 @@
   color: #ef4444;
 }
 
-.user-menu-item--danger:hover {
+.user-menu-item--danger:hover,
+.user-menu-item--danger:active {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 
+/* Hamburger button - hidden on desktop */
+.header-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 150ms, color 150ms;
+}
+
+.header-hamburger:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.header-hamburger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (max-width: 1024px) {
+  .header-center {
+    position: static;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-hamburger {
+    display: flex;
+  }
+
+  .header-center {
+    display: none;
+  }
+
+  .logo-badge {
+    display: none;
+  }
+
+  .header-content {
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .header-hamburger {
+    transition: none;
+  }
+
   .user-menu-trigger {
     transition: none;
     animation: none;

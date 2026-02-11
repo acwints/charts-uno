@@ -31,7 +31,8 @@
   text-align: left;
 }
 
-.share-option:hover:not(:disabled) {
+.share-option:hover:not(:disabled),
+.share-option:active:not(:disabled) {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
@@ -46,7 +47,8 @@
   color: var(--text-muted);
 }
 
-.share-option:hover:not(:disabled) svg {
+.share-option:hover:not(:disabled) svg,
+.share-option:active:not(:disabled) svg {
   color: var(--text-secondary);
 }
 
@@ -100,6 +102,24 @@
 .paste-hint-icon {
   color: var(--success);
   flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .share-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .share-option {
+    min-height: 44px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

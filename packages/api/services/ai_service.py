@@ -48,7 +48,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
   "labels": ["label1", "label2", ...],
   "series": [
-    {{"name": "Series Name", "data": [num1, num2, ...]}}
+    {{"name": "Series Name", "data": [num1 | null, num2 | null, ...]}}
   ],
   "suggestedTitle": "A title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
@@ -61,7 +61,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
 Rules:
 - labels array must match the length of each data array
-- All data values must be numbers (convert scores like "-27" to -27)
+- Data values must be numbers or null (convert scores like "-27" to -27)
 - If there are multiple numeric columns, create multiple series
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
 - If you can't find chartable data, return: {{"error": "No chartable data found"}}
@@ -70,6 +70,9 @@ Rules:
 - If the chart has a time-based x-axis (years, months, dates), labels MUST be the time values and each category/group must be a separate series.
 - Recognize chart structure — for stacked or grouped bar charts, each color/segment = a series, each x-axis position = a label. Estimate segment values from visual proportions if exact numbers aren't labeled.
 - Set "stacked" to true if the bars are stacked on top of each other, false if they are grouped side-by-side or not applicable.
+- Never fabricate missing history. If a series is not visibly plotted for some labels, use null for those labels (not 0 and not inferred values).
+- Use 0 only when the plotted mark is visibly at the zero baseline.
+- Be conservative: when uncertain between a specific value and missing, use null.
 - IMPORTANT: Always assign axis labels SEMANTICALLY, not positionally:
   - "xAxisLabel" must describe the CATEGORIES (what each bar/point represents)
   - "yAxisLabel" must describe the NUMERICAL VALUES (what is being measured)
@@ -102,8 +105,58 @@ Rules:
     if not parsed.get("labels") or not parsed.get("series"):
         raise ValueError("Invalid data structure returned")
 
+    labels = parsed.get("labels", [])
+    series_list = parsed.get("series", [])
+    if not isinstance(labels, list) or not isinstance(series_list, list):
+        raise ValueError("Invalid data structure returned")
+
     # Coerce labels to strings — Gemini sometimes returns numeric labels as ints
-    parsed["labels"] = [str(label) for label in parsed["labels"]]
+    parsed["labels"] = [str(label) for label in labels]
+    label_count = len(parsed["labels"])
+
+    # Normalize/validate series data:
+    # - preserve null for unknown points
+    # - coerce numeric strings to float
+    # - pad/truncate to labels length
+    normalized_series = []
+    for series in series_list:
+        if not isinstance(series, dict):
+            continue
+        name = str(series.get("name") or "Series")
+        raw_data = series.get("data") or []
+        if not isinstance(raw_data, list):
+            raw_data = []
+
+        normalized_data: List[Optional[float]] = []
+        for value in raw_data[:label_count]:
+            if value is None:
+                normalized_data.append(None)
+                continue
+            if isinstance(value, (int, float)):
+                normalized_data.append(float(value))
+                continue
+            if isinstance(value, str):
+                cleaned = value.strip().replace(",", "")
+                if cleaned.lower() in {"", "na", "n/a", "null", "none", "missing", "-", "—"}:
+                    normalized_data.append(None)
+                    continue
+                try:
+                    normalized_data.append(float(cleaned))
+                    continue
+                except ValueError:
+                    normalized_data.append(None)
+                    continue
+            normalized_data.append(None)
+
+        if len(normalized_data) < label_count:
+            normalized_data.extend([None] * (label_count - len(normalized_data)))
+
+        normalized_series.append({"name": name, "data": normalized_data})
+
+    if not normalized_series:
+        raise ValueError("No valid series returned from image analysis")
+
+    parsed["series"] = normalized_series
 
     return parsed
 
@@ -121,13 +174,15 @@ async def chat_with_chart(
     stats = []
     for series in current_data.get("series", []):
         data = series.get("data", [])
-        if data:
-            sum_val = sum(data)
-            avg = sum_val / len(data)
-            min_val = min(data)
-            max_val = max(data)
-            min_idx = data.index(min_val)
-            max_idx = data.index(max_val)
+        numeric_points = [(idx, float(v)) for idx, v in enumerate(data) if isinstance(v, (int, float))]
+        if numeric_points:
+            numeric_values = [v for _, v in numeric_points]
+            sum_val = sum(numeric_values)
+            avg = sum_val / len(numeric_values)
+            min_val = min(numeric_values)
+            max_val = max(numeric_values)
+            min_idx = next((idx for idx, v in numeric_points if v == min_val), 0)
+            max_idx = next((idx for idx, v in numeric_points if v == max_val), 0)
             labels = current_data.get("labels", [])
             stats.append({
                 "name": series.get("name"),
@@ -137,7 +192,8 @@ async def chat_with_chart(
                 "max": max_val,
                 "minLabel": labels[min_idx] if min_idx < len(labels) else None,
                 "maxLabel": labels[max_idx] if max_idx < len(labels) else None,
-                "count": len(data),
+                "count": len(numeric_values),
+                "missingCount": max(0, len(data) - len(numeric_values)),
             })
 
     recent_history = chat_history[-6:] if chat_history else []
@@ -257,7 +313,13 @@ Guidelines:
                 series = current_data.get("series", [])
 
                 for i in range(len(labels)):
-                    values = [s["data"][i] if i < len(s["data"]) else 0 for s in series]
+                    values = []
+                    for s in series:
+                        series_data = s.get("data", [])
+                        if i < len(series_data):
+                            value = series_data[i]
+                            if isinstance(value, (int, float)):
+                                values.append(float(value))
                     formula = col.get("formula", "sum")
 
                     if formula == "sum":
@@ -324,9 +386,10 @@ async def recommend_chart_type(
             {
                 "name": s.get("name"),
                 "sampleData": s.get("data", [])[:10],
-                "min": min(s.get("data", [0])) if s.get("data") else 0,
-                "max": max(s.get("data", [0])) if s.get("data") else 0,
-                "count": len(s.get("data", [])),
+                "min": min([float(v) for v in s.get("data", []) if isinstance(v, (int, float))], default=0),
+                "max": max([float(v) for v in s.get("data", []) if isinstance(v, (int, float))], default=0),
+                "count": len([v for v in s.get("data", []) if isinstance(v, (int, float))]),
+                "missingCount": len([v for v in s.get("data", []) if v is None]),
             }
             for s in series
         ],

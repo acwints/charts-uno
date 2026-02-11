@@ -63,7 +63,7 @@ export async function fetchStockData(ticker: string, range: string, ticker2?: st
 
 export async function fetchStockInsights(
   labels: string[],
-  series: { name: string; data: number[] }[],
+  series: { name: string; data: Array<number | null> }[],
   title: string
 ): Promise<string> {
   const response = await fetch(`${API_URL}/api/stocks/insights`, {

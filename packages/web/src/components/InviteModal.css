@@ -234,6 +234,24 @@
   color: white;
 }
 
+@media (max-width: 480px) {
+  .invite-modal {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    max-width: 100%;
+    border-radius: 12px 12px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .invite-modal__close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .invite-modal__close {
     transition: none;

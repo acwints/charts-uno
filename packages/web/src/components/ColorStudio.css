@@ -84,7 +84,8 @@
   outline-offset: -2px;
 }
 
-.cstudio-mode-btn:hover {
+.cstudio-mode-btn:hover,
+.cstudio-mode-btn:active {
   color: var(--text-primary);
 }
 
@@ -120,7 +121,8 @@
   outline-offset: -2px;
 }
 
-.cstudio-scheme:hover {
+.cstudio-scheme:hover,
+.cstudio-scheme:active {
   color: var(--text-secondary);
   background: var(--bg-hover);
 }
@@ -326,5 +328,15 @@
 @media (max-width: 768px) {
   .cstudio-schemes {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .cstudio-schemes {
+    grid-template-columns: 1fr;
+  }
+
+  .cstudio-custom-fields {
+    grid-template-columns: 1fr;
   }
 }

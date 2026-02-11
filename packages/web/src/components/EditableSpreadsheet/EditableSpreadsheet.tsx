@@ -47,7 +47,12 @@ export function EditableSpreadsheet({
     (seriesIndex: number, dataIndex: number, value: string | number) => {
       const newSeries = [...data.series];
       const newData = [...newSeries[seriesIndex].data];
-      newData[dataIndex] = typeof value === 'number' ? value : parseFloat(value) || 0;
+      if (typeof value === 'number') {
+        newData[dataIndex] = value;
+      } else {
+        const trimmed = value.trim();
+        newData[dataIndex] = trimmed === '' ? null : (parseFloat(trimmed) || 0);
+      }
       newSeries[seriesIndex] = { ...newSeries[seriesIndex], data: newData };
       onChange({ ...data, series: newSeries });
     },
@@ -184,7 +189,7 @@ export function EditableSpreadsheet({
                 {data.series.map((series, colIdx) => (
                   <td key={colIdx} className="spreadsheet-td value-cell">
                     <EditableCell
-                      value={series.data?.[rowIdx] ?? 0}
+                      value={series.data?.[rowIdx] ?? ''}
                       onChange={(v) => handleValueChange(colIdx, rowIdx, v)}
                       isNumeric
                     />

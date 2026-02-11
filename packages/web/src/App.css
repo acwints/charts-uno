@@ -24,7 +24,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding: var(--space-4) 120px;
+  padding: var(--space-4) clamp(var(--space-4), 8vw, 120px);
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -274,6 +274,36 @@
   }
 }
 
+@media (max-width: 640px) {
+  .input-view {
+    gap: var(--space-4);
+  }
+
+  .chart-toolbar {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .chart-toolbar-left,
+  .chart-toolbar-center,
+  .chart-toolbar-right {
+    justify-self: center;
+  }
+
+  .chart-view {
+    padding: var(--space-2);
+  }
+
+  .chart-data-editor {
+    height: auto;
+  }
+
+  .data-editor-top-row {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chart-view-toggle-btn {
     transition: none;
@@ -306,4 +336,10 @@
 
 .footer-tagline {
   letter-spacing: 0.02em;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: var(--space-3) var(--space-4);
+  }
 }

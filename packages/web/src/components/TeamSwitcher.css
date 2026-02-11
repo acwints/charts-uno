@@ -33,7 +33,8 @@
   min-width: 220px;
 }
 
-.team-switcher__trigger:hover {
+.team-switcher__trigger:hover,
+.team-switcher__trigger:active {
   background: var(--bg-hover);
   border-color: var(--accent);
 }
@@ -209,6 +210,12 @@
 .team-switcher__create:hover {
   background: var(--bg-elevated);
   color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+  .team-switcher__trigger {
+    min-width: 160px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

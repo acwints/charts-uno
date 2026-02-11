@@ -55,6 +55,19 @@
   padding: var(--space-2) 0;
 }
 
+@media (max-width: 480px) {
+  .team-dashboard-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    padding: 0 var(--space-3);
+  }
+
+  .team-dashboard-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .team-dashboard-tab {
     transition: none;

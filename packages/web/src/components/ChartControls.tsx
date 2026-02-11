@@ -371,7 +371,11 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                 />
                 <span className="series-name">{series.name}</span>
                 <span className="series-stats">
-                  {Math.min(...series.data).toLocaleString()} — {Math.max(...series.data).toLocaleString()}
+                  {(() => {
+                    const numericValues = series.data.filter((v): v is number => typeof v === 'number');
+                    if (numericValues.length === 0) return 'No numeric data';
+                    return `${Math.min(...numericValues).toLocaleString()} — ${Math.max(...numericValues).toLocaleString()}`;
+                  })()}
                 </span>
               </div>
             ))}

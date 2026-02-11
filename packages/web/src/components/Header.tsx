@@ -6,10 +6,12 @@ import Settings from 'lucide-react/dist/esm/icons/settings';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Menu from 'lucide-react/dist/esm/icons/menu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
+import { useMobileNav } from '../hooks/useMobileNav';
 import './Header.css';
 
 interface HeaderProps {
@@ -23,6 +25,7 @@ export function Header({
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { isOpen: isMobileNavOpen, toggle: toggleMobileNav } = useMobileNav();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -52,6 +55,14 @@ export function Header({
   return (
     <header className="header">
       <div className="header-content">
+        <button
+          className="header-hamburger"
+          onClick={toggleMobileNav}
+          aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={isMobileNavOpen}
+        >
+          <Menu size={20} />
+        </button>
         <motion.div
           className="logo-container"
           initial={{ opacity: 0, x: -20 }}

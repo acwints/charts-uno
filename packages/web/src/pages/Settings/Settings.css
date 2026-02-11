@@ -877,6 +877,7 @@
 
   .settings-page__nav-item {
     white-space: nowrap;
+    min-height: 44px;
   }
 
   .settings-page__content {
@@ -909,6 +910,16 @@
   .brand-color-input-wrapper {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page__content {
+    padding: 16px;
+  }
+
+  .settings-page__sidebar {
+    padding: 12px;
   }
 }
 

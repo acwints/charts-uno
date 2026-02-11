@@ -22,7 +22,7 @@ class UserResponse(UserBase):
 # Chart schemas
 class ChartDataSeries(BaseModel):
     name: str
-    data: List[float]
+    data: List[Optional[float]]
 
 
 class ChartData(BaseModel):

@@ -11,7 +11,7 @@ export async function exportToCSV(data: ChartData, filename: string = 'chart-dat
   // Build rows with labels as first column, series as subsequent columns
   const headers = ['Label', ...data.series.map(s => s.name)];
   const rows = data.labels.map((label, idx) => {
-    const row: (string | number)[] = [label];
+    const row: (string | number | null)[] = [label];
     data.series.forEach(series => {
       row.push(series.data[idx]);
     });
@@ -96,11 +96,19 @@ async function drawLogoWatermark(
   }
 }
 
+async function prepareElementForCapture(element: HTMLElement): Promise<void> {
+  element.scrollIntoView({ block: 'center', behavior: 'instant' });
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 export async function exportToPNG(
   element: HTMLElement,
   filename: string = 'chart',
   watermark?: WatermarkSettings
 ): Promise<void> {
+  await prepareElementForCapture(element);
   element.classList.add('is-exporting');
   // Use null to capture the element's actual background color
   const canvas = await html2canvas(element, {
@@ -136,6 +144,7 @@ export async function copyImageToClipboard(
   element: HTMLElement,
   watermark?: WatermarkSettings
 ): Promise<void> {
+  await prepareElementForCapture(element);
   element.classList.add('is-exporting');
   const canvas = await html2canvas(element, {
     backgroundColor: null,
@@ -174,7 +183,7 @@ export async function copyToClipboard(data: ChartData): Promise<void> {
   // Build tab-separated values for Excel/Sheets paste
   const headers = ['', ...data.labels].join('\t');
   const rows = data.series.map(series => {
-    return [series.name, ...series.data.map(v => v.toString())].join('\t');
+    return [series.name, ...series.data.map(v => (v == null ? '' : v.toString()))].join('\t');
   });
 
   const tsvContent = [headers, ...rows].join('\n');

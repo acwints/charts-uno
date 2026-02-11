@@ -25,7 +25,8 @@
   transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
-.assistant-sidebar-btn:hover {
+.assistant-sidebar-btn:hover,
+.assistant-sidebar-btn:active {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
   transform: scale(1.05);
 }
@@ -79,8 +80,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
@@ -89,7 +90,8 @@
   transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
-.assistant-header-btn:hover {
+.assistant-header-btn:hover,
+.assistant-header-btn:active {
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -153,7 +155,8 @@
   transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
 }
 
-.assistant-suggestion-card:hover {
+.assistant-suggestion-card:hover,
+.assistant-suggestion-card:active {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
@@ -453,8 +456,33 @@
 
 @media (max-width: 768px) {
   .assistant-sidebar {
-    width: 48px;
-    min-width: 48px;
+    position: fixed;
+    bottom: 24px;
+    right: 16px;
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border-left: none;
+    padding: 0;
+    background: var(--accent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 80;
+    justify-content: center;
+  }
+
+  .assistant-sidebar-btn {
+    width: 56px;
+    height: 56px;
+    background: transparent;
+    color: white;
+    border-radius: 50%;
+  }
+
+  .assistant-sidebar-btn:hover,
+  .assistant-sidebar-btn:active {
+    background: transparent;
+    transform: none;
   }
 
   .assistant-panel {

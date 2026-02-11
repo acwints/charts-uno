@@ -282,6 +282,27 @@
   }
 }
 
+@media (max-width: 480px) {
+  .spreadsheet-container {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .spreadsheet-header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .corner-cell,
+  .label-cell {
+    min-width: 80px;
+    width: 80px;
+  }
+
+  .value-cell {
+    min-width: 80px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spreadsheet-action {
     transition: none;

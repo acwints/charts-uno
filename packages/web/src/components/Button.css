@@ -17,7 +17,8 @@
   transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-.button:hover:not(:disabled) {
+.button:hover:not(:disabled),
+.button:active:not(:disabled) {
   color: var(--text-primary);
   background: var(--bg-tertiary);
 }
@@ -33,7 +34,8 @@
   border-color: transparent;
 }
 
-.button--primary:hover:not(:disabled) {
+.button--primary:hover:not(:disabled),
+.button--primary:active:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
 }
@@ -55,7 +57,8 @@
   color: var(--text-secondary);
 }
 
-.button--ghost:hover:not(:disabled) {
+.button--ghost:hover:not(:disabled),
+.button--ghost:active:not(:disabled) {
   background: var(--bg-tertiary);
   color: var(--text-primary);
 }

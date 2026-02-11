@@ -62,7 +62,7 @@ export interface ChartResponse {
   description: string | null;
   data: {
     labels: string[];
-    series: { name: string; data: number[] }[];
+    series: { name: string; data: Array<number | null> }[];
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
@@ -92,7 +92,7 @@ export interface CreateChartData {
   description?: string;
   data: {
     labels: string[];
-    series: { name: string; data: number[] }[];
+    series: { name: string; data: Array<number | null> }[];
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
