@@ -79,6 +79,7 @@ from schemas import (
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
+from services.research_service import get_research_provider_status
 
 # Configure logging
 logging.basicConfig(
@@ -163,7 +164,11 @@ async def startup_event():
 # Health check
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "providers": get_research_provider_status(),
+    }
 
 
 # ============================================================================

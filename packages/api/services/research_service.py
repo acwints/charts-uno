@@ -240,7 +240,35 @@ def _is_safe_bigquery_sql(sql: str) -> bool:
     return sql_l.strip().startswith("select")
 
 
+def _default_bigquery_sql(prompt: str) -> Optional[str]:
+    """Fallback deterministic SQL when LLM SQL generation is unavailable."""
+    lower = prompt.lower()
+
+    # IMDb-focused fallback with known-good column names.
+    if any(term in lower for term in ["imdb", "movie", "film", "rating", "genre"]):
+        return """
+SELECT
+  CAST(t.start_year AS STRING) AS year,
+  COUNT(1) AS title_count,
+  AVG(r.average_rating) AS average_rating
+FROM `bigquery-public-data.imdb.title_basics` AS t
+JOIN `bigquery-public-data.imdb.title_ratings` AS r
+  ON t.tconst = r.tconst
+WHERE t.start_year IS NOT NULL
+  AND t.start_year >= 1980
+GROUP BY year
+ORDER BY year
+LIMIT 50
+""".strip()
+
+    return None
+
+
 async def _generate_bigquery_sql(prompt: str) -> Optional[str]:
+    # If AI key is unavailable, use deterministic fallback when possible.
+    if not GOOGLE_API_KEY:
+        return _default_bigquery_sql(prompt)
+
     client = _get_client()
     schema_prompt = f"""Write ONE BigQuery SQL query for a chart from this prompt:
 "{prompt}"
@@ -251,6 +279,8 @@ Constraints:
   - `bigquery-public-data.imdb.title_basics`
   - `bigquery-public-data.imdb.title_ratings`
   - `bigquery-public-data.imdb.name_basics`
+  - NOTE: valid title_basics columns include: `primary_title`, `start_year`, `genres`, `title_type`, `runtime_minutes`, `is_adult`.
+  - NOTE: valid title_ratings columns include: `tconst`, `average_rating`, `num_votes`.
 - Use SELECT only (no DDL/DML), no semicolons.
 - Return at most 50 rows.
 - Output exactly two to four columns where:
@@ -259,9 +289,26 @@ Constraints:
 
 Return ONLY SQL, no markdown.
 """
-    resp = client.models.generate_content(model=_MODEL_NAME, contents=schema_prompt)
-    sql = (resp.text or "").replace("```sql", "").replace("```", "").strip()
-    return sql or None
+    try:
+        resp = client.models.generate_content(model=_MODEL_NAME, contents=schema_prompt)
+        sql = (resp.text or "").replace("```sql", "").replace("```", "").strip()
+        return sql or _default_bigquery_sql(prompt)
+    except Exception:
+        return _default_bigquery_sql(prompt)
+
+
+def get_research_provider_status() -> Dict[str, Any]:
+    """Return provider readiness information for health/debug endpoints."""
+    return {
+        "googleApiConfigured": bool(GOOGLE_API_KEY),
+        "fredConfigured": bool(FRED_API_KEY),
+        "bigquery": {
+            "enabled": ENABLE_BIGQUERY_PUBLIC_DATA,
+            "projectConfigured": bool(BIGQUERY_PROJECT_ID),
+            "credentialsConfigured": bool(BIGQUERY_CREDENTIALS_FILE),
+            "credentialsFileExists": bool(BIGQUERY_CREDENTIALS_FILE and Path(BIGQUERY_CREDENTIALS_FILE).exists()),
+        },
+    }
 
 
 async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
@@ -322,7 +369,7 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         return None
 
     labels: List[str] = []
-    series_data: Dict[str, List[float]] = {col: [] for col in numeric_cols[:3]}
+    series_data: Dict[str, List[Optional[float]]] = {col: [] for col in numeric_cols[:3]}
     for row in row_dicts[:40]:
         label_val = row.get(label_col)
         if label_val is None:
@@ -333,7 +380,7 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
             try:
                 series_data[col].append(float(val))
             except (TypeError, ValueError):
-                series_data[col].append(0.0)
+                series_data[col].append(None)
 
     if len(labels) < 3:
         return None
@@ -341,7 +388,10 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     # Keep aligned rows only.
     min_len = min([len(labels)] + [len(v) for v in series_data.values()])
     labels = labels[:min_len]
-    series = [{"name": name, "data": [round(v, 3) for v in vals[:min_len]]} for name, vals in series_data.items()]
+    series = [{
+        "name": name,
+        "data": [round(v, 3) if isinstance(v, (int, float)) else None for v in vals[:min_len]],
+    } for name, vals in series_data.items()]
 
     source_link = "https://console.cloud.google.com/marketplace/product/bigquery-public-data"
     return {
