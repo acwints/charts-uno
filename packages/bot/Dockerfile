@@ -1,9 +1,6 @@
 # Build stage
 FROM node:22-slim AS builder
 
-# Cache bust - forces fresh build layers
-ARG CACHEBUST=1
-
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -21,9 +18,9 @@ RUN pnpm install --frozen-lockfile || pnpm install
 COPY packages/shared/ ./packages/shared/
 COPY packages/bot/ ./packages/bot/
 
-# Build shared package first, then bot
-RUN pnpm --filter @chartsuno/shared build
-RUN pnpm --filter @chartsuno/bot build
+# Build shared then bot (chartsuno v2)
+RUN echo "Building @chartsuno/shared..." && pnpm --filter @chartsuno/shared build
+RUN echo "Building @chartsuno/bot..." && pnpm --filter @chartsuno/bot build
 
 # Production stage
 FROM node:22-slim
