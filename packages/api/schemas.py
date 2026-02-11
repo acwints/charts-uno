@@ -188,6 +188,25 @@ class StockInsightsRequest(BaseModel):
     title: str
 
 
+class PublicDatasetOption(BaseModel):
+    id: str
+    name: str
+    description: str
+    tables: List[str]
+    examplePrompts: List[str] = []
+
+
+class PublicDatasetsResponse(BaseModel):
+    datasets: List[PublicDatasetOption]
+
+
+class PublicDatasetGenerateRequest(BaseModel):
+    dataset_id: str
+    prompt: str
+    top_n: int = 20
+    chart_type_hint: Optional[str] = None
+
+
 class ChatMessageHistory(BaseModel):
     role: str  # 'user' or 'assistant'
     content: str

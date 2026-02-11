@@ -13,7 +13,7 @@ export type BarLayout = 'vertical' | 'horizontal';
 export interface ChartData {
   labels: string[];
   series: DataSeries[];
-  sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks';
+  sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets';
   verifiedData?: boolean;
   suggestedTitle?: string;
   suggestedType?: ChartType;

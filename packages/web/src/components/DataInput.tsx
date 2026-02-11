@@ -8,6 +8,7 @@ import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Database from 'lucide-react/dist/esm/icons/database';
 import Search from 'lucide-react/dist/esm/icons/search';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Check from 'lucide-react/dist/esm/icons/check';
@@ -19,11 +20,12 @@ import type { ChartData } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
 import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
+import { getPublicDatasets, generateChartFromPublicDataset, type PublicDatasetOption } from '../services/publicDatasets';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './DataInput.css';
 
-type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks';
+type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets';
 
 const STOCK_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD'] as const;
 
@@ -39,6 +41,7 @@ const INPUT_MODES = [
   { id: 'sheets' as const, icon: Link2, label: 'Google Sheets' },
   { id: 'prompt' as const, icon: Sparkles, label: 'Describe' },
   { id: 'stocks' as const, icon: TrendingUp, label: 'Stocks' },
+  { id: 'datasets' as const, icon: Database, label: 'Public Datasets' },
 ];
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
@@ -62,6 +65,13 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [ticker2Results, setTicker2Results] = useState<TickerResult[]>([]);
   const [selectedTicker2, setSelectedTicker2] = useState<string | null>(null);
   const [showTicker2Dropdown, setShowTicker2Dropdown] = useState(false);
+  const [publicDatasets, setPublicDatasets] = useState<PublicDatasetOption[]>([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState('');
+  const [datasetPrompt, setDatasetPrompt] = useState('');
+  const [datasetTopN, setDatasetTopN] = useState(20);
+  const [datasetChartTypeHint, setDatasetChartTypeHint] = useState<'auto' | 'line' | 'bar' | 'area' | 'table'>('auto');
+  const [isLoadingDatasets, setIsLoadingDatasets] = useState(false);
+  const [isGeneratingDatasetChart, setIsGeneratingDatasetChart] = useState(false);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -375,6 +385,53 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       setIsGeneratingPrompt(false);
     }
   }, [promptText, onSubmit]);
+
+  useEffect(() => {
+    if (mode !== 'datasets' || publicDatasets.length > 0 || isLoadingDatasets) return;
+    setIsLoadingDatasets(true);
+    getPublicDatasets()
+      .then((datasets) => {
+        setPublicDatasets(datasets);
+        if (datasets.length > 0) {
+          setSelectedDatasetId(datasets[0].id);
+          if (!datasetPrompt.trim() && datasets[0].examplePrompts?.[0]) {
+            setDatasetPrompt(datasets[0].examplePrompts[0]);
+          }
+        }
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load public datasets');
+      })
+      .finally(() => setIsLoadingDatasets(false));
+  }, [mode, publicDatasets.length, isLoadingDatasets, datasetPrompt]);
+
+  const selectedDataset = publicDatasets.find((d) => d.id === selectedDatasetId) || null;
+
+  const handlePublicDatasetSubmit = useCallback(async () => {
+    setError(null);
+    if (!selectedDatasetId) {
+      setError('Please choose a dataset.');
+      return;
+    }
+    if (!datasetPrompt.trim()) {
+      setError('Please describe what you want to chart from this dataset.');
+      return;
+    }
+    setIsGeneratingDatasetChart(true);
+    try {
+      const data = await generateChartFromPublicDataset({
+        datasetId: selectedDatasetId,
+        prompt: datasetPrompt.trim(),
+        topN: datasetTopN,
+        chartTypeHint: datasetChartTypeHint,
+      });
+      onSubmit(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate chart from dataset');
+    } finally {
+      setIsGeneratingDatasetChart(false);
+    }
+  }, [selectedDatasetId, datasetPrompt, datasetTopN, datasetChartTypeHint, onSubmit]);
 
   return (
     <div className="data-input">
@@ -710,10 +767,112 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               )}
             </div>
           )}
+
+          {mode === 'datasets' && (
+            <div className="datasets-input">
+              <div className="datasets-input-top">
+                <div className="datasets-select-wrapper">
+                  <Database size={18} className="datasets-select-icon" />
+                  <select
+                    className="datasets-select"
+                    value={selectedDatasetId}
+                    onChange={(e) => {
+                      const nextId = e.target.value;
+                      setSelectedDatasetId(nextId);
+                      const next = publicDatasets.find((d) => d.id === nextId);
+                      if (next && !datasetPrompt.trim() && next.examplePrompts?.[0]) {
+                        setDatasetPrompt(next.examplePrompts[0]);
+                      }
+                    }}
+                    disabled={isLoadingDatasets || publicDatasets.length === 0}
+                    aria-label="Select a public dataset"
+                  >
+                    {publicDatasets.map((dataset) => (
+                      <option key={dataset.id} value={dataset.id}>
+                        {dataset.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedDataset && (
+                  <div className="datasets-meta">
+                    <p className="datasets-description">{selectedDataset.description}</p>
+                    {selectedDataset.examplePrompts.length > 0 && (
+                      <div className="datasets-examples">
+                        {selectedDataset.examplePrompts.slice(0, 3).map((example) => (
+                          <button
+                            key={example}
+                            className="datasets-example-chip"
+                            type="button"
+                            onClick={() => setDatasetPrompt(example)}
+                          >
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <textarea
+                  className="datasets-prompt-textarea"
+                  placeholder="Describe what to chart from the selected dataset (e.g., 'average rating by year since 2000')"
+                  value={datasetPrompt}
+                  onChange={(e) => setDatasetPrompt(e.target.value)}
+                  spellCheck={false}
+                />
+                <div className="datasets-controls-row">
+                  <label className="datasets-control">
+                    <span className="datasets-control-label">Rows</span>
+                    <input
+                      type="number"
+                      min={5}
+                      max={50}
+                      step={1}
+                      value={datasetTopN}
+                      onChange={(e) => setDatasetTopN(Math.max(5, Math.min(50, Number(e.target.value) || 20)))}
+                      className="datasets-number-input"
+                    />
+                  </label>
+                  <label className="datasets-control">
+                    <span className="datasets-control-label">Chart type</span>
+                    <select
+                      className="datasets-type-select"
+                      value={datasetChartTypeHint}
+                      onChange={(e) => setDatasetChartTypeHint(e.target.value as 'auto' | 'line' | 'bar' | 'area' | 'table')}
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="line">Line</option>
+                      <option value="bar">Bar</option>
+                      <option value="area">Area</option>
+                      <option value="table">Table</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              {(isProcessing || isGeneratingDatasetChart || isLoadingDatasets) ? (
+                <AIProcessingIndicator
+                  size="sm"
+                  label={isLoadingDatasets ? 'Loading datasets...' : 'Querying public dataset...'}
+                  statusMessages={['Building SQL query...', 'Running BigQuery...', 'Formatting chart data...', 'Almost ready...']}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handlePublicDatasetSubmit}
+                  disabled={!selectedDatasetId || !datasetPrompt.trim()}
+                >
+                  <Database size={18} />
+                  <span>Generate from Dataset</span>
+                  <ArrowRight size={18} />
+                </Button>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
-      {mode !== 'prompt' && mode !== 'stocks' && (
+      {mode !== 'prompt' && mode !== 'stocks' && mode !== 'datasets' && (
       <div className="prompt-input-wrapper">
         <MessageSquare size={18} className="prompt-icon" />
         <input

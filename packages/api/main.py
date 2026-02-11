@@ -47,6 +47,8 @@ from schemas import (
     StockPriceRequest,
     StockSearchRequest,
     StockInsightsRequest,
+    PublicDatasetsResponse,
+    PublicDatasetGenerateRequest,
     ChatRequest,
     ChatResponse,
     ChartRecommendRequest,
@@ -80,6 +82,7 @@ from services.ai_service import analyze_image, chat_with_chart, recommend_chart_
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 from services.research_service import get_research_provider_status, probe_research_providers
+from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset
 
 # Configure logging
 logging.basicConfig(
@@ -1055,6 +1058,47 @@ async def stock_insights_endpoint(
     except Exception as e:
         logger.error(f"Stock insights generation failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate insights")
+
+
+# ============================================================================
+# Public Dataset Endpoints (BigQuery)
+# ============================================================================
+
+@app.get("/api/datasets/public", response_model=PublicDatasetsResponse)
+@limiter.limit("30/minute")
+async def public_datasets_endpoint(request: Request):
+    return PublicDatasetsResponse(datasets=get_public_datasets())
+
+
+@app.post("/api/datasets/public/generate", response_model=ImageAnalysisResponse)
+@limiter.limit("15/minute")
+async def public_dataset_generate_endpoint(
+    request: Request,
+    data: PublicDatasetGenerateRequest,
+):
+    try:
+        result = await generate_chart_from_public_dataset(
+            dataset_id=data.dataset_id,
+            prompt=data.prompt,
+            top_n=data.top_n,
+            chart_type_hint=data.chart_type_hint,
+        )
+        return ImageAnalysisResponse(
+            labels=result["labels"],
+            series=result["series"],
+            verifiedData=result.get("verifiedData"),
+            suggestedTitle=result.get("suggestedTitle"),
+            suggestedType=result.get("suggestedType"),
+            xAxisLabel=result.get("xAxisLabel"),
+            yAxisLabel=result.get("yAxisLabel"),
+            aiReasoning=result.get("aiReasoning"),
+            sourceLink=result.get("sourceLink"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Public dataset chart generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate chart from dataset")
 
 
 # ============================================================================
