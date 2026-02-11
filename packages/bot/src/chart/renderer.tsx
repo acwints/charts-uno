@@ -100,20 +100,20 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
   const chartData = data.labels.map((label, idx) => {
     const point: Record<string, string | number> = { name: label };
     data.series.forEach((series) => {
-      point[series.name] = series.data[idx];
+      point[series.name] = series.data[idx] ?? 0;
     });
     return point;
   });
 
   const pieData = data.series[0]?.data.map((value, idx) => ({
     name: data.labels[idx],
-    value,
+    value: value ?? 0,
   })) || [];
 
   const radarData = data.labels.map((label, idx) => {
     const point: Record<string, string | number> = { subject: label };
     data.series.forEach((series) => {
-      point[series.name] = series.data[idx];
+      point[series.name] = series.data[idx] ?? 0;
     });
     return point;
   });
@@ -394,10 +394,14 @@ export function getDefaultConfig(data: ChartData): ChartConfig {
     type: chartType,
     colorScheme: 'default',
     styleVariant: 'professional',
+    themeMode: 'dark',
     showGrid: true,
     showLegend: data.series.length > 1,
     showValues: false,
+    showPoints: true,
+    showBorder: false,
     animate: false, // No animations for server-side rendering
     title: data.suggestedTitle || '',
+    stacked: false,
   };
 }
