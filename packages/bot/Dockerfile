@@ -1,6 +1,9 @@
 # Build stage
 FROM node:22-slim AS builder
 
+# Cache bust - forces fresh build layers
+ARG CACHEBUST=1
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
