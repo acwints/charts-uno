@@ -170,6 +170,10 @@
   --control-font-xs: 0.65rem;
   --control-font-sm: 0.75rem;
   --control-font-md: 0.85rem;
+
+  /* Sidebar sizing */
+  --sidebar-width: 216px;
+  --sidebar-width-mobile: 256px;
 }
 
 [data-theme="light"] {

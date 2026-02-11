@@ -5,7 +5,7 @@
 }
 
 .settings-page__sidebar {
-  width: 208px;
+  width: var(--sidebar-width);
   padding: 20px 16px;
   background: var(--bg-secondary);
   border-right: var(--border-default);

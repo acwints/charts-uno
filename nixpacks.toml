@@ -8,7 +8,7 @@ cmds = ["npm install -g pnpm && export PATH=\"$(npm prefix -g)/bin:$PATH\" && pn
 cmds = ["npm install -g pnpm && export PATH=\"$(npm prefix -g)/bin:$PATH\" && pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/bot build"]
 
 [start]
-cmd = "mkdir -p /data && test -f /data/bot-state.json || cp packages/bot/bot-state.json /data/bot-state.json; node packages/bot/dist/index.js"
+cmd = "ls -la packages/bot/dist/ 2>&1; echo NODE=$(which node); node --version; mkdir -p /data && test -f /data/bot-state.json || cp packages/bot/bot-state.json /data/bot-state.json; node packages/bot/dist/index.js"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
