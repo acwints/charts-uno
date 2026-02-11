@@ -8,10 +8,11 @@ import { createServer, type Server } from 'node:http';
 let isRunning = false;
 let pollTimeout: NodeJS.Timeout | null = null;
 let healthServer: Server | null = null;
+let startRetryTimeout: NodeJS.Timeout | null = null;
+const START_RETRY_MS = 30_000;
 
 function startHealthServer(): void {
-  const port = process.env.PORT;
-  if (!port) return;
+  const port = Number(process.env.PORT || '8080');
 
   healthServer = createServer((req, res) => {
     if (req.url === '/health' || req.url === '/') {
@@ -24,8 +25,8 @@ function startHealthServer(): void {
     res.end(JSON.stringify({ ok: false, error: 'Not Found' }));
   });
 
-  healthServer.listen(Number(port), '0.0.0.0', () => {
-    logger.info({ port: Number(port) }, 'Health server listening');
+  healthServer.listen(port, '0.0.0.0', () => {
+    logger.info({ port }, 'Health server listening');
   });
 
   healthServer.on('error', (error) => {
@@ -67,31 +68,36 @@ async function poll(): Promise<void> {
 async function start(): Promise<void> {
   logger.info('Starting Chartsuno Bot...');
   startHealthServer();
-
-  try {
-    validateConfig();
-  } catch (error) {
-    logger.error({ error }, 'Configuration validation failed');
-    process.exit(1);
-  }
-
-  await initializeClient();
-
-  logger.info(
-    {
-      botUserId: config.bot.userId,
-      pollInterval: config.bot.pollIntervalMs,
-      allowedUsers: config.bot.allowedUserIds.length || 'all',
-    },
-    'Bot configured'
-  );
-
   isRunning = true;
 
-  // Start polling
-  await poll();
+  const attemptStart = async (): Promise<void> => {
+    if (!isRunning) return;
 
-  logger.info('Bot is now running and polling for mentions');
+    try {
+      validateConfig();
+      await initializeClient();
+
+      logger.info(
+        {
+          botUserId: config.bot.userId,
+          pollInterval: config.bot.pollIntervalMs,
+          allowedUsers: config.bot.allowedUserIds.length || 'all',
+        },
+        'Bot configured'
+      );
+
+      // Start polling
+      await poll();
+      logger.info('Bot is now running and polling for mentions');
+    } catch (error) {
+      logger.error({ error, retryInMs: START_RETRY_MS }, 'Bot initialization failed; retrying');
+      startRetryTimeout = setTimeout(() => {
+        void attemptStart();
+      }, START_RETRY_MS);
+    }
+  };
+
+  await attemptStart();
 }
 
 async function shutdown(): Promise<void> {
@@ -101,6 +107,10 @@ async function shutdown(): Promise<void> {
   if (pollTimeout) {
     clearTimeout(pollTimeout);
     pollTimeout = null;
+  }
+  if (startRetryTimeout) {
+    clearTimeout(startRetryTimeout);
+    startRetryTimeout = null;
   }
 
   await closeBrowser();
@@ -134,5 +144,4 @@ process.on('unhandledRejection', (reason) => {
 // Start the bot
 start().catch((error) => {
   logger.error(error, 'Failed to start bot');
-  process.exit(1);
 });
