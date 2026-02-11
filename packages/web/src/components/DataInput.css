@@ -81,7 +81,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  padding: var(--space-10);
+  padding: var(--space-16);
   border: 1px dashed var(--text-muted);
   border-radius: var(--radius-md);
   cursor: pointer;
