@@ -70,10 +70,15 @@ RUN pnpm install --prod --frozen-lockfile || pnpm install --prod
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/bot/dist ./packages/bot/dist
 
+# Create persistent data directory
+RUN mkdir -p /data
+
 # Create non-root user for security
 RUN groupadd -r botuser && useradd -r -g botuser botuser
-RUN chown -R botuser:botuser /app
+RUN chown -R botuser:botuser /app /data
 USER botuser
+
+VOLUME ["/data"]
 
 # Start the bot
 CMD ["node", "packages/bot/dist/index.js"]

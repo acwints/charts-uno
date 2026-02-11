@@ -1,4 +1,5 @@
 import { config, validateConfig, logger } from './config.js';
+import { initializeClient, ensureFreshClient } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
 import { closeBrowser } from './chart/renderer.js';
@@ -10,6 +11,8 @@ async function poll(): Promise<void> {
   if (!isRunning) return;
 
   try {
+    await ensureFreshClient();
+
     logger.debug('Polling for mentions...');
     const mentions = await pollMentions();
 
@@ -43,6 +46,8 @@ async function start(): Promise<void> {
     logger.error({ error }, 'Configuration validation failed');
     process.exit(1);
   }
+
+  await initializeClient();
 
   logger.info(
     {

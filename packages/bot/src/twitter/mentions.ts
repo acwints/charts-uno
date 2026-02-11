@@ -1,5 +1,6 @@
 import { getReadOnlyClient } from './client.js';
 import { config, logger } from '../config.js';
+import { loadState, updateState } from '../storage.js';
 
 export interface MentionData {
   mentionId: string;
@@ -8,8 +9,6 @@ export interface MentionData {
   parentTweetId: string | null;
 }
 
-let lastSinceId: string | undefined;
-
 const TRIGGER_PHRASE = 'make it epic';
 
 export async function pollMentions(): Promise<MentionData[]> {
@@ -17,14 +16,16 @@ export async function pollMentions(): Promise<MentionData[]> {
   const mentions: MentionData[] = [];
 
   try {
+    const state = await loadState();
+
     const params: Parameters<typeof client.v2.userMentionTimeline>[1] = {
       max_results: 10,
       'tweet.fields': ['referenced_tweets', 'author_id'],
       expansions: ['referenced_tweets.id'],
     };
 
-    if (lastSinceId) {
-      params.since_id = lastSinceId;
+    if (state.lastSinceId) {
+      params.since_id = state.lastSinceId;
     }
 
     const response = await client.v2.userMentionTimeline(config.bot.userId, params);
@@ -36,7 +37,7 @@ export async function pollMentions(): Promise<MentionData[]> {
 
     // Update since_id for next poll
     if (response.data.meta?.newest_id) {
-      lastSinceId = response.data.meta.newest_id;
+      await updateState({ lastSinceId: response.data.meta.newest_id });
     }
 
     for (const tweet of response.data.data) {
@@ -78,9 +79,4 @@ export async function pollMentions(): Promise<MentionData[]> {
   }
 
   return mentions;
-}
-
-export function setSinceId(id: string): void {
-  lastSinceId = id;
-  logger.info({ sinceId: id }, 'Set since_id for polling');
 }

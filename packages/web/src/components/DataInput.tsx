@@ -42,7 +42,7 @@ const INPUT_MODES = [
 ];
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
-  const [mode, setMode] = useState<InputMode>('paste');
+  const [mode, setMode] = useState<InputMode>('image');
   const [pasteContent, setPasteContent] = useState('');
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');

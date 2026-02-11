@@ -9,20 +9,46 @@ import {
 import { analyzeImageFromBuffer, analyzeImageFromUrl } from '../chart/analyzer.js';
 import { renderChartToPng, getDefaultConfig } from '../chart/renderer.js';
 import { addWatermark } from '../chart/watermark.js';
+import { loadState, updateState } from '../storage.js';
 import type { MentionData } from '../twitter/mentions.js';
 
-const processedMentions = new Set<string>();
+const MAX_PROCESSED_MENTIONS = 1000;
+
+let processedMentions: Set<string> | null = null;
+
+async function getProcessedMentions(): Promise<Set<string>> {
+  if (!processedMentions) {
+    const state = await loadState();
+    processedMentions = new Set(state.processedMentions);
+  }
+  return processedMentions;
+}
+
+async function markProcessed(mentionId: string): Promise<void> {
+  const set = await getProcessedMentions();
+  set.add(mentionId);
+
+  // Cap at MAX_PROCESSED_MENTIONS to prevent unbounded growth
+  const entries = [...set];
+  if (entries.length > MAX_PROCESSED_MENTIONS) {
+    const trimmed = entries.slice(entries.length - MAX_PROCESSED_MENTIONS);
+    processedMentions = new Set(trimmed);
+  }
+
+  await updateState({ processedMentions: [...(processedMentions || set)] });
+}
 
 export async function processMention(mention: MentionData): Promise<void> {
   const { mentionId, parentTweetId } = mention;
 
   // Skip if already processed
-  if (processedMentions.has(mentionId)) {
+  const processed = await getProcessedMentions();
+  if (processed.has(mentionId)) {
     logger.debug({ mentionId }, 'Skipping already processed mention');
     return;
   }
 
-  processedMentions.add(mentionId);
+  await markProcessed(mentionId);
 
   logger.info({ mentionId, parentTweetId }, 'Processing mention');
 
@@ -42,7 +68,7 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     logger.info({ imageUrl: parentTweet.imageUrl }, 'Found image in parent tweet');
 
-    // Step 2: Analyze the image with GPT-4o Vision
+    // Step 2: Analyze the image with Gemini Vision
     let chartData;
     try {
       // Try analyzing directly from URL first
@@ -97,6 +123,6 @@ export async function processMention(mention: MentionData): Promise<void> {
 }
 
 export function clearProcessedMentions(): void {
-  processedMentions.clear();
+  processedMentions = null;
   logger.info('Cleared processed mentions cache');
 }

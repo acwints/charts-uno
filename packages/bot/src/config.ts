@@ -3,10 +3,8 @@ import { pino } from 'pino';
 // Environment variables
 export const config = {
   twitter: {
-    apiKey: process.env.TWITTER_API_KEY || '',
-    apiSecret: process.env.TWITTER_API_SECRET || '',
-    accessToken: process.env.TWITTER_ACCESS_TOKEN || '',
-    accessSecret: process.env.TWITTER_ACCESS_SECRET || '',
+    clientId: process.env.TWITTER_CLIENT_ID || '',
+    clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
   },
   bot: {
     userId: process.env.BOT_USER_ID || '',
@@ -16,14 +14,15 @@ export const config = {
   google: {
     apiKey: process.env.GOOGLE_API_KEY || '',
   },
+  storage: {
+    statePath: process.env.BOT_STATE_PATH || '/data/bot-state.json',
+  },
 };
 
 export function validateConfig(): void {
   const required = [
-    ['TWITTER_API_KEY', config.twitter.apiKey],
-    ['TWITTER_API_SECRET', config.twitter.apiSecret],
-    ['TWITTER_ACCESS_TOKEN', config.twitter.accessToken],
-    ['TWITTER_ACCESS_SECRET', config.twitter.accessSecret],
+    ['TWITTER_CLIENT_ID', config.twitter.clientId],
+    ['TWITTER_CLIENT_SECRET', config.twitter.clientSecret],
     ['BOT_USER_ID', config.bot.userId],
     ['GOOGLE_API_KEY', config.google.apiKey],
   ];

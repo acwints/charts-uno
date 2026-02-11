@@ -63,7 +63,7 @@ export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
   const client = getReadWriteClient();
 
   try {
-    // Upload using v1.1 API (required for media upload)
+    // v1.1 media upload works with OAuth 2.0 user-context tokens
     const mediaId = await client.v1.uploadMedia(imageBuffer, {
       mimeType: 'image/png',
     });
