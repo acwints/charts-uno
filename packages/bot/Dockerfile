@@ -78,7 +78,5 @@ RUN groupadd -r botuser && useradd -r -g botuser botuser
 RUN chown -R botuser:botuser /app /data
 USER botuser
 
-VOLUME ["/data"]
-
 # Start the bot
 CMD ["node", "packages/bot/dist/index.js"]
