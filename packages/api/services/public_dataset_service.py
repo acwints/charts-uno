@@ -1,7 +1,7 @@
 import os
 import re
-from pathlib import Path
 from typing import Any, Dict, List, Optional
+from services.bigquery_auth import has_bigquery_credentials, load_bigquery_service_account_credentials
 
 try:
     from google import genai  # type: ignore
@@ -11,7 +11,6 @@ except Exception:  # pragma: no cover - optional at runtime
 
 ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").lower() in {"1", "true", "yes", "on"}
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
-BIGQUERY_CREDENTIALS_FILE = os.environ.get("BIGQUERY_CREDENTIALS_FILE") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 MODEL_NAME = "gemini-2.5-flash"
 
@@ -112,8 +111,7 @@ def _is_bigquery_ready() -> bool:
     return (
         ENABLE_BIGQUERY_PUBLIC_DATA
         and bool(BIGQUERY_PROJECT_ID)
-        and bool(BIGQUERY_CREDENTIALS_FILE)
-        and Path(BIGQUERY_CREDENTIALS_FILE).exists()
+        and has_bigquery_credentials()
     )
 
 
@@ -175,12 +173,8 @@ Return ONLY SQL, no markdown.
 
 def _get_bigquery_client():
     from google.cloud import bigquery  # type: ignore
-    from google.oauth2 import service_account  # type: ignore
 
-    credentials = service_account.Credentials.from_service_account_file(
-        BIGQUERY_CREDENTIALS_FILE,
-        scopes=["https://www.googleapis.com/auth/bigquery"],
-    )
+    credentials = load_bigquery_service_account_credentials()
     return bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials), bigquery
 
 

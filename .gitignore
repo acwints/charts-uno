@@ -38,3 +38,7 @@ dist-ssr
 # Python
 __pycache__
 *.pyc
+
+# Local temp/state artifacts
+tmp/
+.tmp_*

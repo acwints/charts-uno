@@ -3,9 +3,36 @@ import { initializeClient, ensureFreshClient } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
 import { closeBrowser } from './chart/renderer.js';
+import { createServer, type Server } from 'node:http';
 
 let isRunning = false;
 let pollTimeout: NodeJS.Timeout | null = null;
+let healthServer: Server | null = null;
+
+function startHealthServer(): void {
+  const port = process.env.PORT;
+  if (!port) return;
+
+  healthServer = createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, service: 'chartsuno-bot' }));
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'Not Found' }));
+  });
+
+  healthServer.listen(Number(port), '0.0.0.0', () => {
+    logger.info({ port: Number(port) }, 'Health server listening');
+  });
+
+  healthServer.on('error', (error) => {
+    logger.error({ error }, 'Health server failed');
+    process.exit(1);
+  });
+}
 
 async function poll(): Promise<void> {
   if (!isRunning) return;
@@ -39,6 +66,7 @@ async function poll(): Promise<void> {
 
 async function start(): Promise<void> {
   logger.info('Starting Chartsuno Bot...');
+  startHealthServer();
 
   try {
     validateConfig();
@@ -76,6 +104,14 @@ async function shutdown(): Promise<void> {
   }
 
   await closeBrowser();
+  await new Promise<void>((resolve) => {
+    if (!healthServer) {
+      resolve();
+      return;
+    }
+
+    healthServer.close(() => resolve());
+  });
   logger.info('Shutdown complete');
   process.exit(0);
 }
@@ -97,6 +133,6 @@ process.on('unhandledRejection', (reason) => {
 
 // Start the bot
 start().catch((error) => {
-  logger.error({ error }, 'Failed to start bot');
+  logger.error(error, 'Failed to start bot');
   process.exit(1);
 });

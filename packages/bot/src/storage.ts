@@ -23,12 +23,45 @@ function getStatePath(): string {
   return resolve(config.storage.statePath);
 }
 
+function getSeedStatePath(): string {
+  return resolve(process.env.BOT_STATE_SEED_PATH || 'packages/bot/bot-state.json');
+}
+
+async function loadSeedState(): Promise<BotState | null> {
+  try {
+    const data = await readFile(getSeedStatePath(), 'utf-8');
+    const parsed = JSON.parse(data) as Partial<BotState>;
+    const seeded = { ...DEFAULT_STATE, ...parsed };
+    if (!seeded.oauth2) return null;
+    return seeded;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadState(): Promise<BotState> {
   try {
     const data = await readFile(getStatePath(), 'utf-8');
-    return { ...DEFAULT_STATE, ...JSON.parse(data) };
+    const state = { ...DEFAULT_STATE, ...JSON.parse(data) };
+    if (state.oauth2) return state;
+
+    const seed = await loadSeedState();
+    if (seed?.oauth2) {
+      logger.warn('State file missing OAuth2 tokens, using seed state from repository file');
+      await saveState(seed);
+      return seed;
+    }
+
+    return state;
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      const seed = await loadSeedState();
+      if (seed?.oauth2) {
+        logger.info('No existing state file found, initializing from seed state');
+        await saveState(seed);
+        return seed;
+      }
+
       logger.info('No existing state file found, using defaults');
       return { ...DEFAULT_STATE };
     }

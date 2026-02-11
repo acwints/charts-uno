@@ -4,11 +4,15 @@ import os
 import re
 import time
 from collections import defaultdict
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
 from google import genai
+from services.bigquery_auth import (
+    get_bigquery_credentials_status,
+    has_bigquery_credentials,
+    load_bigquery_service_account_credentials,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +21,6 @@ FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 FRED_BASE_URL = "https://api.stlouisfed.org/fred"
 ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").lower() in {"1", "true", "yes", "on"}
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
-BIGQUERY_CREDENTIALS_FILE = os.environ.get("BIGQUERY_CREDENTIALS_FILE") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
 
 _client: Optional[genai.Client] = None
 _MODEL_NAME = "gemini-2.5-flash"
@@ -300,14 +303,14 @@ Return ONLY SQL, no markdown.
 
 def get_research_provider_status() -> Dict[str, Any]:
     """Return provider readiness information for health/debug endpoints."""
+    cred_status = get_bigquery_credentials_status()
     return {
         "googleApiConfigured": bool(GOOGLE_API_KEY),
         "fredConfigured": bool(FRED_API_KEY),
         "bigquery": {
             "enabled": ENABLE_BIGQUERY_PUBLIC_DATA,
             "projectConfigured": bool(BIGQUERY_PROJECT_ID),
-            "credentialsConfigured": bool(BIGQUERY_CREDENTIALS_FILE),
-            "credentialsFileExists": bool(BIGQUERY_CREDENTIALS_FILE and Path(BIGQUERY_CREDENTIALS_FILE).exists()),
+            **cred_status,
         },
     }
 
@@ -338,7 +341,6 @@ async def probe_research_providers() -> Dict[str, Any]:
 
     try:
         from google.cloud import bigquery  # type: ignore
-        from google.oauth2 import service_account  # type: ignore
     except Exception as e:
         result["probes"]["bigquery"] = {
             "ok": False,
@@ -350,10 +352,7 @@ async def probe_research_providers() -> Dict[str, Any]:
 
     started = time.monotonic()
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            BIGQUERY_CREDENTIALS_FILE,
-            scopes=["https://www.googleapis.com/auth/bigquery"],
-        )
+        credentials = load_bigquery_service_account_credentials()
         client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
         rows = list(client.query("SELECT 1 AS ok").result(max_results=1))
         elapsed_ms = int((time.monotonic() - started) * 1000)
@@ -383,16 +382,12 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     if not BIGQUERY_PROJECT_ID:
         logger.info("BigQuery provider skipped: BIGQUERY_PROJECT_ID not configured")
         return None
-    if not BIGQUERY_CREDENTIALS_FILE:
-        logger.info("BigQuery provider skipped: BIGQUERY_CREDENTIALS_FILE/GOOGLE_APPLICATION_CREDENTIALS not configured")
-        return None
-    if not Path(BIGQUERY_CREDENTIALS_FILE).exists():
-        logger.info("BigQuery provider skipped: credentials file not found")
+    if not has_bigquery_credentials():
+        logger.info("BigQuery provider skipped: no valid service account credentials configured")
         return None
 
     try:
         from google.cloud import bigquery  # type: ignore
-        from google.oauth2 import service_account  # type: ignore
     except Exception:
         logger.info("BigQuery provider skipped: google-cloud-bigquery not installed")
         return None
@@ -402,10 +397,7 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            BIGQUERY_CREDENTIALS_FILE,
-            scopes=["https://www.googleapis.com/auth/bigquery"],
-        )
+        credentials = load_bigquery_service_account_credentials()
         client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
         rows = list(client.query(sql, job_config=job_config).result(max_results=50))

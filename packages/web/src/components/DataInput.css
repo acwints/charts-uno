@@ -727,7 +727,17 @@
 
 @media (max-width: 480px) {
   .drop-zone {
-    padding: var(--space-6);
+    min-height: 220px;
+    padding: var(--space-8) var(--space-5);
+  }
+
+  .drop-zone-text {
+    font-size: 0.9rem;
+  }
+
+  .drop-zone-hint {
+    font-size: 0.76rem;
+    text-align: center;
   }
 
   .stocks-range-bar {
