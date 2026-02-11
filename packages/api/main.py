@@ -79,7 +79,7 @@ from schemas import (
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
-from services.research_service import get_research_provider_status
+from services.research_service import get_research_provider_status, probe_research_providers
 
 # Configure logging
 logging.basicConfig(
@@ -168,6 +168,18 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "providers": get_research_provider_status(),
+    }
+
+
+@app.get("/health/providers")
+async def providers_health_check(
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user  # Ensures endpoint is protected for authenticated users.
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "details": await probe_research_providers(),
     }
 
 

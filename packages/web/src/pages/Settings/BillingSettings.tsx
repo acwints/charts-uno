@@ -127,87 +127,89 @@ export function BillingSettings() {
         </div>
       )}
 
-      {/* Current Plan Summary */}
-      <div className="settings-card">
-        <div className="settings-card__header">
-          <h3 className="settings-card__title">Current Plan</h3>
-          {isPaid && (
-            <Button
-              onClick={handleManageSubscription}
-              disabled={isLoadingPortal}
-            >
-              <ExternalLink size={14} className="settings-button__icon" />
-              {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
-            </Button>
-          )}
-        </div>
-        <div className="settings-card__content">
-          <div className="settings-plan-row">
-            <span className="settings-plan-name">{plan}</span>
-            {subscription?.status === 'canceled' && (
-              <span className="settings-plan-status">Canceling</span>
-            )}
-          </div>
-          {subscription?.current_period_end && (
-            <p className="settings-plan-renewal">
-              {subscription.status === 'canceled'
-                ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                : `Renews ${new Date(subscription.current_period_end).toLocaleDateString()}`}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Usage Stats */}
-      {usage && (
+      <div className="settings-billing-overview">
+        {/* Current Plan Summary */}
         <div className="settings-card">
           <div className="settings-card__header">
-            <h3 className="settings-card__title">
-              <TrendingUp size={18} className="settings-usage-title-icon" />
-              Usage This Month
-            </h3>
+            <h3 className="settings-card__title">Current Plan</h3>
+            {isPaid && (
+              <Button
+                onClick={handleManageSubscription}
+                disabled={isLoadingPortal}
+              >
+                <ExternalLink size={14} className="settings-button__icon" />
+                {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
+              </Button>
+            )}
           </div>
-          <div className="usage-stats">
-            <div className="usage-stat">
-              <div className="usage-stat__label">Charts Created</div>
-              <div className="usage-stat__value">
-                {usage.charts_created_this_month}
-              </div>
-              <div className="usage-stat__limit">
-                {usage.charts_limit === -1
-                  ? 'Unlimited'
-                  : `of ${usage.charts_limit} (${usage.charts_remaining} remaining)`}
-              </div>
-              {usage.charts_limit !== -1 && (
-                <div className="usage-bar">
-                  <div
-                    className={`usage-bar__fill ${getUsageBarClass(chartsUsagePercent)}`}
-                    style={{ width: `${chartsUsagePercent}%` }}
-                  />
-                </div>
+          <div className="settings-card__content">
+            <div className="settings-plan-row">
+              <span className="settings-plan-name">{plan}</span>
+              {subscription?.status === 'canceled' && (
+                <span className="settings-plan-status">Canceling</span>
               )}
             </div>
-
-            <div className="usage-stat">
-              <div className="usage-stat__label">Team Seats</div>
-              <div className="usage-stat__value">{usage.seats_used}</div>
-              <div className="usage-stat__limit">
-                {usage.seats_limit === -1
-                  ? 'Unlimited'
-                  : `of ${usage.seats_limit} (${usage.seats_remaining} available)`}
-              </div>
-              {usage.seats_limit !== -1 && (
-                <div className="usage-bar">
-                  <div
-                    className={`usage-bar__fill ${getUsageBarClass(seatsUsagePercent)}`}
-                    style={{ width: `${seatsUsagePercent}%` }}
-                  />
-                </div>
-              )}
-            </div>
+            {subscription?.current_period_end && (
+              <p className="settings-plan-renewal">
+                {subscription.status === 'canceled'
+                  ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  : `Renews ${new Date(subscription.current_period_end).toLocaleDateString()}`}
+              </p>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Usage Stats */}
+        {usage && (
+          <div className="settings-card">
+            <div className="settings-card__header">
+              <h3 className="settings-card__title">
+                <TrendingUp size={18} className="settings-usage-title-icon" />
+                Usage This Month
+              </h3>
+            </div>
+            <div className="usage-stats">
+              <div className="usage-stat">
+                <div className="usage-stat__label">Charts Created</div>
+                <div className="usage-stat__value">
+                  {usage.charts_created_this_month}
+                </div>
+                <div className="usage-stat__limit">
+                  {usage.charts_limit === -1
+                    ? 'Unlimited'
+                    : `of ${usage.charts_limit} (${usage.charts_remaining} remaining)`}
+                </div>
+                {usage.charts_limit !== -1 && (
+                  <div className="usage-bar">
+                    <div
+                      className={`usage-bar__fill ${getUsageBarClass(chartsUsagePercent)}`}
+                      style={{ width: `${chartsUsagePercent}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="usage-stat">
+                <div className="usage-stat__label">Team Seats</div>
+                <div className="usage-stat__value">{usage.seats_used}</div>
+                <div className="usage-stat__limit">
+                  {usage.seats_limit === -1
+                    ? 'Unlimited'
+                    : `of ${usage.seats_limit} (${usage.seats_remaining} available)`}
+                </div>
+                {usage.seats_limit !== -1 && (
+                  <div className="usage-bar">
+                    <div
+                      className={`usage-bar__fill ${getUsageBarClass(seatsUsagePercent)}`}
+                      style={{ width: `${seatsUsagePercent}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Plan Selection */}
       <div className="settings-plan-selection">

@@ -5,8 +5,8 @@
 }
 
 .settings-page__sidebar {
-  width: 240px;
-  padding: 24px;
+  width: 208px;
+  padding: 20px 16px;
   background: var(--bg-secondary);
   border-right: var(--border-default);
 }
@@ -177,6 +177,17 @@
 
 .settings-plan-selection {
   margin-top: 32px;
+}
+
+.settings-billing-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.settings-billing-overview .settings-card {
+  margin-bottom: 0;
 }
 
 .settings-plan-selection__title {
@@ -885,6 +896,10 @@
   }
 
   .usage-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-billing-overview {
     grid-template-columns: 1fr;
   }
 

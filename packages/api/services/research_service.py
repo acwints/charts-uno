@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -309,6 +310,70 @@ def get_research_provider_status() -> Dict[str, Any]:
             "credentialsFileExists": bool(BIGQUERY_CREDENTIALS_FILE and Path(BIGQUERY_CREDENTIALS_FILE).exists()),
         },
     }
+
+
+async def probe_research_providers() -> Dict[str, Any]:
+    """Run lightweight provider probes for diagnostics.
+
+    Notes:
+    - This never exposes secrets.
+    - BigQuery probe uses a safe `SELECT 1` query only.
+    """
+    status = get_research_provider_status()
+    result: Dict[str, Any] = {"status": status, "probes": {}}
+
+    bq_status = status.get("bigquery", {})
+    if not bq_status.get("enabled"):
+        result["probes"]["bigquery"] = {"ok": False, "state": "skipped", "reason": "disabled"}
+        return result
+    if not bq_status.get("projectConfigured"):
+        result["probes"]["bigquery"] = {"ok": False, "state": "misconfigured", "reason": "missing project id"}
+        return result
+    if not bq_status.get("credentialsConfigured"):
+        result["probes"]["bigquery"] = {"ok": False, "state": "misconfigured", "reason": "missing credentials path"}
+        return result
+    if not bq_status.get("credentialsFileExists"):
+        result["probes"]["bigquery"] = {"ok": False, "state": "misconfigured", "reason": "credentials file not found"}
+        return result
+
+    try:
+        from google.cloud import bigquery  # type: ignore
+        from google.oauth2 import service_account  # type: ignore
+    except Exception as e:
+        result["probes"]["bigquery"] = {
+            "ok": False,
+            "state": "unavailable",
+            "reason": "bigquery client import failed",
+            "error": str(e)[:300],
+        }
+        return result
+
+    started = time.monotonic()
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            BIGQUERY_CREDENTIALS_FILE,
+            scopes=["https://www.googleapis.com/auth/bigquery"],
+        )
+        client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
+        rows = list(client.query("SELECT 1 AS ok").result(max_results=1))
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        result["probes"]["bigquery"] = {
+            "ok": bool(rows and rows[0]["ok"] == 1),
+            "state": "ok",
+            "project": client.project,
+            "elapsedMs": elapsed_ms,
+        }
+    except Exception as e:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        result["probes"]["bigquery"] = {
+            "ok": False,
+            "state": "failed",
+            "project": BIGQUERY_PROJECT_ID,
+            "elapsedMs": elapsed_ms,
+            "error": str(e)[:500],
+        }
+
+    return result
 
 
 async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:

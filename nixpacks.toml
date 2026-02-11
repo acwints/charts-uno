@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs_22", "chromium"]
 
 [phases.install]
-cmds = ["npm install -g pnpm && pnpm install"]
+cmds = ["npm install -g pnpm && export PATH=\"$(npm prefix -g)/bin:$PATH\" && pnpm install"]
 
 [phases.build]
-cmds = ["npm install -g pnpm && pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/bot build"]
+cmds = ["npm install -g pnpm && export PATH=\"$(npm prefix -g)/bin:$PATH\" && pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/bot build"]
 
 [start]
 cmd = "mkdir -p /data && test -f /data/bot-state.json || cp packages/bot/bot-state.json /data/bot-state.json; node packages/bot/dist/index.js"
