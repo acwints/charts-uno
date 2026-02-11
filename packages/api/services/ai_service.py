@@ -48,7 +48,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
   "labels": ["label1", "label2", ...],
   "series": [
-    {{"name": "Series Name", "data": [num1 | null, num2 | null, ...]}}
+    {{"name": "Series Name", "data": [num1 | null, num2 | null, ...], "confidence": [0.0-1.0 | null, ...]}}
   ],
   "suggestedTitle": "A title for the chart",
   "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
@@ -62,6 +62,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 Rules:
 - labels array must match the length of each data array
 - Data values must be numbers or null (convert scores like "-27" to -27)
+- confidence is optional; when present it must align with labels and data lengths
+- confidence values must be between 0 and 1 (higher = more certain)
 - If there are multiple numeric columns, create multiple series
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
 - If you can't find chartable data, return: {{"error": "No chartable data found"}}
@@ -117,6 +119,7 @@ Rules:
     # Normalize/validate series data:
     # - preserve null for unknown points
     # - coerce numeric strings to float
+    # - normalize optional confidence (0..1) per point
     # - pad/truncate to labels length
     normalized_series = []
     for series in series_list:
@@ -124,34 +127,61 @@ Rules:
             continue
         name = str(series.get("name") or "Series")
         raw_data = series.get("data") or []
+        raw_confidence = series.get("confidence") or []
         if not isinstance(raw_data, list):
             raw_data = []
+        if not isinstance(raw_confidence, list):
+            raw_confidence = []
 
         normalized_data: List[Optional[float]] = []
-        for value in raw_data[:label_count]:
+        normalized_confidence: List[Optional[float]] = []
+        for idx in range(label_count):
+            value = raw_data[idx] if idx < len(raw_data) else None
             if value is None:
                 normalized_data.append(None)
-                continue
-            if isinstance(value, (int, float)):
+            elif isinstance(value, (int, float)):
                 normalized_data.append(float(value))
-                continue
-            if isinstance(value, str):
+            elif isinstance(value, str):
                 cleaned = value.strip().replace(",", "")
                 if cleaned.lower() in {"", "na", "n/a", "null", "none", "missing", "-", "—"}:
                     normalized_data.append(None)
+                else:
+                    try:
+                        normalized_data.append(float(cleaned))
+                    except ValueError:
+                        normalized_data.append(None)
+            else:
+                normalized_data.append(None)
+
+            conf = raw_confidence[idx] if idx < len(raw_confidence) else None
+            if normalized_data[idx] is None or conf is None:
+                normalized_confidence.append(None)
+                continue
+
+            if isinstance(conf, (int, float)):
+                normalized_confidence.append(max(0.0, min(1.0, float(conf))))
+                continue
+            if isinstance(conf, str):
+                conf_cleaned = conf.strip()
+                if conf_cleaned.lower() in {"", "na", "n/a", "null", "none", "missing", "-", "—"}:
+                    normalized_confidence.append(None)
                     continue
                 try:
-                    normalized_data.append(float(cleaned))
+                    parsed_conf = float(conf_cleaned)
+                    # Permit both 0..1 and 0..100 scales from model output.
+                    if parsed_conf > 1.0:
+                        parsed_conf = parsed_conf / 100.0
+                    normalized_confidence.append(max(0.0, min(1.0, parsed_conf)))
                     continue
                 except ValueError:
-                    normalized_data.append(None)
+                    normalized_confidence.append(None)
                     continue
-            normalized_data.append(None)
+            normalized_confidence.append(None)
 
-        if len(normalized_data) < label_count:
-            normalized_data.extend([None] * (label_count - len(normalized_data)))
-
-        normalized_series.append({"name": name, "data": normalized_data})
+        series_payload: Dict[str, Any] = {"name": name, "data": normalized_data}
+        if any(c is not None for c in normalized_confidence):
+            series_payload["confidence"] = normalized_confidence
+        normalized_series.append(series_payload)
 
     if not normalized_series:
         raise ValueError("No valid series returned from image analysis")

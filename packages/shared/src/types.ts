@@ -2,6 +2,8 @@ export interface DataSeries {
   name: string;
   // `null` indicates a missing/unknown point (not the same as zero).
   data: Array<number | null>;
+  // Optional confidence score per point (0-1), typically from AI extraction.
+  confidence?: Array<number | null>;
 }
 
 export type XAxisType = 'year' | 'date' | 'category' | 'number';

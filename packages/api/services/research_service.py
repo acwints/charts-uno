@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -15,6 +16,7 @@ FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 FRED_BASE_URL = "https://api.stlouisfed.org/fred"
 ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").lower() in {"1", "true", "yes", "on"}
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
+BIGQUERY_CREDENTIALS_FILE = os.environ.get("BIGQUERY_CREDENTIALS_FILE") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
 
 _client: Optional[genai.Client] = None
 _MODEL_NAME = "gemini-2.5-flash"
@@ -266,8 +268,19 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     if not ENABLE_BIGQUERY_PUBLIC_DATA:
         return None
 
+    if not BIGQUERY_PROJECT_ID:
+        logger.info("BigQuery provider skipped: BIGQUERY_PROJECT_ID not configured")
+        return None
+    if not BIGQUERY_CREDENTIALS_FILE:
+        logger.info("BigQuery provider skipped: BIGQUERY_CREDENTIALS_FILE/GOOGLE_APPLICATION_CREDENTIALS not configured")
+        return None
+    if not Path(BIGQUERY_CREDENTIALS_FILE).exists():
+        logger.info("BigQuery provider skipped: credentials file not found")
+        return None
+
     try:
         from google.cloud import bigquery  # type: ignore
+        from google.oauth2 import service_account  # type: ignore
     except Exception:
         logger.info("BigQuery provider skipped: google-cloud-bigquery not installed")
         return None
@@ -277,7 +290,11 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        client = bigquery.Client(project=BIGQUERY_PROJECT_ID or None)
+        credentials = service_account.Credentials.from_service_account_file(
+            BIGQUERY_CREDENTIALS_FILE,
+            scopes=["https://www.googleapis.com/auth/bigquery"],
+        )
+        client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
         rows = list(client.query(sql, job_config=job_config).result(max_results=50))
         if not rows:

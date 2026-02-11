@@ -351,8 +351,33 @@
   border-bottom: var(--border-subtle);
 }
 
+.table-cell-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.table-cell--low-confidence {
+  color: var(--warning);
+  background: linear-gradient(90deg, transparent 0%, var(--warning-subtle) 100%);
+}
+
+.low-confidence-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 1px var(--warning-subtle);
+  flex-shrink: 0;
+}
+
 .data-table tbody tr:hover .table-cell {
   background: var(--bg-tertiary);
+}
+
+.data-table tbody tr:hover .table-cell--low-confidence {
+  background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--warning-subtle) 100%);
 }
 
 .sticky-col {

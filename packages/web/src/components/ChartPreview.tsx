@@ -237,6 +237,15 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
   const verifiedLabel = sourceDomain
     ? `Verified real data source (${sourceDomain})`
     : 'Verified real data source';
+  const lowConfidenceCount = useMemo(() => {
+    let count = 0;
+    data.series.forEach((series) => {
+      series.confidence?.forEach((value) => {
+        if (typeof value === 'number' && value < 0.5) count += 1;
+      });
+    });
+    return count;
+  }, [data.series]);
   const adaptiveBottom = adaptiveAxis.angle !== 0
     ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
     : (xAxisLabel ? 25 : 5);
@@ -831,6 +840,17 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
             <span className="meta-label" style={{ color: theme.textMuted }}>Series:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.series.length}</span>
           </span>
+          {lowConfidenceCount > 0 && (
+            <span
+              className="chart-meta-item"
+              style={{ borderColor: theme.border, color: theme.text }}
+              title="AI flagged these points as uncertain; verify in the data editor."
+              aria-label={`${lowConfidenceCount} low-confidence points`}
+            >
+              <span className="meta-label" style={{ color: theme.textMuted }}>Low conf:</span>
+              <span className="meta-value" style={{ color: theme.text }}>{lowConfidenceCount}</span>
+            </span>
+          )}
         </div>
       </div>
 
@@ -860,11 +880,29 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
                 {data.labels.map((label, rowIdx) => (
                   <tr key={label}>
                     <td className="table-cell sticky-col" style={{ color: theme.text, background: theme.background, fontWeight: 500 }}>{label}</td>
-                    {data.series.map((series) => (
-                      <td key={series.name} className="table-cell" style={{ color: theme.textMuted, borderColor: theme.border }}>
-                        {typeof series.data[rowIdx] === 'number' ? formatTooltipValue(series.data[rowIdx]) : 'N/A'}
-                      </td>
-                    ))}
+                    {data.series.map((series) => {
+                      const value = series.data[rowIdx];
+                      const confidence = series.confidence?.[rowIdx];
+                      const isLowConfidence = typeof confidence === 'number' && confidence < 0.5;
+                      return (
+                        <td
+                          key={series.name}
+                          className={`table-cell ${isLowConfidence ? 'table-cell--low-confidence' : ''}`}
+                          style={{ color: theme.textMuted, borderColor: theme.border }}
+                        >
+                          <span className="table-cell-value">
+                            {typeof value === 'number' ? formatTooltipValue(value) : 'N/A'}
+                            {isLowConfidence && (
+                              <span
+                                className="low-confidence-dot"
+                                aria-label="Low-confidence value"
+                                title={`Low confidence${typeof confidence === 'number' ? ` (${Math.round(confidence * 100)}%)` : ''}`}
+                              />
+                            )}
+                          </span>
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

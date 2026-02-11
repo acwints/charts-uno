@@ -23,6 +23,7 @@ class UserResponse(UserBase):
 class ChartDataSeries(BaseModel):
     name: str
     data: List[Optional[float]]
+    confidence: Optional[List[Optional[float]]] = None
 
 
 class ChartData(BaseModel):
