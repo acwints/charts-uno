@@ -2,13 +2,13 @@
 nixPkgs = ["chromium"]
 
 [phases.install]
-cmds = ["npm install -g pnpm", "pnpm install"]
+cmds = ["corepack enable", "corepack prepare pnpm@latest --activate", "pnpm install"]
 
 [phases.build]
 cmds = ["pnpm --filter @chartsuno/shared build", "pnpm --filter @chartsuno/bot build"]
 
 [start]
-cmd = "node packages/bot/dist/index.js"
+cmd = "mkdir -p /data && test -f /data/bot-state.json || cp packages/bot/bot-state.json /data/bot-state.json; node packages/bot/dist/index.js"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
