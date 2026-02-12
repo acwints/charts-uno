@@ -1,4 +1,5 @@
 import puppeteer, { Browser } from 'puppeteer';
+import { accessSync, constants } from 'node:fs';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import {
@@ -30,11 +31,34 @@ import { logger } from '../config.js';
 
 let browser: Browser | null = null;
 
+function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveExecutablePath(): Promise<string | undefined> {
+  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim();
+  if (configuredPath) {
+    if (isExecutable(configuredPath)) {
+      return configuredPath;
+    }
+
+    logger.warn(
+      { configuredPath },
+      'Configured PUPPETEER_EXECUTABLE_PATH is not executable; falling back to auto-detection'
+    );
+  }
+
+  return findChromium();
+}
+
 async function getBrowser(): Promise<Browser> {
   if (!browser) {
-    // Try to find chromium in common locations
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
-      (await findChromium());
+    const executablePath = await resolveExecutablePath();
 
     browser = await puppeteer.launch({
       headless: true,
