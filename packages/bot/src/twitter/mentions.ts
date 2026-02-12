@@ -74,7 +74,16 @@ export async function pollMentions(): Promise<MentionData[]> {
       );
     }
   } catch (error) {
-    logger.error({ error }, 'Error polling mentions');
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: number }).code === 429
+    ) {
+      logger.warn('Mention polling received 429 from X API');
+    } else {
+      logger.error({ error }, 'Error polling mentions');
+    }
     throw error;
   }
 

@@ -10,6 +10,31 @@ let pollTimeout: NodeJS.Timeout | null = null;
 let healthServer: Server | null = null;
 let startRetryTimeout: NodeJS.Timeout | null = null;
 const START_RETRY_MS = 30_000;
+const MIN_RATE_LIMIT_BACKOFF_MS = 5_000;
+
+interface RateLimitedErrorLike {
+  code?: number;
+  rateLimit?: {
+    limit?: number;
+    remaining?: number;
+    reset?: number;
+  };
+}
+
+function getRateLimitBackoffMs(error: unknown): number | null {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const candidate = error as RateLimitedErrorLike;
+  if (candidate.code !== 429 || !candidate.rateLimit?.reset) {
+    return null;
+  }
+
+  const resetMs = candidate.rateLimit.reset * 1000;
+  const waitMs = resetMs - Date.now();
+  return Math.max(MIN_RATE_LIMIT_BACKOFF_MS, waitMs);
+}
 
 function startHealthServer(): void {
   const port = Number(process.env.PORT || '8080');
@@ -37,6 +62,7 @@ function startHealthServer(): void {
 
 async function poll(): Promise<void> {
   if (!isRunning) return;
+  let nextPollDelayMs = config.bot.pollIntervalMs;
 
   try {
     await ensureFreshClient();
@@ -56,12 +82,21 @@ async function poll(): Promise<void> {
       }
     }
   } catch (error) {
-    logger.error({ error }, 'Error during poll cycle');
+    const rateLimitBackoffMs = getRateLimitBackoffMs(error);
+    if (rateLimitBackoffMs) {
+      nextPollDelayMs = Math.max(config.bot.pollIntervalMs, rateLimitBackoffMs);
+      logger.warn(
+        { waitMs: nextPollDelayMs, retryAt: new Date(Date.now() + nextPollDelayMs).toISOString() },
+        'X mention timeline rate-limited; delaying next poll'
+      );
+    } else {
+      logger.error({ error }, 'Error during poll cycle');
+    }
   }
 
   // Schedule next poll
   if (isRunning) {
-    pollTimeout = setTimeout(poll, config.bot.pollIntervalMs);
+    pollTimeout = setTimeout(poll, nextPollDelayMs);
   }
 }
 
