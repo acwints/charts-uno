@@ -13,6 +13,7 @@ import { loadState, updateState } from '../storage.js';
 import type { MentionData } from '../twitter/mentions.js';
 
 const MAX_PROCESSED_MENTIONS = 1000;
+const CHARTABLE_TYPES = new Set(['bar', 'line', 'area', 'pie', 'radar', 'scatter']);
 
 let processedMentions: Set<string> | null = null;
 
@@ -83,7 +84,19 @@ export async function processMention(mention: MentionData): Promise<void> {
       config.type = 'table';
       config.showLegend = true;
       config.showGrid = false;
+    } else {
+      // "chart it" should always render an actual chart, never a table view.
+      if (!CHARTABLE_TYPES.has(config.type)) {
+        config.type = chartData.series.length > 1 ? 'bar' : 'line';
+      }
+      config.showGrid = true;
+      config.showLegend = chartData.series.length > 1;
     }
+
+    logger.info(
+      { action, chartType: config.type, labels: chartData.labels.length, series: chartData.series.length },
+      'Selected render mode for mention'
+    );
     const chartPng = await renderChartToPng(chartData, config);
 
     // Step 4: Add watermark

@@ -27,18 +27,20 @@ export async function pollMentions(): Promise<MentionData[]> {
 
   try {
     const state = await loadState();
+    const me = await client.v2.me();
+    const botUsername = me.data.username.toLowerCase();
 
-    const params: Parameters<typeof client.v2.userMentionTimeline>[1] = {
+    const params: Parameters<typeof client.v2.search>[1] = {
       max_results: 10,
       'tweet.fields': ['referenced_tweets', 'author_id'],
-      expansions: ['referenced_tweets.id'],
     };
 
     if (state.lastSinceId) {
       params.since_id = state.lastSinceId;
     }
 
-    const response = await client.v2.userMentionTimeline(config.bot.userId, params);
+    const query = `@${botUsername} ("chart it" OR "reverse it") -from:${botUsername}`;
+    const response = await client.v2.search(query, params);
 
     if (!response.data.data) {
       logger.debug('No new mentions found');
