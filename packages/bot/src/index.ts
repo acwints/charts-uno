@@ -11,6 +11,7 @@ let healthServer: Server | null = null;
 let startRetryTimeout: NodeJS.Timeout | null = null;
 const START_RETRY_MS = 30_000;
 const MIN_RATE_LIMIT_BACKOFF_MS = 5_000;
+const AUTH_RECOVERY_RETRY_MS = 15_000;
 
 interface RateLimitedErrorLike {
   code?: number;
@@ -19,6 +20,15 @@ interface RateLimitedErrorLike {
     remaining?: number;
     reset?: number;
   };
+}
+
+function getErrorCode(error: unknown): number | null {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const candidate = error as { code?: number };
+  return typeof candidate.code === 'number' ? candidate.code : null;
 }
 
 function getRateLimitBackoffMs(error: unknown): number | null {
@@ -82,6 +92,7 @@ async function poll(): Promise<void> {
       }
     }
   } catch (error) {
+    const errorCode = getErrorCode(error);
     const rateLimitBackoffMs = getRateLimitBackoffMs(error);
     if (rateLimitBackoffMs) {
       // Poll again as soon as X indicates the limit resets.
@@ -90,6 +101,18 @@ async function poll(): Promise<void> {
         { waitMs: nextPollDelayMs, retryAt: new Date(Date.now() + nextPollDelayMs).toISOString() },
         'X mention timeline rate-limited; delaying next poll'
       );
+    } else if (errorCode === 401) {
+      logger.warn('X API returned 401; reinitializing Twitter client');
+      try {
+        await initializeClient();
+        nextPollDelayMs = AUTH_RECOVERY_RETRY_MS;
+        logger.info(
+          { retryInMs: nextPollDelayMs },
+          'Twitter client reinitialized after 401; scheduling quick retry'
+        );
+      } catch (reinitError) {
+        logger.error({ error: reinitError }, 'Failed to reinitialize Twitter client after 401');
+      }
     } else {
       logger.error({ error }, 'Error during poll cycle');
     }
