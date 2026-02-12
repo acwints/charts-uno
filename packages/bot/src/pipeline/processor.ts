@@ -116,6 +116,11 @@ export async function processMention(mention: MentionData): Promise<void> {
           mentionId,
           "I had trouble understanding the data in that image. Try with a clearer chart!"
         );
+      } else if (error.message.includes('Request failed with code 403')) {
+        await replyWithError(
+          mentionId,
+          "I parsed your chart, but I couldn't upload the image response due to X API permissions. I'm retrying once permissions are updated."
+        );
       }
       // For other errors, don't reply to avoid spam
     }

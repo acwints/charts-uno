@@ -7,7 +7,7 @@ import { updateState } from './storage.js';
 const CALLBACK_PORT = 3000;
 const CALLBACK_URL = `http://localhost:${CALLBACK_PORT}/callback`;
 
-const SCOPES = ['tweet.read', 'tweet.write', 'users.read', 'offline.access'] as const;
+const SCOPES = ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'] as const;
 
 async function setup(): Promise<void> {
   if (!config.twitter.clientId || !config.twitter.clientSecret) {

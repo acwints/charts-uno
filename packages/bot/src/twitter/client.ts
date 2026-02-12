@@ -58,7 +58,7 @@ async function refreshAccessToken(refreshToken: string): Promise<void> {
       accessToken,
       refreshToken: newRefreshToken || refreshToken,
       expiresAt: Date.now() + expiresIn * 1000,
-      scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+      scope: ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'],
     },
   });
 

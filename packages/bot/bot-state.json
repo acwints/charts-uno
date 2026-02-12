@@ -1,12 +1,13 @@
 {
   "oauth2": {
-    "accessToken": "X2pTSlVvLVBVa0lINkZTeUl1SUlibXRZNXdNa1VaMFVpQnRxOGxwVDdQTkRYOjE3NzA4Njk4NjQ3Nzk6MTowOmF0OjE",
-    "refreshToken": "U0JGdkw2YlNkVHhfd0VyZFJfajhIUm5KeTFKTEJGR25UTEZzRmV6c2hXSWRNOjE3NzA4Njk4NjQ3Nzk6MTowOnJ0OjE",
-    "expiresAt": 1770877064836,
+    "accessToken": "LUQxcmtkY2R0MjdSRUhTOW9Rc01hS0drLTRZMlB4ckF3cmNWRU02alo4Q3JYOjE3NzA4NzAzNzI0MzQ6MToxOmF0OjE",
+    "refreshToken": "bGxrZjN2Y0pOalFYOU1tMUtrUU80WXhlbXppcXJLWFlRY0dNOVlnWFctTGxwOjE3NzA4NzAzNzI0MzU6MToxOnJ0OjE",
+    "expiresAt": 1770877572454,
     "scope": [
       "tweet.read",
       "tweet.write",
       "users.read",
+      "media.write",
       "offline.access"
     ]
   },
