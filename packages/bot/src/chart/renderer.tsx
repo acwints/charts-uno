@@ -3,7 +3,6 @@ import { accessSync, constants } from 'node:fs';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   LineChart,
@@ -119,6 +118,8 @@ interface ChartPreviewServerProps {
 }
 
 function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
+  const chartWidth = 720;
+  const chartHeight = config.title ? 480 : 520;
   const colors = COLOR_PALETTES[config.colorScheme];
 
   const chartData = data.labels.map((label, idx) => {
@@ -179,7 +180,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
     switch (config.type) {
       case 'bar':
         return (
-          <BarChart data={chartData}>
+          <BarChart width={chartWidth} height={chartHeight} data={chartData}>
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -198,7 +199,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       case 'line':
         return (
-          <LineChart data={chartData}>
+          <LineChart width={chartWidth} height={chartHeight} data={chartData}>
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -219,7 +220,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       case 'area':
         return (
-          <AreaChart data={chartData}>
+          <AreaChart width={chartWidth} height={chartHeight} data={chartData}>
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -241,7 +242,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       case 'pie':
         return (
-          <PieChart>
+          <PieChart width={chartWidth} height={chartHeight}>
             {tooltipElement}
             {legendElement}
             <Pie
@@ -264,7 +265,14 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       case 'radar':
         return (
-          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+          <RadarChart
+            width={chartWidth}
+            height={chartHeight}
+            cx={chartWidth / 2}
+            cy={chartHeight / 2}
+            outerRadius={Math.min(chartWidth, chartHeight) * 0.32}
+            data={radarData}
+          >
             <PolarGrid stroke="rgba(255,255,255,0.2)" />
             <PolarAngleAxis dataKey="subject" tick={{ fill: '#aaa', fontSize: 12 }} />
             {tooltipElement}
@@ -284,7 +292,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       case 'scatter':
         return (
-          <ScatterChart>
+          <ScatterChart width={chartWidth} height={chartHeight}>
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -303,7 +311,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
 
       default:
         return (
-          <BarChart data={chartData}>
+          <BarChart width={chartWidth} height={chartHeight} data={chartData}>
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -346,10 +354,8 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
           {config.title}
         </h2>
       )}
-      <div style={{ width: '100%', height: config.title ? '480px' : '520px' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
-        </ResponsiveContainer>
+      <div style={{ width: `${chartWidth}px`, height: `${chartHeight}px`, margin: '0 auto' }}>
+        {renderChart()}
       </div>
     </div>
   );
