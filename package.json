@@ -9,6 +9,7 @@
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/web build",
     "build:bot": "pnpm --filter @chartsuno/bot build",
+    "check:harness": "node scripts/check-harness.mjs",
     "lint": "pnpm -r lint",
     "preview": "pnpm --filter @chartsuno/web preview"
   },

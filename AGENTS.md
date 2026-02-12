@@ -10,10 +10,18 @@ pnpm build:web              # Build shared + web
 # Verify
 pnpm lint                   # ESLint across all packages
 npx tsc --noEmit            # Type check (run from packages/web)
+pnpm check:harness          # Enforce agent/web guardrails
 
 # API
 cd packages/api && python run.py  # Start FastAPI server
 ```
+
+## Harness Workflow
+
+- Start by reading `docs/repo-map.md` for ownership boundaries and verification expectations.
+- Keep agent instructions in `AGENTS.md` files concise and location-specific.
+- Every new rule should be enforceable by a script (prefer `pnpm check:harness` updates over prose-only rules).
+- For web UI edits, run: `pnpm check:harness`, `pnpm lint`, then `cd packages/web && npx tsc --noEmit`.
 
 ## Code Style
 

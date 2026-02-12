@@ -77,7 +77,7 @@ async function poll(): Promise<void> {
   try {
     await ensureFreshClient();
 
-    logger.debug('Polling for mentions...');
+    logger.info('Polling for mentions...');
     const mentions = await pollMentions();
 
     if (mentions.length > 0) {
@@ -90,6 +90,8 @@ async function poll(): Promise<void> {
           logger.error({ error, mentionId: mention.mentionId }, 'Failed to process mention');
         }
       }
+    } else {
+      logger.info('No new trigger mentions found');
     }
   } catch (error) {
     const errorCode = getErrorCode(error);

@@ -9,6 +9,7 @@ pnpm dev          # Dev server at localhost:5173
 pnpm build        # tsc -b && vite build
 pnpm lint         # ESLint
 npx tsc --noEmit  # Type check only
+pnpm check:harness # Run from repo root to enforce CSS/agent guardrails
 ```
 
 ## Stack

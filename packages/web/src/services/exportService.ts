@@ -46,8 +46,7 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
 
 function drawTextWatermark(
   ctx: CanvasRenderingContext2D,
-  canvasWidth: number,
-  _canvasHeight: number
+  canvasWidth: number
 ): void {
   const text = 'Chartsuno';
   const fontSize = 14;
@@ -66,8 +65,7 @@ function drawTextWatermark(
 async function drawLogoWatermark(
   ctx: CanvasRenderingContext2D,
   logoUrl: string,
-  canvasWidth: number,
-  canvasHeight: number
+  canvasWidth: number
 ): Promise<void> {
   try {
     const img = await loadImage(logoUrl);
@@ -92,7 +90,7 @@ async function drawLogoWatermark(
   } catch (error) {
     // If logo fails to load, fall back to text watermark
     console.warn('Failed to load custom logo, falling back to text watermark:', error);
-    drawTextWatermark(ctx, canvasWidth, canvasHeight);
+    drawTextWatermark(ctx, canvasWidth);
   }
 }
 
@@ -124,9 +122,9 @@ export async function exportToPNG(
     const ctx = canvas.getContext('2d');
     if (ctx) {
       if (watermark?.customLogoUrl) {
-        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width, canvas.height);
+        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width);
       } else {
-        drawTextWatermark(ctx, canvas.width, canvas.height);
+        drawTextWatermark(ctx, canvas.width);
       }
     }
   }
@@ -158,9 +156,9 @@ export async function copyImageToClipboard(
     const ctx = canvas.getContext('2d');
     if (ctx) {
       if (watermark?.customLogoUrl) {
-        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width, canvas.height);
+        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width);
       } else {
-        drawTextWatermark(ctx, canvas.width, canvas.height);
+        drawTextWatermark(ctx, canvas.width);
       }
     }
   }

@@ -864,7 +864,7 @@
   text-transform: uppercase;
 }
 
-.brand-color-hex-input:focus {
+.brand-color-hex-input:focus-visible {
   outline: none;
   border-color: var(--accent);
 }
