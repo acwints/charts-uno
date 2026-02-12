@@ -7,9 +7,19 @@ export interface MentionData {
   authorId: string;
   text: string;
   parentTweetId: string | null;
+  action: 'chart' | 'reverse';
 }
 
-const TRIGGER_PHRASE = 'make it epic';
+function parseAction(text: string): MentionData['action'] | null {
+  const normalized = text.toLowerCase();
+  if (normalized.includes('reverse it')) {
+    return 'reverse';
+  }
+  if (normalized.includes('chart it')) {
+    return 'chart';
+  }
+  return null;
+}
 
 export async function pollMentions(): Promise<MentionData[]> {
   const client = getReadOnlyClient();
@@ -47,9 +57,9 @@ export async function pollMentions(): Promise<MentionData[]> {
         continue;
       }
 
-      // Check if it contains the trigger phrase
-      if (!tweet.text.toLowerCase().includes(TRIGGER_PHRASE)) {
-        logger.debug({ text: tweet.text }, 'Skipping mention without trigger phrase');
+      const action = parseAction(tweet.text);
+      if (!action) {
+        logger.debug({ text: tweet.text }, 'Skipping mention without valid trigger phrase');
         continue;
       }
 
@@ -66,10 +76,11 @@ export async function pollMentions(): Promise<MentionData[]> {
         authorId: tweet.author_id || '',
         text: tweet.text,
         parentTweetId: replyToTweet.id,
+        action,
       });
 
       logger.info(
-        { mentionId: tweet.id, parentTweetId: replyToTweet.id },
+        { mentionId: tweet.id, parentTweetId: replyToTweet.id, action },
         'Found valid trigger mention'
       );
     }

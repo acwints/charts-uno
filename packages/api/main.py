@@ -43,6 +43,8 @@ from schemas import (
     TokenResponse,
     ImageAnalysisRequest,
     ImageAnalysisResponse,
+    BotAnalyzeAndCreateRequest,
+    BotAnalyzeAndCreateResponse,
     PromptGenerateRequest,
     StockPriceRequest,
     StockSearchRequest,
@@ -109,6 +111,10 @@ ALLOWED_FRONTEND_DOMAINS = [
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:8080/auth/callback")
+BOT_INTERNAL_API_TOKEN = os.environ.get("BOT_INTERNAL_API_TOKEN", "")
+BOT_CHART_OWNER_EMAIL = os.environ.get("BOT_CHART_OWNER_EMAIL", "chartsuno-bot@chartsuno.local")
+BOT_CHART_OWNER_ID = os.environ.get("BOT_CHART_OWNER_ID", "")
+PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://chartsuno.com")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -888,6 +894,131 @@ async def analyze_image_endpoint(
     except Exception as e:
         logger.error(f"Image analysis failed: {e}")
         raise HTTPException(status_code=500, detail="Image analysis failed")
+
+
+def _resolve_bot_chart_owner(db: Session) -> User:
+    """Resolve the user that owns charts created by bot internal endpoints."""
+    user: Optional[User] = None
+
+    if BOT_CHART_OWNER_ID:
+        user = db.query(User).filter(User.id == BOT_CHART_OWNER_ID).first()
+    if not user and BOT_CHART_OWNER_EMAIL:
+        user = db.query(User).filter(User.email == BOT_CHART_OWNER_EMAIL).first()
+
+    if not user:
+        # Auto-create a service user so bot-generated charts always have a stable owner.
+        service_email = BOT_CHART_OWNER_EMAIL or "chartsuno-bot@chartsuno.local"
+        user = User(
+            email=service_email,
+            name="Chartsuno Bot",
+            picture=None,
+            google_id=f"bot-service:{service_email}",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Created bot service user for chart ownership: user_id={user.id} email={user.email}")
+
+    return user
+
+
+def _resolve_personal_team_for_user(db: Session, user: User) -> Team:
+    membership = (
+        db.query(TeamMember)
+        .join(Team)
+        .filter(TeamMember.user_id == user.id, Team.is_personal == True)
+        .first()
+    )
+    if membership and membership.team:
+        return membership.team
+    return _create_personal_team(db, user)
+
+
+@app.post("/api/internal/bot/analyze-and-create", response_model=BotAnalyzeAndCreateResponse)
+@limiter.limit("30/minute")
+async def bot_analyze_and_create_chart(
+    request: Request,
+    payload: BotAnalyzeAndCreateRequest,
+    db: Session = Depends(get_db),
+):
+    """Analyze an image with the same AI pipeline as web upload and create a public chart."""
+    token = request.headers.get("x-bot-token", "")
+    if not BOT_INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=503, detail="Bot internal API token is not configured")
+    if not token or not secrets.compare_digest(token, BOT_INTERNAL_API_TOKEN):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        result = await analyze_image(payload.image_base64, payload.mime_type, payload.user_prompt)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Bot image analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Image analysis failed")
+
+    owner = _resolve_bot_chart_owner(db)
+    team = _resolve_personal_team_for_user(db, owner)
+
+    chart_data = {
+        "labels": result.get("labels", []),
+        "series": result.get("series", []),
+        "sourceType": "image",
+        "suggestedTitle": result.get("suggestedTitle"),
+        "suggestedType": result.get("suggestedType"),
+        "aiReasoning": result.get("aiReasoning"),
+        "xAxisLabel": result.get("xAxisLabel"),
+        "yAxisLabel": result.get("yAxisLabel"),
+        "barLayout": result.get("barLayout"),
+    }
+
+    suggested_type = result.get("suggestedType") or "bar"
+    show_legend = len(result.get("series", [])) > 1
+    chart_config = {
+        "type": suggested_type,
+        "colorScheme": "default",
+        "styleVariant": "professional",
+        "themeMode": "dark",
+        "showGrid": True,
+        "showLegend": show_legend,
+        "showValues": False,
+        "showPoints": True,
+        "showBorder": False,
+        "animate": False,
+        "title": result.get("suggestedTitle") or "AI Chart",
+        "stacked": bool(result.get("stacked")),
+    }
+    if result.get("barLayout") in {"horizontal", "vertical"}:
+        chart_config["barLayout"] = result["barLayout"]
+
+    chart = Chart(
+        user_id=owner.id,
+        team_id=team.id,
+        title=result.get("suggestedTitle") or "AI Chart",
+        description="Generated from X reply by Chartsuno bot",
+        data=chart_data,
+        config=chart_config,
+        source_type="image",
+        source_url=payload.source_url,
+        is_public=1,
+    )
+    db.add(chart)
+    db.commit()
+    db.refresh(chart)
+
+    chart_url = f"{PUBLIC_APP_URL.rstrip('/')}/chart/{chart.id}"
+    return BotAnalyzeAndCreateResponse(
+        chart_id=chart.id,
+        chart_url=chart_url,
+        labels=chart_data["labels"],
+        series=chart_data["series"],
+        suggestedTitle=result.get("suggestedTitle"),
+        suggestedType=result.get("suggestedType"),
+        stacked=result.get("stacked"),
+        xAxisLabel=result.get("xAxisLabel"),
+        yAxisLabel=result.get("yAxisLabel"),
+        barLayout=result.get("barLayout"),
+        aiReasoning=result.get("aiReasoning"),
+    )
 
 
 @app.post("/api/ai/chat", response_model=ChatResponse)

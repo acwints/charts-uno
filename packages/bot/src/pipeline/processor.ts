@@ -6,9 +6,9 @@ import {
   replyWithMedia,
   replyWithError,
 } from '../twitter/media.js';
-import { analyzeImageFromBuffer, analyzeImageFromUrl } from '../chart/analyzer.js';
 import { renderChartToPng, getDefaultConfig } from '../chart/renderer.js';
 import { addWatermark } from '../chart/watermark.js';
+import { analyzeAndCreateChart } from '../services/chartsunoApi.js';
 import { loadState, updateState } from '../storage.js';
 import type { MentionData } from '../twitter/mentions.js';
 
@@ -39,7 +39,7 @@ async function markProcessed(mentionId: string): Promise<void> {
 }
 
 export async function processMention(mention: MentionData): Promise<void> {
-  const { mentionId, parentTweetId } = mention;
+  const { mentionId, parentTweetId, action } = mention;
 
   // Skip if already processed
   const processed = await getProcessedMentions();
@@ -68,17 +68,9 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     logger.info({ imageUrl: parentTweet.imageUrl }, 'Found image in parent tweet');
 
-    // Step 2: Analyze the image with Gemini Vision
-    let chartData;
-    try {
-      // Try analyzing directly from URL first
-      chartData = await analyzeImageFromUrl(parentTweet.imageUrl);
-    } catch (urlError) {
-      // If URL fails, download and analyze from buffer
-      logger.warn({ error: urlError }, 'URL analysis failed, trying buffer');
-      const imageBuffer = await downloadImage(parentTweet.imageUrl);
-      chartData = await analyzeImageFromBuffer(imageBuffer);
-    }
+    // Step 2: Use the same backend AI path as web upload and create a shareable chart.
+    const sourceImage = await downloadImage(parentTweet.imageUrl);
+    const { chartData, chartUrl } = await analyzeAndCreateChart(sourceImage, parentTweet.imageUrl);
 
     logger.info(
       { labels: chartData.labels.length, series: chartData.series.length },
@@ -87,6 +79,11 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     // Step 3: Render the chart with Recharts + Puppeteer
     const config = getDefaultConfig(chartData);
+    if (action === 'reverse') {
+      config.type = 'table';
+      config.showLegend = true;
+      config.showGrid = false;
+    }
     const chartPng = await renderChartToPng(chartData, config);
 
     // Step 4: Add watermark
@@ -95,7 +92,10 @@ export async function processMention(mention: MentionData): Promise<void> {
     // Step 5: Upload the image and reply
     const mediaId = await uploadMedia(watermarkedPng);
 
-    const replyText = `Here's your epic chart! 📊✨`;
+    const replyText =
+      action === 'reverse'
+        ? `Here's your reverse table view! 📋✨\n${chartUrl}`
+        : `Here's your epic chart! 📊✨\n${chartUrl}`;
     await replyWithMedia(mentionId, replyText, mediaId);
 
     logger.info({ mentionId }, 'Successfully processed mention and posted reply');

@@ -168,6 +168,27 @@ class ImageAnalysisResponse(BaseModel):
     yAxisSuffix: Optional[str] = None
 
 
+class BotAnalyzeAndCreateRequest(BaseModel):
+    image_base64: str
+    mime_type: str = "image/png"
+    source_url: Optional[str] = None
+    user_prompt: Optional[str] = None
+
+
+class BotAnalyzeAndCreateResponse(BaseModel):
+    chart_id: str
+    chart_url: str
+    labels: List[str]
+    series: List[ChartDataSeries]
+    suggestedTitle: Optional[str] = None
+    suggestedType: Optional[str] = None
+    stacked: Optional[bool] = None
+    xAxisLabel: Optional[str] = None
+    yAxisLabel: Optional[str] = None
+    barLayout: Optional[str] = None
+    aiReasoning: Optional[str] = None
+
+
 class PromptGenerateRequest(BaseModel):
     prompt: str
 

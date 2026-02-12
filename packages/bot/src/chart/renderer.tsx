@@ -176,8 +176,70 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
     />
   ) : null;
 
+  const renderTable = () => (
+    <div
+      style={{
+        width: `${chartWidth}px`,
+        height: `${chartHeight}px`,
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.14)',
+        borderRadius: '12px',
+        background: 'rgba(0,0,0,0.22)',
+        color: '#e5e7eb',
+      }}
+    >
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', fontSize: '14px' }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.16)', color: '#f9fafb' }}>
+              Label
+            </th>
+            {data.series.map((series) => (
+              <th
+                key={series.name}
+                style={{
+                  textAlign: 'right',
+                  padding: '10px 12px',
+                  borderBottom: '1px solid rgba(255,255,255,0.16)',
+                  color: '#f9fafb',
+                }}
+              >
+                {series.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.labels.slice(0, 20).map((label, idx) => (
+            <tr key={`${label}-${idx}`}>
+              <td style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#d1d5db' }}>
+                {label}
+              </td>
+              {data.series.map((series) => (
+                <td
+                  key={`${series.name}-${idx}`}
+                  style={{
+                    textAlign: 'right',
+                    padding: '8px 12px',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    color: '#e5e7eb',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {Number.isFinite(series.data[idx] as number) ? String(series.data[idx]) : '-'}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   const renderChart = () => {
     switch (config.type) {
+      case 'table':
+        return renderTable();
       case 'bar':
         return (
           <BarChart width={chartWidth} height={chartHeight} data={chartData}>
@@ -416,7 +478,7 @@ export function getDefaultConfig(data: ChartData): ChartConfig {
   let chartType: ChartType = data.suggestedType || 'bar';
 
   // Use suggested type if available, otherwise default to bar
-  if (!['bar', 'line', 'area', 'pie', 'radar', 'scatter'].includes(chartType)) {
+  if (!['bar', 'line', 'area', 'pie', 'radar', 'scatter', 'table'].includes(chartType)) {
     chartType = 'bar';
   }
 

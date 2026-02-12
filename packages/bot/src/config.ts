@@ -14,6 +14,10 @@ export const config = {
   google: {
     apiKey: process.env.GOOGLE_API_KEY || '',
   },
+  chartsuno: {
+    apiUrl: process.env.BOT_API_URL || process.env.API_URL || '',
+    internalToken: process.env.BOT_INTERNAL_API_TOKEN || '',
+  },
   storage: {
     statePath: process.env.BOT_STATE_PATH || '/data/bot-state.json',
   },
@@ -25,6 +29,8 @@ export function validateConfig(): void {
     ['TWITTER_CLIENT_SECRET or TWITTER_API_SECRET', config.twitter.clientSecret],
     ['BOT_USER_ID', config.bot.userId],
     ['GOOGLE_API_KEY', config.google.apiKey],
+    ['BOT_API_URL or API_URL', config.chartsuno.apiUrl],
+    ['BOT_INTERNAL_API_TOKEN', config.chartsuno.internalToken],
   ];
 
   const missing = required.filter(([, value]) => !value).map(([name]) => name);
