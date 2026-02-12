@@ -197,8 +197,44 @@ def _to_chart(rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     if not label_col or not numeric_cols:
         return None
 
+    def _safe_float(value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            cleaned = value.strip().replace(",", "")
+            if not cleaned:
+                return None
+            try:
+                return float(cleaned)
+            except ValueError:
+                return None
+        return None
+
+    def _is_duplicate_of_label(col: str) -> bool:
+        comparable = 0
+        matches = 0
+        for row in rows:
+            label_num = _safe_float(row.get(label_col))
+            value_num = _safe_float(row.get(col))
+            if label_num is None or value_num is None:
+                continue
+            comparable += 1
+            if abs(label_num - value_num) < 1e-9:
+                matches += 1
+
+        # Treat a numeric column as duplicate if it mirrors the label values
+        # for nearly all comparable rows.
+        min_comparable = max(2, len(rows) // 2)
+        return comparable >= min_comparable and (matches / comparable) >= 0.9
+
+    filtered_numeric_cols = [col for col in numeric_cols if not _is_duplicate_of_label(col)]
+    if not filtered_numeric_cols:
+        return None
+
     labels: List[str] = []
-    series_data: Dict[str, List[Optional[float]]] = {col: [] for col in numeric_cols[:3]}
+    series_data: Dict[str, List[Optional[float]]] = {col: [] for col in filtered_numeric_cols[:3]}
     for row in rows:
         label_val = row.get(label_col)
         if label_val is None:

@@ -770,6 +770,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'datasets' && (
             <div className="datasets-input">
+              {(isProcessing || isGeneratingDatasetChart || isLoadingDatasets) && (
+                <div className="datasets-input-overlay" aria-busy="true" aria-live="polite">
+                  <AIProcessingIndicator
+                    size="sm"
+                    label={isLoadingDatasets ? 'Loading datasets...' : 'Querying public dataset...'}
+                    statusMessages={['Building SQL query...', 'Running BigQuery...', 'Formatting chart data...', 'Almost ready...']}
+                  />
+                </div>
+              )}
               <div className="datasets-input-top">
                 <div className="datasets-select-wrapper">
                   <Database size={18} className="datasets-select-icon" />
@@ -849,24 +858,16 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                   </label>
                 </div>
               </div>
-              {(isProcessing || isGeneratingDatasetChart || isLoadingDatasets) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label={isLoadingDatasets ? 'Loading datasets...' : 'Querying public dataset...'}
-                  statusMessages={['Building SQL query...', 'Running BigQuery...', 'Formatting chart data...', 'Almost ready...']}
-                />
-              ) : (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handlePublicDatasetSubmit}
-                  disabled={!selectedDatasetId || !datasetPrompt.trim()}
-                >
-                  <Database size={18} />
-                  <span>Generate from Dataset</span>
-                  <ArrowRight size={18} />
-                </Button>
-              )}
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handlePublicDatasetSubmit}
+                disabled={isProcessing || isGeneratingDatasetChart || isLoadingDatasets || !selectedDatasetId || !datasetPrompt.trim()}
+              >
+                <Database size={18} />
+                <span>Generate from Dataset</span>
+                <ArrowRight size={18} />
+              </Button>
             </div>
           )}
         </motion.div>
