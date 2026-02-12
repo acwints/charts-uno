@@ -1,5 +1,6 @@
 import { getReadOnlyClient, getReadWriteClient } from './client.js';
 import { logger } from '../config.js';
+import { loadState } from '../storage.js';
 
 export interface TweetMediaData {
   imageUrl: string | null;
@@ -60,13 +61,45 @@ export async function downloadImage(url: string): Promise<Buffer> {
 }
 
 export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
-  const client = getReadWriteClient();
-
   try {
-    // v1.1 media upload works with OAuth 2.0 user-context tokens
-    const mediaId = await client.v1.uploadMedia(imageBuffer, {
-      mimeType: 'image/png',
+    const state = await loadState();
+    const accessToken = state.oauth2?.accessToken;
+    if (!accessToken) {
+      throw new Error('Missing OAuth2 access token for media upload');
+    }
+
+    const form = new FormData();
+    const mediaBytes = new Uint8Array(imageBuffer);
+    form.append('media', new Blob([mediaBytes], { type: 'image/png' }), 'chart.png');
+    form.append('media_category', 'tweet_image');
+    form.append('media_type', 'image/png');
+
+    const response = await fetch('https://api.x.com/2/media/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: form,
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(
+        {
+          status: response.status,
+          body: errorText,
+          headers: Object.fromEntries(response.headers.entries()),
+        },
+        'X v2 media upload failed'
+      );
+      throw new Error(`Media upload failed with status ${response.status}`);
+    }
+
+    const payload = (await response.json()) as { data?: { id?: string }; errors?: unknown };
+    const mediaId = payload.data?.id;
+    if (!mediaId) {
+      throw new Error('Media upload succeeded but response did not include media id');
+    }
 
     logger.info({ mediaId }, 'Uploaded media successfully');
     return mediaId;
