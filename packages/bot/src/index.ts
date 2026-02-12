@@ -84,7 +84,8 @@ async function poll(): Promise<void> {
   } catch (error) {
     const rateLimitBackoffMs = getRateLimitBackoffMs(error);
     if (rateLimitBackoffMs) {
-      nextPollDelayMs = Math.max(config.bot.pollIntervalMs, rateLimitBackoffMs);
+      // Poll again as soon as X indicates the limit resets.
+      nextPollDelayMs = rateLimitBackoffMs;
       logger.warn(
         { waitMs: nextPollDelayMs, retryAt: new Date(Date.now() + nextPollDelayMs).toISOString() },
         'X mention timeline rate-limited; delaying next poll'
