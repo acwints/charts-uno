@@ -1,34 +1,13 @@
 import puppeteer, { Browser } from 'puppeteer';
 import { accessSync, constants } from 'node:fs';
-import React from 'react';
-import { renderToString } from 'react-dom/server';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  Cell,
-} from 'recharts';
+import { createRequire } from 'node:module';
 import type { ChartData, ChartConfig, ChartType } from '@chartsuno/shared';
 import { COLOR_PALETTES } from '@chartsuno/shared';
 import { logger } from '../config.js';
 
 let browser: Browser | null = null;
+const require = createRequire(import.meta.url);
+const CHART_JS_UMD_PATH = require.resolve('chart.js/dist/chart.umd.js');
 
 function isExecutable(path: string): boolean {
   try {
@@ -124,381 +103,98 @@ function toFiniteNumber(value: unknown): number | undefined {
   return value;
 }
 
-function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
-  const chartWidth = 720;
-  const chartHeight = config.title ? 480 : 520;
-  const colors = COLOR_PALETTES[config.colorScheme];
+function getChartHeight(config: ChartConfig): number {
+  return config.title ? 480 : 520;
+}
 
-  const chartData = data.labels.map((label, idx) => {
-    const point: Record<string, string | number | undefined> = { name: label };
-    data.series.forEach((series) => {
-      point[series.name] = toFiniteNumber(series.data[idx]);
-    });
-    return point;
-  });
-
-  const pieData = data.series[0]?.data
-    .map((value, idx) => {
-      const numeric = toFiniteNumber(value);
-      if (numeric === undefined) return null;
-      return {
-        name: data.labels[idx],
-        value: numeric,
-      };
-    })
-    .filter((point): point is { name: string; value: number } => point !== null) || [];
-
-  const radarData = data.labels.map((label, idx) => {
-    const point: Record<string, string | number | undefined> = { subject: label };
-    data.series.forEach((series) => {
-      point[series.name] = toFiniteNumber(series.data[idx]);
-    });
-    return point;
-  });
-
-  const commonAxisProps = {
-    stroke: '#666',
-    tick: { fill: '#888', fontSize: 12 },
-    tickLine: { stroke: '#666' },
-    axisLine: { stroke: '#444' },
-  };
-
-  const gridElement = config.showGrid ? (
-    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-  ) : null;
-
-  const xAxisElement = <XAxis dataKey="name" {...commonAxisProps} />;
-  const yAxisElement = <YAxis {...commonAxisProps} />;
-
-  const tooltipElement = (
-    <Tooltip
-      contentStyle={{
-        background: '#1a1a1a',
-        border: '1px solid #333',
-        borderRadius: '8px',
-      }}
-      labelStyle={{ color: '#fff', fontWeight: 600 }}
-      itemStyle={{ color: '#ccc' }}
-    />
-  );
-
-  const legendElement = config.showLegend ? (
-    <Legend
-      wrapperStyle={{ paddingTop: '20px' }}
-      formatter={(value) => <span style={{ color: '#aaa', fontSize: '0.85rem' }}>{value}</span>}
-    />
-  ) : null;
-
-  const renderTable = () => (
-    <div
-      style={{
-        width: `${chartWidth}px`,
-        height: `${chartHeight}px`,
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.14)',
-        borderRadius: '12px',
-        background: 'rgba(0,0,0,0.22)',
-        color: '#e5e7eb',
-      }}
-    >
-      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', fontSize: '14px' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.16)', color: '#f9fafb' }}>
-              Label
-            </th>
-            {data.series.map((series) => (
-              <th
-                key={series.name}
-                style={{
-                  textAlign: 'right',
-                  padding: '10px 12px',
-                  borderBottom: '1px solid rgba(255,255,255,0.16)',
-                  color: '#f9fafb',
-                }}
-              >
-                {series.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.labels.slice(0, 20).map((label, idx) => (
-            <tr key={`${label}-${idx}`}>
-              <td style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#d1d5db' }}>
-                {label}
-              </td>
-              {data.series.map((series) => (
-                <td
-                  key={`${series.name}-${idx}`}
-                  style={{
-                    textAlign: 'right',
-                    padding: '8px 12px',
-                    borderBottom: '1px solid rgba(255,255,255,0.08)',
-                    color: '#e5e7eb',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {Number.isFinite(series.data[idx] as number) ? String(series.data[idx]) : '-'}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
-  const renderChart = () => {
-    const hasRenderableSeries =
-      data.series.length > 0 &&
-      data.series.some((series) => series.data.some((value) => toFiniteNumber(value) !== undefined));
-    const hasAnyNonZeroValue = data.series.some((series) =>
-      series.data.some((value) => {
-        const numeric = toFiniteNumber(value);
-        return numeric !== undefined && Math.abs(numeric) > 0;
-      })
-    );
-
-    if (!hasRenderableSeries || !hasAnyNonZeroValue) {
-      return (
-        <div
-          style={{
-            width: `${chartWidth}px`,
-            height: `${chartHeight}px`,
-            border: '1px dashed rgba(255,255,255,0.24)',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#9ca3af',
-            fontSize: '14px',
-            textAlign: 'center',
-            padding: '16px',
-          }}
-        >
-          {!hasRenderableSeries
-            ? 'No plottable numeric data detected. Try "reverse it" for table extraction.'
-            : 'Extracted chart values are all zero. Try "reverse it" to inspect the table output.'}
-        </div>
-      );
-    }
-
-    switch (config.type) {
-      case 'table':
-        return renderTable();
-      case 'bar':
-        return (
-          <BarChart width={chartWidth} height={chartHeight} data={chartData}>
-            {gridElement}
-            {xAxisElement}
-            {yAxisElement}
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Bar
-                key={series.name}
-                dataKey={series.name}
-                fill={colors[idx % colors.length]}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              />
-            ))}
-          </BarChart>
-        );
-
-      case 'line':
-        return (
-          <LineChart width={chartWidth} height={chartHeight} data={chartData}>
-            {gridElement}
-            {xAxisElement}
-            {yAxisElement}
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Line
-                key={series.name}
-                type="monotone"
-                dataKey={series.name}
-                stroke={colors[idx % colors.length]}
-                strokeWidth={2}
-                connectNulls={false}
-                isAnimationActive={false}
-                dot={{ fill: colors[idx % colors.length], strokeWidth: 0, r: 4 }}
-              />
-            ))}
-          </LineChart>
-        );
-
-      case 'area':
-        return (
-          <AreaChart width={chartWidth} height={chartHeight} data={chartData}>
-            {gridElement}
-            {xAxisElement}
-            {yAxisElement}
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Area
-                key={series.name}
-                type="monotone"
-                dataKey={series.name}
-                stroke={colors[idx % colors.length]}
-                fill={colors[idx % colors.length]}
-                fillOpacity={0.3}
-                strokeWidth={2}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            ))}
-          </AreaChart>
-        );
-
-      case 'pie':
-        return (
-          <PieChart width={chartWidth} height={chartHeight}>
-            {tooltipElement}
-            {legendElement}
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={120}
-              paddingAngle={2}
-              dataKey="value"
-              isAnimationActive={false}
-              label={config.showValues ? ({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} (${((percent ?? 0) * 100).toFixed(0)}%)` : false}
-              labelLine={config.showValues}
-            >
-              {pieData.map((_, idx) => (
-                <Cell key={`cell-${idx}`} fill={colors[idx % colors.length]} />
-              ))}
-            </Pie>
-          </PieChart>
-        );
-
-      case 'radar':
-        return (
-          <RadarChart
-            width={chartWidth}
-            height={chartHeight}
-            cx={chartWidth / 2}
-            cy={chartHeight / 2}
-            outerRadius={Math.min(chartWidth, chartHeight) * 0.32}
-            data={radarData}
-          >
-            <PolarGrid stroke="rgba(255,255,255,0.2)" />
-            <PolarAngleAxis dataKey="subject" tick={{ fill: '#aaa', fontSize: 12 }} />
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Radar
-                key={series.name}
-                name={series.name}
-                dataKey={series.name}
-                stroke={colors[idx % colors.length]}
-                fill={colors[idx % colors.length]}
-                fillOpacity={0.3}
-                isAnimationActive={false}
-              />
-            ))}
-          </RadarChart>
-        );
-
-      case 'scatter':
-        return (
-          <ScatterChart width={chartWidth} height={chartHeight}>
-            {gridElement}
-            {xAxisElement}
-            {yAxisElement}
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Scatter
-                key={series.name}
-                name={series.name}
-                data={series.data
-                  .map((value, i) => {
-                    const numeric = toFiniteNumber(value);
-                    if (numeric === undefined) return null;
-                    return { x: i + 1, y: numeric, name: data.labels[i] };
-                  })
-                  .filter((point): point is { x: number; y: number; name: string } => point !== null)}
-                fill={colors[idx % colors.length]}
-                isAnimationActive={false}
-              />
-            ))}
-          </ScatterChart>
-        );
-
-      default:
-        return (
-          <BarChart width={chartWidth} height={chartHeight} data={chartData}>
-            {gridElement}
-            {xAxisElement}
-            {yAxisElement}
-            {tooltipElement}
-            {legendElement}
-            {data.series.map((series, idx) => (
-              <Bar
-                key={series.name}
-                dataKey={series.name}
-                fill={colors[idx % colors.length]}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              />
-            ))}
-          </BarChart>
-        );
-    }
-  };
-
+function hasRenderableSeries(data: ChartData): boolean {
   return (
-    <div
-      style={{
-        width: '800px',
-        height: '600px',
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%)',
-        padding: '40px',
-        boxSizing: 'border-box',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
-      {config.title && (
-        <h2
-          style={{
-            color: '#ffffff',
-            fontSize: '24px',
-            fontWeight: 600,
-            marginBottom: '20px',
-            textAlign: 'center',
-          }}
-        >
-          {config.title}
-        </h2>
-      )}
-      <div style={{ width: `${chartWidth}px`, height: `${chartHeight}px`, margin: '0 auto' }}>
-        {renderChart()}
-      </div>
-    </div>
+    data.series.length > 0 &&
+    data.series.some((series) => series.data.some((value) => toFiniteNumber(value) !== undefined))
   );
 }
 
-export async function renderChartToPng(data: ChartData, config: ChartConfig): Promise<Buffer> {
-  const browserInstance = await getBrowser();
-  const page = await browserInstance.newPage();
+function hasAnyNonZeroValue(data: ChartData): boolean {
+  return data.series.some((series) =>
+    series.data.some((value) => {
+      const numeric = toFiniteNumber(value);
+      return numeric !== undefined && Math.abs(numeric) > 0;
+    })
+  );
+}
 
-  try {
-    // Set viewport to match chart size (retina for crisp output)
-    const viewport = { width: 800, height: 600, deviceScaleFactor: 2 };
-    await page.setViewport(viewport);
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
-    // Render the React component to HTML string
-    const chartHtml = renderToString(<ChartPreviewServer data={data} config={config} />);
+function buildTableHtml(data: ChartData, chartWidth: number, chartHeight: number): string {
+  const header = data.series
+    .map(
+      (series) => `
+            <th class="table-head table-cell table-cell-right">${escapeHtml(series.name)}</th>`
+    )
+    .join('');
 
-    // Create full HTML document
-    const html = `
+  const rows = data.labels
+    .slice(0, 20)
+    .map((label, idx) => {
+      const cells = data.series
+        .map((series) => {
+          const value = toFiniteNumber(series.data[idx]);
+          const display = value === undefined ? '-' : String(value);
+          return `<td class="table-cell table-cell-right table-value">${escapeHtml(display)}</td>`;
+        })
+        .join('');
+      return `
+          <tr>
+            <td class="table-cell table-label">${escapeHtml(label)}</td>
+            ${cells}
+          </tr>`;
+    })
+    .join('');
+
+  return `
+    <div class="table-wrap" style="width:${chartWidth}px;height:${chartHeight}px;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="table-head table-cell table-cell-left">Label</th>
+            ${header}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function buildEmptyStateHtml(
+  chartWidth: number,
+  chartHeight: number,
+  hasData: boolean
+): string {
+  const message = hasData
+    ? 'Extracted chart values are all zero. Try "reverse it" to inspect the table output.'
+    : 'No plottable numeric data detected. Try "reverse it" for table extraction.';
+
+  return `
+    <div class="empty-state" style="width:${chartWidth}px;height:${chartHeight}px;">
+      ${escapeHtml(message)}
+    </div>`;
+}
+
+function buildShellHtml(bodyContent: string, title: string): string {
+  const titleHtml = title
+    ? `<h2 class="chart-title">${escapeHtml(title)}</h2>`
+    : '';
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -509,17 +205,284 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
       background: #0f0f0f;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .recharts-wrapper { font-family: inherit; }
-    .recharts-cartesian-axis-tick-value { fill: #888 !important; }
-    .recharts-legend-item-text { color: #aaa !important; }
+    #root {
+      width: 800px;
+      height: 600px;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+      padding: 40px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .chart-title {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .chart-frame {
+      width: 720px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .empty-state {
+      border: 1px dashed rgba(255,255,255,0.24);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 14px;
+      text-align: center;
+      padding: 16px;
+    }
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.22);
+      color: #e5e7eb;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 14px;
+    }
+    .table-cell {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .table-head {
+      color: #f9fafb;
+      border-bottom: 1px solid rgba(255,255,255,0.16);
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .table-cell-left { text-align: left; }
+    .table-cell-right { text-align: right; }
+    .table-label { color: #d1d5db; }
+    .table-value {
+      color: #e5e7eb;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
-  <div id="root">${chartHtml}</div>
+  <div id="root">
+    ${titleHtml}
+    <div class="chart-frame">
+      ${bodyContent}
+    </div>
+  </div>
 </body>
 </html>`;
+}
+
+function getChartPayload({ data, config }: ChartPreviewServerProps) {
+  const palette = COLOR_PALETTES[config.colorScheme];
+  const labels = data.labels.map((label) => String(label));
+  const series = data.series.map((entry) => ({
+    name: entry.name || 'Series',
+    data: entry.data.map((value) => {
+      const numeric = toFiniteNumber(value);
+      return numeric === undefined ? null : numeric;
+    }),
+  }));
+
+  return {
+    type: config.type,
+    labels,
+    series,
+    colors: palette,
+    showGrid: config.showGrid,
+    showLegend: config.showLegend,
+    showPoints: config.showPoints,
+    stacked: config.stacked,
+    barLayout: config.barLayout ?? 'vertical',
+  };
+}
+
+export async function renderChartToPng(data: ChartData, config: ChartConfig): Promise<Buffer> {
+  const chartWidth = 720;
+  const chartHeight = getChartHeight(config);
+  const canPlot = hasRenderableSeries(data) && hasAnyNonZeroValue(data);
+  const shouldDrawCanvas = config.type !== 'table' && canPlot;
+  const bodyContent =
+    config.type === 'table'
+      ? buildTableHtml(data, chartWidth, chartHeight)
+      : canPlot
+        ? `<canvas id="chart-canvas" width="${chartWidth}" height="${chartHeight}"></canvas>`
+        : buildEmptyStateHtml(chartWidth, chartHeight, hasRenderableSeries(data));
+
+  const browserInstance = await getBrowser();
+  const page = await browserInstance.newPage();
+
+  try {
+    // Set viewport to match chart size (retina for crisp output)
+    const viewport = { width: 800, height: 600, deviceScaleFactor: 2 };
+    await page.setViewport(viewport);
+
+    const html = buildShellHtml(bodyContent, config.title || '');
 
     await page.setContent(html, { waitUntil: 'networkidle0' });
+    if (shouldDrawCanvas) {
+      await page.addScriptTag({ path: CHART_JS_UMD_PATH });
+
+      await page.evaluate((payload) => {
+        const chartTypeMap: Record<string, string> = {
+          area: 'line',
+          table: 'bar',
+        };
+        const resolvedType = chartTypeMap[payload.type] || payload.type;
+        const chartType =
+          resolvedType === 'bar' ||
+          resolvedType === 'line' ||
+          resolvedType === 'pie' ||
+          resolvedType === 'radar' ||
+          resolvedType === 'scatter'
+            ? resolvedType
+            : 'bar';
+
+        const canvas = document.getElementById('chart-canvas') as HTMLCanvasElement | null;
+        if (!canvas) {
+          throw new Error('Chart canvas element not found');
+        }
+
+        const win = window as unknown as {
+          Chart?: new (ctx: CanvasRenderingContext2D, config: unknown) => unknown;
+        };
+        if (!win.Chart) {
+          throw new Error('Chart.js was not loaded');
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Unable to get 2D context for chart canvas');
+        }
+
+        const getDatasetColor = (idx: number): string => payload.colors[idx % payload.colors.length];
+        const labels = payload.labels as string[];
+
+        const commonDatasetOptions = {
+          borderWidth: 2,
+          pointRadius: payload.showPoints ? 3 : 0,
+          pointHoverRadius: payload.showPoints ? 4 : 0,
+        };
+
+        let datasets: Array<Record<string, unknown>>;
+        let chartData: Record<string, unknown>;
+        let scales: Record<string, unknown>;
+
+        if (chartType === 'pie') {
+          const firstSeries = payload.series[0];
+          const pieData = (firstSeries?.data || []).map((value: number | null) => value ?? 0);
+          datasets = [
+            {
+              label: firstSeries?.name || 'Series',
+              data: pieData,
+              backgroundColor: labels.map((_, idx) => getDatasetColor(idx)),
+              borderColor: '#0f172a',
+              borderWidth: 1,
+            },
+          ];
+          chartData = { labels, datasets };
+          scales = {};
+        } else if (chartType === 'scatter') {
+          datasets = payload.series.map((series: { name: string; data: Array<number | null> }, idx: number) => ({
+            label: series.name,
+            data: series.data
+              .map((value, pointIdx) => {
+                if (typeof value !== 'number') return null;
+                return { x: pointIdx + 1, y: value };
+              })
+              .filter((point): point is { x: number; y: number } => point !== null),
+            backgroundColor: getDatasetColor(idx),
+            borderColor: getDatasetColor(idx),
+            ...commonDatasetOptions,
+          }));
+          chartData = { datasets };
+          scales = {
+            x: {
+              type: 'linear',
+              min: 1,
+              max: Math.max(labels.length, 1),
+              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
+              ticks: {
+                color: '#888',
+                callback(value: number | string) {
+                  const idx = Number(value) - 1;
+                  return Number.isInteger(idx) && idx >= 0 && idx < labels.length ? labels[idx] : '';
+                },
+              },
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
+              ticks: { color: '#888' },
+            },
+          };
+        } else {
+          datasets = payload.series.map((series: { name: string; data: Array<number | null> }, idx: number) => {
+            const color = getDatasetColor(idx);
+            return {
+              label: series.name,
+              data: series.data.map((value) => (typeof value === 'number' ? value : null)),
+              borderColor: color,
+              backgroundColor:
+                chartType === 'line' && payload.type !== 'area'
+                  ? color
+                  : `${color}${payload.type === 'area' ? '66' : ''}`,
+              fill: payload.type === 'area',
+              tension: chartType === 'line' ? 0.35 : 0,
+              ...commonDatasetOptions,
+            };
+          });
+          chartData = { labels, datasets };
+          scales = {
+            x: {
+              stacked: payload.stacked,
+              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
+              ticks: { color: '#888', maxRotation: 45, minRotation: 45 },
+            },
+            y: {
+              stacked: payload.stacked,
+              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
+              ticks: { color: '#888' },
+            },
+          };
+        }
+
+        new win.Chart(ctx, {
+          type: chartType,
+          data: chartData,
+          options: {
+            animation: false,
+            responsive: false,
+            maintainAspectRatio: false,
+            indexAxis: chartType === 'bar' && payload.barLayout === 'horizontal' ? 'y' : 'x',
+            scales,
+            plugins: {
+              legend: {
+                display: payload.showLegend,
+                labels: { color: '#aaa' },
+              },
+              tooltip: {
+                backgroundColor: '#1a1a1a',
+                borderColor: '#333',
+                borderWidth: 1,
+                titleColor: '#fff',
+                bodyColor: '#ccc',
+              },
+            },
+          },
+        });
+      }, getChartPayload({ data, config }));
+    }
 
     // Take screenshot
     const screenshot = await page.screenshot({
