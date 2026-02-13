@@ -1,6 +1,7 @@
 import { logger } from '../config.js';
 import {
   getParentTweetWithMedia,
+  hasExistingReplyToMention,
   downloadImage,
   uploadMedia,
   replyWithMedia,
@@ -41,15 +42,23 @@ async function markProcessed(mentionId: string): Promise<void> {
 
 export async function processMention(mention: MentionData): Promise<void> {
   const { mentionId, parentTweetId, action } = mention;
+  const mentionActionKey = `${mentionId}:${action}`;
 
   // Skip if already processed
   const processed = await getProcessedMentions();
-  if (processed.has(mentionId)) {
-    logger.debug({ mentionId }, 'Skipping already processed mention');
+  if (processed.has(mentionActionKey) || processed.has(mentionId)) {
+    logger.debug({ mentionId, action }, 'Skipping already processed mention');
     return;
   }
 
-  await markProcessed(mentionId);
+  // Belt-and-suspenders dedupe: if we've already replied on X, don't post again.
+  if (await hasExistingReplyToMention(mentionId)) {
+    logger.info({ mentionId, action }, 'Skipping mention because bot already replied');
+    await markProcessed(mentionActionKey);
+    return;
+  }
+
+  await markProcessed(mentionActionKey);
 
   logger.info({ mentionId, parentTweetId }, 'Processing mention');
 

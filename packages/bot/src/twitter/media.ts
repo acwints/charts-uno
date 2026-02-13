@@ -8,6 +8,32 @@ export interface TweetMediaData {
   authorUsername: string;
 }
 
+let cachedBotUsername: string | null = null;
+
+async function getBotUsername(): Promise<string> {
+  if (cachedBotUsername) {
+    return cachedBotUsername;
+  }
+
+  const client = getReadOnlyClient();
+  const me = await client.v2.me();
+  cachedBotUsername = me.data.username.toLowerCase();
+  return cachedBotUsername;
+}
+
+export async function hasExistingReplyToMention(mentionId: string): Promise<boolean> {
+  try {
+    const client = getReadOnlyClient();
+    const botUsername = await getBotUsername();
+    const query = `from:${botUsername} in_reply_to_tweet_id:${mentionId}`;
+    const response = await client.v2.search(query, { max_results: 10, 'tweet.fields': ['id'] });
+    return Boolean(response.data.data && response.data.data.length > 0);
+  } catch (error) {
+    logger.warn({ mentionId, error }, 'Failed to check existing replies for mention');
+    return false;
+  }
+}
+
 export async function getParentTweetWithMedia(tweetId: string): Promise<TweetMediaData> {
   const client = getReadOnlyClient();
 

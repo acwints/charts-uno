@@ -48,7 +48,10 @@ export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: stri
       labels: parsed.labels,
       series: parsed.series.map((series) => ({
         name: series.name,
-        data: series.data.map((value) => value ?? 0),
+        data: series.data.map((value) => {
+          const numeric = typeof value === 'number' ? value : Number(value);
+          return Number.isFinite(numeric) ? numeric : 0;
+        }),
       })),
       sourceType: 'image',
       suggestedTitle: parsed.suggestedTitle,

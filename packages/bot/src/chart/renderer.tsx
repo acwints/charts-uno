@@ -117,28 +117,41 @@ interface ChartPreviewServerProps {
   config: ChartConfig;
 }
 
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return undefined;
+  }
+  return value;
+}
+
 function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
   const chartWidth = 720;
   const chartHeight = config.title ? 480 : 520;
   const colors = COLOR_PALETTES[config.colorScheme];
 
   const chartData = data.labels.map((label, idx) => {
-    const point: Record<string, string | number> = { name: label };
+    const point: Record<string, string | number | undefined> = { name: label };
     data.series.forEach((series) => {
-      point[series.name] = series.data[idx] ?? 0;
+      point[series.name] = toFiniteNumber(series.data[idx]);
     });
     return point;
   });
 
-  const pieData = data.series[0]?.data.map((value, idx) => ({
-    name: data.labels[idx],
-    value: value ?? 0,
-  })) || [];
+  const pieData = data.series[0]?.data
+    .map((value, idx) => {
+      const numeric = toFiniteNumber(value);
+      if (numeric === undefined) return null;
+      return {
+        name: data.labels[idx],
+        value: numeric,
+      };
+    })
+    .filter((point): point is { name: string; value: number } => point !== null) || [];
 
   const radarData = data.labels.map((label, idx) => {
-    const point: Record<string, string | number> = { subject: label };
+    const point: Record<string, string | number | undefined> = { subject: label };
     data.series.forEach((series) => {
-      point[series.name] = series.data[idx] ?? 0;
+      point[series.name] = toFiniteNumber(series.data[idx]);
     });
     return point;
   });
@@ -237,6 +250,40 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
   );
 
   const renderChart = () => {
+    const hasRenderableSeries =
+      data.series.length > 0 &&
+      data.series.some((series) => series.data.some((value) => toFiniteNumber(value) !== undefined));
+    const hasAnyNonZeroValue = data.series.some((series) =>
+      series.data.some((value) => {
+        const numeric = toFiniteNumber(value);
+        return numeric !== undefined && Math.abs(numeric) > 0;
+      })
+    );
+
+    if (!hasRenderableSeries || !hasAnyNonZeroValue) {
+      return (
+        <div
+          style={{
+            width: `${chartWidth}px`,
+            height: `${chartHeight}px`,
+            border: '1px dashed rgba(255,255,255,0.24)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#9ca3af',
+            fontSize: '14px',
+            textAlign: 'center',
+            padding: '16px',
+          }}
+        >
+          {!hasRenderableSeries
+            ? 'No plottable numeric data detected. Try "reverse it" for table extraction.'
+            : 'Extracted chart values are all zero. Try "reverse it" to inspect the table output.'}
+        </div>
+      );
+    }
+
     switch (config.type) {
       case 'table':
         return renderTable();
@@ -254,6 +301,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
                 dataKey={series.name}
                 fill={colors[idx % colors.length]}
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
               />
             ))}
           </BarChart>
@@ -274,6 +322,8 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
                 strokeWidth={2}
+                connectNulls={false}
+                isAnimationActive={false}
                 dot={{ fill: colors[idx % colors.length], strokeWidth: 0, r: 4 }}
               />
             ))}
@@ -297,6 +347,8 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
                 fill={colors[idx % colors.length]}
                 fillOpacity={0.3}
                 strokeWidth={2}
+                connectNulls={false}
+                isAnimationActive={false}
               />
             ))}
           </AreaChart>
@@ -315,6 +367,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
               outerRadius={120}
               paddingAngle={2}
               dataKey="value"
+              isAnimationActive={false}
               label={config.showValues ? ({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} (${((percent ?? 0) * 100).toFixed(0)}%)` : false}
               labelLine={config.showValues}
             >
@@ -347,6 +400,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
                 stroke={colors[idx % colors.length]}
                 fill={colors[idx % colors.length]}
                 fillOpacity={0.3}
+                isAnimationActive={false}
               />
             ))}
           </RadarChart>
@@ -364,8 +418,15 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
               <Scatter
                 key={series.name}
                 name={series.name}
-                data={series.data.map((value, i) => ({ x: i + 1, y: value, name: data.labels[i] }))}
+                data={series.data
+                  .map((value, i) => {
+                    const numeric = toFiniteNumber(value);
+                    if (numeric === undefined) return null;
+                    return { x: i + 1, y: numeric, name: data.labels[i] };
+                  })
+                  .filter((point): point is { x: number; y: number; name: string } => point !== null)}
                 fill={colors[idx % colors.length]}
+                isAnimationActive={false}
               />
             ))}
           </ScatterChart>
@@ -385,6 +446,7 @@ function ChartPreviewServer({ data, config }: ChartPreviewServerProps) {
                 dataKey={series.name}
                 fill={colors[idx % colors.length]}
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
               />
             ))}
           </BarChart>
