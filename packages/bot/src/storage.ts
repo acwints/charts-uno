@@ -27,7 +27,38 @@ function getSeedStatePath(): string {
   return resolve(process.env.BOT_STATE_SEED_PATH || 'packages/bot/bot-state.json');
 }
 
+function loadSeedStateFromEnv(): BotState | null {
+  const raw = process.env.BOT_STATE_JSON;
+  if (!raw) return null;
+
+  const candidates = [raw];
+  try {
+    candidates.push(Buffer.from(raw, 'base64').toString('utf-8'));
+  } catch {
+    // Ignore base64 decode errors and continue with raw value.
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as Partial<BotState>;
+      const seeded = { ...DEFAULT_STATE, ...parsed };
+      if (!seeded.oauth2) continue;
+      return seeded;
+    } catch {
+      // Try next candidate format.
+    }
+  }
+
+  logger.warn('BOT_STATE_JSON is present but invalid; ignoring env seed state');
+  return null;
+}
+
 async function loadSeedState(): Promise<BotState | null> {
+  const envSeed = loadSeedStateFromEnv();
+  if (envSeed?.oauth2) {
+    return envSeed;
+  }
+
   try {
     const data = await readFile(getSeedStatePath(), 'utf-8');
     const parsed = JSON.parse(data) as Partial<BotState>;
