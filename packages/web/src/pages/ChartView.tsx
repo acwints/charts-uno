@@ -309,6 +309,7 @@ export function ChartView() {
               <ExportMenu
                 data={chartData}
                 chartRef={chartCaptureRef}
+                chartId={id}
                 title={chartConfig.title}
                 watermark={watermarkSettings}
                 isAuthenticated={isAuthenticated}

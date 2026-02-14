@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ChartBuilder } from './pages/ChartBuilder';
 import { ChartView } from './pages/ChartView';
+import { EmbedView } from './pages/EmbedView';
 import { ChartFeedPage } from './pages/ChartFeedPage';
 import { SettingsPage } from './pages/Settings';
 import { InviteAccept } from './pages/InviteAccept';
@@ -24,6 +25,9 @@ function AppWithTeam() {
       <Routes>
         {/* Home route with auth-based redirect */}
         <Route path="/" element={<HomeRoute />} />
+
+        {/* Embed route (no layout chrome) */}
+        <Route path="/embed/:id" element={<EmbedView />} />
 
         {/* Public routes */}
         <Route path="/feed" element={<MainLayout />}>
