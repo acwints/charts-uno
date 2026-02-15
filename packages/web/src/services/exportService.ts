@@ -177,6 +177,15 @@ export async function copyImageToClipboard(
   await navigator.clipboard.write([clipboardItem]);
 }
 
+export function generateEmbedCode(chartId: string, title?: string): string {
+  const origin = window.location.origin;
+  const src = `${origin}/embed/${chartId}`;
+  const safeTitle = title
+    ? title.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    : 'Chart';
+  return `<iframe src="${src}" width="600" height="400" frameborder="0" title="${safeTitle}" style="border:0;border-radius:8px;" allowtransparency="true"></iframe>`;
+}
+
 export async function copyToClipboard(data: ChartData): Promise<void> {
   // Build tab-separated values for Excel/Sheets paste
   const headers = ['', ...data.labels].join('\t');
