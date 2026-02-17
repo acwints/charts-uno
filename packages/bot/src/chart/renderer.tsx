@@ -1,13 +1,32 @@
 import puppeteer, { Browser } from 'puppeteer';
 import { accessSync, constants } from 'node:fs';
 import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import type { ChartData, ChartConfig, ChartType } from '@chartsuno/shared';
 import { COLOR_PALETTES } from '@chartsuno/shared';
 import { logger } from '../config.js';
 
 let browser: Browser | null = null;
 const require = createRequire(import.meta.url);
-const CHART_JS_UMD_PATH = require.resolve('chart.js/dist/chart.umd.js');
+
+function resolveChartJsUmdPath(): string {
+  const chartJsEntryPath = require.resolve('chart.js');
+  const chartJsDistDir = dirname(chartJsEntryPath);
+  const candidates = [join(chartJsDistDir, 'chart.umd.js'), join(chartJsDistDir, 'chart.umd.min.js')];
+
+  for (const candidate of candidates) {
+    try {
+      accessSync(candidate, constants.R_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(`Unable to locate Chart.js UMD bundle from entry "${chartJsEntryPath}"`);
+}
+
+const CHART_JS_UMD_PATH = resolveChartJsUmdPath();
 
 function isExecutable(path: string): boolean {
   try {
