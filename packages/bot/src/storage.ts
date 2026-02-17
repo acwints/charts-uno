@@ -53,7 +53,7 @@ function loadSeedStateFromEnv(): BotState | null {
   return null;
 }
 
-async function loadSeedState(): Promise<BotState | null> {
+export async function loadSeedState(): Promise<BotState | null> {
   const envSeed = loadSeedStateFromEnv();
   if (envSeed?.oauth2) {
     return envSeed;

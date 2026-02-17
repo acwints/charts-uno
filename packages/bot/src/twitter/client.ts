@@ -1,6 +1,6 @@
 import { TwitterApi } from 'twitter-api-v2';
 import { config, logger } from '../config.js';
-import { loadState, updateState } from '../storage.js';
+import { loadSeedState, loadState, updateState } from '../storage.js';
 
 let client: TwitterApi | null = null;
 
@@ -41,29 +41,82 @@ export async function ensureFreshClient(): Promise<void> {
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<void> {
-  const tempClient = new TwitterApi({
-    clientId: config.twitter.clientId,
-    clientSecret: config.twitter.clientSecret,
-  });
+  await refreshAccessTokenInternal(refreshToken, true);
+}
 
-  const {
-    client: refreshedClient,
-    accessToken,
-    refreshToken: newRefreshToken,
-    expiresIn,
-  } = await tempClient.refreshOAuth2Token(refreshToken);
+interface TwitterRefreshError {
+  code?: number;
+  error?: {
+    error?: string;
+    error_description?: string;
+    errors?: Array<{
+      code?: number;
+      message?: string;
+    }>;
+  };
+}
 
-  await updateState({
-    oauth2: {
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as TwitterRefreshError;
+  const description = candidate.error?.error_description?.toLowerCase() || '';
+  const kind = candidate.error?.error?.toLowerCase() || '';
+  const apiCode = candidate.error?.errors?.[0]?.code;
+
+  return (
+    candidate.code === 400 &&
+    (description.includes('token was invalid') ||
+      apiCode === 131 ||
+      (kind === 'invalid_request' && description.includes('token')))
+  );
+}
+
+async function refreshAccessTokenInternal(
+  refreshToken: string,
+  allowSeedFallback: boolean
+): Promise<void> {
+  try {
+    const tempClient = new TwitterApi({
+      clientId: config.twitter.clientId,
+      clientSecret: config.twitter.clientSecret,
+    });
+
+    const {
+      client: refreshedClient,
       accessToken,
-      refreshToken: newRefreshToken || refreshToken,
-      expiresAt: Date.now() + expiresIn * 1000,
-      scope: ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'],
-    },
-  });
+      refreshToken: newRefreshToken,
+      expiresIn,
+    } = await tempClient.refreshOAuth2Token(refreshToken);
 
-  client = refreshedClient;
-  logger.info('Access token refreshed successfully');
+    await updateState({
+      oauth2: {
+        accessToken,
+        refreshToken: newRefreshToken || refreshToken,
+        expiresAt: Date.now() + expiresIn * 1000,
+        scope: ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'],
+      },
+    });
+
+    client = refreshedClient;
+    logger.info('Access token refreshed successfully');
+  } catch (error) {
+    if (allowSeedFallback && isInvalidRefreshTokenError(error)) {
+      const seedState = await loadSeedState();
+      const seedRefreshToken = seedState?.oauth2?.refreshToken?.trim();
+      if (seedRefreshToken && seedRefreshToken !== refreshToken) {
+        logger.warn('Stored refresh token was rejected; trying seed refresh token');
+        await refreshAccessTokenInternal(seedRefreshToken, false);
+        return;
+      }
+
+      throw new Error(
+        'OAuth refresh token is invalid or revoked. Re-run bot auth and update BOT_STATE_PATH or BOT_STATE_JSON.',
+        { cause: error }
+      );
+    }
+
+    throw error;
+  }
 }
 
 export function getReadOnlyClient() {
