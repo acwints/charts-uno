@@ -31,7 +31,7 @@ import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import Check from 'lucide-react/dist/esm/icons/check';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
-import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors } from '../types';
+import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
 import { computeAdaptiveAxisConfig } from '../utils/adaptiveAxis';
@@ -204,6 +204,15 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       return point;
     });
   }, [data, isNumericLabels]);
+
+  const isBarLike = config.type === 'bar' || config.type === 'histogram';
+  const canStack = data.series.length > 1;
+
+  const barValueAxisDomain = useMemo((): [number, number] | undefined => {
+    if (!isBarLike) return undefined;
+    const values = data.series.flatMap((series) => series.data);
+    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+  }, [config.yAxisBaselineMode, data.series, isBarLike]);
 
   // Calculate domain with padding for numeric axes
   const numericDomain = useMemo((): [number, number] | undefined => {
@@ -435,6 +444,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         tick={{ fill: theme.textMuted, fontSize: 12 }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+        domain={!isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         tickFormatter={formatYAxisTick}
         label={yAxisLabel ? {
           value: yAxisLabel,
@@ -452,6 +462,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     const horizontalXAxis = (
       <XAxis
         type="number"
+        domain={isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         stroke={theme.textMuted}
         tick={{ fill: theme.textMuted, fontSize: 12 }}
         tickLine={{ stroke: theme.textMuted }}
@@ -544,7 +555,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
                 radius={styleConfig.chart.barRadius}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
-                {...(config.stacked ? { stackId: 'stack' } : {})}
+                {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
               >
                 {config.showValues && (
                   <LabelList
@@ -577,7 +588,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
                 radius={0}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
-                {...(config.stacked ? { stackId: 'stack' } : {})}
+                {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
               >
                 {config.showValues && (
                   <LabelList

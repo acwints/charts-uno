@@ -23,6 +23,7 @@ const defaultConfig: ChartConfig = {
   showBorder: true,
   animate: true,
   stacked: false,
+  yAxisBaselineMode: 'auto',
   title: '',
 };
 

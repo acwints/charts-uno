@@ -9,6 +9,7 @@ export interface DataSeries {
 export type XAxisType = 'year' | 'date' | 'category' | 'number';
 export type YAxisFormat = 'currency' | 'percentage' | 'number';
 export type BarLayout = 'vertical' | 'horizontal';
+export type YAxisBaselineMode = 'auto' | 'zero' | 'data';
 
 export interface ChartData {
   labels: string[];
@@ -94,6 +95,7 @@ export interface ChartConfig {
   title: string;
   stacked: boolean;
   barLayout?: BarLayout;
+  yAxisBaselineMode?: YAxisBaselineMode;
   sourceLink?: string;
   // Custom color overrides - when set, these take precedence
   customColors?: CustomColors;
@@ -119,5 +121,6 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
   showBorder: true,
   animate: true,
   stacked: false,
+  yAxisBaselineMode: 'auto',
   title: '',
 };

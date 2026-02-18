@@ -1,4 +1,4 @@
-import { getReadOnlyClient, getReadWriteClient } from './client.js';
+import { getAuthMode, getReadOnlyClient, getReadWriteClient } from './client.js';
 import { logger } from '../config.js';
 import { loadState } from '../storage.js';
 
@@ -96,6 +96,17 @@ export async function downloadImage(url: string): Promise<Buffer> {
 }
 
 export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
+  if (getAuthMode() === 'oauth1') {
+    try {
+      const mediaId = await getReadWriteClient().v1.uploadMedia(imageBuffer, { type: 'png' });
+      logger.info({ mediaId }, 'Uploaded media successfully via X v1');
+      return mediaId;
+    } catch (error) {
+      logger.error({ error }, 'Error uploading media via X v1');
+      throw error;
+    }
+  }
+
   try {
     const state = await loadState();
     const accessToken = state.oauth2?.accessToken;

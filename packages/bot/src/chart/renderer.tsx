@@ -3,7 +3,7 @@ import { accessSync, constants } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import type { ChartData, ChartConfig, ChartType } from '@chartsuno/shared';
-import { COLOR_PALETTES } from '@chartsuno/shared';
+import { COLOR_PALETTES, getNumericDomainFromValues } from '@chartsuno/shared';
 import { logger } from '../config.js';
 
 let browser: Browser | null = null;
@@ -313,6 +313,11 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
       return numeric === undefined ? null : numeric;
     }),
   }));
+  const valueDomain = getNumericDomainFromValues(
+    series.flatMap((entry) => entry.data),
+    { mode: config.yAxisBaselineMode ?? 'auto' }
+  );
+  const canStack = series.length > 1;
 
   return {
     type: config.type,
@@ -322,8 +327,10 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
     showGrid: config.showGrid,
     showLegend: config.showLegend,
     showPoints: config.showPoints,
-    stacked: config.stacked,
+    stacked: config.stacked && canStack,
     barLayout: config.barLayout ?? 'vertical',
+    yAxisBaselineMode: config.yAxisBaselineMode ?? 'auto',
+    valueDomain,
   };
 }
 
@@ -462,14 +469,30 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
             };
           });
           chartData = { labels, datasets };
+          const isHorizontalBar = chartType === 'bar' && payload.barLayout === 'horizontal';
+          const valueAxisKey = isHorizontalBar ? 'x' : 'y';
+          const valueAxisDomain = Array.isArray(payload.valueDomain) &&
+            payload.valueDomain.length === 2 &&
+            typeof payload.valueDomain[0] === 'number' &&
+            typeof payload.valueDomain[1] === 'number'
+            ? payload.valueDomain as [number, number]
+            : undefined;
+          const valueScaleOptions = chartType === 'bar'
+            ? {
+                beginAtZero: payload.yAxisBaselineMode === 'zero',
+                ...(valueAxisDomain ? { min: valueAxisDomain[0], max: valueAxisDomain[1] } : {}),
+              }
+            : {};
           scales = {
             x: {
-              stacked: payload.stacked,
+              stacked: chartType === 'bar' ? payload.stacked : false,
+              ...(valueAxisKey === 'x' ? valueScaleOptions : {}),
               grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
               ticks: { color: '#888', maxRotation: 45, minRotation: 45 },
             },
             y: {
-              stacked: payload.stacked,
+              stacked: chartType === 'bar' ? payload.stacked : false,
+              ...(valueAxisKey === 'y' ? valueScaleOptions : {}),
               grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
               ticks: { color: '#888' },
             },
@@ -539,5 +562,6 @@ export function getDefaultConfig(data: ChartData): ChartConfig {
     animate: false, // No animations for server-side rendering
     title: data.suggestedTitle || '',
     stacked: false,
+    yAxisBaselineMode: 'auto',
   };
 }

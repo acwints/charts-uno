@@ -3,32 +3,78 @@ import { config, logger } from '../config.js';
 import { loadSeedState, loadState, updateState } from '../storage.js';
 
 let client: TwitterApi | null = null;
+let authMode: 'oauth2' | 'oauth1' | null = null;
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+
+function hasOAuth1Credentials(): boolean {
+  return Boolean(
+    config.twitter.apiKey &&
+      config.twitter.apiSecret &&
+      config.twitter.accessToken &&
+      config.twitter.accessSecret
+  );
+}
+
+function initializeOAuth1Client(reason: string): void {
+  if (!hasOAuth1Credentials()) {
+    throw new Error('OAuth1 credentials are not configured');
+  }
+
+  client = new TwitterApi({
+    appKey: config.twitter.apiKey,
+    appSecret: config.twitter.apiSecret,
+    accessToken: config.twitter.accessToken,
+    accessSecret: config.twitter.accessSecret,
+  });
+  authMode = 'oauth1';
+  logger.warn({ reason }, 'Twitter client initialized with OAuth 1.0a fallback');
+}
 
 export async function initializeClient(): Promise<void> {
   const state = await loadState();
 
   if (!state.oauth2) {
+    if (hasOAuth1Credentials()) {
+      initializeOAuth1Client('No OAuth2 tokens found in bot state');
+      return;
+    }
     throw new Error(
       'No OAuth 2.0 tokens found. Run `pnpm --filter @chartsuno/bot auth` to authenticate with X first.'
     );
   }
 
-  if (Date.now() >= state.oauth2.expiresAt - TOKEN_REFRESH_BUFFER_MS) {
-    logger.info('Access token expired or expiring soon, refreshing...');
-    await refreshAccessToken(state.oauth2.refreshToken);
-    return;
-  }
+  try {
+    if (Date.now() >= state.oauth2.expiresAt - TOKEN_REFRESH_BUFFER_MS) {
+      logger.info('Access token expired or expiring soon, refreshing...');
+      await refreshAccessToken(state.oauth2.refreshToken);
+      return;
+    }
 
-  client = new TwitterApi(state.oauth2.accessToken);
-  logger.info('Twitter client initialized with OAuth 2.0');
+    client = new TwitterApi(state.oauth2.accessToken);
+    authMode = 'oauth2';
+    logger.info('Twitter client initialized with OAuth 2.0');
+  } catch (error) {
+    if (hasOAuth1Credentials()) {
+      initializeOAuth1Client('OAuth2 initialization failed, using OAuth1 credentials');
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function ensureFreshClient(): Promise<void> {
+  if (authMode === 'oauth1') {
+    return;
+  }
+
   const state = await loadState();
 
   if (!state.oauth2) {
+    if (hasOAuth1Credentials()) {
+      initializeOAuth1Client('OAuth2 state missing during poll cycle');
+      return;
+    }
     throw new Error(
       'No OAuth 2.0 tokens found. Run `pnpm --filter @chartsuno/bot auth` to authenticate with X first.'
     );
@@ -98,6 +144,7 @@ async function refreshAccessTokenInternal(
     });
 
     client = refreshedClient;
+    authMode = 'oauth2';
     logger.info('Access token refreshed successfully');
   } catch (error) {
     if (allowSeedFallback && isInvalidRefreshTokenError(error)) {
@@ -131,4 +178,8 @@ export function getReadWriteClient() {
     throw new Error('Twitter client not initialized. Call initializeClient() first.');
   }
   return client.readWrite;
+}
+
+export function getAuthMode(): 'oauth2' | 'oauth1' | null {
+  return authMode;
 }

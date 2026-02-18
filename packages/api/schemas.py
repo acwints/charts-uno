@@ -62,6 +62,7 @@ class ChartConfig(BaseModel):
     showBorder: bool = True
     animate: bool = True
     stacked: bool = False
+    yAxisBaselineMode: Optional[str] = "auto"
     title: Optional[str] = None
     sourceLink: Optional[str] = None
     customColors: Optional[CustomColors] = None

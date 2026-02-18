@@ -24,7 +24,7 @@ import Palette from 'lucide-react/dist/esm/icons/palette';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
-import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -77,6 +77,12 @@ const AI_MODE_OPTIONS: { id: AiMode; icon: typeof BarChart3; label: string; desc
   { id: 'chart', icon: BarChart3, label: 'Chart', description: 'AI-enhanced chart visualization' },
   { id: 'infographic', icon: Image, label: 'Infographic', description: 'Visual infographic design' },
   { id: 'custom', icon: MessageSquare, label: 'Custom', description: 'Custom AI generation with prompt' },
+];
+
+const Y_AXIS_BASELINE_OPTIONS: { id: YAxisBaselineMode; label: string }[] = [
+  { id: 'auto', label: 'Auto (smart)' },
+  { id: 'zero', label: 'Start at 0' },
+  { id: 'data', label: 'Data range' },
 ];
 
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
@@ -334,7 +340,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               </label>
             )}
 
-            {config.type === 'bar' && (
+            {config.type === 'bar' && data.series.length > 1 && (
               <label className="toggle-item">
                 <input
                   type="checkbox"
@@ -358,6 +364,23 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
               </label>
             )}
           </div>
+          {(config.type === 'bar' || config.type === 'histogram') && (
+            <label className="baseline-mode-control">
+              <span className="baseline-mode-label">Value axis baseline</span>
+              <select
+                className="baseline-mode-select"
+                value={config.yAxisBaselineMode ?? 'auto'}
+                onChange={(e) => updateConfig({ yAxisBaselineMode: e.target.value as YAxisBaselineMode })}
+                aria-label="Value axis baseline mode"
+              >
+                {Y_AXIS_BASELINE_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         <div className="control-section data-summary full-width">

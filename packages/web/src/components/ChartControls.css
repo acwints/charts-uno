@@ -428,6 +428,39 @@
   gap: var(--space-2);
 }
 
+.baseline-mode-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.baseline-mode-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.baseline-mode-select {
+  width: 100%;
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.baseline-mode-select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .toggle-item {
   display: flex;
   align-items: center;
@@ -683,6 +716,11 @@
   }
 
   .toggle-switch::after {
+    transition: none;
+    animation: none;
+  }
+
+  .baseline-mode-select {
     transition: none;
     animation: none;
   }

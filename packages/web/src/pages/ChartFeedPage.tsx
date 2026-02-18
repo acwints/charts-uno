@@ -33,6 +33,7 @@ export function ChartFeedPage() {
         showBorder: (chart.config as Record<string, unknown>).showBorder as boolean ?? true,
         animate: chart.config.animate ?? true,
         stacked: (chart.config as Record<string, unknown>).stacked as boolean ?? false,
+        yAxisBaselineMode: ((chart.config as Record<string, unknown>).yAxisBaselineMode as ChartConfig['yAxisBaselineMode']) ?? 'auto',
         title: chart.config.title || chart.title || '',
       };
 
