@@ -32,6 +32,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build Shared
+        run: pnpm --filter @chartsuno/shared build
+
       - name: Harness Checks
         run: pnpm check:harness
 
