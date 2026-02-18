@@ -9,7 +9,7 @@ import {
 } from '../twitter/media.js';
 import { renderChartToPng, getDefaultConfig } from '../chart/renderer.js';
 import { addWatermark } from '../chart/watermark.js';
-import { analyzeAndCreateChart } from '../services/chartsunoApi.js';
+import { analyzeAndCreateChart, promptAndCreateChart } from '../services/chartsunoApi.js';
 import { loadState, updateState } from '../storage.js';
 import type { MentionData } from '../twitter/mentions.js';
 
@@ -40,6 +40,17 @@ async function markProcessed(mentionId: string): Promise<void> {
   await updateState({ processedMentions: [...(processedMentions || set)] });
 }
 
+function buildPromptFromTweetText(tweetText: string, authorUsername: string): string {
+  return [
+    'Extract chart data from this X post text.',
+    'Use exact numeric values when present.',
+    'Do not invent values if explicit data is already listed.',
+    `Author: @${authorUsername}`,
+    '',
+    tweetText.trim(),
+  ].join('\n');
+}
+
 export async function processMention(mention: MentionData): Promise<void> {
   const { mentionId, parentTweetId, action } = mention;
   const mentionActionKey = `${mentionId}:${action}`;
@@ -63,7 +74,7 @@ export async function processMention(mention: MentionData): Promise<void> {
   logger.info({ mentionId, parentTweetId }, 'Processing mention');
 
   try {
-    // Step 1: Get the parent tweet and find the image
+    // Step 1: Get the parent tweet (image preferred; text fallback supported)
     if (!parentTweetId) {
       await replyWithError(mentionId, "I couldn't find the tweet you're replying to!");
       return;
@@ -71,16 +82,29 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     const parentTweet = await getParentTweetWithMedia(parentTweetId);
 
-    if (!parentTweet.imageUrl) {
-      await replyWithError(mentionId, "I couldn't find an image in that tweet! Please reply to a tweet that contains a chart image.");
-      return;
+    // Step 2: Use the same backend AI path as web upload and create a shareable chart.
+    let result: Awaited<ReturnType<typeof analyzeAndCreateChart>> | null = null;
+    if (parentTweet.imageUrl) {
+      logger.info({ imageUrl: parentTweet.imageUrl }, 'Found image in parent tweet');
+      const sourceImage = await downloadImage(parentTweet.imageUrl);
+      result = await analyzeAndCreateChart(sourceImage, parentTweet.imageUrl);
+    } else {
+      if (!parentTweet.tweetText.trim()) {
+        await replyWithError(
+          mentionId,
+          "I couldn't find an image or readable text in that tweet. Reply to a chart image or a tweet that lists data values."
+        );
+        return;
+      }
+      logger.info({ parentTweetId, tweetUrl: parentTweet.tweetUrl }, 'No image found; using tweet text fallback');
+      const prompt = buildPromptFromTweetText(parentTweet.tweetText, parentTweet.authorUsername);
+      result = await promptAndCreateChart(prompt, parentTweet.tweetUrl);
     }
 
-    logger.info({ imageUrl: parentTweet.imageUrl }, 'Found image in parent tweet');
-
-    // Step 2: Use the same backend AI path as web upload and create a shareable chart.
-    const sourceImage = await downloadImage(parentTweet.imageUrl);
-    const { chartData, chartUrl } = await analyzeAndCreateChart(sourceImage, parentTweet.imageUrl);
+    if (!result) {
+      return;
+    }
+    const { chartData, chartUrl } = result;
 
     logger.info(
       { labels: chartData.labels.length, series: chartData.series.length },
@@ -131,12 +155,12 @@ export async function processMention(mention: MentionData): Promise<void> {
       if (error.message.includes('No chartable data found')) {
         await replyWithError(
           mentionId,
-          "I couldn't extract chart data from that image. Make sure it contains a clear chart, table, or data visualization!"
+          "I couldn't extract chart data from that tweet. Make sure it contains a clear chart image or explicit numeric values."
         );
       } else if (error.message.includes('Invalid data structure')) {
         await replyWithError(
           mentionId,
-          "I had trouble understanding the data in that image. Try with a clearer chart!"
+          "I had trouble understanding the data in that tweet. Try a clearer chart image or a cleaner text table."
         );
       } else if (error.message.includes('Request failed with code 403')) {
         await replyWithError(

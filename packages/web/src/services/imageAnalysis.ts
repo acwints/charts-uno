@@ -1,6 +1,5 @@
 import type { ChartData } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export async function analyzeImage(file: File): Promise<ChartData> {
   // Convert file to base64
@@ -8,7 +7,7 @@ export async function analyzeImage(file: File): Promise<ChartData> {
   // Remove the data URL prefix for the API
   const base64Data = base64.split(',')[1];
 
-  const response = await fetch(`${API_URL}/api/ai/analyze-image`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/analyze-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -49,7 +48,7 @@ export async function reanalyzeImageWithNotes(
   sourceImage: { base64: string; mimeType: string },
   userPrompt: string
 ): Promise<ChartData> {
-  const response = await fetch(`${API_URL}/api/ai/analyze-image`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/analyze-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

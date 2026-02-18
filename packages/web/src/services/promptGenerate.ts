@@ -1,9 +1,8 @@
 import type { ChartData } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export async function generateChartFromPrompt(prompt: string): Promise<ChartData> {
-  const response = await fetch(`${API_URL}/api/ai/generate`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -20,6 +20,11 @@ export interface AnalyzeAndCreateResult {
   chartUrl: string;
 }
 
+interface PromptAndCreateRequest {
+  prompt: string;
+  source_url?: string;
+}
+
 export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: string): Promise<AnalyzeAndCreateResult> {
   const apiUrl = config.chartsuno.apiUrl.replace(/\/$/, '');
   const response = await fetch(`${apiUrl}/api/internal/bot/analyze-and-create`, {
@@ -54,6 +59,52 @@ export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: stri
         }),
       })),
       sourceType: 'image',
+      suggestedTitle: parsed.suggestedTitle,
+      suggestedType: parsed.suggestedType,
+      suggestedStacked: parsed.stacked ?? undefined,
+      suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
+      aiReasoning: parsed.aiReasoning,
+      xAxisLabel: parsed.xAxisLabel,
+      yAxisLabel: parsed.yAxisLabel,
+    },
+  };
+}
+
+export async function promptAndCreateChart(prompt: string, sourceUrl?: string): Promise<AnalyzeAndCreateResult> {
+  const apiUrl = config.chartsuno.apiUrl.replace(/\/$/, '');
+  const payload: PromptAndCreateRequest = { prompt };
+  if (sourceUrl) {
+    payload.source_url = sourceUrl;
+  }
+
+  const response = await fetch(`${apiUrl}/api/internal/bot/prompt-and-create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-bot-token': config.chartsuno.internalToken,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Chartsuno API failed (${response.status}): ${errorText}`);
+  }
+
+  const parsed = (await response.json()) as AnalyzeAndCreateResponse;
+
+  return {
+    chartUrl: parsed.chart_url,
+    chartData: {
+      labels: parsed.labels,
+      series: parsed.series.map((series) => ({
+        name: series.name,
+        data: series.data.map((value) => {
+          const numeric = typeof value === 'number' ? value : Number(value);
+          return Number.isFinite(numeric) ? numeric : 0;
+        }),
+      })),
+      sourceType: 'prompt',
       suggestedTitle: parsed.suggestedTitle,
       suggestedType: parsed.suggestedType,
       suggestedStacked: parsed.stacked ?? undefined,

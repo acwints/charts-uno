@@ -1,6 +1,5 @@
 import type { ChartData } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export interface TickerResult {
   symbol: string;
@@ -13,7 +12,7 @@ export async function searchTickers(query: string): Promise<TickerResult[]> {
     return [];
   }
 
-  const response = await fetch(`${API_URL}/api/stocks/search`, {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/search`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -31,7 +30,7 @@ export async function searchTickers(query: string): Promise<TickerResult[]> {
 }
 
 export async function fetchStockData(ticker: string, range: string, ticker2?: string): Promise<ChartData> {
-  const response = await fetch(`${API_URL}/api/stocks/prices`, {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/prices`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -66,7 +65,7 @@ export async function fetchStockInsights(
   series: { name: string; data: Array<number | null> }[],
   title: string
 ): Promise<string> {
-  const response = await fetch(`${API_URL}/api/stocks/insights`, {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/insights`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

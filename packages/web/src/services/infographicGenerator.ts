@@ -1,6 +1,5 @@
 import type { ChartData, ColorScheme, ThemeMode, AiMode } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export async function generateInfographic(
   data: ChartData,
@@ -15,12 +14,11 @@ export async function generateInfographic(
 
   const hasSourceImage = Boolean(sourceImage?.base64 && sourceImage?.mimeType);
 
-  const response = await fetch(`${API_URL}/api/ai/infographic`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/infographic`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       data: {
         labels: data.labels,

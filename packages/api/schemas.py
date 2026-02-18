@@ -175,6 +175,11 @@ class BotAnalyzeAndCreateRequest(BaseModel):
     user_prompt: Optional[str] = None
 
 
+class BotPromptAndCreateRequest(BaseModel):
+    prompt: str
+    source_url: Optional[str] = None
+
+
 class BotAnalyzeAndCreateResponse(BaseModel):
     chart_id: str
     chart_url: str

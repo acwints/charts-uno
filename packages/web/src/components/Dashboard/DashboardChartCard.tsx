@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   LineChart,
@@ -21,6 +20,7 @@ import { ChartActionsMenu } from './ChartActionsMenu';
 import type { ChartResponse } from '../../services/api';
 import { COLOR_PALETTES } from '../../types';
 import { useDashboardStore } from '../../stores/dashboardStore';
+import { SafeResponsiveContainer } from '../SafeResponsiveContainer';
 import './DashboardChartCard.css';
 
 interface DashboardChartCardProps {
@@ -179,9 +179,9 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
       onClick={handleCardClick}
     >
       <div className="dashboard-chart-card__preview">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <SafeResponsiveContainer minWidth={0} minHeight={88}>
           {renderMiniChart()}
-        </ResponsiveContainer>
+        </SafeResponsiveContainer>
 
         {/* Checkbox */}
         <button

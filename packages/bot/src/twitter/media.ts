@@ -6,6 +6,7 @@ export interface TweetMediaData {
   imageUrl: string | null;
   tweetText: string;
   authorUsername: string;
+  tweetUrl: string;
 }
 
 let cachedBotUsername: string | null = null;
@@ -39,7 +40,7 @@ export async function getParentTweetWithMedia(tweetId: string): Promise<TweetMed
 
   try {
     const response = await client.v2.singleTweet(tweetId, {
-      'tweet.fields': ['attachments', 'author_id'],
+      'tweet.fields': ['attachments', 'author_id', 'note_tweet'],
       expansions: ['attachments.media_keys', 'author_id'],
       'media.fields': ['url', 'preview_image_url', 'type'],
       'user.fields': ['username'],
@@ -64,12 +65,20 @@ export async function getParentTweetWithMedia(tweetId: string): Promise<TweetMed
       }
     }
 
-    logger.info({ tweetId, hasImage: !!imageUrl, authorUsername }, 'Fetched parent tweet');
+    const noteTweetText = (tweet as unknown as { note_tweet?: { text?: string } }).note_tweet?.text || '';
+    const tweetText = noteTweetText || tweet.text || '';
+    const tweetUrl = `https://x.com/${authorUsername}/status/${tweet.id}`;
+
+    logger.info(
+      { tweetId, hasImage: !!imageUrl, authorUsername, hasNoteTweet: Boolean(noteTweetText) },
+      'Fetched parent tweet'
+    );
 
     return {
       imageUrl,
-      tweetText: tweet.text,
+      tweetText,
       authorUsername,
+      tweetUrl,
     };
   } catch (error) {
     logger.error({ error, tweetId }, 'Error fetching parent tweet');

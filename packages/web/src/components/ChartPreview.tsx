@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   LineChart,
@@ -40,6 +39,7 @@ import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import { MapChart } from './MapChart';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 import './ChartPreview.css';
 
 interface ChartPreviewProps {
@@ -909,9 +909,9 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
             </table>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+          <SafeResponsiveContainer minWidth={0} minHeight={200}>
             {renderChart()}
-          </ResponsiveContainer>
+          </SafeResponsiveContainer>
         )}
       </div>
 

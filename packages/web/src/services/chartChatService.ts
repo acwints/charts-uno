@@ -1,6 +1,5 @@
 import type { ChartData, ChartConfig } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export interface ChatMessage {
   id: string;
@@ -36,7 +35,7 @@ export async function sendChatMessage(
     content: msg.content,
   }));
 
-  const response = await fetch(`${API_URL}/api/ai/chat`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

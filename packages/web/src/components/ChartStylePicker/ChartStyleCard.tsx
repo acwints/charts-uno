@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   LineChart,
@@ -13,6 +12,7 @@ import {
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import type { ChartStyleOption, ChartData } from '../../types';
 import { COLOR_PALETTES } from '../../types';
+import { SafeResponsiveContainer } from '../SafeResponsiveContainer';
 
 interface ChartStyleCardProps {
   option: ChartStyleOption;
@@ -141,9 +141,9 @@ export function ChartStyleCard({
         </div>
       )}
       <div className="style-card-preview">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <SafeResponsiveContainer minWidth={0} minHeight={64}>
           {renderMiniChart()}
-        </ResponsiveContainer>
+        </SafeResponsiveContainer>
       </div>
       <div className="style-card-info">
         <span className="style-card-label">{option.label}</span>

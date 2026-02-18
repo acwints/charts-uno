@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   LineChart,
@@ -18,6 +17,7 @@ import User from 'lucide-react/dist/esm/icons/user';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart } from '../../services/api';
 import { COLOR_PALETTES } from '../../types';
+import { SafeResponsiveContainer } from '../SafeResponsiveContainer';
 import './ChartCard.css';
 
 interface ChartCardProps {
@@ -179,9 +179,9 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
       onClick={() => onChartClick?.(chart)}
     >
       <div className="chart-card__preview">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <SafeResponsiveContainer minWidth={0} minHeight={96}>
           {renderMiniChart()}
-        </ResponsiveContainer>
+        </SafeResponsiveContainer>
         <div className="chart-card__type-badge">{chart.config.type}</div>
       </div>
 

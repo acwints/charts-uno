@@ -1,6 +1,5 @@
 import type { ChartData } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export interface PublicDatasetOption {
   id: string;
@@ -11,7 +10,7 @@ export interface PublicDatasetOption {
 }
 
 export async function getPublicDatasets(): Promise<PublicDatasetOption[]> {
-  const response = await fetch(`${API_URL}/api/datasets/public`, {
+  const response = await fetch(`${API_BASE_URL}/api/datasets/public`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -32,7 +31,7 @@ export async function generateChartFromPublicDataset(input: {
   topN: number;
   chartTypeHint?: 'line' | 'bar' | 'area' | 'table' | 'auto';
 }): Promise<ChartData> {
-  const response = await fetch(`${API_URL}/api/datasets/public/generate`, {
+  const response = await fetch(`${API_BASE_URL}/api/datasets/public/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

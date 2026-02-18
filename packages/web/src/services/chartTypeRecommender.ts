@@ -1,6 +1,5 @@
 import type { ChartData, ChartType } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 export interface ChartRecommendation {
   type: ChartType;
@@ -12,7 +11,7 @@ export async function recommendChartType(
   data: ChartData,
   options: { preferredType?: ChartType } = {}
 ): Promise<ChartRecommendation> {
-  const response = await fetch(`${API_URL}/api/ai/recommend`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/recommend`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

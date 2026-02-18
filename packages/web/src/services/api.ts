@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './apiBase';
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -8,7 +8,7 @@ interface ApiOptions {
 async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { method = 'GET', body } = options;
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
     headers: {
       'Content-Type': 'application/json',

@@ -44,6 +44,7 @@ from schemas import (
     ImageAnalysisRequest,
     ImageAnalysisResponse,
     BotAnalyzeAndCreateRequest,
+    BotPromptAndCreateRequest,
     BotAnalyzeAndCreateResponse,
     PromptGenerateRequest,
     StockPriceRequest,
@@ -998,6 +999,98 @@ async def bot_analyze_and_create_chart(
         data=chart_data,
         config=chart_config,
         source_type="image",
+        source_url=payload.source_url,
+        is_public=1,
+    )
+    db.add(chart)
+    db.commit()
+    db.refresh(chart)
+
+    chart_url = f"{PUBLIC_APP_URL.rstrip('/')}/chart/{chart.id}"
+    return BotAnalyzeAndCreateResponse(
+        chart_id=chart.id,
+        chart_url=chart_url,
+        labels=chart_data["labels"],
+        series=chart_data["series"],
+        suggestedTitle=result.get("suggestedTitle"),
+        suggestedType=result.get("suggestedType"),
+        stacked=result.get("stacked"),
+        xAxisLabel=result.get("xAxisLabel"),
+        yAxisLabel=result.get("yAxisLabel"),
+        barLayout=result.get("barLayout"),
+        aiReasoning=result.get("aiReasoning"),
+    )
+
+
+@app.post("/api/internal/bot/prompt-and-create", response_model=BotAnalyzeAndCreateResponse)
+@limiter.limit("30/minute")
+async def bot_prompt_and_create_chart(
+    request: Request,
+    payload: BotPromptAndCreateRequest,
+    db: Session = Depends(get_db),
+):
+    """Generate chart data from text prompt and create a public chart for bot replies."""
+    token = request.headers.get("x-bot-token", "")
+    if not BOT_INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=503, detail="Bot internal API token is not configured")
+    if not token or not secrets.compare_digest(token, BOT_INTERNAL_API_TOKEN):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        result = await generate_chart_from_prompt(payload.prompt)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Bot prompt generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Prompt generation failed")
+
+    owner = _resolve_bot_chart_owner(db)
+    team = _resolve_personal_team_for_user(db, owner)
+
+    chart_data = {
+        "labels": result.get("labels", []),
+        "series": result.get("series", []),
+        "sourceType": "prompt",
+        "suggestedTitle": result.get("suggestedTitle"),
+        "suggestedType": result.get("suggestedType"),
+        "aiReasoning": result.get("aiReasoning"),
+        "xAxisLabel": result.get("xAxisLabel"),
+        "yAxisLabel": result.get("yAxisLabel"),
+        "barLayout": result.get("barLayout"),
+        "sourceLink": result.get("sourceLink"),
+        "xAxisType": result.get("xAxisType"),
+        "yAxisFormat": result.get("yAxisFormat"),
+        "yAxisPrefix": result.get("yAxisPrefix"),
+        "yAxisSuffix": result.get("yAxisSuffix"),
+    }
+
+    suggested_type = result.get("suggestedType") or "bar"
+    show_legend = len(result.get("series", [])) > 1
+    chart_config = {
+        "type": suggested_type,
+        "colorScheme": "default",
+        "styleVariant": "professional",
+        "themeMode": "dark",
+        "showGrid": True,
+        "showLegend": show_legend,
+        "showValues": False,
+        "showPoints": True,
+        "showBorder": False,
+        "animate": False,
+        "title": result.get("suggestedTitle") or "AI Chart",
+        "stacked": bool(result.get("stacked")),
+    }
+    if result.get("barLayout") in {"horizontal", "vertical"}:
+        chart_config["barLayout"] = result["barLayout"]
+
+    chart = Chart(
+        user_id=owner.id,
+        team_id=team.id,
+        title=result.get("suggestedTitle") or "AI Chart",
+        description="Generated from X text reply by Chartsuno bot",
+        data=chart_data,
+        config=chart_config,
+        source_type="prompt",
         source_url=payload.source_url,
         is_public=1,
     )
