@@ -82,7 +82,7 @@ async function setup(): Promise<void> {
 
         console.log(`\nAuthenticated as @${me.data.username} (${me.data.id})`);
         console.log('Tokens saved successfully!');
-        console.log('\nYou can now start the bot with: pnpm dev');
+        console.log('\nYou can now start the bot with: pnpm dev:bot');
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end([

@@ -78,6 +78,20 @@ for (const trackedFile of trackedFiles) {
   }
 }
 
+const botStateTemplatePath = path.join(root, 'packages', 'bot', 'bot-state.json')
+if (!existsSync(botStateTemplatePath)) {
+  errors.push('Missing required bot state template: packages/bot/bot-state.json')
+} else {
+  try {
+    const botStateTemplate = JSON.parse(readFileSync(botStateTemplatePath, 'utf8'))
+    if (botStateTemplate.oauth2 !== null) {
+      errors.push('packages/bot/bot-state.json must keep oauth2 set to null (no embedded tokens)')
+    }
+  } catch {
+    errors.push('packages/bot/bot-state.json must be valid JSON')
+  }
+}
+
 if (errors.length > 0) {
   console.error('Harness checks failed:\n')
   for (const error of errors) {

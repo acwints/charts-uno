@@ -1,16 +1,5 @@
 {
-  "oauth2": {
-    "accessToken": "aGYyN05pTG4wTVlxMy1LR2RpWEVCUl8yVjZtbzVjN3pCX19rMWRVaGdHUnNzOjE3NzA5OTAzODE0NTc6MToxOmF0OjE",
-    "refreshToken": "bkRmQnN3eDNCUGpmZVQxcG1oaEtGVFdzWFoyNnV1YnZ6eDZLVjk0cU45QkxFOjE3NzA5OTAzODE0NTc6MToxOnJ0OjE",
-    "expiresAt": 1770997581452,
-    "scope": [
-      "tweet.read",
-      "tweet.write",
-      "users.read",
-      "media.write",
-      "offline.access"
-    ]
-  },
+  "oauth2": null,
   "lastSinceId": null,
   "processedMentions": []
 }

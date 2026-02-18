@@ -11,7 +11,7 @@ export async function initializeClient(): Promise<void> {
 
   if (!state.oauth2) {
     throw new Error(
-      'No OAuth 2.0 tokens found. Run `pnpm setup` to authenticate with Twitter first.'
+      'No OAuth 2.0 tokens found. Run `pnpm --filter @chartsuno/bot auth` to authenticate with X first.'
     );
   }
 
@@ -30,7 +30,7 @@ export async function ensureFreshClient(): Promise<void> {
 
   if (!state.oauth2) {
     throw new Error(
-      'No OAuth 2.0 tokens found. Run `pnpm setup` to authenticate with Twitter first.'
+      'No OAuth 2.0 tokens found. Run `pnpm --filter @chartsuno/bot auth` to authenticate with X first.'
     );
   }
 
@@ -110,7 +110,7 @@ async function refreshAccessTokenInternal(
       }
 
       throw new Error(
-        'OAuth refresh token is invalid or revoked. Re-run bot auth and update BOT_STATE_PATH or BOT_STATE_JSON.',
+        'OAuth refresh token is invalid or revoked. Re-run `pnpm --filter @chartsuno/bot auth` and update BOT_STATE_PATH or BOT_STATE_JSON.',
         { cause: error }
       );
     }
