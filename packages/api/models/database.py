@@ -78,6 +78,7 @@ class User(Base):
     owned_teams = relationship("Team", back_populates="owner", cascade="all, delete-orphan")
     team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
     sent_invitations = relationship("TeamInvitation", back_populates="inviter", cascade="all, delete-orphan")
+    chart_publications = relationship("ChartPublication", back_populates="publisher", cascade="all, delete-orphan")
 
 
 class Chart(Base):
@@ -110,11 +111,33 @@ class Chart(Base):
     team = relationship("Team", back_populates="charts")
     saved_by = relationship("SavedChart", back_populates="chart", cascade="all, delete-orphan")
     likes = relationship("Like", back_populates="chart", cascade="all, delete-orphan")
+    publications = relationship("ChartPublication", back_populates="chart", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_charts_user_created", "user_id", "created_at"),
         Index("ix_charts_public_created", "is_public", "created_at"),
         Index("ix_charts_team_created", "team_id", "created_at"),
+    )
+
+
+class ChartPublication(Base):
+    """Visibility links between charts and non-personal team spaces."""
+    __tablename__ = "chart_publications"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    chart_id = Column(String(36), ForeignKey("charts.id", ondelete="CASCADE"), nullable=False, index=True)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    published_by = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    chart = relationship("Chart", back_populates="publications")
+    team = relationship("Team", back_populates="chart_publications")
+    publisher = relationship("User", back_populates="chart_publications")
+
+    __table_args__ = (
+        UniqueConstraint("chart_id", "team_id", name="uq_chart_publication_team"),
+        Index("ix_chart_publications_team_created", "team_id", "created_at"),
     )
 
 
@@ -184,6 +207,7 @@ class Team(Base):
     invitations = relationship("TeamInvitation", back_populates="team", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="team", uselist=False, cascade="all, delete-orphan")
     charts = relationship("Chart", back_populates="team", cascade="all, delete-orphan")
+    chart_publications = relationship("ChartPublication", back_populates="team", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_teams_owner_created", "owner_id", "created_at"),

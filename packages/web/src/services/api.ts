@@ -307,13 +307,26 @@ export async function getPortalUrl(teamId: string): Promise<{ portal_url: string
   return apiRequest(`/api/teams/${teamId}/portal`);
 }
 
-// Update createChart to support team_id
-export interface CreateChartDataWithTeam extends CreateChartData {
-  team_id?: string;
+export interface ChartPublishTargetsResponse {
+  chart_id: string;
+  is_public: boolean;
+  team_ids: string[];
 }
 
-export async function createChartWithTeam(data: CreateChartDataWithTeam): Promise<ChartResponse> {
-  return apiRequest('/api/charts', { method: 'POST', body: data });
+export interface ChartPublishTargetsUpdate {
+  is_public?: boolean;
+  team_ids?: string[];
+}
+
+export async function getChartPublishTargets(chartId: string): Promise<ChartPublishTargetsResponse> {
+  return apiRequest(`/api/charts/${chartId}/publish-targets`);
+}
+
+export async function updateChartPublishTargets(
+  chartId: string,
+  data: ChartPublishTargetsUpdate,
+): Promise<ChartPublishTargetsResponse> {
+  return apiRequest(`/api/charts/${chartId}/publish-targets`, { method: 'PUT', body: data });
 }
 
 // ============================================
@@ -399,21 +412,16 @@ export async function getUserStats(): Promise<UserStats> {
 
 // Batch operations
 export async function batchDeleteCharts(chartIds: string[]): Promise<void> {
-  await apiRequest('/api/charts/batch/delete', { method: 'POST', body: { chart_ids: chartIds } });
+  await Promise.all(chartIds.map((chartId) => deleteChart(chartId)));
 }
 
 export async function batchPublishCharts(chartIds: string[], isPublic: boolean): Promise<void> {
-  await apiRequest('/api/charts/batch/publish', { method: 'POST', body: { chart_ids: chartIds, is_public: isPublic } });
+  await Promise.all(chartIds.map((chartId) => updateChart(chartId, { is_public: isPublic })));
 }
 
-// Move chart to team
+// Deprecated compatibility endpoint.
 export async function moveChartToTeam(chartId: string, teamId: string): Promise<ChartResponse> {
   return apiRequest(`/api/charts/${chartId}/move`, { method: 'POST', body: { team_id: teamId } });
-}
-
-// Duplicate chart
-export async function duplicateChart(chartId: string): Promise<ChartResponse> {
-  return apiRequest(`/api/charts/${chartId}/duplicate`, { method: 'POST' });
 }
 
 // ============================================

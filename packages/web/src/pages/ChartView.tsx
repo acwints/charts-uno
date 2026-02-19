@@ -15,12 +15,13 @@ import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEn
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ExportMenu } from '../components/ExportMenu';
 import { ShareMenu } from '../components/ShareMenu';
+import { PublishMenu } from '../components/PublishMenu';
 import { Button } from '../components/Button';
 import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
-import { getChart, createChartWithTeam, getTeamBranding, updateChart } from '../services/api';
+import { getChart, createChart, getTeamBranding, getChartPublishTargets, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 
@@ -36,12 +37,20 @@ export function ChartView() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishedToFeed, setIsPublishedToFeed] = useState(false);
+  const [publishedTeamIds, setPublishedTeamIds] = useState<string[]>([]);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
   const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
   const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
   const [originalData, setOriginalData] = useState<ChartData | null>(null);
   const initTokenRef = useRef<string | null>(null);
   const justSavedIdRef = useRef<string | null>(null);
+
+  const teamSpaces = useMemo(() => teams.filter((team) => !team.is_personal), [teams]);
+  const publishTeamOptions = useMemo(
+    () => teamSpaces.map((team) => ({ id: team.id, name: team.name })),
+    [teamSpaces],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,7 +59,6 @@ export function ChartView() {
       return;
     }
 
-    const teamSpaces = teams.filter((team) => !team.is_personal);
     if (teamSpaces.length === 0) {
       setLogoOptions([]);
       setWatermarkSettings((previous) => ({ ...previous, customLogoUrl: null }));
@@ -91,7 +99,7 @@ export function ChartView() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, teams]);
+  }, [isAuthenticated, teamSpaces]);
 
   const handleToggleLogo = () => {
     setWatermarkSettings((previous) => ({ ...previous, enabled: !previous.enabled }));
@@ -131,7 +139,7 @@ export function ChartView() {
         return id;
       }
 
-      const result = await createChartWithTeam({
+      const result = await createChart({
         title: chartConfig.title || 'Untitled Chart',
         data: {
           labels: chartData.labels,
@@ -145,6 +153,8 @@ export function ChartView() {
         source_type: chartData.sourceType || 'paste',
         is_public: false,
       });
+      setIsPublishedToFeed(result.is_public);
+      setPublishedTeamIds([]);
       toast.success('Chart saved to your profile');
       justSavedIdRef.current = result.id;
       navigate(`/chart/${result.id}`, { replace: true });
@@ -177,7 +187,7 @@ export function ChartView() {
       setIsLoading(true);
       setError(null);
       getChart(id)
-        .then((chart) => {
+        .then(async (chart) => {
           // Populate the store with the loaded chart data
         const data: ChartData = {
             labels: chart.data.labels,
@@ -198,6 +208,15 @@ export function ChartView() {
             showPoints: rawConfig.showPoints as boolean ?? true,
           };
           setChartConfig(configWithDefaults);
+
+          try {
+            const targets = await getChartPublishTargets(chart.id);
+            setIsPublishedToFeed(targets.is_public);
+            setPublishedTeamIds(targets.team_ids);
+          } catch {
+            setIsPublishedToFeed(chart.is_public);
+            setPublishedTeamIds([]);
+          }
         })
         .catch((err) => {
           console.error('Failed to load chart:', err);
@@ -208,6 +227,13 @@ export function ChartView() {
         });
     }
   }, [id, setChartData, setChartConfig, setInfographicSvg]);
+
+  useEffect(() => {
+    if (!id) {
+      setIsPublishedToFeed(false);
+      setPublishedTeamIds([]);
+    }
+  }, [id]);
 
   // If no ID and no chart data, redirect to home
   useEffect(() => {
@@ -321,12 +347,25 @@ export function ChartView() {
               variant="default"
               size="sm"
               onClick={handleSaveChart}
-              disabled={Boolean(id) || isSaving}
-              title={id ? 'Saved' : 'Save chart'}
+              disabled={isSaving}
+              title={id ? 'Update chart' : 'Save chart'}
             >
               {id ? <Check size={16} /> : <Save size={16} />}
-              {id ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? 'Saving...' : id ? 'Update' : 'Save'}
             </Button>
+          )}
+          {id && isAuthenticated && (
+            <PublishMenu
+              chartId={id}
+              isPublic={isPublishedToFeed}
+              publishedTeamIds={publishedTeamIds}
+              onTargetsChange={(targets) => {
+                setIsPublishedToFeed(targets.isPublic);
+                setPublishedTeamIds(targets.teamIds);
+              }}
+              teamOptions={publishTeamOptions}
+              isAuthenticated={isAuthenticated}
+            />
           )}
           {editorView === 'chart' && (
             <>

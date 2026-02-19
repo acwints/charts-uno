@@ -4,7 +4,7 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import { useDashboardStore } from '../../stores/dashboardStore';
-import { batchDeleteCharts, batchPublishCharts } from '../../services/api';
+import { deleteChart, updateChart } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../Button';
 import './DashboardToolbar.css';
@@ -18,6 +18,7 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
   const { showToast } = useToast();
 
   const count = selectedIds.size;
+  const selectedChartIds = Array.from(selectedIds);
 
   const handleClear = () => {
     clearSelection();
@@ -29,8 +30,13 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
     if (!confirmed) return;
 
     try {
-      await batchDeleteCharts(Array.from(selectedIds));
-      showToast('success', `${count} chart${count > 1 ? 's' : ''} deleted`);
+      const results = await Promise.allSettled(selectedChartIds.map((chartId) => deleteChart(chartId)));
+      const failed = results.filter((result) => result.status === 'rejected').length;
+      if (failed > 0) {
+        showToast('error', `Deleted ${count - failed} of ${count} charts`);
+      } else {
+        showToast('success', `${count} chart${count > 1 ? 's' : ''} deleted`);
+      }
       clearSelection();
       onBatchAction?.();
     } catch {
@@ -41,8 +47,15 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
   const handleBatchPublish = async () => {
     if (count === 0) return;
     try {
-      await batchPublishCharts(Array.from(selectedIds), true);
-      showToast('success', `${count} chart${count > 1 ? 's' : ''} published`);
+      const results = await Promise.allSettled(
+        selectedChartIds.map((chartId) => updateChart(chartId, { is_public: true })),
+      );
+      const failed = results.filter((result) => result.status === 'rejected').length;
+      if (failed > 0) {
+        showToast('error', `Published ${count - failed} of ${count} charts`);
+      } else {
+        showToast('success', `${count} chart${count > 1 ? 's' : ''} published`);
+      }
       clearSelection();
       onBatchAction?.();
     } catch {
@@ -53,8 +66,15 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
   const handleBatchUnpublish = async () => {
     if (count === 0) return;
     try {
-      await batchPublishCharts(Array.from(selectedIds), false);
-      showToast('success', `${count} chart${count > 1 ? 's' : ''} made private`);
+      const results = await Promise.allSettled(
+        selectedChartIds.map((chartId) => updateChart(chartId, { is_public: false })),
+      );
+      const failed = results.filter((result) => result.status === 'rejected').length;
+      if (failed > 0) {
+        showToast('error', `Updated ${count - failed} of ${count} charts`);
+      } else {
+        showToast('success', `${count} chart${count > 1 ? 's' : ''} made private`);
+      }
       clearSelection();
       onBatchAction?.();
     } catch {

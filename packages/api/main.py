@@ -17,14 +17,14 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
-    Team, TeamMember, TeamInvitation, Subscription, generate_uuid,
+    Team, TeamMember, TeamInvitation, Subscription, ChartPublication, generate_uuid,
 )
 from dependencies import (
     get_current_user,
@@ -75,6 +75,12 @@ from schemas import (
     PortalResponse,
     UsageSummaryResponse,
     ChartCreateWithTeam,
+    ActivityItemResponse,
+    ActivityTarget,
+    ActivityListResponse,
+    ChartPublishTargetsResponse,
+    ChartPublishTargetsUpdate,
+    MoveChartRequest,
     # Branding schemas
     TeamBrandingUpdate,
     TeamBrandingResponse,
@@ -116,6 +122,8 @@ BOT_INTERNAL_API_TOKEN = os.environ.get("BOT_INTERNAL_API_TOKEN", "")
 BOT_CHART_OWNER_EMAIL = os.environ.get("BOT_CHART_OWNER_EMAIL", "chartsuno-bot@chartsuno.local")
 BOT_CHART_OWNER_ID = os.environ.get("BOT_CHART_OWNER_ID", "")
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://chartsuno.com")
+CHART_TEAM_CREATE_DEPRECATION_SUNSET = "Mon, 30 Jun 2026 00:00:00 GMT"
+CHART_MOVE_DEPRECATION_SUNSET = "Mon, 30 Jun 2026 00:00:00 GMT"
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -495,58 +503,110 @@ def _chart_to_response(
     )
 
 
+def _can_user_access_chart(
+    db: Session,
+    chart: Chart,
+    user: Optional[User],
+) -> bool:
+    """Resolve read access for a chart (owner, public, or team-space member)."""
+    if chart.is_public:
+        return True
+    if not user:
+        return False
+    if chart.user_id == user.id:
+        return True
+
+    team_link = (
+        db.query(ChartPublication.id)
+        .join(TeamMember, TeamMember.team_id == ChartPublication.team_id)
+        .filter(
+            ChartPublication.chart_id == chart.id,
+            TeamMember.user_id == user.id,
+        )
+        .first()
+    )
+    return team_link is not None
+
+
+def _get_chart_publish_team_ids(db: Session, chart_id: str) -> List[str]:
+    rows = (
+        db.query(ChartPublication.team_id)
+        .filter(ChartPublication.chart_id == chart_id)
+        .all()
+    )
+    return sorted({row[0] for row in rows})
+
+
+def _set_deprecation_headers(response: Response, successor_path: str, sunset: str) -> None:
+    response.headers["Deprecation"] = "true"
+    response.headers["Sunset"] = sunset
+    response.headers["Link"] = f'<{successor_path}>; rel="successor-version"'
+
+
 @app.post("/api/charts", response_model=ChartResponse)
 async def create_chart(
     chart_data: ChartCreateWithTeam,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Create a new chart"""
-    # Determine which team to use
-    team_id = chart_data.team_id
+    if chart_data.team_id:
+        _set_deprecation_headers(
+            response,
+            "/api/charts/{chart_id}/publish-targets",
+            CHART_TEAM_CREATE_DEPRECATION_SUNSET,
+        )
+        logger.info(
+            "Deprecated chart create team_id ignored: user_id=%s requested_team_id=%s",
+            current_user.id,
+            chart_data.team_id,
+        )
 
-    if team_id:
-        # Verify user is a member of the specified team
-        team, _ = _get_team_with_access(db, team_id, current_user)
-    else:
-        # Use user's personal team
-        membership = db.query(TeamMember).filter(
+    # Charts are always created into the user's personal space.
+    membership = (
+        db.query(TeamMember)
+        .join(Team)
+        .filter(
             TeamMember.user_id == current_user.id,
-        ).join(Team).filter(Team.is_personal == True).first()
-
-        if membership:
-            team_id = membership.team_id
-            team = membership.team
-        else:
-            # Create personal team if it doesn't exist (shouldn't happen normally)
-            team = _create_personal_team(db, current_user)
-            team_id = team.id
+            Team.is_personal == True,
+        )
+        .first()
+    )
+    if membership and membership.team:
+        personal_team = membership.team
+    else:
+        # Create personal team if it doesn't exist (shouldn't happen normally)
+        personal_team = _create_personal_team(db, current_user)
 
     # Check chart creation limit
-    if not _check_can_create_chart(db, team):
+    if not _check_can_create_chart(db, personal_team):
         raise HTTPException(
             status_code=403,
             detail="Monthly chart limit reached. Upgrade your plan to create more charts."
         )
 
+    if chart_data.is_public:
+        logger.info("Ignoring chart create is_public=true; use publish-targets. user_id=%s", current_user.id)
+
     chart = Chart(
         user_id=current_user.id,
-        team_id=team_id,
+        team_id=personal_team.id,
         title=chart_data.title,
         description=chart_data.description,
         data=chart_data.data.model_dump(),
         config=chart_data.config.model_dump(),
         source_type=chart_data.source_type,
         source_url=chart_data.source_url,
-        is_public=1 if chart_data.is_public else 0,
+        is_public=0,
     )
 
     db.add(chart)
 
     # Increment chart count atomically to avoid race conditions under concurrency
-    if team.subscription:
+    if personal_team.subscription:
         db.query(Subscription).filter(
-            Subscription.id == team.subscription.id
+            Subscription.id == personal_team.subscription.id
         ).update(
             {Subscription.charts_created_this_month: Subscription.charts_created_this_month + 1},
             synchronize_session="fetch",
@@ -629,10 +689,8 @@ async def get_chart(
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
 
-    # Check access
-    if not chart.is_public:
-        if not current_user or chart.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    if not _can_user_access_chart(db, chart, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     # Increment view count
     chart.view_count += 1
@@ -675,6 +733,93 @@ async def update_chart(
     return _chart_to_response(chart, current_user, db)
 
 
+@app.get("/api/charts/{chart_id}/publish-targets", response_model=ChartPublishTargetsResponse)
+async def get_chart_publish_targets(
+    chart_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get feed/team publish targets for a chart."""
+    chart = db.query(Chart).filter(Chart.id == chart_id).first()
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    if chart.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return ChartPublishTargetsResponse(
+        chart_id=chart.id,
+        is_public=bool(chart.is_public),
+        team_ids=_get_chart_publish_team_ids(db, chart.id),
+    )
+
+
+@app.put("/api/charts/{chart_id}/publish-targets", response_model=ChartPublishTargetsResponse)
+async def update_chart_publish_targets(
+    chart_id: str,
+    publish_data: ChartPublishTargetsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update feed/team publish targets for a chart."""
+    chart = db.query(Chart).filter(Chart.id == chart_id).first()
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    if chart.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if publish_data.is_public is not None:
+        chart.is_public = 1 if publish_data.is_public else 0
+
+    if publish_data.team_ids is not None:
+        requested_team_ids = sorted({team_id for team_id in publish_data.team_ids if team_id})
+        requested_team_ids_set = set(requested_team_ids)
+
+        allowed_team_ids_set: set[str] = set()
+        if requested_team_ids_set:
+            allowed_rows = (
+                db.query(Team.id)
+                .join(TeamMember, TeamMember.team_id == Team.id)
+                .filter(
+                    TeamMember.user_id == current_user.id,
+                    Team.id.in_(requested_team_ids),
+                    Team.is_personal == False,
+                )
+                .all()
+            )
+            allowed_team_ids_set = {row[0] for row in allowed_rows}
+
+            if allowed_team_ids_set != requested_team_ids_set:
+                raise HTTPException(status_code=403, detail="Invalid team publish targets")
+
+        existing_links = (
+            db.query(ChartPublication)
+            .filter(ChartPublication.chart_id == chart.id)
+            .all()
+        )
+        existing_team_ids_set = {link.team_id for link in existing_links}
+
+        for link in existing_links:
+            if link.team_id not in allowed_team_ids_set:
+                db.delete(link)
+
+        for team_id in (allowed_team_ids_set - existing_team_ids_set):
+            db.add(
+                ChartPublication(
+                    chart_id=chart.id,
+                    team_id=team_id,
+                    published_by=current_user.id,
+                )
+            )
+
+    db.commit()
+
+    return ChartPublishTargetsResponse(
+        chart_id=chart.id,
+        is_public=bool(chart.is_public),
+        team_ids=_get_chart_publish_team_ids(db, chart.id),
+    )
+
+
 @app.delete("/api/charts/{chart_id}")
 async def delete_chart(
     chart_id: str,
@@ -696,6 +841,44 @@ async def delete_chart(
     return {"status": "ok"}
 
 
+@app.post("/api/charts/{chart_id}/move", response_model=ChartResponse, deprecated=True)
+async def move_chart_to_team(
+    chart_id: str,
+    move_data: MoveChartRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deprecated: retarget a chart's team-space publication to a single team."""
+    _set_deprecation_headers(
+        response,
+        f"/api/charts/{chart_id}/publish-targets",
+        CHART_MOVE_DEPRECATION_SUNSET,
+    )
+    chart = db.query(Chart).filter(Chart.id == chart_id).first()
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    if chart.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    target_team, _ = _get_team_with_access(db, move_data.team_id, current_user)
+    if target_team.is_personal:
+        raise HTTPException(status_code=400, detail="Target must be a non-personal team space")
+
+    db.query(ChartPublication).filter(ChartPublication.chart_id == chart.id).delete(synchronize_session=False)
+    db.add(
+        ChartPublication(
+            chart_id=chart.id,
+            team_id=target_team.id,
+            published_by=current_user.id,
+        )
+    )
+    db.commit()
+    db.refresh(chart)
+
+    return _chart_to_response(chart, current_user, db)
+
+
 # ============================================================================
 # Save/Bookmark Endpoints
 # ============================================================================
@@ -711,6 +894,8 @@ async def save_chart(
 
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
+    if not _can_user_access_chart(db, chart, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     # Check if already saved
     existing = db.query(SavedChart).filter(
@@ -798,6 +983,8 @@ async def like_chart(
 
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
+    if not _can_user_access_chart(db, chart, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     # Check if already liked
     existing = db.query(Like).filter(
@@ -1588,6 +1775,170 @@ async def get_team(
     """Get team details"""
     team, _ = _get_team_with_access(db, team_id, current_user)
     return _team_to_response(team, db)
+
+
+@app.get("/api/teams/{team_id}/charts", response_model=ChartListResponse)
+async def list_team_charts(
+    team_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    sort: str = Query("created_at"),
+    order: str = Query("desc"),
+    search: Optional[str] = Query(None),
+    member_id: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List charts published to a team space."""
+    _team, _ = _get_team_with_access(db, team_id, current_user)
+
+    query = (
+        db.query(Chart)
+        .join(ChartPublication, ChartPublication.chart_id == Chart.id)
+        .filter(ChartPublication.team_id == team_id)
+    )
+
+    if member_id:
+        query = query.filter(Chart.user_id == member_id)
+
+    if search:
+        pattern = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Chart.title.ilike(pattern),
+                Chart.description.ilike(pattern),
+            )
+        )
+
+    sort_columns = {
+        "created_at": Chart.created_at,
+        "updated_at": Chart.updated_at,
+        "title": Chart.title,
+        "view_count": Chart.view_count,
+    }
+    if sort not in sort_columns:
+        raise HTTPException(status_code=400, detail="Invalid sort option")
+    if order not in ("asc", "desc"):
+        raise HTTPException(status_code=400, detail="Invalid order option")
+
+    sort_column = sort_columns[sort]
+    sort_expr = sort_column.asc() if order == "asc" else sort_column.desc()
+
+    total = query.count()
+    charts = query.order_by(sort_expr).offset(offset).limit(limit).all()
+
+    chart_ids = [chart.id for chart in charts]
+    liked_ids, saved_ids = _get_user_interactions(db, current_user.id, chart_ids)
+
+    return ChartListResponse(
+        charts=[
+            _chart_to_response(chart, current_user, db, liked_ids, saved_ids)
+            for chart in charts
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/teams/{team_id}/activity", response_model=ActivityListResponse)
+async def list_team_activity(
+    team_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List recent activity for a team space."""
+    _team, _ = _get_team_with_access(db, team_id, current_user)
+    fetch_count = max(limit + offset, 100)
+    events: List[ActivityItemResponse] = []
+
+    publications = (
+        db.query(ChartPublication)
+        .join(Chart, Chart.id == ChartPublication.chart_id)
+        .filter(ChartPublication.team_id == team_id)
+        .order_by(ChartPublication.created_at.desc())
+        .limit(fetch_count)
+        .all()
+    )
+    for publication in publications:
+        actor = publication.publisher or publication.chart.user
+        if not actor:
+            continue
+        chart_title = (
+            publication.chart.title
+            or (publication.chart.config or {}).get("title")
+            or "Untitled Chart"
+        )
+        events.append(
+            ActivityItemResponse(
+                id=f"chart-published:{publication.id}",
+                type="chart_published",
+                actor=UserResponse.model_validate(actor),
+                target=ActivityTarget(type="chart", id=publication.chart.id, name=chart_title),
+                created_at=publication.created_at,
+            )
+        )
+
+    team_charts = (
+        db.query(Chart)
+        .join(ChartPublication, ChartPublication.chart_id == Chart.id)
+        .filter(ChartPublication.team_id == team_id)
+        .order_by(Chart.updated_at.desc())
+        .limit(fetch_count)
+        .all()
+    )
+    for chart in team_charts:
+        if not chart.user:
+            continue
+        chart_title = chart.title or (chart.config or {}).get("title") or "Untitled Chart"
+        events.append(
+            ActivityItemResponse(
+                id=f"chart-created:{chart.id}",
+                type="chart_created",
+                actor=UserResponse.model_validate(chart.user),
+                target=ActivityTarget(type="chart", id=chart.id, name=chart_title),
+                created_at=chart.created_at,
+            )
+        )
+        if chart.updated_at and chart.updated_at > chart.created_at:
+            events.append(
+                ActivityItemResponse(
+                    id=f"chart-updated:{chart.id}",
+                    type="chart_updated",
+                    actor=UserResponse.model_validate(chart.user),
+                    target=ActivityTarget(type="chart", id=chart.id, name=chart_title),
+                    created_at=chart.updated_at,
+                )
+            )
+
+    members = (
+        db.query(TeamMember)
+        .filter(TeamMember.team_id == team_id)
+        .order_by(TeamMember.joined_at.desc())
+        .limit(fetch_count)
+        .all()
+    )
+    for member in members:
+        if not member.user:
+            continue
+        events.append(
+            ActivityItemResponse(
+                id=f"member-joined:{member.id}",
+                type="member_joined",
+                actor=UserResponse.model_validate(member.user),
+                created_at=member.joined_at,
+            )
+        )
+
+    events.sort(key=lambda event: event.created_at, reverse=True)
+    paginated = events[offset: offset + limit]
+
+    return ActivityListResponse(
+        activities=paginated,
+        total=len(events),
+    )
 
 
 @app.patch("/api/teams/{team_id}", response_model=TeamResponse)

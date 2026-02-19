@@ -1,0 +1,170 @@
+.publish-menu {
+  position: relative;
+}
+
+.publish-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 280px;
+  background: var(--bg-elevated);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.publish-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.publish-option:hover:not(:disabled),
+.publish-option:active:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.publish-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.publish-option svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.publish-option:hover:not(:disabled) svg,
+.publish-option:active:not(:disabled) svg {
+  color: var(--text-secondary);
+}
+
+.publish-check {
+  margin-left: auto;
+  color: var(--success) !important;
+}
+
+.publish-divider {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.publish-team-block {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.publish-team-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.publish-team-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.publish-team-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+}
+
+.publish-team-item input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.publish-team-item input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.publish-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-1);
+  min-height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.publish-save-button:hover:not(:disabled),
+.publish-save-button:active:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.publish-save-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.publish-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.publish-team-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .publish-dropdown {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    min-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .publish-option,
+  .publish-save-button {
+    transition: none;
+  }
+}

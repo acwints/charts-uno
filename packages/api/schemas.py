@@ -117,6 +117,25 @@ class ChartListResponse(BaseModel):
     offset: int
 
 
+class ActivityTarget(BaseModel):
+    type: str
+    id: str
+    name: str
+
+
+class ActivityItemResponse(BaseModel):
+    id: str
+    type: str
+    actor: UserResponse
+    target: Optional[ActivityTarget] = None
+    created_at: datetime
+
+
+class ActivityListResponse(BaseModel):
+    activities: List[ActivityItemResponse]
+    total: int
+
+
 # Saved charts
 class SavedChartResponse(BaseModel):
     id: str
@@ -412,12 +431,31 @@ class UsageSummaryResponse(BaseModel):
 
 # Update ChartCreate to include team_id
 class ChartCreateWithTeam(ChartCreate):
-    team_id: Optional[str] = None
+    team_id: Optional[str] = Field(
+        default=None,
+        description="Deprecated. New charts are always saved to personal space.",
+        json_schema_extra={"deprecated": True},
+    )
 
 
 # Update ChartResponse to include team_id
 class ChartResponseWithTeam(ChartResponse):
     team_id: Optional[str] = None
+
+
+class ChartPublishTargetsUpdate(BaseModel):
+    is_public: Optional[bool] = None
+    team_ids: Optional[List[str]] = None
+
+
+class ChartPublishTargetsResponse(BaseModel):
+    chart_id: str
+    is_public: bool
+    team_ids: List[str]
+
+
+class MoveChartRequest(BaseModel):
+    team_id: str
 
 
 # ============================================

@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { COLOR_PALETTES, applyCustomColors, getEffectiveColors, getTheme } from '../types';
+import { COLOR_PALETTES, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, getTheme } from '../types';
 import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface MiniChartPreviewData {
@@ -25,6 +25,7 @@ interface MiniChartPreviewConfig {
   colorScheme?: string;
   themeMode?: string;
   barLayout?: string;
+  yAxisBaselineMode?: 'auto' | 'zero' | 'data';
   customColors?: {
     background?: string;
     cardBackground?: string;
@@ -77,6 +78,13 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
     [data.labels, data.series]
   );
 
+  const numericDomain = useMemo(() => {
+    const rawValues = data.series.flatMap((series) => series.data);
+    return getNumericDomainFromValues(rawValues, {
+      mode: config.yAxisBaselineMode ?? 'auto',
+    });
+  }, [data.series, config.yAxisBaselineMode]);
+
   const renderMiniChart = () => {
     const chartType = config.type;
     const isHorizontalBar = chartType === 'bar' && config.barLayout === 'horizontal';
@@ -91,13 +99,13 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
           >
             {isHorizontalBar ? (
               <>
-                <XAxis type="number" hide />
+                <XAxis type="number" hide domain={numericDomain} />
                 <YAxis dataKey="name" type="category" hide width={0} />
               </>
             ) : (
               <>
                 <XAxis dataKey="name" type="category" hide />
-                <YAxis type="number" hide />
+                <YAxis type="number" hide domain={numericDomain} />
               </>
             )}
             {data.series.map((series, idx) => (
@@ -114,6 +122,8 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
       case 'line':
         return (
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <XAxis dataKey="name" type="category" hide />
+            <YAxis type="number" hide domain={numericDomain} />
             {data.series.map((series, idx) => (
               <Line
                 key={series.name}
@@ -130,6 +140,8 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
       case 'area':
         return (
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <XAxis dataKey="name" type="category" hide />
+            <YAxis type="number" hide domain={numericDomain} />
             {data.series.map((series, idx) => (
               <Area
                 key={series.name}
@@ -166,6 +178,8 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
       default:
         return (
           <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <XAxis dataKey="name" type="category" hide />
+            <YAxis type="number" hide domain={numericDomain} />
             {data.series.map((series, idx) => (
               <Bar
                 key={series.name}

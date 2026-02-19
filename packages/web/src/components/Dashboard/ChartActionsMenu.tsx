@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import Edit from 'lucide-react/dist/esm/icons/edit';
-import Copy from 'lucide-react/dist/esm/icons/copy';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import type { ChartResponse } from '../../services/api';
-import { updateChart, deleteChart, duplicateChart } from '../../services/api';
+import { updateChart, deleteChart } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import './ChartActionsMenu.css';
 
@@ -53,18 +52,6 @@ export function ChartActionsMenu({
     e.stopPropagation();
     onOpenChange(false);
     navigate(`/chart/${chart.id}`);
-  };
-
-  const handleDuplicate = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onOpenChange(false);
-    try {
-      const newChart = await duplicateChart(chart.id);
-      showToast('success', 'Chart duplicated');
-      onUpdate?.(newChart);
-    } catch {
-      showToast('error', 'Failed to duplicate chart');
-    }
   };
 
   const handleTogglePublish = async (e: React.MouseEvent) => {
@@ -118,11 +105,6 @@ export function ChartActionsMenu({
             <button className="chart-actions-item" onClick={handleEdit}>
               <Edit size={14} />
               <span>Edit</span>
-            </button>
-
-            <button className="chart-actions-item" onClick={handleDuplicate}>
-              <Copy size={14} />
-              <span>Duplicate</span>
             </button>
 
             <button className="chart-actions-item" onClick={handleTogglePublish}>
