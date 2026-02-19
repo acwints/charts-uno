@@ -1,23 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import User from 'lucide-react/dist/esm/icons/user';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart } from '../../services/api';
-import { COLOR_PALETTES } from '../../types';
-import { SafeResponsiveContainer } from '../SafeResponsiveContainer';
+import { MiniChartPreview } from '../MiniChartPreview';
 import './ChartCard.css';
 
 interface ChartCardProps {
@@ -30,23 +18,6 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
-
-  const colors = COLOR_PALETTES[(chart.config.colorScheme as keyof typeof COLOR_PALETTES) || 'default'];
-
-  const chartData = chart.data.labels.map((label, idx) => {
-    const point: Record<string, string | number | null> = { name: label };
-    chart.data.series.forEach((series) => {
-      point[series.name] = series.data[idx];
-    });
-    return point;
-  });
-
-  const pieData = chart.data.series[0]?.data
-    .map((value, idx) => ({
-      name: chart.data.labels[idx],
-      value,
-    }))
-    .filter((point): point is { name: string; value: number } => typeof point.value === 'number') || [];
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,92 +38,6 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
       console.error('Failed to toggle like:', error);
     } finally {
       setIsLikeLoading(false);
-    }
-  };
-
-  const renderMiniChart = () => {
-    const chartType = chart.config.type;
-
-    switch (chartType) {
-      case 'bar':
-        return (
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            {chart.data.series.map((series, idx) => (
-              <Bar
-                key={series.name}
-                dataKey={series.name}
-                fill={colors[idx % colors.length]}
-                radius={[2, 2, 0, 0]}
-              />
-            ))}
-          </BarChart>
-        );
-
-      case 'line':
-        return (
-          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            {chart.data.series.map((series, idx) => (
-              <Line
-                key={series.name}
-                type="monotone"
-                dataKey={series.name}
-                stroke={colors[idx % colors.length]}
-                strokeWidth={2}
-                dot={false}
-              />
-            ))}
-          </LineChart>
-        );
-
-      case 'area':
-        return (
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            {chart.data.series.map((series, idx) => (
-              <Area
-                key={series.name}
-                type="monotone"
-                dataKey={series.name}
-                stroke={colors[idx % colors.length]}
-                fill={colors[idx % colors.length]}
-                fillOpacity={0.3}
-                strokeWidth={2}
-              />
-            ))}
-          </AreaChart>
-        );
-
-      case 'pie':
-        return (
-          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={25}
-              outerRadius={50}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {pieData.map((_, idx) => (
-                <Cell key={`cell-${idx}`} fill={colors[idx % colors.length]} />
-              ))}
-            </Pie>
-          </PieChart>
-        );
-
-      default:
-        return (
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            {chart.data.series.map((series, idx) => (
-              <Bar
-                key={series.name}
-                dataKey={series.name}
-                fill={colors[idx % colors.length]}
-                radius={[2, 2, 0, 0]}
-              />
-            ))}
-          </BarChart>
-        );
     }
   };
 
@@ -178,12 +63,14 @@ export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
       transition={{ duration: 0.2 }}
       onClick={() => onChartClick?.(chart)}
     >
-      <div className="chart-card__preview">
-        <SafeResponsiveContainer minWidth={0} minHeight={96}>
-          {renderMiniChart()}
-        </SafeResponsiveContainer>
+      <MiniChartPreview
+        className="chart-card__preview"
+        data={chart.data}
+        config={chart.config}
+        minHeight={96}
+      >
         <div className="chart-card__type-badge">{chart.config.type}</div>
-      </div>
+      </MiniChartPreview>
 
       <div className="chart-card__content">
         <h3 className="chart-card__title">
