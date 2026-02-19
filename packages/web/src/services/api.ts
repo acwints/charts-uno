@@ -419,11 +419,6 @@ export async function batchPublishCharts(chartIds: string[], isPublic: boolean):
   await Promise.all(chartIds.map((chartId) => updateChart(chartId, { is_public: isPublic })));
 }
 
-// Deprecated compatibility endpoint.
-export async function moveChartToTeam(chartId: string, teamId: string): Promise<ChartResponse> {
-  return apiRequest(`/api/charts/${chartId}/move`, { method: 'POST', body: { team_id: teamId } });
-}
-
 // ============================================
 // Team Branding
 // ============================================

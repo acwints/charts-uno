@@ -454,10 +454,6 @@ class ChartPublishTargetsResponse(BaseModel):
     team_ids: List[str]
 
 
-class MoveChartRequest(BaseModel):
-    team_id: str
-
-
 # ============================================
 # Team Branding Schemas
 # ============================================

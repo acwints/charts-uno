@@ -80,7 +80,6 @@ from schemas import (
     ActivityListResponse,
     ChartPublishTargetsResponse,
     ChartPublishTargetsUpdate,
-    MoveChartRequest,
     # Branding schemas
     TeamBrandingUpdate,
     TeamBrandingResponse,
@@ -123,7 +122,6 @@ BOT_CHART_OWNER_EMAIL = os.environ.get("BOT_CHART_OWNER_EMAIL", "chartsuno-bot@c
 BOT_CHART_OWNER_ID = os.environ.get("BOT_CHART_OWNER_ID", "")
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://chartsuno.com")
 CHART_TEAM_CREATE_DEPRECATION_SUNSET = "Mon, 30 Jun 2026 00:00:00 GMT"
-CHART_MOVE_DEPRECATION_SUNSET = "Mon, 30 Jun 2026 00:00:00 GMT"
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -839,44 +837,6 @@ async def delete_chart(
     db.commit()
 
     return {"status": "ok"}
-
-
-@app.post("/api/charts/{chart_id}/move", response_model=ChartResponse, deprecated=True)
-async def move_chart_to_team(
-    chart_id: str,
-    move_data: MoveChartRequest,
-    response: Response,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Deprecated: retarget a chart's team-space publication to a single team."""
-    _set_deprecation_headers(
-        response,
-        f"/api/charts/{chart_id}/publish-targets",
-        CHART_MOVE_DEPRECATION_SUNSET,
-    )
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-    if chart.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    target_team, _ = _get_team_with_access(db, move_data.team_id, current_user)
-    if target_team.is_personal:
-        raise HTTPException(status_code=400, detail="Target must be a non-personal team space")
-
-    db.query(ChartPublication).filter(ChartPublication.chart_id == chart.id).delete(synchronize_session=False)
-    db.add(
-        ChartPublication(
-            chart_id=chart.id,
-            team_id=target_team.id,
-            published_by=current_user.id,
-        )
-    )
-    db.commit()
-    db.refresh(chart)
-
-    return _chart_to_response(chart, current_user, db)
 
 
 # ============================================================================
