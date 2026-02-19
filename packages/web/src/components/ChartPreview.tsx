@@ -236,7 +236,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
   const horizontalCategoryAxis = useMemo(
-    () => computeHorizontalCategoryAxisConfig(data.labels, Boolean(xAxisLabel)),
+    () => computeHorizontalCategoryAxisConfig(data.labels, xAxisLabel),
     [data.labels, xAxisLabel],
   );
   const sourceDomain = useMemo(() => {

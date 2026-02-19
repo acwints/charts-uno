@@ -22,17 +22,23 @@ const CHAR_WIDTH_PX = 7; // approximate px per char at fontSize 12
 const MAX_TICK_LENGTH = 25;
 const SIN_45 = Math.sin(Math.PI / 4);
 const HORIZONTAL_AXIS_MIN_WIDTH = 88;
-const HORIZONTAL_AXIS_MAX_WIDTH = 220;
+const HORIZONTAL_AXIS_MAX_WIDTH = 170;
 
 function estimateCharWidth(fontSize: number): number {
   return fontSize * 0.58;
 }
 
-function getLongestNormalizedLabelLength(labels: string[]): number {
-  return labels.reduce((max, label) => {
-    const normalized = label.replace(/\s+/g, ' ').trim();
-    return Math.max(max, normalized.length);
-  }, 0);
+function getLabelLengths(labels: string[]): number[] {
+  return labels
+    .map((label) => label.replace(/\s+/g, ' ').trim().length)
+    .filter((length) => length > 0)
+    .sort((a, b) => a - b);
+}
+
+function getLengthAtPercentile(lengths: number[], percentile: number): number {
+  if (lengths.length === 0) return 0;
+  const idx = Math.max(0, Math.min(lengths.length - 1, Math.floor((lengths.length - 1) * percentile)));
+  return lengths[idx];
 }
 
 export function computeAdaptiveAxisConfig(
@@ -137,21 +143,36 @@ export function computeAdaptiveAxisConfig(
 
 export function computeHorizontalCategoryAxisConfig(
   labels: string[],
-  hasAxisLabel: boolean,
+  axisLabel?: string,
 ): HorizontalCategoryAxisConfig {
-  const longestLabelLength = getLongestNormalizedLabelLength(labels);
+  const lengths = getLabelLengths(labels);
+  const longestLabelLength = lengths.length > 0 ? lengths[lengths.length - 1] : 0;
+  const p80Length = getLengthAtPercentile(lengths, 0.8);
+  const hasAxisLabel = Boolean(axisLabel && axisLabel.trim());
 
   let fontSize: 10 | 11 | 12 = 12;
   if (longestLabelLength > 18) fontSize = 11;
   if (longestLabelLength > 28) fontSize = 10;
 
+  // Use a robust length estimate so one outlier label doesn't force huge left margins.
+  const targetTickLength = Math.max(
+    10,
+    Math.min(16, Math.min(longestLabelLength, Math.max(p80Length + 2, 12)))
+  );
+
   const charWidth = estimateCharWidth(fontSize);
-  const rawAxisWidth = Math.round(longestLabelLength * charWidth + 14);
-  const axisWidth = Math.max(HORIZONTAL_AXIS_MIN_WIDTH, Math.min(HORIZONTAL_AXIS_MAX_WIDTH, rawAxisWidth));
-  const maxTickLength = Math.max(8, Math.floor((axisWidth - 14) / charWidth));
-  const labelAllowance = hasAxisLabel ? 30 : 10;
+  const rawAxisWidth = Math.round(targetTickLength * charWidth + 12);
+  const axisWidth = Math.max(
+    76,
+    Math.min(HORIZONTAL_AXIS_MAX_WIDTH, Math.max(HORIZONTAL_AXIS_MIN_WIDTH - 8, rawAxisWidth))
+  );
+  const maxTickLength = Math.max(8, Math.min(targetTickLength, Math.floor((axisWidth - 12) / charWidth)));
+  const axisLabelLength = hasAxisLabel ? axisLabel!.trim().length : 0;
+  const labelAllowance = hasAxisLabel
+    ? Math.max(14, Math.min(22, Math.round(axisLabelLength * 0.7) + 8))
+    : 8;
   const leftMargin = axisWidth + labelAllowance;
-  const labelOffset = Math.max(8, Math.round(axisWidth * 0.1));
+  const labelOffset = Math.max(8, Math.min(12, Math.round(axisWidth * 0.08)));
 
   return {
     axisWidth,
