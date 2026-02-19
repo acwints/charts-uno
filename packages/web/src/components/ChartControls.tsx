@@ -134,12 +134,13 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
 
   const effectiveColors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
 
-  const showComboControls =
+  const comboAvailable = data.series.length >= 2;
+  const comboCompatibleBase =
     COMBO_ELIGIBLE_TYPES.has(config.type) &&
-    data.series.length >= 2 &&
     config.barLayout !== 'horizontal';
+  const showComboControls = comboCompatibleBase && comboAvailable;
 
-  const combo = isComboChart(config);
+  const combo = comboCompatibleBase && isComboChart(config);
   const hasRightAxis = combo && data.series.some(
     (s) => resolveSeriesConfig(s.name, config).axis === 'right',
   );
@@ -154,6 +155,41 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
     updateConfig({
       seriesConfig: comboSuggestion.seriesConfig,
       rightYAxisLabel: comboSuggestion.rightYAxisLabel,
+    });
+  };
+
+  const enableCombo = () => {
+    if (!comboAvailable) return;
+    const baseType: SeriesChartType =
+      config.type === 'line' || config.type === 'area' ? config.type : 'bar';
+    const suggestion = suggestComboConfig(data, baseType);
+    const fallbackSeries = data.series[1];
+    const fallbackSeriesConfig = fallbackSeries
+      ? {
+        [fallbackSeries.name]: {
+          chartType: baseType === 'bar' ? 'line' : 'bar',
+          axis: 'right' as const,
+        },
+      }
+      : undefined;
+    updateConfig({
+      type: baseType,
+      ...(baseType === 'bar' ? { barLayout: 'vertical' } : {}),
+      seriesConfig: suggestion?.seriesConfig ?? fallbackSeriesConfig,
+      rightYAxisLabel: suggestion?.rightYAxisLabel ?? fallbackSeries?.name ?? 'Right Axis',
+    });
+  };
+
+  const handleTypeChange = (type: ChartType) => {
+    updateConfig({
+      type,
+      aiMode: type === 'infographic' ? (config.aiMode || 'chart') : undefined,
+      aiReadyToGenerate: type === 'infographic' ? false : undefined,
+      mapVariant: type === 'map' ? (config.mapVariant || 'choropleth') : undefined,
+      mapScope: type === 'map' ? (config.mapScope || data.mapScope || 'us-states') : undefined,
+      // Choosing a standard chart type should leave dual-axis mode.
+      seriesConfig: undefined,
+      rightYAxisLabel: undefined,
     });
   };
 
@@ -214,13 +250,7 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             <button
               key={type.id}
               className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
-              onClick={() => updateConfig({
-                type: type.id,
-                aiMode: type.id === 'infographic' ? (config.aiMode || 'chart') : undefined,
-                aiReadyToGenerate: type.id === 'infographic' ? false : undefined,
-                mapVariant: type.id === 'map' ? (config.mapVariant || 'choropleth') : undefined,
-                mapScope: type.id === 'map' ? (config.mapScope || data.mapScope || 'us-states') : undefined,
-              })}
+              onClick={() => handleTypeChange(type.id)}
               title={type.label}
             >
               <type.icon size={18} />
@@ -228,6 +258,20 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
             </button>
           ))}
         </div>
+        {comboAvailable && (
+          <div className="type-quick-actions">
+            <button
+              className={`type-button combo-entry-button ${combo ? 'active' : ''}`}
+              onClick={enableCombo}
+              title="Enable combo chart (dual axis)"
+              disabled={combo}
+              aria-pressed={combo}
+            >
+              <Columns2 size={16} />
+              <span className="type-label">{combo ? 'Combo Enabled' : 'Enable Combo'}</span>
+            </button>
+          </div>
+        )}
         {data.aiReasoning && config.type !== 'infographic' && (
           <div className="ai-reasoning">
             <Sparkles size={12} />
@@ -411,7 +455,13 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                 <input
                   type="checkbox"
                   checked={config.barLayout === 'horizontal'}
-                  onChange={(e) => updateConfig({ barLayout: e.target.checked ? 'horizontal' : 'vertical' })}
+                  onChange={(e) => {
+                    const nextHorizontal = e.target.checked;
+                    updateConfig({
+                      barLayout: nextHorizontal ? 'horizontal' : 'vertical',
+                      ...(nextHorizontal ? { seriesConfig: undefined, rightYAxisLabel: undefined } : {}),
+                    });
+                  }}
                 />
                 <span className="toggle-switch" />
                 <span className="toggle-label">Horizontal</span>

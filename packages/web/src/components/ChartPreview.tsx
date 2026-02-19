@@ -206,7 +206,10 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
   }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
   // --- Combo chart (dual-axis) memos ---
-  const combo = isComboChart(config);
+  const comboCompatibleBase =
+    (config.type === 'bar' || config.type === 'line' || config.type === 'area') &&
+    config.barLayout !== 'horizontal';
+  const combo = comboCompatibleBase && isComboChart(config);
 
   const rightYAxisFormat = useMemo(() => {
     const label = (config.rightYAxisLabel || '').toLowerCase();
