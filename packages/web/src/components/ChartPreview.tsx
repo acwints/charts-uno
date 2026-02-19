@@ -159,6 +159,34 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     return '';
   }, [data.yAxisSuffix, yAxisFormat]);
 
+  const numericSeriesValues = useMemo(() => {
+    return data.series.flatMap((series) =>
+      series.data.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+    );
+  }, [data.series]);
+
+  const numericValueRange = useMemo(() => {
+    if (numericSeriesValues.length === 0) return 0;
+    const min = Math.min(...numericSeriesValues);
+    const max = Math.max(...numericSeriesValues);
+    return Math.abs(max - min);
+  }, [numericSeriesValues]);
+
+  // Keep axes readable by defaulting to 1-2 decimals; only use 3 for very tight ranges.
+  const axisDecimalPlaces = useMemo(() => {
+    if (numericValueRange <= 0.25) return 3;
+    if (numericValueRange <= 5) return 2;
+    if (numericValueRange <= 150) return 1;
+    return 0;
+  }, [numericValueRange]);
+
+  const axisNumberFormatter = useMemo(() => {
+    return new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: axisDecimalPlaces,
+    });
+  }, [axisDecimalPlaces]);
+
   // Format Y-axis tick values with compact notation for large numbers
   const formatYAxisTick = useCallback((value: number): string => {
     const absValue = Math.abs(value);
@@ -173,11 +201,11 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     } else if (absValue >= 1_000) {
       formatted = `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
     } else {
-      formatted = value.toLocaleString();
+      formatted = axisNumberFormatter.format(value);
     }
 
     return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
-  }, [yAxisPrefix, yAxisSuffix]);
+  }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
   // Format tooltip values with full precision
   const formatTooltipValue = useCallback((value: number): string => {
