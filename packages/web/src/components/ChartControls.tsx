@@ -164,10 +164,11 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
       config.type === 'line' || config.type === 'area' ? config.type : 'bar';
     const suggestion = suggestComboConfig(data, baseType);
     const fallbackSeries = data.series[1];
-    const fallbackSeriesConfig = fallbackSeries
+    const fallbackChartType: SeriesChartType = baseType === 'bar' ? 'line' : 'bar';
+    const fallbackSeriesConfig: Record<string, SeriesOverride> | undefined = fallbackSeries
       ? {
         [fallbackSeries.name]: {
-          chartType: baseType === 'bar' ? 'line' : 'bar',
+          chartType: fallbackChartType,
           axis: 'right' as const,
         },
       }
