@@ -626,6 +626,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'paste' && (
             <div className="paste-input">
+              {(isProcessing || isGeneratingPrompt) && (
+                <div className="input-processing-overlay" aria-busy="true" aria-live="polite">
+                  <AIProcessingIndicator
+                    size="sm"
+                    label="Generating your chart..."
+                    statusMessages={['Checking for structured data...', 'Converting or generating values...', 'Selecting chart type...', 'Almost ready...']}
+                  />
+                </div>
+              )}
               <textarea
                 className="paste-textarea"
                 placeholder={`Paste tabular data or describe the chart you want...\n\nData example:\nCategory,Sales,Profit\nJan,1200,400\nFeb,1900,520\nMar,3000,890\n\nPrompt example:\n"Monthly revenue for a SaaS startup growing 15% month-over-month"`}
@@ -633,13 +642,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 onChange={(e) => setPasteContent(e.target.value)}
                 spellCheck={false}
               />
-              {(isProcessing || isGeneratingPrompt) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label="Generating your chart..."
-                  statusMessages={['Checking for structured data...', 'Converting or generating values...', 'Selecting chart type...', 'Almost ready...']}
-                />
-              ) : (
+              {!(isProcessing || isGeneratingPrompt) && (
                 <Button
                   variant="primary"
                   size="lg"
@@ -656,6 +659,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'sheets' && (
             <div className="sheets-input">
+              {isProcessing && (
+                <div className="input-processing-overlay" aria-busy="true" aria-live="polite">
+                  <AIProcessingIndicator
+                    size="sm"
+                    label="Importing & generating..."
+                    statusMessages={['Fetching spreadsheet...', 'Parsing data...', 'Selecting chart type...', 'Almost ready...']}
+                  />
+                </div>
+              )}
               <div className="sheets-input-top">
                 <div className="sheets-url-wrapper">
                   <Link2 size={20} className="sheets-url-icon" />
@@ -671,13 +683,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                   Make sure your sheet is publicly accessible or shared with view permissions.
                 </p>
               </div>
-              {isProcessing ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label="Importing & generating..."
-                  statusMessages={['Fetching spreadsheet...', 'Parsing data...', 'Selecting chart type...', 'Almost ready...']}
-                />
-              ) : (
+              {!isProcessing && (
                 <Button
                   variant="primary"
                   size="lg"
@@ -693,6 +699,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
           {mode === 'stocks' && (
             <div className="stocks-input">
+              {(isProcessing || isLoadingStock) && (
+                <div className="input-processing-overlay" aria-busy="true" aria-live="polite">
+                  <AIProcessingIndicator
+                    size="sm"
+                    label="Fetching stock data..."
+                    statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
+                  />
+                </div>
+              )}
               <div className="stocks-input-top">
                 <div className="stocks-col-left">
                   <div className="stocks-ticker-row" ref={tickerWrapperRef}>
@@ -787,13 +802,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 </div>
               </div>
 
-              {(isProcessing || isLoadingStock) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label="Fetching stock data..."
-                  statusMessages={['Connecting to market data...', 'Downloading price history...', 'Building your chart...', 'Almost ready...']}
-                />
-              ) : (
+              {!(isProcessing || isLoadingStock) && (
                 <Button
                   variant="primary"
                   size="lg"
