@@ -95,10 +95,36 @@ async function drawLogoWatermark(
 }
 
 async function prepareElementForCapture(element: HTMLElement): Promise<void> {
-  element.scrollIntoView({ block: 'center', behavior: 'instant' });
+  element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+}
+
+function resolveCaptureTarget(element: HTMLElement): HTMLElement {
+  if (element.classList.contains('chart-preview')) return element;
+  const preview = element.querySelector<HTMLElement>('.chart-preview');
+  return preview ?? element;
+}
+
+async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
+  const captureTarget = resolveCaptureTarget(element);
+  await prepareElementForCapture(captureTarget);
+
+  captureTarget.classList.add('is-exporting');
+  try {
+    // Use null to preserve the chart card's rendered background colors.
+    return await html2canvas(captureTarget, {
+      backgroundColor: null,
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      width: Math.ceil(captureTarget.getBoundingClientRect().width),
+      height: Math.ceil(captureTarget.getBoundingClientRect().height),
+    });
+  } finally {
+    captureTarget.classList.remove('is-exporting');
+  }
 }
 
 export async function exportToPNG(
@@ -106,16 +132,7 @@ export async function exportToPNG(
   filename: string = 'chart',
   watermark?: WatermarkSettings
 ): Promise<void> {
-  await prepareElementForCapture(element);
-  element.classList.add('is-exporting');
-  // Use null to capture the element's actual background color
-  const canvas = await html2canvas(element, {
-    backgroundColor: null,
-    scale: 2,
-    logging: false,
-    useCORS: true,
-  });
-  element.classList.remove('is-exporting');
+  const canvas = await renderElementToCanvas(element);
 
   // Apply watermark if enabled
   if (watermark?.enabled !== false) {
@@ -142,15 +159,7 @@ export async function copyImageToClipboard(
   element: HTMLElement,
   watermark?: WatermarkSettings
 ): Promise<void> {
-  await prepareElementForCapture(element);
-  element.classList.add('is-exporting');
-  const canvas = await html2canvas(element, {
-    backgroundColor: null,
-    scale: 2,
-    logging: false,
-    useCORS: true,
-  });
-  element.classList.remove('is-exporting');
+  const canvas = await renderElementToCanvas(element);
 
   if (watermark?.enabled !== false) {
     const ctx = canvas.getContext('2d');
