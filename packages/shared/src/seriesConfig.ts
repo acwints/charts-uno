@@ -50,7 +50,7 @@ export function getSeriesForAxis(
 const COMBO_ELIGIBLE: Set<ChartType> = new Set(['bar', 'line', 'area']);
 
 const PERCENTAGE_NAME_RE =
-  /\b(saving|percent|rate|ratio|share|proportion|margin|efficiency|utilization|growth|change|return|yield)\b/i;
+  /\b(savings?|percent(age)?|rates?|ratio|share|proportion|margin|efficiency|utilization|growth|change|returns?|yield)\b/i;
 
 /**
  * Heuristic: detect series that look like percentages among series that don't.

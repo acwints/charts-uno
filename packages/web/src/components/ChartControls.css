@@ -604,6 +604,39 @@
   color: var(--text-muted);
 }
 
+/* Combo / Dual Axis section */
+.combo-section.full-width {
+  grid-column: 1 / -1;
+  border-right: none;
+  background: var(--bg-tertiary);
+}
+
+.combo-series-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.combo-series-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.combo-series-name {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 /* Combo chart suggestion banner */
 .combo-suggest-banner {
   display: flex;

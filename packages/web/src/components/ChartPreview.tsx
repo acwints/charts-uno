@@ -214,7 +214,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     if (/(percent|%|rate|ratio|share|proportion)/.test(label)) return 'percentage';
     // Heuristic: if the label contains savings/margin/growth/etc. and all right-axis values
     // are in 0-100 range, treat as percentage
-    if (/\b(saving|margin|efficiency|utilization|growth|change|return|yield)\b/i.test(label)) {
+    if (/\b(savings?|margin|efficiency|utilization|growth|change|returns?|yield)\b/i.test(label)) {
       const rightNames = combo ? new Set(getSeriesForAxis(data, config, 'right')) : new Set<string>();
       const vals = data.series
         .filter((s) => rightNames.has(s.name))

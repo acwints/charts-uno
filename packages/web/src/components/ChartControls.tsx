@@ -24,6 +24,7 @@ import Palette from 'lucide-react/dist/esm/icons/palette';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
+import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
@@ -438,36 +439,52 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
 
         <div className="control-section data-summary full-width">
           <SectionHeader icon={Hash} label="Data Summary" />
-          {comboSuggestion && (
-            <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
-              <Sparkles size={12} />
-              <span>
-                Mixed units detected — use <strong>Dual Axis</strong> to show{' '}
-                {Object.keys(comboSuggestion.seriesConfig).join(', ')} as % on the right
-              </span>
-            </button>
-          )}
           <div className="data-grid">
-            {data.series.map((series, idx) => {
-              const resolved = resolveSeriesConfig(series.name, config);
-              return (
-                <div key={series.name} className="data-series-item">
-                  <div
-                    className="series-color"
-                    style={{ background: effectiveColors[idx % effectiveColors.length] }}
-                  />
-                  <span className="series-name">{series.name}</span>
-                  <span className="series-stats">
-                    {(() => {
-                      const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-                      if (numericValues.length === 0) return 'No numeric data';
-                      const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
-                      const min = Math.min(...numericValues);
-                      const max = Math.max(...numericValues);
-                      return `${formatter.format(min)} — ${formatter.format(max)}`;
-                    })()}
-                  </span>
-                  {showComboControls && (
+            {data.series.map((series, idx) => (
+              <div key={series.name} className="data-series-item">
+                <div
+                  className="series-color"
+                  style={{ background: effectiveColors[idx % effectiveColors.length] }}
+                />
+                <span className="series-name">{series.name}</span>
+                <span className="series-stats">
+                  {(() => {
+                    const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+                    if (numericValues.length === 0) return 'No numeric data';
+                    const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
+                    const min = Math.min(...numericValues);
+                    const max = Math.max(...numericValues);
+                    return `${formatter.format(min)} — ${formatter.format(max)}`;
+                  })()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {showComboControls && (
+          <div className="control-section combo-section full-width">
+            <SectionHeader icon={Columns2} label="Dual Axis" />
+            {comboSuggestion && (
+              <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
+                <Sparkles size={12} />
+                <span>
+                  Mixed units detected — click to show{' '}
+                  <strong>{Object.keys(comboSuggestion.seriesConfig).join(', ')}</strong>{' '}
+                  as % on the right axis
+                </span>
+              </button>
+            )}
+            <div className="combo-series-grid">
+              {data.series.map((series, idx) => {
+                const resolved = resolveSeriesConfig(series.name, config);
+                return (
+                  <div key={series.name} className="combo-series-row">
+                    <div
+                      className="series-color"
+                      style={{ background: effectiveColors[idx % effectiveColors.length] }}
+                    />
+                    <span className="combo-series-name">{series.name}</span>
                     <div className="combo-series-controls">
                       <div className="combo-type-selector" role="group" aria-label={`Chart type for ${series.name}`}>
                         {COMBO_CHART_TYPES.map((ct) => (
@@ -498,24 +515,24 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {showComboControls && hasRightAxis && (
-            <div className="combo-right-axis-label">
-              <input
-                type="text"
-                className="combo-right-axis-input"
-                placeholder="Right axis label..."
-                value={config.rightYAxisLabel ?? ''}
-                onChange={(e) => updateConfig({ rightYAxisLabel: e.target.value || undefined })}
-                spellCheck={false}
-              />
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+            {hasRightAxis && (
+              <div className="combo-right-axis-label">
+                <input
+                  type="text"
+                  className="combo-right-axis-input"
+                  placeholder="Right axis label..."
+                  value={config.rightYAxisLabel ?? ''}
+                  onChange={(e) => updateConfig({ rightYAxisLabel: e.target.value || undefined })}
+                  spellCheck={false}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="controls-footer">
