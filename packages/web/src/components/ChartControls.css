@@ -604,6 +604,86 @@
   color: var(--text-muted);
 }
 
+/* Combo chart per-series controls */
+.combo-series-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.combo-type-selector,
+.combo-axis-selector {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.combo-type-btn,
+.combo-axis-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.combo-type-btn:focus-visible,
+.combo-axis-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+.combo-type-btn:hover,
+.combo-type-btn:active,
+.combo-axis-btn:hover,
+.combo-axis-btn:active {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.combo-type-btn.active,
+.combo-axis-btn.active {
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.combo-right-axis-label {
+  margin-top: var(--space-2);
+}
+
+.combo-right-axis-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.combo-right-axis-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.combo-right-axis-input::placeholder {
+  color: var(--text-muted);
+}
+
 /* Footer */
 .controls-footer {
   padding: var(--space-2) var(--space-3);
@@ -732,6 +812,15 @@
 
   .map-scope-button,
   .map-variant-button {
+    transition: none;
+  }
+
+  .combo-type-btn,
+  .combo-axis-btn {
+    transition: none;
+  }
+
+  .combo-right-axis-input {
     transition: none;
   }
 }

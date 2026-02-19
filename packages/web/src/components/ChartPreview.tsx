@@ -7,6 +7,7 @@ import {
   Line,
   AreaChart,
   Area,
+  ComposedChart,
   PieChart,
   Pie,
   RadarChart,
@@ -31,7 +32,7 @@ import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import Check from 'lucide-react/dist/esm/icons/check';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
-import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues } from '../types';
+import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, isComboChart, resolveSeriesConfig, getSeriesForAxis } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
 import {
@@ -204,6 +205,78 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
   }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
+  // --- Combo chart (dual-axis) memos ---
+  const combo = isComboChart(config);
+
+  const rightYAxisFormat = useMemo(() => {
+    const label = (config.rightYAxisLabel || '').toLowerCase();
+    if (/(\$|usd|eur|gbp|price|cost|revenue|salary|income|spend|budget|dollar|euro|pound)/.test(label)) return 'currency';
+    if (/(percent|%|rate|ratio|share|proportion)/.test(label)) return 'percentage';
+    return 'number';
+  }, [config.rightYAxisLabel]);
+
+  const rightYAxisPrefix = useMemo(() => {
+    if (rightYAxisFormat === 'currency') {
+      const label = (config.rightYAxisLabel || '').toLowerCase();
+      if (/eur|euro|€/.test(label)) return '€';
+      if (/gbp|pound|£/.test(label)) return '£';
+      return '$';
+    }
+    return '';
+  }, [rightYAxisFormat, config.rightYAxisLabel]);
+
+  const rightYAxisSuffix = useMemo(() => {
+    return rightYAxisFormat === 'percentage' ? '%' : '';
+  }, [rightYAxisFormat]);
+
+  const rightSeriesValues = useMemo(() => {
+    if (!combo) return [];
+    const rightNames = new Set(getSeriesForAxis(data, config, 'right'));
+    return data.series
+      .filter((s) => rightNames.has(s.name))
+      .flatMap((s) => s.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v)));
+  }, [combo, data, config]);
+
+  const rightAxisDecimalPlaces = useMemo(() => getAdaptiveDecimalPlaces(rightSeriesValues), [rightSeriesValues]);
+  const rightAxisNumberFormatter = useMemo(() => createFixedNumberFormatter(rightAxisDecimalPlaces), [rightAxisDecimalPlaces]);
+
+  const formatRightYAxisTick = useCallback((value: number): string => {
+    const absValue = Math.abs(value);
+    let formatted: string;
+    if (absValue >= 1_000_000_000) formatted = `${(value / 1_000_000_000).toFixed(1)}B`;
+    else if (absValue >= 1_000_000) formatted = `${(value / 1_000_000).toFixed(1)}M`;
+    else if (absValue >= 1_000) formatted = `${(value / 1_000).toFixed(1)}K`;
+    else formatted = rightAxisNumberFormatter.format(value);
+    return `${rightYAxisPrefix}${formatted}${rightYAxisSuffix}`;
+  }, [rightAxisNumberFormatter, rightYAxisPrefix, rightYAxisSuffix]);
+
+  const formatRightTooltipValue = useCallback((value: number): string => {
+    const formatted = rightAxisNumberFormatter.format(value);
+    return `${rightYAxisPrefix}${formatted}${rightYAxisSuffix}`;
+  }, [rightAxisNumberFormatter, rightYAxisPrefix, rightYAxisSuffix]);
+
+  const leftSeriesDomain = useMemo((): [number, number] | undefined => {
+    if (!combo) return undefined;
+    const leftNames = new Set(getSeriesForAxis(data, config, 'left'));
+    const values = data.series
+      .filter((s) => leftNames.has(s.name))
+      .flatMap((s) => s.data);
+    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+  }, [combo, data, config]);
+
+  const rightSeriesDomain = useMemo((): [number, number] | undefined => {
+    if (!combo) return undefined;
+    const values = rightSeriesValues;
+    if (values.length === 0) return undefined;
+    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+  }, [combo, rightSeriesValues, config.yAxisBaselineMode]);
+
+  // Set of right-axis series names for tooltip formatting
+  const rightAxisSeriesNames = useMemo(() => {
+    if (!combo) return new Set<string>();
+    return new Set(getSeriesForAxis(data, config, 'right'));
+  }, [combo, data, config]);
+
   // Format X-axis year ticks as integers (no decimals)
   const formatXAxisYearTick = useCallback((value: number): string => {
     return String(Math.round(value));
@@ -295,7 +368,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       }
     : {
         top: 20,
-        right: 5,
+        right: combo ? 50 : 5,
         bottom: adaptiveBottom,
         left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
       };
@@ -479,7 +552,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     const yAxisLabelConfig = yAxisLabel ? {
       value: yAxisLabel,
       angle: -90,
-      position: (isVerticalBar && verticalValueAxis.preferOutsideLabel ? 'left' : 'insideLeft') as const,
+      position: (isVerticalBar && verticalValueAxis.preferOutsideLabel ? 'left' as const : 'insideLeft' as const),
       offset: isVerticalBar ? verticalValueAxis.labelOffset : 8,
       dy: isVerticalBar
         ? verticalValueAxis.dy
@@ -581,6 +654,190 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       }
       return colors[idx % colors.length];
     };
+
+    // --- Combo chart (dual-axis, mixed series types) ---
+    if (combo) {
+      const rightYAxisLabelConfig = config.rightYAxisLabel ? {
+        value: config.rightYAxisLabel,
+        angle: 90,
+        position: 'insideRight' as const,
+        offset: 8,
+        fill: theme.textMuted,
+        fontSize: 11,
+        fontFamily: 'var(--font-mono)',
+      } : undefined;
+
+      const comboTooltip = (
+        <Tooltip
+          contentStyle={{
+            background: theme.cardBackground,
+            border: `1px solid ${theme.border}`,
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+          labelStyle={{ color: theme.text, fontWeight: 600 }}
+          itemStyle={{ color: theme.textMuted }}
+          formatter={(value, name) => {
+            if (typeof value !== 'number') return value;
+            const formatted = typeof name === 'string' && rightAxisSeriesNames.has(name)
+              ? formatRightTooltipValue(value)
+              : formatTooltipValue(value);
+            return [formatted, undefined];
+          }}
+        />
+      );
+
+      return (
+        <ComposedChart {...commonProps}>
+          {renderGradientDefs()}
+          {gridElement}
+          {xAxisElement}
+          <YAxis
+            yAxisId="left"
+            stroke={theme.textMuted}
+            tick={{ fill: theme.textMuted, fontSize: 12 }}
+            tickLine={{ stroke: theme.textMuted }}
+            axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+            domain={leftSeriesDomain}
+            tickFormatter={formatYAxisTick}
+            label={yAxisLabelConfig}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke={theme.textMuted}
+            tick={{ fill: theme.textMuted, fontSize: 12 }}
+            tickLine={{ stroke: theme.textMuted }}
+            axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
+            domain={rightSeriesDomain}
+            tickFormatter={formatRightYAxisTick}
+            label={rightYAxisLabelConfig}
+          />
+          {comboTooltip}
+          {legendElement}
+          {data.series.map((series, idx) => {
+            const resolved = resolveSeriesConfig(series.name, config);
+            const yAxisId = resolved.axis;
+            const stackId = config.stacked && resolved.chartType === 'bar'
+              ? `stack-${resolved.axis}`
+              : undefined;
+            const color = colors[idx % colors.length];
+
+            switch (resolved.chartType) {
+              case 'bar':
+                return (
+                  <Bar
+                    key={series.name}
+                    yAxisId={yAxisId}
+                    dataKey={series.name}
+                    fill={getBarFill(idx)}
+                    radius={styleConfig.chart.barRadius}
+                    animationDuration={config.animate ? 800 : 0}
+                    animationBegin={idx * 100}
+                    stackId={stackId}
+                  >
+                    {config.showValues && (
+                      <LabelList
+                        dataKey={series.name}
+                        position="top"
+                        fill={theme.textMuted}
+                        fontSize={11}
+                        formatter={(value) =>
+                          typeof value === 'number'
+                            ? (resolved.axis === 'right' ? formatRightYAxisTick(value) : formatYAxisTick(value))
+                            : value
+                        }
+                      />
+                    )}
+                  </Bar>
+                );
+              case 'line':
+                return (
+                  <Line
+                    key={series.name}
+                    yAxisId={yAxisId}
+                    type="monotone"
+                    dataKey={series.name}
+                    stroke={color}
+                    strokeWidth={styleConfig.chart.strokeWidth}
+                    dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
+                      fill: color,
+                      strokeWidth: 0,
+                      r: styleConfig.chart.dotRadius,
+                    } : false}
+                    activeDot={config.showPoints ? {
+                      r: styleConfig.chart.activeDotRadius,
+                      stroke: color,
+                      strokeWidth: 2,
+                      fill: theme.background,
+                    } : false}
+                    animationDuration={config.animate ? 1200 : 0}
+                    animationBegin={idx * 200}
+                  >
+                    {config.showValues && (
+                      <LabelList
+                        dataKey={series.name}
+                        position="top"
+                        fill={theme.textMuted}
+                        fontSize={11}
+                        offset={8}
+                        formatter={(value) =>
+                          typeof value === 'number'
+                            ? (resolved.axis === 'right' ? formatRightYAxisTick(value) : formatYAxisTick(value))
+                            : value
+                        }
+                      />
+                    )}
+                  </Line>
+                );
+              case 'area':
+                return (
+                  <Area
+                    key={series.name}
+                    yAxisId={yAxisId}
+                    type="monotone"
+                    dataKey={series.name}
+                    stroke={color}
+                    fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : color}
+                    fillOpacity={styleConfig.decorations.useGradients ? 0.6 : 0.3}
+                    strokeWidth={styleConfig.chart.strokeWidth}
+                    dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
+                      fill: color,
+                      strokeWidth: 0,
+                      r: styleConfig.chart.dotRadius,
+                    } : false}
+                    activeDot={config.showPoints ? {
+                      r: styleConfig.chart.activeDotRadius,
+                      stroke: color,
+                      strokeWidth: 2,
+                      fill: theme.background,
+                    } : false}
+                    animationDuration={config.animate ? 1000 : 0}
+                    animationBegin={idx * 150}
+                  >
+                    {config.showValues && (
+                      <LabelList
+                        dataKey={series.name}
+                        position="top"
+                        fill={theme.textMuted}
+                        fontSize={11}
+                        offset={8}
+                        formatter={(value) =>
+                          typeof value === 'number'
+                            ? (resolved.axis === 'right' ? formatRightYAxisTick(value) : formatYAxisTick(value))
+                            : value
+                        }
+                      />
+                    )}
+                  </Area>
+                );
+              default:
+                return null;
+            }
+          })}
+        </ComposedChart>
+      );
+    }
 
     switch (config.type) {
       case 'infographic':

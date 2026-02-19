@@ -24,8 +24,8 @@ import Palette from 'lucide-react/dist/esm/icons/palette';
 import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
-import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode } from '../types';
-import { STYLE_VARIANTS, getEffectiveColors } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
+import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -86,6 +86,14 @@ const Y_AXIS_BASELINE_OPTIONS: { id: YAxisBaselineMode; label: string }[] = [
   { id: 'data', label: 'Data range' },
 ];
 
+const COMBO_CHART_TYPES: { id: SeriesChartType; icon: typeof BarChart3; label: string }[] = [
+  { id: 'bar', icon: BarChart3, label: 'Bar' },
+  { id: 'line', icon: LineChart, label: 'Line' },
+  { id: 'area', icon: AreaChart, label: 'Area' },
+];
+
+const COMBO_ELIGIBLE_TYPES: Set<ChartType> = new Set(['bar', 'line', 'area']);
+
 export function ChartControls({ config, onChange, data }: ChartControlsProps) {
   const { currentTeam } = useTeam();
   const [branding, setBranding] = useState<TeamBranding | null>(null);
@@ -124,6 +132,37 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
   };
 
   const effectiveColors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
+
+  const showComboControls =
+    COMBO_ELIGIBLE_TYPES.has(config.type) &&
+    data.series.length >= 2 &&
+    config.barLayout !== 'horizontal';
+
+  const combo = isComboChart(config);
+  const hasRightAxis = combo && data.series.some(
+    (s) => resolveSeriesConfig(s.name, config).axis === 'right',
+  );
+
+  const updateSeriesConfig = (seriesName: string, patch: Partial<SeriesOverride>) => {
+    const prev = config.seriesConfig ?? {};
+    const current = prev[seriesName] ?? {};
+    const merged = { ...current, ...patch };
+    // Derive the base type for cleanup
+    const baseType = (config.type === 'bar' || config.type === 'line' || config.type === 'area')
+      ? config.type : 'bar';
+    // Strip defaults so empty entries don't linger
+    if (merged.chartType === baseType) delete merged.chartType;
+    if (merged.axis === 'left') delete merged.axis;
+    const next = { ...prev };
+    if (Object.keys(merged).length === 0) {
+      delete next[seriesName];
+    } else {
+      next[seriesName] = merged;
+    }
+    updateConfig({
+      seriesConfig: Object.keys(next).length > 0 ? next : undefined,
+    });
+  };
 
   return (
     <motion.div
@@ -387,26 +426,73 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
         <div className="control-section data-summary full-width">
           <SectionHeader icon={Hash} label="Data Summary" />
           <div className="data-grid">
-            {data.series.map((series, idx) => (
-              <div key={series.name} className="data-series-item">
-                <div
-                  className="series-color"
-                  style={{ background: effectiveColors[idx % effectiveColors.length] }}
-                />
-                <span className="series-name">{series.name}</span>
-                <span className="series-stats">
-                  {(() => {
-                    const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-                    if (numericValues.length === 0) return 'No numeric data';
-                    const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
-                    const min = Math.min(...numericValues);
-                    const max = Math.max(...numericValues);
-                    return `${formatter.format(min)} — ${formatter.format(max)}`;
-                  })()}
-                </span>
-              </div>
-            ))}
+            {data.series.map((series, idx) => {
+              const resolved = resolveSeriesConfig(series.name, config);
+              return (
+                <div key={series.name} className="data-series-item">
+                  <div
+                    className="series-color"
+                    style={{ background: effectiveColors[idx % effectiveColors.length] }}
+                  />
+                  <span className="series-name">{series.name}</span>
+                  <span className="series-stats">
+                    {(() => {
+                      const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+                      if (numericValues.length === 0) return 'No numeric data';
+                      const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
+                      const min = Math.min(...numericValues);
+                      const max = Math.max(...numericValues);
+                      return `${formatter.format(min)} — ${formatter.format(max)}`;
+                    })()}
+                  </span>
+                  {showComboControls && (
+                    <div className="combo-series-controls">
+                      <div className="combo-type-selector" role="group" aria-label={`Chart type for ${series.name}`}>
+                        {COMBO_CHART_TYPES.map((ct) => (
+                          <button
+                            key={ct.id}
+                            className={`combo-type-btn ${resolved.chartType === ct.id ? 'active' : ''}`}
+                            onClick={() => updateSeriesConfig(series.name, { chartType: ct.id })}
+                            aria-label={`${ct.label} chart for ${series.name}`}
+                            aria-pressed={resolved.chartType === ct.id}
+                            title={ct.label}
+                          >
+                            <ct.icon size={12} />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="combo-axis-selector" role="group" aria-label={`Axis for ${series.name}`}>
+                        {(['left', 'right'] as AxisSide[]).map((side) => (
+                          <button
+                            key={side}
+                            className={`combo-axis-btn ${resolved.axis === side ? 'active' : ''}`}
+                            onClick={() => updateSeriesConfig(series.name, { axis: side })}
+                            aria-label={`${side === 'left' ? 'Left' : 'Right'} axis for ${series.name}`}
+                            aria-pressed={resolved.axis === side}
+                            title={`${side === 'left' ? 'Left' : 'Right'} axis`}
+                          >
+                            {side === 'left' ? 'L' : 'R'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+          {showComboControls && hasRightAxis && (
+            <div className="combo-right-axis-label">
+              <input
+                type="text"
+                className="combo-right-axis-input"
+                placeholder="Right axis label..."
+                value={config.rightYAxisLabel ?? ''}
+                onChange={(e) => updateConfig({ rightYAxisLabel: e.target.value || undefined })}
+                spellCheck={false}
+              />
+            </div>
+          )}
         </div>
       </div>
 

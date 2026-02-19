@@ -42,6 +42,15 @@ export interface ChartData {
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'histogram' | 'table' | 'infographic' | 'map';
 
+// Combo chart (dual-axis, mixed series types)
+export type SeriesChartType = 'bar' | 'line' | 'area';
+export type AxisSide = 'left' | 'right';
+
+export interface SeriesOverride {
+  chartType?: SeriesChartType;
+  axis?: AxisSide;
+}
+
 // Map-specific types
 export type MapVariant = 'bubble' | 'choropleth';
 export type MapScope = 'us-states' | 'world';
@@ -106,6 +115,9 @@ export interface ChartConfig {
   // Map options
   mapVariant?: MapVariant;
   mapScope?: MapScope;
+  // Combo chart (dual-axis, mixed series types)
+  seriesConfig?: Record<string, SeriesOverride>;
+  rightYAxisLabel?: string;
 }
 
 // Default chart config
