@@ -183,7 +183,6 @@
   font-size: 0.6rem;
   font-weight: 500;
   color: var(--text-muted);
-  max-width: 52px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

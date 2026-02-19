@@ -275,7 +275,12 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
     : (xAxisLabel ? 25 : 5);
   const chartMargins = isHorizontal
-    ? { top: 20, right: 30, bottom: yAxisLabel ? 25 : 5, left: horizontalCategoryAxis.leftMargin }
+    ? {
+        top: 20,
+        right: 30,
+        bottom: yAxisLabel ? 25 : 5,
+        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 8 : 0),
+      }
     : { top: 20, right: 5, bottom: adaptiveBottom, left: yAxisLabel ? 15 : 5 };
 
   const pieData = useMemo(() => {
