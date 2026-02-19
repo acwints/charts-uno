@@ -18,6 +18,18 @@ export interface HorizontalCategoryAxisConfig {
   maxTickLength: number;
 }
 
+export interface VerticalValueAxisConfig {
+  leftMargin: number;
+  labelOffset: number;
+  preferOutsideLabel: boolean;
+  dy: number;
+}
+
+export interface CartesianXAxisLabelConfig {
+  offset: number;
+  extraBottomMargin: number;
+}
+
 const CHART_WIDTH_ESTIMATE = 650;
 const CHAR_WIDTH_PX = 7; // approximate px per char at fontSize 12
 const MAX_TICK_LENGTH = 25;
@@ -185,5 +197,47 @@ export function computeHorizontalCategoryAxisConfig(
     preferOutsideLabel,
     fontSize,
     maxTickLength,
+  };
+}
+
+export function computeVerticalValueAxisConfig(
+  axisLabel?: string,
+): VerticalValueAxisConfig {
+  const hasAxisLabel = Boolean(axisLabel && axisLabel.trim());
+  const axisLabelLength = hasAxisLabel ? axisLabel!.trim().length : 0;
+  const preferOutsideLabel = hasAxisLabel;
+  const baseLeftMargin = hasAxisLabel
+    ? Math.max(14, Math.min(24, Math.round(axisLabelLength * 0.35) + 12))
+    : 8;
+  const leftMargin = baseLeftMargin + (preferOutsideLabel ? 8 : 0);
+  const labelOffset = preferOutsideLabel
+    ? Math.max(8, Math.min(14, Math.round(axisLabelLength * 0.2) + 8))
+    : 8;
+  const dy = Math.min(10, Math.max(2, Math.floor(axisLabelLength / 10)));
+
+  return {
+    leftMargin,
+    labelOffset,
+    preferOutsideLabel,
+    dy,
+  };
+}
+
+export function computeCartesianXAxisLabelConfig(
+  adaptiveAxis: AdaptiveAxisConfig,
+  axisLabel?: string,
+): CartesianXAxisLabelConfig {
+  const hasAxisLabel = Boolean(axisLabel && axisLabel.trim());
+
+  if (!hasAxisLabel) {
+    return {
+      offset: adaptiveAxis.angle !== 0 ? -14 : -10,
+      extraBottomMargin: 0,
+    };
+  }
+
+  return {
+    offset: adaptiveAxis.angle !== 0 ? -24 : -10,
+    extraBottomMargin: adaptiveAxis.angle !== 0 ? 30 : 20,
   };
 }

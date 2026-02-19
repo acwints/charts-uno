@@ -34,7 +34,12 @@ import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
-import { computeAdaptiveAxisConfig, computeHorizontalCategoryAxisConfig } from '../utils/adaptiveAxis';
+import {
+  computeAdaptiveAxisConfig,
+  computeCartesianXAxisLabelConfig,
+  computeHorizontalCategoryAxisConfig,
+  computeVerticalValueAxisConfig,
+} from '../utils/adaptiveAxis';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
@@ -238,6 +243,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
   }, [data.labels, isNumericLabels]);
 
   const isHorizontal = config.type === 'bar' && config.barLayout === 'horizontal';
+  const isVerticalBar = config.type === 'bar' && !isHorizontal;
 
   const adaptiveAxis = useMemo(
     () => computeAdaptiveAxisConfig(data.labels, isHorizontal),
@@ -246,9 +252,17 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const xAxisLabelLayout = useMemo(
+    () => computeCartesianXAxisLabelConfig(adaptiveAxis, xAxisLabel),
+    [adaptiveAxis, xAxisLabel],
+  );
   const horizontalCategoryAxis = useMemo(
     () => computeHorizontalCategoryAxisConfig(data.labels, xAxisLabel),
     [data.labels, xAxisLabel],
+  );
+  const verticalValueAxis = useMemo(
+    () => computeVerticalValueAxisConfig(yAxisLabel),
+    [yAxisLabel],
   );
   const sourceDomain = useMemo(() => {
     const link = config.sourceLink || data.sourceLink;
@@ -271,17 +285,20 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     });
     return count;
   }, [data.series]);
-  const adaptiveBottom = adaptiveAxis.angle !== 0
-    ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
-    : (xAxisLabel ? 25 : 5);
+  const adaptiveBottom = adaptiveAxis.bottomMargin + xAxisLabelLayout.extraBottomMargin;
   const chartMargins = isHorizontal
     ? {
         top: 20,
         right: 30,
         bottom: yAxisLabel ? 25 : 5,
-        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 12 : 0),
+        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
       }
-    : { top: 20, right: 5, bottom: adaptiveBottom, left: yAxisLabel ? 15 : 5 };
+    : {
+        top: 20,
+        right: 5,
+        bottom: adaptiveBottom,
+        left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
+      };
 
   const pieData = useMemo(() => {
     if (config.type !== 'pie') return [];
@@ -410,7 +427,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     const xAxisLabelConfig = xAxisLabel ? {
       value: xAxisLabel,
       position: 'insideBottom' as const,
-      offset: adaptiveAxis.angle !== 0 ? -14 : -10,
+      offset: xAxisLabelLayout.offset,
       fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
@@ -462,9 +479,11 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     const yAxisLabelConfig = yAxisLabel ? {
       value: yAxisLabel,
       angle: -90,
-      position: 'insideLeft' as const,
-      offset: 8,
-      dy: Math.min(10, Math.max(2, Math.floor(yAxisLabel.length / 10))),
+      position: (isVerticalBar && verticalValueAxis.preferOutsideLabel ? 'left' : 'insideLeft') as const,
+      offset: isVerticalBar ? verticalValueAxis.labelOffset : 8,
+      dy: isVerticalBar
+        ? verticalValueAxis.dy
+        : Math.min(10, Math.max(2, Math.floor(yAxisLabel.length / 10))),
       fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
