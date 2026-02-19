@@ -516,7 +516,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         label={xAxisLabel ? {
           value: xAxisLabel,
           angle: -90,
-          position: 'insideLeft',
+          position: horizontalCategoryAxis.preferOutsideLabel ? 'left' : 'insideLeft',
           offset: horizontalCategoryAxis.labelOffset,
           fill: theme.textMuted,
           fontSize: 11,

@@ -43,6 +43,51 @@ const INPUT_MODES = [
   { id: 'datasets' as const, icon: Database, label: 'Public Datasets' },
 ];
 
+function splitLikelyTiedLabels(data: ChartData, rawInput: string): ChartData {
+  const tieHintPattern = /(^|\n)\s*(?:t\d+|tie\s*\d+|tied)\b/i;
+  if (!tieHintPattern.test(rawInput)) return data;
+  if (data.labels.length === 0 || data.series.length === 0) return data;
+
+  const splitPattern = /\s+(?:&|and)\s+/i;
+  let changed = false;
+
+  const expandedLabels: string[] = [];
+  const expandedSeriesData = data.series.map(() => [] as Array<number | null>);
+  const expandedSeriesConfidence = data.series.map((series) =>
+    series.confidence ? [] as Array<number | null> : undefined
+  );
+
+  data.labels.forEach((originalLabel, rowIndex) => {
+    const normalizedLabel = originalLabel.replace(/\s+/g, ' ').trim();
+    const parts = normalizedLabel.split(splitPattern).map((part) => part.trim()).filter(Boolean);
+    const shouldSplit = parts.length === 2 && parts[0] !== parts[1];
+    const rowLabels = shouldSplit ? parts : [normalizedLabel];
+    if (shouldSplit) changed = true;
+
+    rowLabels.forEach((rowLabel) => {
+      expandedLabels.push(rowLabel);
+      data.series.forEach((series, seriesIndex) => {
+        expandedSeriesData[seriesIndex].push(series.data[rowIndex] ?? null);
+        if (expandedSeriesConfidence[seriesIndex]) {
+          expandedSeriesConfidence[seriesIndex].push(series.confidence?.[rowIndex] ?? null);
+        }
+      });
+    });
+  });
+
+  if (!changed) return data;
+
+  return {
+    ...data,
+    labels: expandedLabels,
+    series: data.series.map((series, index) => ({
+      ...series,
+      data: expandedSeriesData[index],
+      confidence: expandedSeriesConfidence[index],
+    })),
+  };
+}
+
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [mode, setMode] = useState<InputMode>('image');
   const [pasteContent, setPasteContent] = useState('');
@@ -420,7 +465,8 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         ? `${input}\n\nAdditional chart instructions:\n${optionalInstructions}`
         : input;
       const generatedData = await generateChartFromPrompt(promptForGeneration);
-      onSubmit({ ...generatedData, userPrompt: optionalInstructions || undefined });
+      const normalizedData = splitLikelyTiedLabels(generatedData, input);
+      onSubmit({ ...normalizedData, userPrompt: optionalInstructions || undefined });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate chart');
     } finally {
@@ -502,7 +548,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   }, [selectedDatasetId, datasetPrompt, datasetTopN, datasetChartTypeHint, onSubmit, userPrompt]);
 
   return (
-    <div className="data-input">
+    <div className={`data-input ${isPromptPanelOpen ? 'data-input--instructions-open' : 'data-input--instructions-collapsed'}`}>
       <div className="input-mode-tabs">
         {INPUT_MODES.map((inputMode) => (
           <button
@@ -921,50 +967,52 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
 
-        <aside className={`ai-instructions-panel ${isPromptPanelOpen ? 'open' : ''}`} aria-hidden={!isPromptPanelOpen}>
-          <div className="ai-instructions-panel-head">
-            <div className="ai-instructions-panel-title-wrap">
-              <MessageSquare size={16} className="ai-instructions-icon" />
-              <span className="ai-instructions-panel-title">AI Instructions</span>
+      <aside className={`ai-instructions-dock ${isPromptPanelOpen ? 'open' : 'collapsed'}`}>
+        {isPromptPanelOpen ? (
+          <div className="ai-instructions-panel" aria-hidden={false}>
+            <div className="ai-instructions-panel-head">
+              <div className="ai-instructions-panel-title-wrap">
+                <MessageSquare size={16} className="ai-instructions-icon" />
+                <span className="ai-instructions-panel-title">AI Instructions</span>
+              </div>
+              <button
+                type="button"
+                className="ai-instructions-close"
+                onClick={() => setIsPromptPanelOpen(false)}
+                aria-label="Collapse AI instructions panel"
+              >
+                <X size={14} />
+              </button>
             </div>
-            <button
-              type="button"
-              className="ai-instructions-close"
-              onClick={() => setIsPromptPanelOpen(false)}
-              aria-label="Close AI instructions panel"
-            >
-              <X size={14} />
-            </button>
+            <p className="ai-instructions-panel-copy">
+              Optional notes used across all input types.
+            </p>
+            <label className="ai-instructions-label" htmlFor="ai-instructions-input">
+              Extra guidance
+            </label>
+            <textarea
+              id="ai-instructions-input"
+              className="ai-instructions-textarea"
+              placeholder="Focus on year-over-year growth and annotate major inflection points."
+              value={userPrompt}
+              onChange={(e) => setUserPrompt(e.target.value)}
+              spellCheck={false}
+            />
           </div>
-          <p className="ai-instructions-panel-copy">
-            Optional notes used across all input types.
-          </p>
-          <label className="ai-instructions-label" htmlFor="ai-instructions-input">
-            Extra guidance
-          </label>
-          <textarea
-            id="ai-instructions-input"
-            className="ai-instructions-textarea"
-            placeholder="Focus on year-over-year growth and annotate major inflection points."
-            value={userPrompt}
-            onChange={(e) => setUserPrompt(e.target.value)}
-            spellCheck={false}
-          />
-        </aside>
-
-        {!isPromptPanelOpen && (
+        ) : (
           <button
             type="button"
-            className="ai-instructions-handle"
+            className="ai-instructions-dock-toggle"
             onClick={() => setIsPromptPanelOpen(true)}
-            aria-label="Open AI instructions panel"
+            aria-label="Expand AI instructions panel"
           >
             <MessageSquare size={16} />
             <span>AI Instructions</span>
           </button>
         )}
-      </div>
+      </aside>
 
       <AnimatePresence>
         {error && (

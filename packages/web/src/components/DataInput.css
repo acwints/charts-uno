@@ -1,9 +1,17 @@
 .data-input {
   width: 100%;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) 52px;
   grid-template-rows: 1fr;
   gap: var(--space-4);
+}
+
+.data-input--instructions-open {
+  grid-template-columns: auto minmax(0, 1fr) clamp(240px, 26vw, 340px);
+}
+
+.data-input--instructions-collapsed {
+  grid-template-columns: auto minmax(0, 1fr) 52px;
 }
 
 .input-mode-tabs {
@@ -276,64 +284,66 @@
   text-align: center;
 }
 
-.ai-instructions-handle {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  z-index: 24;
-  display: inline-flex;
+.ai-instructions-dock {
+  grid-row: 1 / 2;
+  min-height: 0;
+  display: flex;
+}
+
+.ai-instructions-dock.open {
+  align-items: stretch;
+}
+
+.ai-instructions-dock.collapsed {
+  align-items: stretch;
+}
+
+.ai-instructions-dock-toggle {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+  padding: var(--space-2);
+  background: var(--bg-secondary);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
   cursor: pointer;
-  backdrop-filter: blur(6px);
   transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.ai-instructions-handle:hover {
-  color: var(--text-primary);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+.ai-instructions-dock-toggle span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
-.ai-instructions-handle:focus-visible {
+.ai-instructions-dock-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.ai-instructions-dock-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
 .ai-instructions-panel {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  bottom: var(--space-3);
-  width: min(340px, calc(100% - var(--space-6)));
-  z-index: 30;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  background: var(--bg-secondary);
   border: var(--border-subtle);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transform: translateX(calc(100% + var(--space-2)));
-  pointer-events: none;
-  transition: transform var(--transition-base), opacity var(--transition-fast);
-}
-
-.ai-instructions-panel.open {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
+  width: 100%;
+  min-height: 0;
+  box-shadow: var(--shadow-card);
 }
 
 .ai-instructions-panel-head {
@@ -402,7 +412,7 @@
 
 .ai-instructions-textarea {
   flex: 1;
-  min-height: 140px;
+  min-height: 160px;
   padding: var(--space-3);
   font-family: var(--font-body);
   font-size: 0.88rem;
@@ -826,8 +836,11 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .data-input {
+  .data-input,
+  .data-input--instructions-open,
+  .data-input--instructions-collapsed {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
   }
 
   .input-mode-tabs {
@@ -839,12 +852,20 @@
     display: none;
   }
 
-  .ai-instructions-handle span {
-    display: none;
+  .ai-instructions-dock {
+    grid-row: auto;
   }
 
-  .ai-instructions-panel {
-    width: min(92vw, 320px);
+  .ai-instructions-dock-toggle {
+    min-height: 44px;
+    flex-direction: row;
+    justify-content: center;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .ai-instructions-dock-toggle span {
+    writing-mode: horizontal-tb;
+    transform: none;
   }
 }
 
@@ -898,7 +919,7 @@
     animation: none;
   }
 
-  .ai-instructions-handle,
+  .ai-instructions-dock-toggle,
   .ai-instructions-panel,
   .ai-instructions-close,
   .ai-instructions-textarea {
