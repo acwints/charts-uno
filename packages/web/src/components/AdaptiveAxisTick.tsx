@@ -21,6 +21,7 @@ export function AdaptiveXAxisTick({
 }: AdaptiveXAxisTickProps) {
   const label = payload?.value ?? '';
   const display = truncate(label, config.maxTickLength);
+  const wasTruncated = display !== label;
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -34,6 +35,7 @@ export function AdaptiveXAxisTick({
         fontFamily="var(--font-mono)"
         transform={config.angle !== 0 ? `rotate(${config.angle})` : undefined}
       >
+        {wasTruncated ? <title>{label}</title> : null}
         {display}
       </text>
     </g>

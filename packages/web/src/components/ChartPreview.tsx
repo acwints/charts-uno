@@ -34,8 +34,9 @@ import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
-import { computeAdaptiveAxisConfig } from '../utils/adaptiveAxis';
+import { computeAdaptiveAxisConfig, computeHorizontalCategoryAxisConfig } from '../utils/adaptiveAxis';
 import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
+import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import { MapChart } from './MapChart';
@@ -234,6 +235,10 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
 
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const horizontalCategoryAxis = useMemo(
+    () => computeHorizontalCategoryAxisConfig(data.labels, Boolean(xAxisLabel)),
+    [data.labels, xAxisLabel],
+  );
   const sourceDomain = useMemo(() => {
     const link = config.sourceLink || data.sourceLink;
     if (!link) return null;
@@ -259,7 +264,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     ? adaptiveAxis.bottomMargin + (xAxisLabel ? 20 : 0)
     : (xAxisLabel ? 25 : 5);
   const chartMargins = isHorizontal
-    ? { top: 20, right: 30, bottom: yAxisLabel ? 25 : 5, left: xAxisLabel ? 80 : 60 }
+    ? { top: 20, right: 30, bottom: yAxisLabel ? 25 : 5, left: horizontalCategoryAxis.leftMargin }
     : { top: 20, right: 5, bottom: adaptiveBottom, left: yAxisLabel ? 15 : 5 };
 
   const pieData = useMemo(() => {
@@ -438,6 +443,17 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       />
     );
 
+    const yAxisLabelConfig = yAxisLabel ? {
+      value: yAxisLabel,
+      angle: -90,
+      position: 'insideLeft' as const,
+      offset: 8,
+      dy: Math.min(10, Math.max(2, Math.floor(yAxisLabel.length / 10))),
+      fill: theme.textMuted,
+      fontSize: 11,
+      fontFamily: 'var(--font-mono)',
+    } : undefined;
+
     const yAxisElement = (
       <YAxis
         stroke={theme.textMuted}
@@ -446,15 +462,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         domain={!isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         tickFormatter={formatYAxisTick}
-        label={yAxisLabel ? {
-          value: yAxisLabel,
-          angle: -90,
-          position: 'insideBottomLeft',
-          offset: 12,
-          fill: theme.textMuted,
-          fontSize: 11,
-          fontFamily: 'var(--font-mono)',
-        } : undefined}
+        label={yAxisLabelConfig}
       />
     );
 
@@ -483,16 +491,22 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
       <YAxis
         type="category"
         dataKey="name"
-        width={75}
+        width={horizontalCategoryAxis.axisWidth}
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
+        tick={
+          <AdaptiveYAxisCategoryTick
+            fill={theme.textMuted}
+            fontSize={horizontalCategoryAxis.fontSize}
+            maxTickLength={horizontalCategoryAxis.maxTickLength}
+          />
+        }
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         label={xAxisLabel ? {
           value: xAxisLabel,
           angle: -90,
-          position: 'insideLeft',
-          offset: 12,
+          position: 'left',
+          offset: horizontalCategoryAxis.labelOffset,
           fill: theme.textMuted,
           fontSize: 11,
           fontFamily: 'var(--font-mono)',

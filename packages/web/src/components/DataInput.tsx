@@ -25,7 +25,7 @@ import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import './DataInput.css';
 
-type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets';
+type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'stocks' | 'datasets';
 
 const STOCK_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD'] as const;
 
@@ -36,10 +36,9 @@ interface DataInputProps {
 
 const INPUT_MODES = [
   { id: 'upload' as const, icon: FileSpreadsheet, label: 'Upload CSV' },
-  { id: 'paste' as const, icon: Clipboard, label: 'Paste Data' },
+  { id: 'paste' as const, icon: Clipboard, label: 'Paste/Describe Data' },
   { id: 'image' as const, icon: Image, label: 'Upload Image' },
   { id: 'sheets' as const, icon: Link2, label: 'Google Sheets' },
-  { id: 'prompt' as const, icon: Sparkles, label: 'Describe' },
   { id: 'stocks' as const, icon: TrendingUp, label: 'Stocks' },
   { id: 'datasets' as const, icon: Database, label: 'Public Datasets' },
 ];
@@ -49,7 +48,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [pasteContent, setPasteContent] = useState('');
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
-  const [promptText, setPromptText] = useState('');
+  const [isPromptPanelOpen, setIsPromptPanelOpen] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,17 +195,18 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     if (!selectedTicker) return;
     setError(null);
     setIsLoadingStock(true);
+    const optionalInstructions = userPrompt.trim() || undefined;
 
     try {
       const data = await fetchStockData(selectedTicker, stockRange, selectedTicker2 || undefined);
       // Show chart immediately
-      onSubmit(data);
+      onSubmit({ ...data, userPrompt: optionalInstructions });
 
       // Fetch insights in background
       fetchStockInsights(data.labels, data.series, data.suggestedTitle || '')
         .then((insight) => {
           // Update with insights when ready
-          onSubmit({ ...data, aiReasoning: insight });
+          onSubmit({ ...data, aiReasoning: insight, userPrompt: optionalInstructions });
         })
         .catch(() => {
           // Silently ignore insight failures - chart still works
@@ -216,9 +216,14 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     } finally {
       setIsLoadingStock(false);
     }
-  }, [selectedTicker, selectedTicker2, stockRange, onSubmit]);
+  }, [selectedTicker, selectedTicker2, stockRange, onSubmit, userPrompt]);
 
-  const parseCSVData = useCallback((content: string, sourceType: 'csv' | 'paste'): ChartData | null => {
+  const parseCSVData = useCallback((
+    content: string,
+    sourceType: 'csv' | 'paste',
+    options?: { suppressErrors?: boolean },
+  ): ChartData | null => {
+    const suppressErrors = options?.suppressErrors === true;
     const result = Papa.parse(content, {
       header: false,
       skipEmptyLines: true,
@@ -226,25 +231,60 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     });
 
     if (result.errors.length > 0) {
-      setError('Unable to parse data. Please check the format.');
+      if (!suppressErrors) {
+        setError('Unable to parse data. Please check the format.');
+      }
       return null;
     }
 
     const rows = result.data as (string | number)[][];
     if (rows.length < 2) {
-      setError('Data must have at least a header row and one data row.');
+      if (!suppressErrors) {
+        setError('Data must have at least a header row and one data row.');
+      }
       return null;
     }
 
     const headers = rows[0].map((header) => String(header).trim());
+    if (headers.length < 2) {
+      if (!suppressErrors) {
+        setError('Data must include at least two columns.');
+      }
+      return null;
+    }
+
+    const toNumber = (value: unknown): number | null => {
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+      }
+      if (typeof value !== 'string') {
+        return null;
+      }
+      const normalized = String(value).replace(/,/g, '').trim();
+      if (!normalized) return null;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const hasNumericValue = rows.slice(1).some((row) =>
+      row.slice(1).some((value) => toNumber(value) !== null),
+    );
+
+    if (!hasNumericValue) {
+      if (!suppressErrors) {
+        setError('Unable to detect numeric values in the pasted data.');
+      }
+      return null;
+    }
+
     const labels = rows.slice(1).map(row => String(row[0]));
     const xAxisLabel = headers[0] || undefined;
 
     const series = headers.slice(1).map((name, colIndex) => ({
       name: name || `Series ${colIndex + 1}`,
       data: rows.slice(1).map(row => {
-        const val = row[colIndex + 1];
-        return typeof val === 'number' ? val : parseFloat(String(val)) || 0;
+        const numericValue = toNumber(row[colIndex + 1]);
+        return numericValue ?? 0;
       }),
     }));
 
@@ -333,18 +373,60 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     }
   }, [mode, stageFile]);
 
-  const handlePasteSubmit = useCallback(() => {
+  const looksLikeTabularData = useCallback((content: string): boolean => {
+    const lines = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) {
+      return false;
+    }
+
+    const delimiters = [',', '\t', ';', '|'];
+    return delimiters.some((delimiter) => {
+      const counts = lines.slice(0, 5).map((line) => line.split(delimiter).length - 1);
+      const positiveCounts = counts.filter((count) => count > 0);
+      if (positiveCounts.length < 2) {
+        return false;
+      }
+
+      const expectedCount = positiveCounts[0];
+      return positiveCounts.every((count) => count === expectedCount);
+    });
+  }, []);
+
+  const handlePasteOrDescribeSubmit = useCallback(async () => {
     setError(null);
-    if (!pasteContent.trim()) {
-      setError('Please paste some data first.');
+    const input = pasteContent.trim();
+    const optionalInstructions = userPrompt.trim();
+    if (!input) {
+      setError('Please paste data or describe the chart you want to create.');
       return;
     }
 
-    const data = parseCSVData(pasteContent, 'paste');
-    if (data) {
-      onSubmit(data);
+    const shouldAttemptParse = looksLikeTabularData(input);
+    if (shouldAttemptParse) {
+      const parsedData = parseCSVData(input, 'paste', { suppressErrors: true });
+      if (parsedData) {
+        onSubmit(parsedData);
+        return;
+      }
     }
-  }, [pasteContent, parseCSVData, onSubmit]);
+
+    setIsGeneratingPrompt(true);
+    try {
+      const promptForGeneration = optionalInstructions
+        ? `${input}\n\nAdditional chart instructions:\n${optionalInstructions}`
+        : input;
+      const generatedData = await generateChartFromPrompt(promptForGeneration);
+      onSubmit({ ...generatedData, userPrompt: optionalInstructions || undefined });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate chart');
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  }, [pasteContent, userPrompt, looksLikeTabularData, parseCSVData, onSubmit]);
 
   const handleSheetsSubmit = useCallback(() => {
     setError(null);
@@ -367,24 +449,6 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       onSubmit(demoData);
     }, 1200);
   }, [sheetsUrl, onSubmit, userPrompt]);
-
-  const handlePromptSubmit = useCallback(async () => {
-    setError(null);
-    if (!promptText.trim()) {
-      setError('Please describe the chart you want to create.');
-      return;
-    }
-
-    setIsGeneratingPrompt(true);
-    try {
-      const data = await generateChartFromPrompt(promptText.trim());
-      onSubmit(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate chart');
-    } finally {
-      setIsGeneratingPrompt(false);
-    }
-  }, [promptText, onSubmit]);
 
   useEffect(() => {
     if (mode !== 'datasets' || publicDatasets.length > 0 || isLoadingDatasets) return;
@@ -409,6 +473,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
   const handlePublicDatasetSubmit = useCallback(async () => {
     setError(null);
+    const optionalInstructions = userPrompt.trim();
     if (!selectedDatasetId) {
       setError('Please choose a dataset.');
       return;
@@ -419,19 +484,22 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     }
     setIsGeneratingDatasetChart(true);
     try {
+      const combinedPrompt = optionalInstructions
+        ? `${datasetPrompt.trim()}\n\nAdditional chart instructions:\n${optionalInstructions}`
+        : datasetPrompt.trim();
       const data = await generateChartFromPublicDataset({
         datasetId: selectedDatasetId,
-        prompt: datasetPrompt.trim(),
+        prompt: combinedPrompt,
         topN: datasetTopN,
         chartTypeHint: datasetChartTypeHint,
       });
-      onSubmit(data);
+      onSubmit({ ...data, userPrompt: optionalInstructions || undefined });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate chart from dataset');
     } finally {
       setIsGeneratingDatasetChart(false);
     }
-  }, [selectedDatasetId, datasetPrompt, datasetTopN, datasetChartTypeHint, onSubmit]);
+  }, [selectedDatasetId, datasetPrompt, datasetTopN, datasetChartTypeHint, onSubmit, userPrompt]);
 
   return (
     <div className="data-input">
@@ -457,15 +525,16 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={mode}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="input-content"
-        >
+      <div className="input-content-shell">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={mode}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="input-content"
+          >
           {(mode === 'upload' || mode === 'image') && (
             <div className="file-input-section">
               {(isProcessing || isAnalyzing) && (
@@ -559,24 +628,25 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
             <div className="paste-input">
               <textarea
                 className="paste-textarea"
-                placeholder={`Paste your data here...\n\nExample format:\nCategory,Sales,Profit\nJan,1200,400\nFeb,1900,520\nMar,3000,890`}
+                placeholder={`Paste tabular data or describe the chart you want...\n\nData example:\nCategory,Sales,Profit\nJan,1200,400\nFeb,1900,520\nMar,3000,890\n\nPrompt example:\n"Monthly revenue for a SaaS startup growing 15% month-over-month"`}
                 value={pasteContent}
                 onChange={(e) => setPasteContent(e.target.value)}
                 spellCheck={false}
               />
-              {isProcessing ? (
+              {(isProcessing || isGeneratingPrompt) ? (
                 <AIProcessingIndicator
                   size="sm"
                   label="Generating your chart..."
-                  statusMessages={['Analyzing data structure...', 'Selecting chart type...', 'Optimizing layout...', 'Almost ready...']}
+                  statusMessages={['Checking for structured data...', 'Converting or generating values...', 'Selecting chart type...', 'Almost ready...']}
                 />
               ) : (
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={handlePasteSubmit}
+                  onClick={handlePasteOrDescribeSubmit}
                   disabled={!pasteContent.trim()}
                 >
+                  <Sparkles size={18} />
                   <span>Generate Chart</span>
                   <ArrowRight size={18} />
                 </Button>
@@ -615,36 +685,6 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                   disabled={!sheetsUrl.trim()}
                 >
                   <span>Import & Generate</span>
-                  <ArrowRight size={18} />
-                </Button>
-              )}
-            </div>
-          )}
-
-          {mode === 'prompt' && (
-            <div className="prompt-generate">
-              <textarea
-                className="prompt-generate-textarea"
-                placeholder={`Describe the chart you want to create...\n\nExamples:\n- "Monthly revenue for a SaaS startup growing 15% MoM"\n- "Top 10 programming languages by popularity in 2024"\n- "US vs China GDP comparison from 2000 to 2023"`}
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                spellCheck={false}
-              />
-              {(isProcessing || isGeneratingPrompt) ? (
-                <AIProcessingIndicator
-                  size="sm"
-                  label="Generating your chart..."
-                  statusMessages={['Interpreting your description...', 'Generating realistic data...', 'Choosing chart type...', 'Almost ready...']}
-                />
-              ) : (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handlePromptSubmit}
-                  disabled={!promptText.trim()}
-                >
-                  <Sparkles size={18} />
-                  <span>Generate Chart</span>
                   <ArrowRight size={18} />
                 </Button>
               )}
@@ -768,8 +808,8 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
             </div>
           )}
 
-          {mode === 'datasets' && (
-            <div className="datasets-input">
+            {mode === 'datasets' && (
+              <div className="datasets-input">
               {(isProcessing || isGeneratingDatasetChart || isLoadingDatasets) && (
                 <div className="datasets-input-overlay" aria-busy="true" aria-live="polite">
                   <AIProcessingIndicator
@@ -868,23 +908,54 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 <span>Generate from Dataset</span>
                 <ArrowRight size={18} />
               </Button>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-      {mode !== 'prompt' && mode !== 'stocks' && mode !== 'datasets' && (
-      <div className="prompt-input-wrapper">
-        <MessageSquare size={18} className="prompt-icon" />
-        <input
-          type="text"
-          className="prompt-input"
-          placeholder="Optional: Add instructions for the AI (e.g., 'Focus on year-over-year growth')"
-          value={userPrompt}
-          onChange={(e) => setUserPrompt(e.target.value)}
-        />
+        <aside className={`ai-instructions-panel ${isPromptPanelOpen ? 'open' : ''}`} aria-hidden={!isPromptPanelOpen}>
+          <div className="ai-instructions-panel-head">
+            <div className="ai-instructions-panel-title-wrap">
+              <MessageSquare size={16} className="ai-instructions-icon" />
+              <span className="ai-instructions-panel-title">AI Instructions</span>
+            </div>
+            <button
+              type="button"
+              className="ai-instructions-close"
+              onClick={() => setIsPromptPanelOpen(false)}
+              aria-label="Close AI instructions panel"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <p className="ai-instructions-panel-copy">
+            Optional notes used across all input types.
+          </p>
+          <label className="ai-instructions-label" htmlFor="ai-instructions-input">
+            Extra guidance
+          </label>
+          <textarea
+            id="ai-instructions-input"
+            className="ai-instructions-textarea"
+            placeholder="Focus on year-over-year growth and annotate major inflection points."
+            value={userPrompt}
+            onChange={(e) => setUserPrompt(e.target.value)}
+            spellCheck={false}
+          />
+        </aside>
+
+        {!isPromptPanelOpen && (
+          <button
+            type="button"
+            className="ai-instructions-handle"
+            onClick={() => setIsPromptPanelOpen(true)}
+            aria-label="Open AI instructions panel"
+          >
+            <MessageSquare size={16} />
+            <span>AI Instructions</span>
+          </button>
+        )}
       </div>
-      )}
 
       <AnimatePresence>
         {error && (

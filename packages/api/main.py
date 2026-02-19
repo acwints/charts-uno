@@ -345,6 +345,7 @@ async def google_callback(
 
 @app.post("/api/auth/set-cookie")
 async def set_auth_cookie(
+    request: Request,
     response: Response,
     token: str = Query(..., description="JWT token to set as cookie"),
     db: Session = Depends(get_db),
@@ -362,29 +363,37 @@ async def set_auth_cookie(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
+    request_host = request.url.hostname or ""
+    cookie_domain = ".chartsuno.com" if request_host.endswith("chartsuno.com") else None
+
     # Set httpOnly cookie
     response.set_cookie(
         key="auth_token",
         value=token,
         httponly=True,
         secure=IS_PRODUCTION,
-        samesite="lax" if not IS_PRODUCTION else "none",
+        samesite="lax",
         max_age=7 * 24 * 60 * 60,  # 7 days
         path="/",
+        domain=cookie_domain,
     )
 
     return {"status": "ok"}
 
 
 @app.post("/api/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
     """Clear the authentication cookie"""
+    request_host = request.url.hostname or ""
+    cookie_domain = ".chartsuno.com" if request_host.endswith("chartsuno.com") else None
+
     response.delete_cookie(
         key="auth_token",
         httponly=True,
         secure=IS_PRODUCTION,
-        samesite="lax" if not IS_PRODUCTION else "none",
+        samesite="lax",
         path="/",
+        domain=cookie_domain,
     )
     return {"status": "ok"}
 
