@@ -169,11 +169,11 @@ export function computeHorizontalCategoryAxisConfig(
   );
   const maxTickLength = Math.max(8, Math.min(targetTickLength, Math.floor((axisWidth - 12) / charWidth)));
   const axisLabelLength = hasAxisLabel ? axisLabel!.trim().length : 0;
-  const preferOutsideLabel = axisLabelLength >= 11;
+  const preferOutsideLabel = hasAxisLabel;
   const baseLeftMargin = hasAxisLabel
     ? Math.max(10, Math.min(18, Math.round(axisLabelLength * 0.25) + 8))
     : 8;
-  const leftMargin = baseLeftMargin + (preferOutsideLabel ? 8 : 0);
+  const leftMargin = baseLeftMargin + (preferOutsideLabel ? 6 : 0);
   const labelOffset = preferOutsideLabel
     ? Math.max(8, Math.min(14, Math.round(axisWidth * 0.08) + 6))
     : Math.max(2, Math.min(8, Math.round(axisWidth * 0.05)));
