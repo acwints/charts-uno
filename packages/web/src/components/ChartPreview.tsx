@@ -181,13 +181,11 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     let formatted: string;
 
     if (absValue >= 1_000_000_000) {
-      formatted = `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+      formatted = `${(value / 1_000_000_000).toFixed(1)}B`;
     } else if (absValue >= 1_000_000) {
-      formatted = `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-    } else if (absValue >= 10_000) {
-      formatted = `${(value / 1_000).toFixed(0)}K`;
+      formatted = `${(value / 1_000_000).toFixed(1)}M`;
     } else if (absValue >= 1_000) {
-      formatted = `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+      formatted = `${(value / 1_000).toFixed(1)}K`;
     } else {
       formatted = axisNumberFormatter.format(value);
     }
