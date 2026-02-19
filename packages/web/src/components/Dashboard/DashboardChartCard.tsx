@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -11,6 +11,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Eye from 'lucide-react/dist/esm/icons/eye';
@@ -18,7 +20,7 @@ import Globe from 'lucide-react/dist/esm/icons/globe';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import { ChartActionsMenu } from './ChartActionsMenu';
 import type { ChartResponse } from '../../services/api';
-import { COLOR_PALETTES } from '../../types';
+import { COLOR_PALETTES, applyCustomColors, getEffectiveColors, getTheme } from '../../types';
 import { useDashboardStore } from '../../stores/dashboardStore';
 import { SafeResponsiveContainer } from '../SafeResponsiveContainer';
 import './DashboardChartCard.css';
@@ -37,22 +39,40 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
   const { selectedIds, toggleSelect, isSelecting } = useDashboardStore();
 
   const isSelected = selectedIds.has(chart.id);
-  const colors = COLOR_PALETTES[(chart.config.colorScheme as keyof typeof COLOR_PALETTES) || 'default'];
+  const colorScheme = useMemo(() => {
+    const scheme = chart.config.colorScheme;
+    return typeof scheme === 'string' && scheme in COLOR_PALETTES
+      ? (scheme as keyof typeof COLOR_PALETTES)
+      : 'default';
+  }, [chart.config.colorScheme]);
 
-  const chartData = chart.data.labels.map((label, idx) => {
-    const point: Record<string, string | number | null> = { name: label };
-    chart.data.series.forEach((series) => {
-      point[series.name] = series.data[idx];
+  const themeMode = chart.config.themeMode === 'light' ? 'light' : 'dark';
+  const theme = applyCustomColors(
+    getTheme(colorScheme, themeMode),
+    chart.config.customColors
+  );
+  const colors = getEffectiveColors(colorScheme, chart.config.customColors?.seriesColors);
+
+  const chartData = useMemo(() => {
+    return chart.data.labels.map((label, idx) => {
+      const point: Record<string, string | number | null> = { name: label };
+      chart.data.series.forEach((series) => {
+        point[series.name] = series.data[idx];
+      });
+      return point;
     });
-    return point;
-  });
+  }, [chart.data.labels, chart.data.series]);
 
-  const pieData = chart.data.series[0]?.data
-    .map((value, idx) => ({
-      name: chart.data.labels[idx],
-      value,
-    }))
-    .filter((point): point is { name: string; value: number } => typeof point.value === 'number') || [];
+  const pieData = useMemo(
+    () =>
+      chart.data.series[0]?.data
+        .map((value, idx) => ({
+          name: chart.data.labels[idx],
+          value,
+        }))
+        .filter((point): point is { name: string; value: number } => typeof point.value === 'number') || [],
+    [chart.data.labels, chart.data.series]
+  );
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isSelecting || e.ctrlKey || e.metaKey) {
@@ -70,11 +90,27 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
 
   const renderMiniChart = () => {
     const chartType = chart.config.type;
+    const isHorizontalBar = chartType === 'bar' && chart.config.barLayout === 'horizontal';
 
     switch (chartType) {
       case 'bar':
         return (
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+            {...(isHorizontalBar ? { layout: 'vertical' as const } : {})}
+          >
+            {isHorizontalBar ? (
+              <>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" hide width={0} />
+              </>
+            ) : (
+              <>
+                <XAxis dataKey="name" type="category" hide />
+                <YAxis type="number" hide />
+              </>
+            )}
             {chart.data.series.map((series, idx) => (
               <Bar
                 key={series.name}
@@ -178,7 +214,7 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
     >
-      <div className="dashboard-chart-card__preview">
+      <div className="dashboard-chart-card__preview" style={{ background: theme.background }}>
         <SafeResponsiveContainer minWidth={0} minHeight={88}>
           {renderMiniChart()}
         </SafeResponsiveContainer>
