@@ -73,7 +73,7 @@ export function computeAdaptiveAxisConfig(
 
   // If average label width is already larger than available slot width,
   // rotate early to avoid collisions for dense categorical axes.
-  if (overlapRatio > 0.95) {
+  if (overlapRatio > 0.85) {
     const fontSize: 10 | 11 = maxLabelLength > 14 ? 10 : 11;
     const displayLength = Math.min(maxLabelLength, MAX_TICK_LENGTH);
     const bottomMargin = Math.min(
