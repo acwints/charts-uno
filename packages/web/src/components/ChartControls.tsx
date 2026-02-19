@@ -25,7 +25,7 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
-import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig } from '../types';
+import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -142,6 +142,19 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
   const hasRightAxis = combo && data.series.some(
     (s) => resolveSeriesConfig(s.name, config).axis === 'right',
   );
+
+  // Show a "use dual axis" suggestion when we detect mixed-unit data but user hasn't configured it
+  const comboSuggestion = !combo && showComboControls
+    ? suggestComboConfig(data, config.type)
+    : null;
+
+  const applyComboSuggestion = () => {
+    if (!comboSuggestion) return;
+    updateConfig({
+      seriesConfig: comboSuggestion.seriesConfig,
+      rightYAxisLabel: comboSuggestion.rightYAxisLabel,
+    });
+  };
 
   const updateSeriesConfig = (seriesName: string, patch: Partial<SeriesOverride>) => {
     const prev = config.seriesConfig ?? {};
@@ -425,6 +438,15 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
 
         <div className="control-section data-summary full-width">
           <SectionHeader icon={Hash} label="Data Summary" />
+          {comboSuggestion && (
+            <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
+              <Sparkles size={12} />
+              <span>
+                Mixed units detected — use <strong>Dual Axis</strong> to show{' '}
+                {Object.keys(comboSuggestion.seriesConfig).join(', ')} as % on the right
+              </span>
+            </button>
+          )}
           <div className="data-grid">
             {data.series.map((series, idx) => {
               const resolved = resolveSeriesConfig(series.name, config);

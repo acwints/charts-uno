@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
 import { recommendChartType } from '../services/chartTypeRecommender';
 import type { ChartData } from '../types';
+import { suggestComboConfig } from '../types';
 
 interface OutletContextType {
   openAuthModal: () => void;
@@ -27,6 +28,7 @@ export function ChartBuilder() {
 
     if (skipAI) {
       const chartType = data.suggestedType ?? 'line';
+      const comboHint = suggestComboConfig(data, chartType);
       setChartData(data);
       setChartConfig((prev) => ({
         ...prev,
@@ -35,6 +37,7 @@ export function ChartBuilder() {
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
+        ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));
       navigate('/chart');
       return;
@@ -50,6 +53,7 @@ export function ChartBuilder() {
         aiReasoning: data.aiReasoning || recommendation.reasoning,
         aiSummary: recommendation.summary,
       };
+      const comboHint = suggestComboConfig(enrichedData, chosenType);
       setChartData(enrichedData);
       setChartConfig((prev) => ({
         ...prev,
@@ -58,11 +62,13 @@ export function ChartBuilder() {
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
+        ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));
       navigate('/chart');
     } catch (error) {
       console.error('AI recommendation failed:', error);
       const fallbackType = data.suggestedType ?? 'bar';
+      const comboHint = suggestComboConfig(data, fallbackType);
       setChartData(data);
       setChartConfig((prev) => ({
         ...prev,
@@ -71,6 +77,7 @@ export function ChartBuilder() {
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
+        ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));
       navigate('/chart');
     } finally {
