@@ -279,7 +279,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         top: 20,
         right: 30,
         bottom: yAxisLabel ? 25 : 5,
-        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 8 : 0),
+        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 12 : 0),
       }
     : { top: 20, right: 5, bottom: adaptiveBottom, left: yAxisLabel ? 15 : 5 };
 
