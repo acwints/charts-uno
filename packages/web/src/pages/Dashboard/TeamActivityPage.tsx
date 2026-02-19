@@ -5,6 +5,7 @@ import { TeamHeader } from '../../components/Dashboard/TeamHeader';
 import { ActivityFeed } from '../../components/Dashboard/ActivityFeed';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/Dashboard/EmptyState';
+import { useTeam } from '../../contexts/TeamContext';
 import {
   getTeams,
   getTeamMembers,
@@ -17,6 +18,7 @@ import './Dashboard.css';
 
 export function TeamActivityPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { currentTeam, switchTeam } = useTeam();
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -38,6 +40,9 @@ export function TeamActivityPage() {
       }
 
       setTeam(foundTeam);
+      if (currentTeam?.id !== foundTeam.id) {
+        switchTeam(foundTeam.id);
+      }
 
       const [membersData, activityData] = await Promise.all([
         getTeamMembers(foundTeam.id),
@@ -52,7 +57,7 @@ export function TeamActivityPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [slug]);
+  }, [slug, currentTeam?.id, switchTeam]);
 
   useEffect(() => {
     fetchTeamData();

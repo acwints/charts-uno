@@ -56,9 +56,25 @@ interface ChartPreviewProps {
   watermark?: WatermarkSettings;
   canToggleLogo?: boolean;
   onToggleLogo?: () => void;
+  logoOptions?: ChartLogoOption[];
+  onSelectLogo?: (logoUrl: string | null) => void;
 }
 
-export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleLogo }: ChartPreviewProps) {
+export interface ChartLogoOption {
+  teamId: string;
+  teamName: string;
+  logoUrl: string;
+}
+
+export function ChartPreview({
+  data,
+  config,
+  watermark,
+  canToggleLogo,
+  onToggleLogo,
+  logoOptions = [],
+  onSelectLogo,
+}: ChartPreviewProps) {
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -1123,9 +1139,36 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
           <div className="chart-brand-area">
             {watermark?.enabled !== false && (
               <div className="chart-brand" style={{ color: theme.textMuted }}>
-                <Sparkles size={12} />
-                <span>Chartsuno</span>
+                {watermark?.customLogoUrl ? (
+                  <img src={watermark.customLogoUrl} alt="Selected logo" className="chart-brand-logo" />
+                ) : (
+                  <>
+                    <Sparkles size={12} />
+                    <span>Chartsuno</span>
+                  </>
+                )}
               </div>
+            )}
+            {watermark?.enabled !== false && onSelectLogo && logoOptions.length > 0 && (
+              <select
+                className="chart-logo-select"
+                value={watermark?.customLogoUrl ?? ''}
+                onChange={(event) => onSelectLogo(event.target.value || null)}
+                disabled={!canToggleLogo}
+                aria-label="Select team logo"
+                style={{
+                  color: theme.textMuted,
+                  borderColor: theme.border,
+                  background: theme.cardBackground,
+                }}
+              >
+                <option value="">Chartsuno</option>
+                {logoOptions.map((logoOption) => (
+                  <option key={logoOption.teamId} value={logoOption.logoUrl}>
+                    {logoOption.teamName}
+                  </option>
+                ))}
+              </select>
             )}
             {onToggleLogo && (
               <button

@@ -9,6 +9,7 @@ import { DashboardToolbar } from '../../components/Dashboard/DashboardToolbar';
 import { EmptyState } from '../../components/Dashboard/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useDashboardStore } from '../../stores/dashboardStore';
+import { useTeam } from '../../contexts/TeamContext';
 import {
   getTeams,
   getTeamCharts,
@@ -23,6 +24,7 @@ export function TeamDashboardPage() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const { view, sort, order, search, clearSelection } = useDashboardStore();
+  const { currentTeam, switchTeam } = useTeam();
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -51,6 +53,9 @@ export function TeamDashboardPage() {
       }
 
       setTeam(foundTeam);
+      if (currentTeam?.id !== foundTeam.id) {
+        switchTeam(foundTeam.id);
+      }
 
       const [membersData, chartsData] = await Promise.all([
         getTeamMembers(foundTeam.id),
@@ -74,7 +79,7 @@ export function TeamDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [slug, sort, order, search, selectedMemberId, clearSelection]);
+  }, [slug, sort, order, search, selectedMemberId, clearSelection, currentTeam?.id, switchTeam]);
 
   useEffect(() => {
     fetchTeamData();

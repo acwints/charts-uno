@@ -9,7 +9,6 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
-import { TeamSwitcher } from './TeamSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import { useMobileNav } from '../hooks/useMobileNav';
 import './Header.css';
@@ -77,12 +76,6 @@ export function Header({
             <span className="logo-badge">BETA</span>
           </Link>
         </motion.div>
-
-        {isAuthenticated && (
-          <div className="header-center">
-            <TeamSwitcher onCreateTeam={() => navigate('/settings/team')} />
-          </div>
-        )}
 
         <motion.nav
           className="header-nav"

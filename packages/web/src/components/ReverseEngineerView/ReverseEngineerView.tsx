@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ChartPreview } from '../ChartPreview';
+import { ChartPreview, type ChartLogoOption } from '../ChartPreview';
 import { ChartControls } from '../ChartControls';
 import type { ChartData, ChartConfig } from '../../types';
 import type { WatermarkSettings } from '../../services/exportService';
@@ -13,6 +13,8 @@ interface ReverseEngineerViewProps {
   watermark?: WatermarkSettings;
   canToggleLogo?: boolean;
   onToggleLogo?: () => void;
+  logoOptions?: ChartLogoOption[];
+  onSelectLogo?: (logoUrl: string | null) => void;
 }
 
 export function ReverseEngineerView({
@@ -23,6 +25,8 @@ export function ReverseEngineerView({
   watermark,
   canToggleLogo,
   onToggleLogo,
+  logoOptions,
+  onSelectLogo,
 }: ReverseEngineerViewProps) {
   return (
     <motion.div
@@ -46,6 +50,8 @@ export function ReverseEngineerView({
               watermark={watermark}
               canToggleLogo={canToggleLogo}
               onToggleLogo={onToggleLogo}
+              logoOptions={logoOptions}
+              onSelectLogo={onSelectLogo}
             />
           </div>
           <div className="re-controls-area">

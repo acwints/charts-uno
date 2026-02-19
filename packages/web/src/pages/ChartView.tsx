@@ -7,7 +7,7 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Table2 from 'lucide-react/dist/esm/icons/table-2';
 import Image from 'lucide-react/dist/esm/icons/image';
-import { ChartPreview } from '../components/ChartPreview';
+import { ChartPreview, type ChartLogoOption } from '../components/ChartPreview';
 import { ChartControls } from '../components/ChartControls';
 import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
 import { ImageReasoningPanel } from '../components/ImageReasoningPanel/ImageReasoningPanel';
@@ -20,7 +20,7 @@ import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
-import { getChart, createChartWithTeam, getTeamBranding, updateTeamBranding, updateChart } from '../services/api';
+import { getChart, createChartWithTeam, getTeamBranding, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 
@@ -30,54 +30,79 @@ export function ChartView() {
   const chartCaptureRef = useRef<HTMLDivElement>(null);
   const { chartData, chartConfig, setChartData, setChartConfig, setInfographicSvg } = useChartStore();
   const { isAuthenticated } = useAuth();
-  const { currentTeam } = useTeam();
+  const { teams } = useTeam();
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
-  const [canToggleLogo, setCanToggleLogo] = useState(false);
+  const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
   const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
   const [originalData, setOriginalData] = useState<ChartData | null>(null);
   const initTokenRef = useRef<string | null>(null);
   const justSavedIdRef = useRef<string | null>(null);
 
-  // Fetch branding settings for logo
   useEffect(() => {
-    if (currentTeam?.id) {
-      getTeamBranding(currentTeam.id)
-        .then((branding) => {
-          // For free plans, always enable logo and can't toggle
-          const canCustomize = branding.can_customize;
-          setCanToggleLogo(canCustomize);
-          setWatermarkSettings({
-            enabled: canCustomize ? branding.watermark_enabled : true,
-            customLogoUrl: canCustomize ? branding.custom_logo_url : null,
-          });
-        })
-        .catch(() => {
-          // Default to logo enabled if fetch fails
-          setCanToggleLogo(false);
-          setWatermarkSettings({ enabled: true, customLogoUrl: null });
-        });
+    if (!isAuthenticated) {
+      setLogoOptions([]);
+      setWatermarkSettings({ enabled: true, customLogoUrl: null });
+      return;
     }
-  }, [currentTeam?.id]);
 
-  const handleToggleLogo = async () => {
-    if (!currentTeam?.id || !canToggleLogo) return;
-
-    const newEnabled = !watermarkSettings.enabled;
-    // Optimistic update
-    setWatermarkSettings(prev => ({ ...prev, enabled: newEnabled }));
-
-    try {
-      await updateTeamBranding(currentTeam.id, { watermark_enabled: newEnabled });
-    } catch {
-      // Revert on error
-      setWatermarkSettings(prev => ({ ...prev, enabled: !newEnabled }));
-      toast.error('Failed to update logo setting');
+    const teamSpaces = teams.filter((team) => !team.is_personal);
+    if (teamSpaces.length === 0) {
+      setLogoOptions([]);
+      setWatermarkSettings((previous) => ({ ...previous, customLogoUrl: null }));
+      return;
     }
+
+    let cancelled = false;
+
+    const loadLogoOptions = async () => {
+      const results = await Promise.all(
+        teamSpaces.map(async (team) => {
+          try {
+            const branding = await getTeamBranding(team.id);
+            if (!branding.custom_logo_url) return null;
+            return {
+              teamId: team.id,
+              teamName: team.name,
+              logoUrl: branding.custom_logo_url,
+            } satisfies ChartLogoOption;
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      const nextOptions = results.filter((option): option is ChartLogoOption => option !== null);
+      setLogoOptions(nextOptions);
+      setWatermarkSettings((previous) => {
+        if (!previous.customLogoUrl) return previous;
+        if (nextOptions.some((option) => option.logoUrl === previous.customLogoUrl)) return previous;
+        return { ...previous, customLogoUrl: null };
+      });
+    };
+
+    loadLogoOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, teams]);
+
+  const handleToggleLogo = () => {
+    setWatermarkSettings((previous) => ({ ...previous, enabled: !previous.enabled }));
+  };
+
+  const handleSelectLogo = (logoUrl: string | null) => {
+    setWatermarkSettings((previous) => ({
+      ...previous,
+      enabled: true,
+      customLogoUrl: logoUrl,
+    }));
   };
 
   const saveChart = async () => {
@@ -119,7 +144,6 @@ export function ChartView() {
         config: chartConfig,
         source_type: chartData.sourceType || 'paste',
         is_public: false,
-        team_id: currentTeam?.id,
       });
       toast.success('Chart saved to your profile');
       justSavedIdRef.current = result.id;
@@ -365,8 +389,10 @@ export function ChartView() {
           onConfigChange={setChartConfig}
           chartRef={chartCaptureRef}
           watermark={watermarkSettings}
-          canToggleLogo={canToggleLogo}
+          canToggleLogo={isAuthenticated}
           onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
+          logoOptions={logoOptions}
+          onSelectLogo={isAuthenticated ? handleSelectLogo : undefined}
         />
       ) : (
         <div className="chart-workspace">
@@ -381,8 +407,10 @@ export function ChartView() {
               data={chartData}
               config={chartConfig}
               watermark={watermarkSettings}
-              canToggleLogo={canToggleLogo}
+              canToggleLogo={isAuthenticated}
               onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
+              logoOptions={logoOptions}
+              onSelectLogo={isAuthenticated ? handleSelectLogo : undefined}
             />
           </div>
           <div className="chart-sidebar">

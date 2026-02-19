@@ -20,6 +20,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
 
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
+  const isCreationFlow = isChartPage || location.pathname === '/new';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -32,7 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Header onAuthOpen={openAuthModal} />
 
       <div className="app-body">
-        {isAuthenticated && <DashboardSidebar />}
+        {isAuthenticated && !isCreationFlow && <DashboardSidebar />}
 
         <main className="main">
           <AnimatePresence mode="wait">

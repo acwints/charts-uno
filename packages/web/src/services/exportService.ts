@@ -107,6 +107,12 @@ function resolveCaptureTarget(element: HTMLElement): HTMLElement {
   return preview ?? element;
 }
 
+function shouldApplyWatermarkOverlay(element: HTMLElement): boolean {
+  const captureTarget = resolveCaptureTarget(element);
+  // For chart previews, watermark visibility/logo is already part of rendered UI state.
+  return !captureTarget.classList.contains('chart-preview');
+}
+
 async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
   const captureTarget = resolveCaptureTarget(element);
   await prepareElementForCapture(captureTarget);
@@ -135,7 +141,7 @@ export async function exportToPNG(
   const canvas = await renderElementToCanvas(element);
 
   // Apply watermark if enabled
-  if (watermark?.enabled !== false) {
+  if (watermark?.enabled !== false && shouldApplyWatermarkOverlay(element)) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       if (watermark?.customLogoUrl) {
@@ -161,7 +167,7 @@ export async function copyImageToClipboard(
 ): Promise<void> {
   const canvas = await renderElementToCanvas(element);
 
-  if (watermark?.enabled !== false) {
+  if (watermark?.enabled !== false && shouldApplyWatermarkOverlay(element)) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       if (watermark?.customLogoUrl) {

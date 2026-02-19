@@ -4,6 +4,7 @@ import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Compass from 'lucide-react/dist/esm/icons/compass';
+import Users from 'lucide-react/dist/esm/icons/users';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import PanelLeftClose from 'lucide-react/dist/esm/icons/panel-left-close';
 import PanelLeftOpen from 'lucide-react/dist/esm/icons/panel-left-open';
@@ -41,10 +42,11 @@ function NavItem({ to, icon, label, end, collapsed }: NavItemProps) {
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
-  const { currentTeam, usage } = useTeam();
+  const { teams, currentTeam, usage } = useTeam();
   const { reset } = useChartStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { isOpen: isMobileNavOpen, close: closeMobileNav } = useMobileNav();
+  const teamSpaces = teams.filter((team) => !team.is_personal);
 
   const handleCreateNew = () => {
     reset();
@@ -90,6 +92,21 @@ export function DashboardSidebar() {
           <NavItem to="/dashboard/published" icon={<Globe size={18} />} label="Published" collapsed={isCollapsed} />
           <NavItem to="/dashboard/liked" icon={<Heart size={18} />} label="Liked" collapsed={isCollapsed} />
         </div>
+
+        {teamSpaces.length > 0 && (
+          <div className="sidebar-section">
+            {!isCollapsed && <div className="sidebar-section-header">Team Spaces</div>}
+            {teamSpaces.map((team) => (
+              <NavItem
+                key={team.id}
+                to={`/team/${team.slug}`}
+                icon={<Users size={18} />}
+                label={team.name}
+                collapsed={isCollapsed}
+              />
+            ))}
+          </div>
+        )}
       </nav>
 
       {!isCollapsed && usage && currentTeam && (
