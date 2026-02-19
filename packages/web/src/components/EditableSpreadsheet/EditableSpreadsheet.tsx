@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { motion } from 'motion/react';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -6,6 +6,7 @@ import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import { EditableCell } from './EditableCell';
 import type { ChartData, ColorScheme } from '../../types';
 import { COLOR_PALETTES } from '../../types';
+import { getAdaptiveDecimalPlaces } from '../../utils/numberFormat';
 import './EditableSpreadsheet.css';
 
 interface EditableSpreadsheetProps {
@@ -24,6 +25,12 @@ export function EditableSpreadsheet({
   onReset,
 }: EditableSpreadsheetProps) {
   const colors = COLOR_PALETTES[colorScheme];
+  const numericValues = useMemo(() => {
+    return data.series.flatMap((series) =>
+      series.data.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+    );
+  }, [data.series]);
+  const numericDecimalPlaces = useMemo(() => getAdaptiveDecimalPlaces(numericValues), [numericValues]);
 
   const handleLabelChange = useCallback(
     (index: number, value: string | number) => {
@@ -192,6 +199,7 @@ export function EditableSpreadsheet({
                       value={series.data?.[rowIdx] ?? ''}
                       onChange={(v) => handleValueChange(colIdx, rowIdx, v)}
                       isNumeric
+                      decimalPlaces={numericDecimalPlaces}
                     />
                   </td>
                 ))}

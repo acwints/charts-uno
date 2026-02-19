@@ -26,6 +26,7 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode } from '../types';
 import { STYLE_VARIANTS, getEffectiveColors } from '../types';
+import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
 import { useTeam } from '../contexts/TeamContext';
@@ -395,9 +396,12 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                 <span className="series-name">{series.name}</span>
                 <span className="series-stats">
                   {(() => {
-                    const numericValues = series.data.filter((v): v is number => typeof v === 'number');
+                    const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
                     if (numericValues.length === 0) return 'No numeric data';
-                    return `${Math.min(...numericValues).toLocaleString()} — ${Math.max(...numericValues).toLocaleString()}`;
+                    const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
+                    const min = Math.min(...numericValues);
+                    const max = Math.max(...numericValues);
+                    return `${formatter.format(min)} — ${formatter.format(max)}`;
                   })()}
                 </span>
               </div>

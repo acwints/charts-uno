@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { createFixedNumberFormatter } from '../../utils/numberFormat';
 
 interface EditableCellProps {
   value: string | number;
   onChange: (value: string | number) => void;
   isNumeric?: boolean;
+  decimalPlaces?: number;
   isHeader?: boolean;
 }
 
@@ -11,6 +13,7 @@ export function EditableCell({
   value,
   onChange,
   isNumeric = false,
+  decimalPlaces,
   isHeader = false,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -82,8 +85,13 @@ export function EditableCell({
     }
   };
 
+  const numberFormatter = useMemo(() => {
+    if (!isNumeric || typeof decimalPlaces !== 'number') return null;
+    return createFixedNumberFormatter(decimalPlaces);
+  }, [isNumeric, decimalPlaces]);
+
   const displayValue = isNumeric && typeof value === 'number'
-    ? value.toLocaleString()
+    ? (numberFormatter ? numberFormatter.format(value) : value.toLocaleString())
     : value;
 
   return (

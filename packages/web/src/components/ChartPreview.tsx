@@ -35,6 +35,7 @@ import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffect
 import { generateInfographic } from '../services/infographicGenerator';
 import { useChartStore } from '../stores/chartStore';
 import { computeAdaptiveAxisConfig, computeHorizontalCategoryAxisConfig } from '../utils/adaptiveAxis';
+import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
@@ -165,26 +166,13 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     );
   }, [data.series]);
 
-  const numericValueRange = useMemo(() => {
-    if (numericSeriesValues.length === 0) return 0;
-    const min = Math.min(...numericSeriesValues);
-    const max = Math.max(...numericSeriesValues);
-    return Math.abs(max - min);
+  // Keep axes readable with adaptive precision while preserving trailing zeros for consistency.
+  const axisDecimalPlaces = useMemo(() => {
+    return getAdaptiveDecimalPlaces(numericSeriesValues);
   }, [numericSeriesValues]);
 
-  // Keep axes readable by defaulting to 1-2 decimals; only use 3 for very tight ranges.
-  const axisDecimalPlaces = useMemo(() => {
-    if (numericValueRange <= 0.25) return 3;
-    if (numericValueRange <= 5) return 2;
-    if (numericValueRange <= 150) return 1;
-    return 0;
-  }, [numericValueRange]);
-
   const axisNumberFormatter = useMemo(() => {
-    return new Intl.NumberFormat(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: axisDecimalPlaces,
-    });
+    return createFixedNumberFormatter(axisDecimalPlaces);
   }, [axisDecimalPlaces]);
 
   // Format Y-axis tick values with compact notation for large numbers
@@ -207,14 +195,11 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
     return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
   }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
-  // Format tooltip values with full precision
+  // Match tooltip precision with axis/data labels so values stay consistent across views.
   const formatTooltipValue = useCallback((value: number): string => {
-    const formatted = value.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+    const formatted = axisNumberFormatter.format(value);
     return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
-  }, [yAxisPrefix, yAxisSuffix]);
+  }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
   // Format X-axis year ticks as integers (no decimals)
   const formatXAxisYearTick = useCallback((value: number): string => {
@@ -533,7 +518,7 @@ export function ChartPreview({ data, config, watermark, canToggleLogo, onToggleL
         label={xAxisLabel ? {
           value: xAxisLabel,
           angle: -90,
-          position: 'left',
+          position: 'insideLeft',
           offset: horizontalCategoryAxis.labelOffset,
           fill: theme.textMuted,
           fontSize: 11,

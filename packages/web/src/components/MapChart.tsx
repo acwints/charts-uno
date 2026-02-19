@@ -8,6 +8,7 @@ import {
 } from 'react-simple-maps';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import { getGeoId } from '../services/geoData';
+import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import './MapChart.css';
 
 interface MapChartProps {
@@ -92,6 +93,16 @@ export function MapChart({ data, config, theme, colors }: MapChartProps) {
     const values = regions.map((r) => r.value);
     return { min: Math.min(...values), max: Math.max(...values) };
   }, [regions]);
+  const valueDecimalPlaces = useMemo(() => {
+    const values = regions
+      .map((region) => region.value)
+      .filter((value) => Number.isFinite(value));
+    return getAdaptiveDecimalPlaces(values);
+  }, [regions]);
+  const valueNumberFormatter = useMemo(
+    () => createFixedNumberFormatter(valueDecimalPlaces),
+    [valueDecimalPlaces]
+  );
 
   // Get color for a value (for choropleth)
   const getColorForValue = useCallback(
@@ -155,8 +166,8 @@ export function MapChart({ data, config, theme, colors }: MapChartProps) {
     if (value >= 1_000) {
       return `${(value / 1_000).toFixed(1)}K`;
     }
-    return value.toLocaleString();
-  }, []);
+    return valueNumberFormatter.format(value);
+  }, [valueNumberFormatter]);
 
   if (loading) {
     return (
