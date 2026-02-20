@@ -13,7 +13,7 @@ export const config = {
   bot: {
     userId: process.env.BOT_USER_ID || '',
     allowedUserIds: (process.env.ALLOWED_USER_IDS || '').split(',').filter(Boolean),
-    pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || '60000', 10),
+    pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || '300000', 10),
   },
   google: {
     apiKey: process.env.GOOGLE_API_KEY || '',

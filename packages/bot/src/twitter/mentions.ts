@@ -47,23 +47,16 @@ export async function pollMentions(): Promise<MentionData[]> {
       return [];
     }
 
-    // If we don't have a checkpoint yet, initialize it and skip historical results.
-    // This prevents replaying old mentions on cold start/restart.
-    if (!state.lastSinceId) {
-      const newestId = response.data.meta?.newest_id;
-      if (newestId) {
-        await updateState({ lastSinceId: newestId });
-      }
-      logger.warn(
-        { newestId: newestId || null, resultCount: response.data.meta?.result_count || response.data.data.length },
-        'No since_id checkpoint found; initialized checkpoint and skipped historical mentions'
-      );
-      return [];
-    }
-
-    // Update since_id for next poll
+    // Update since_id checkpoint (handles both cold start and normal polls)
     if (response.data.meta?.newest_id) {
+      const isFirstPoll = !state.lastSinceId;
       await updateState({ lastSinceId: response.data.meta.newest_id });
+      if (isFirstPoll) {
+        logger.warn(
+          { newestId: response.data.meta.newest_id, resultCount: response.data.meta?.result_count || response.data.data.length },
+          'Initialized since_id checkpoint; processing found mentions'
+        );
+      }
     }
 
     for (const tweet of response.data.data) {
