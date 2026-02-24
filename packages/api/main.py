@@ -653,6 +653,20 @@ async def list_public_charts(
 ):
     """List public charts (discover page)"""
     query = db.query(Chart).filter(Chart.is_public == 1)
+
+    # Exclude charts created by the bot service user
+    bot_user_id = BOT_CHART_OWNER_ID
+    if not bot_user_id:
+        bot_user = (
+            db.query(User.id)
+            .filter(User.email == BOT_CHART_OWNER_EMAIL)
+            .first()
+        )
+        if bot_user:
+            bot_user_id = bot_user.id
+    if bot_user_id:
+        query = query.filter(Chart.user_id != bot_user_id)
+
     total = query.count()
 
     charts = query.order_by(Chart.created_at.desc()).offset(offset).limit(limit).all()
