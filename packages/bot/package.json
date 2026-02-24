@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "auth": "tsx src/setup-oauth2.ts",
+    "tweet": "tsx src/post-tweet.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
