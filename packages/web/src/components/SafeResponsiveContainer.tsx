@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { ResponsiveContainer } from 'recharts';
+import {
+  cloneElement,
+  isValidElement,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 
 interface SafeResponsiveContainerProps {
   children: ReactElement | null;
@@ -15,15 +21,22 @@ export function SafeResponsiveContainer({
   className,
 }: SafeResponsiveContainerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [ready, setReady] = useState(false);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = containerRef.current;
     if (!element) return;
 
     const update = () => {
       const rect = element.getBoundingClientRect();
-      setReady(rect.width > 0 && rect.height > 0);
+      const width = Math.max(Math.floor(rect.width), 0);
+      const height = Math.max(Math.floor(rect.height), 0);
+      setSize((prev) => {
+        if (prev.width === width && prev.height === height) {
+          return prev;
+        }
+        return { width, height };
+      });
     };
 
     update();
@@ -44,11 +57,12 @@ export function SafeResponsiveContainer({
       className={className}
       style={{ width: '100%', height: '100%', minWidth, minHeight }}
     >
-      {ready && children ? (
-        <ResponsiveContainer width="100%" height="100%" minWidth={minWidth} minHeight={minHeight}>
-          {children}
-        </ResponsiveContainer>
-      ) : null}
+      {children && isValidElement(children) && size.width > 0 && size.height > 0
+        ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+            width: Math.max(size.width, minWidth),
+            height: Math.max(size.height, minHeight),
+          })
+        : null}
     </div>
   );
 }

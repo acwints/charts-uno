@@ -23,13 +23,12 @@ export function DashboardHeader({ title, subtitle, chartCount }: DashboardHeader
             <span className="dashboard-header-count">{chartCount} charts</span>
           )}
         </div>
-      </div>
-
-      <div className="dashboard-header-controls">
-        <SearchInput value={search} onChange={setSearch} />
-        <div className="dashboard-header-actions">
-          <SortDropdown sort={sort} order={order} onSort={setSort} />
-          <ViewToggle view={view} onViewChange={setView} />
+        <div className="dashboard-header-controls">
+          <SearchInput value={search} onChange={setSearch} />
+          <div className="dashboard-header-actions">
+            <SortDropdown sort={sort} order={order} onSort={setSort} />
+            <ViewToggle view={view} onViewChange={setView} />
+          </div>
         </div>
       </div>
     </div>
