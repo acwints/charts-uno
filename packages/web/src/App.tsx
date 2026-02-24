@@ -23,49 +23,41 @@ function AppWithTeam() {
   return (
     <TeamProvider isAuthenticated={isAuthenticated}>
       <Routes>
-        {/* Home route with auth-based redirect */}
-        <Route path="/" element={<HomeRoute />} />
-
         {/* Embed route (no layout chrome) */}
         <Route path="/embed/:id" element={<EmbedView />} />
 
-        {/* Public routes */}
-        <Route path="/feed" element={<MainLayout />}>
-          <Route index element={<ChartFeedPage />} />
-        </Route>
+        {/* Shared app shell */}
+        <Route path="/" element={<MainLayout />}>
+          {/* Home route with auth-based redirect */}
+          <Route index element={<HomeRoute />} />
 
-        <Route path="/chart" element={<MainLayout />}>
-          <Route index element={<ChartView />} />
-        </Route>
-
-        <Route path="/chart/:id" element={<MainLayout />}>
-          <Route index element={<ChartView />} />
-        </Route>
-
-        <Route path="/invite/:token" element={<MainLayout />}>
-          <Route index element={<InviteAccept />} />
-        </Route>
-
-        {/* Auth-required dashboard routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<MainLayout />}>
-            <Route index element={<UserDashboardPage tab="all" />} />
-            <Route path="published" element={<UserDashboardPage tab="published" />} />
-            <Route path="liked" element={<UserDashboardPage tab="liked" />} />
+          {/* Public routes */}
+          <Route path="feed" element={<ChartFeedPage />} />
+          <Route path="chart">
+            <Route index element={<ChartView />} />
+            <Route path=":id" element={<ChartView />} />
           </Route>
+          <Route path="invite/:token" element={<InviteAccept />} />
 
-          <Route path="/team/:slug" element={<MainLayout />}>
-            <Route index element={<TeamDashboardPage />} />
-            <Route path="activity" element={<TeamActivityPage />} />
-          </Route>
+          {/* Auth-required dashboard routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="dashboard">
+              <Route index element={<UserDashboardPage tab="all" />} />
+              <Route path="published" element={<UserDashboardPage tab="published" />} />
+              <Route path="liked" element={<UserDashboardPage tab="liked" />} />
+            </Route>
 
-          <Route path="/new" element={<MainLayout />}>
-            <Route index element={<ChartBuilder />} />
-          </Route>
+            <Route path="team/:slug">
+              <Route index element={<TeamDashboardPage />} />
+              <Route path="activity" element={<TeamActivityPage />} />
+            </Route>
 
-          <Route path="/settings" element={<MainLayout />}>
-            <Route index element={<SettingsPage />} />
-            <Route path=":tab" element={<SettingsPage />} />
+            <Route path="new" element={<ChartBuilder />} />
+
+            <Route path="settings">
+              <Route index element={<SettingsPage />} />
+              <Route path=":tab" element={<SettingsPage />} />
+            </Route>
           </Route>
         </Route>
 
@@ -88,11 +80,7 @@ function HomeRoute() {
   }
 
   // Show landing page with chart builder for unauthenticated users
-  return (
-    <MainLayout>
-      <ChartBuilder />
-    </MainLayout>
-  );
+  return <ChartBuilder />;
 }
 
 function App() {

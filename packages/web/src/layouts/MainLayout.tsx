@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Header } from '../components/Header';
 import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
 import { AuthModal } from '../components/AuthModal';
@@ -15,9 +15,11 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
   const { isAuthenticated } = useAuth();
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
+  const routeContent = children || <Outlet context={{ openAuthModal }} />;
 
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
   const isCreationFlow = isChartPage || location.pathname === '/new';
@@ -36,9 +38,25 @@ export function MainLayout({ children }: MainLayoutProps) {
         {isAuthenticated && !isCreationFlow && <DashboardSidebar />}
 
         <main className="main">
-          <AnimatePresence mode="wait">
-            {children || <Outlet context={{ openAuthModal }} />}
-          </AnimatePresence>
+          {prefersReducedMotion ? (
+            <div className="app-route-shell">{routeContent}</div>
+          ) : (
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={location.pathname}
+                className="app-route-shell"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{
+                  duration: 0.22,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                {routeContent}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </main>
 
         {/* ChatPanel as sidebar - only show on chart pages with data */}
