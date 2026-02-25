@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/web" },
-    { "path": "./packages/bot" }
+    { "path": "./packages/bot" },
+    { "path": "./packages/video" }
   ]
 }

@@ -25,6 +25,9 @@ import { getChart, createChart, getTeamBranding, getChartPublishTargets, updateC
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 
+const BRANDING_NONE_VALUE = '__none__';
+const BRANDING_CHARTSUNO_VALUE = '__chartsuno__';
+
 export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -101,16 +104,22 @@ export function ChartView() {
     };
   }, [isAuthenticated, teamSpaces]);
 
-  const handleToggleLogo = () => {
-    setWatermarkSettings((previous) => ({ ...previous, enabled: !previous.enabled }));
-  };
+  const logoSelectionValue = watermarkSettings.enabled === false
+    ? BRANDING_NONE_VALUE
+    : (watermarkSettings.customLogoUrl ?? BRANDING_CHARTSUNO_VALUE);
 
-  const handleSelectLogo = (logoUrl: string | null) => {
-    setWatermarkSettings((previous) => ({
-      ...previous,
-      enabled: true,
-      customLogoUrl: logoUrl,
-    }));
+  const handleLogoSelectionChange = (value: string) => {
+    if (value === BRANDING_NONE_VALUE) {
+      setWatermarkSettings({ enabled: false, customLogoUrl: null });
+      return;
+    }
+
+    if (value === BRANDING_CHARTSUNO_VALUE) {
+      setWatermarkSettings({ enabled: true, customLogoUrl: null });
+      return;
+    }
+
+    setWatermarkSettings({ enabled: true, customLogoUrl: value });
   };
 
   const saveChart = async () => {
@@ -428,10 +437,10 @@ export function ChartView() {
           onConfigChange={setChartConfig}
           chartRef={chartCaptureRef}
           watermark={watermarkSettings}
-          canToggleLogo={isAuthenticated}
-          onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
           logoOptions={logoOptions}
-          onSelectLogo={isAuthenticated ? handleSelectLogo : undefined}
+          logoSelectionValue={logoSelectionValue}
+          canCustomizeBranding={isAuthenticated}
+          onLogoSelectionChange={handleLogoSelectionChange}
         />
       ) : (
         <div className="chart-workspace">
@@ -446,10 +455,6 @@ export function ChartView() {
               data={chartData}
               config={chartConfig}
               watermark={watermarkSettings}
-              canToggleLogo={isAuthenticated}
-              onToggleLogo={isAuthenticated ? handleToggleLogo : undefined}
-              logoOptions={logoOptions}
-              onSelectLogo={isAuthenticated ? handleSelectLogo : undefined}
             />
           </div>
           <div className="chart-sidebar">
@@ -457,6 +462,11 @@ export function ChartView() {
               config={chartConfig}
               onChange={setChartConfig}
               data={chartData}
+              watermark={watermarkSettings}
+              logoOptions={logoOptions}
+              logoSelectionValue={logoSelectionValue}
+              canCustomizeBranding={isAuthenticated}
+              onLogoSelectionChange={handleLogoSelectionChange}
             />
           </div>
         </div>

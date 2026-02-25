@@ -11,10 +11,10 @@ interface ReverseEngineerViewProps {
   onConfigChange: (config: ChartConfig) => void;
   chartRef: React.RefObject<HTMLDivElement | null>;
   watermark?: WatermarkSettings;
-  canToggleLogo?: boolean;
-  onToggleLogo?: () => void;
   logoOptions?: ChartLogoOption[];
-  onSelectLogo?: (logoUrl: string | null) => void;
+  logoSelectionValue?: string;
+  canCustomizeBranding?: boolean;
+  onLogoSelectionChange?: (value: string) => void;
 }
 
 export function ReverseEngineerView({
@@ -23,10 +23,10 @@ export function ReverseEngineerView({
   onConfigChange,
   chartRef,
   watermark,
-  canToggleLogo,
-  onToggleLogo,
   logoOptions,
-  onSelectLogo,
+  logoSelectionValue,
+  canCustomizeBranding,
+  onLogoSelectionChange,
 }: ReverseEngineerViewProps) {
   return (
     <motion.div
@@ -48,10 +48,6 @@ export function ReverseEngineerView({
               data={initialData}
               config={config}
               watermark={watermark}
-              canToggleLogo={canToggleLogo}
-              onToggleLogo={onToggleLogo}
-              logoOptions={logoOptions}
-              onSelectLogo={onSelectLogo}
             />
           </div>
           <div className="re-controls-area">
@@ -59,6 +55,11 @@ export function ReverseEngineerView({
               config={config}
               onChange={onConfigChange}
               data={initialData}
+              watermark={watermark}
+              logoOptions={logoOptions}
+              logoSelectionValue={logoSelectionValue}
+              canCustomizeBranding={canCustomizeBranding}
+              onLogoSelectionChange={onLogoSelectionChange}
             />
           </div>
         </div>

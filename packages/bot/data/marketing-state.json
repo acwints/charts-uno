@@ -1,0 +1,208 @@
+{
+  "decks": [
+    {
+      "id": "3d0c461a",
+      "createdAt": "2026-02-25T20:38:45.406Z",
+      "hookId": "cd-one-click",
+      "hookCategory": "curiosity-discovery",
+      "hookText": "One click changed how my entire dashboard looks",
+      "ctaText": "Try it free — chartsuno.com",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "role": "hook",
+          "headlineText": "One click changed how my entire dashboard looks",
+          "imageSource": "ai-generated",
+          "imagePrompt": "iPhone photo of a clean modern workspace with a large monitor showing a beautiful data dashboard. Minimalist desk setup, natural daylight, plant in corner. Photorealistic, natural phone camera quality, slight depth of field. No text overlays. Portrait orientation 9:16."
+        },
+        {
+          "slideNumber": 2,
+          "role": "problem",
+          "headlineText": "This is what most\npeople deal with",
+          "subText": "Ugly default charts nobody wants to present",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "ugly-before"
+          }
+        },
+        {
+          "slideNumber": 3,
+          "role": "discovery",
+          "headlineText": "Then I found\nChartsUno",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "feature-showcase"
+          }
+        },
+        {
+          "slideNumber": 4,
+          "role": "transform1",
+          "headlineText": "Same data.\nCompletely different.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 5,
+          "role": "transform2",
+          "headlineText": "Every chart type.\nEvery style.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 6,
+          "role": "cta",
+          "headlineText": "Try it free",
+          "subText": "https://chartsuno.com",
+          "imageSource": "ai-generated",
+          "imagePrompt": "Clean minimal dark gradient background, deep navy to black, subtle geometric glow accents, professional app interface aesthetic. No text, no UI elements. Abstract and premium. Portrait orientation."
+        }
+      ],
+      "generatedImages": [
+        {
+          "slideNumber": 1,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-1.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 2,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-2.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 3,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-3.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 4,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-4.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 5,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-5.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 6,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-6.png",
+          "overlayApplied": true
+        }
+      ],
+      "status": "ready",
+      "caption": "One click changed how my entire dashboard looks\n\nSame data — completely different impact.\nTry ChartsUno free: https://chartsuno.com\n\n#dataviz #charts #startup #design"
+    },
+    {
+      "id": "34bd097a",
+      "createdAt": "2026-02-25T21:00:16.859Z",
+      "hookId": "cd-same-charts",
+      "hookCategory": "curiosity-discovery",
+      "hookText": "Why do all my charts look the same? I finally fixed it.",
+      "ctaText": "Try it free — chartsuno.com",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "role": "hook",
+          "headlineText": "Why do all my charts look the same? I finally fixed it.",
+          "imageSource": "ai-generated",
+          "imagePrompt": "iPhone photo of a clean modern workspace with a large monitor showing a beautiful data dashboard. Minimalist desk setup, natural daylight, plant in corner. Photorealistic, natural phone camera quality, slight depth of field. No text overlays. Portrait orientation 9:16."
+        },
+        {
+          "slideNumber": 2,
+          "role": "problem",
+          "headlineText": "This is what most\npeople deal with",
+          "subText": "Ugly default charts nobody wants to present",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "ugly-before"
+          }
+        },
+        {
+          "slideNumber": 3,
+          "role": "discovery",
+          "headlineText": "Then I found\nChartsUno",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "feature-showcase"
+          }
+        },
+        {
+          "slideNumber": 4,
+          "role": "transform1",
+          "headlineText": "Same data.\nCompletely different.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 5,
+          "role": "transform2",
+          "headlineText": "Every chart type.\nEvery style.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 6,
+          "role": "cta",
+          "headlineText": "Try it free",
+          "subText": "https://chartsuno.com",
+          "imageSource": "ai-generated",
+          "imagePrompt": "Clean minimal dark gradient background, deep navy to black, subtle geometric glow accents, professional app interface aesthetic. No text, no UI elements. Abstract and premium. Portrait orientation."
+        }
+      ],
+      "generatedImages": [
+        {
+          "slideNumber": 1,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-1.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 2,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-2.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 3,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-3.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 4,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-4.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 5,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-5.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 6,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-6.png",
+          "overlayApplied": true
+        }
+      ],
+      "status": "posted-x",
+      "caption": "Why do all my charts look the same? I finally fixed it.\n\nSame data — completely different impact.\nTry ChartsUno free: https://chartsuno.com\n\n#dataviz #charts #startup #design"
+    }
+  ],
+  "posts": [
+    {
+      "platform": "x",
+      "postId": "dry-run",
+      "url": "https://x.com/dry-run",
+      "postedAt": "2026-02-25T21:07:50.525Z",
+      "deckId": "34bd097a"
+    }
+  ],
+  "metrics": [],
+  "hookPerformance": [],
+  "lastDailyReport": null
+}

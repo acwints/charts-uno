@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import {
   validateMarketingConfig,
   loadMarketingState,
@@ -9,15 +10,20 @@ import {
   composeDeck,
   postToX,
   postToTikTok,
+  postVideoToTikTok,
   generateDailyReport,
   marketingConfig,
+  planScenes,
+  renderAllScenes,
+  assembleVideo,
 } from './marketing/index.js';
 import { logger } from './marketing/config.js';
 import type { HookCategory, CarouselDeck } from './marketing/types.js';
+import type { VideoProject } from './marketing/video/types.js';
 
 // ─── CLI Argument Parsing ──────────────────────────────────────────
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((a) => a !== '--');
 const command = args[0];
 
 function getFlag(name: string): string | undefined {
@@ -31,23 +37,25 @@ function hasFlag(name: string): boolean {
 
 const COMMANDS: Record<string, string> = {
   generate: 'Generate a new 6-slide carousel deck',
+  'generate-video': 'Generate a marketing video (5 scenes, ~18s)',
   'post-x': 'Post a deck to X/Twitter',
-  'post-tiktok': 'Post a deck to TikTok via Upload-Post',
+  'post-tiktok': 'Post a deck or video to TikTok via Upload-Post',
   'post-all': 'Post to both X and TikTok',
   analytics: 'Check analytics for recent posts',
   report: 'Generate daily performance report',
-  list: 'List all decks and their status',
+  list: 'List all decks and videos',
 };
 
 function printUsage(): void {
   console.log('Usage: pnpm --filter @chartsuno/bot marketing -- <command> [options]\n');
   console.log('Commands:');
   for (const [cmd, desc] of Object.entries(COMMANDS)) {
-    console.log(`  ${cmd.padEnd(14)} ${desc}`);
+    console.log(`  ${cmd.padEnd(18)} ${desc}`);
   }
   console.log('\nOptions:');
   console.log('  --hook-category <category>  Force hook category (person-conflict|budget-pain|curiosity-discovery)');
   console.log('  --deck <id|latest>          Select deck by ID or "latest"');
+  console.log('  --video <id|latest>         Select video by ID or "latest"');
   console.log('  --days <n>                  Analytics window in days (default: 3)');
   console.log('  --dry-run                   Skip actual API calls');
 }
@@ -72,11 +80,29 @@ async function resolveDeck(): Promise<CarouselDeck> {
   return deck;
 }
 
+async function resolveVideo(): Promise<VideoProject> {
+  const state = await loadMarketingState();
+  const videoArg = getFlag('video') ?? 'latest';
+
+  let video: VideoProject | undefined;
+  if (videoArg === 'latest') {
+    video = state.videos.at(-1);
+  } else {
+    video = state.videos.find((v) => v.id === videoArg);
+  }
+
+  if (!video) {
+    throw new Error(`No video found for "${videoArg}". Run "generate-video" first.`);
+  }
+
+  return video;
+}
+
 // ─── Commands ──────────────────────────────────────────────────────
 
 async function cmdGenerate(): Promise<void> {
-  validateMarketingConfig();
   const dryRun = hasFlag('dry-run');
+  if (!dryRun) validateMarketingConfig();
   const state = await loadMarketingState();
 
   // Select hook
@@ -123,6 +149,74 @@ async function cmdGenerate(): Promise<void> {
   console.log(`  pnpm --filter @chartsuno/bot marketing -- post-tiktok --deck ${deckId}`);
 }
 
+async function cmdGenerateVideo(): Promise<void> {
+  const dryRun = hasFlag('dry-run');
+  const state = await loadMarketingState();
+
+  // Select hook
+  const hookCategory = getFlag('hook-category') as HookCategory | undefined;
+  const hook = selectHook(state, hookCategory);
+  console.log(`\nHook: "${hook.text}" [${hook.category}]`);
+
+  // Plan scenes
+  const scenes = planScenes(hook, marketingConfig.marketing.ctaUrl);
+  console.log(`Planned ${scenes.length} scenes (${scenes.reduce((s, sc) => s + sc.durationSeconds, 0)}s total)`);
+
+  // Generate video
+  const videoId = randomUUID().slice(0, 8);
+  const outputDir = join(marketingConfig.marketing.videosDir, videoId);
+  const finalVideoPath = join(outputDir, 'final.mp4');
+
+  console.log(`\nRendering video ${videoId}...${dryRun ? ' (dry run)' : ''}`);
+
+  // Render all scenes
+  const renderJobs = await renderAllScenes(scenes, outputDir, { dryRun });
+  const failedJobs = renderJobs.filter((j) => j.status === 'error');
+
+  if (failedJobs.length > 0) {
+    console.error(`\n${failedJobs.length} scene(s) failed to render:`);
+    for (const job of failedJobs) {
+      console.error(`  Scene ${job.sceneNumber}: ${job.error}`);
+    }
+    if (!dryRun) {
+      throw new Error('Video rendering failed');
+    }
+  }
+
+  // Assemble final video
+  console.log('\nAssembling final video...');
+  await assembleVideo(renderJobs, finalVideoPath, {
+    dryRun,
+    ffmpegPath: marketingConfig.marketing.ffmpegPath,
+  });
+
+  // Save to state
+  const video: VideoProject = {
+    id: videoId,
+    createdAt: new Date().toISOString(),
+    hookId: hook.id,
+    hookCategory: hook.category,
+    hookText: hook.text,
+    ctaText: 'Try it free',
+    ctaUrl: marketingConfig.marketing.ctaUrl,
+    scenes,
+    renderJobs,
+    finalVideoPath,
+    status: 'ready',
+    durationSeconds: scenes.reduce((s, sc) => s + sc.durationSeconds, 0),
+  };
+
+  await updateMarketingState((s) => ({
+    ...s,
+    videos: [...s.videos, video],
+  }));
+
+  console.log(`\nVideo ${videoId} ready.`);
+  console.log(`Output: ${finalVideoPath}`);
+  console.log(`\nNext steps:`);
+  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-tiktok --video ${videoId}`);
+}
+
 async function cmdPostX(): Promise<void> {
   validateMarketingConfig();
   const dryRun = hasFlag('dry-run');
@@ -153,6 +247,33 @@ async function cmdPostX(): Promise<void> {
 async function cmdPostTikTok(): Promise<void> {
   validateMarketingConfig({ requireTikTok: true });
   const dryRun = hasFlag('dry-run');
+
+  // Check if posting a video or a carousel deck
+  if (hasFlag('video') || getFlag('video')) {
+    const video = await resolveVideo();
+    const caption = generateCaption(
+      { id: video.hookId, category: video.hookCategory, text: video.hookText },
+      'tiktok',
+      marketingConfig.marketing.ctaUrl,
+    );
+
+    console.log(`\nPosting video ${video.id} to TikTok...${dryRun ? ' (dry run)' : ''}`);
+    const result = await postVideoToTikTok(video, caption, { dryRun });
+
+    await updateMarketingState((s) => ({
+      ...s,
+      posts: [...s.posts, result],
+      videos: s.videos.map((v) =>
+        v.id === video.id
+          ? { ...v, status: v.status === 'posted-x' ? 'posted-both' : 'posted-tiktok' }
+          : v,
+      ),
+    }));
+
+    console.log(`Posted video to TikTok (request_id: ${result.postId})`);
+    return;
+  }
+
   const deck = await resolveDeck();
   const caption = generateCaption(
     { id: deck.hookId, category: deck.hookCategory, text: deck.hookText },
@@ -201,15 +322,25 @@ async function cmdReport(): Promise<void> {
 async function cmdList(): Promise<void> {
   const state = await loadMarketingState();
 
-  if (state.decks.length === 0) {
-    console.log('No decks yet. Run "generate" to create one.');
+  if (state.decks.length === 0 && state.videos.length === 0) {
+    console.log('No decks or videos yet. Run "generate" or "generate-video" to create one.');
     return;
   }
 
-  console.log(`\n${state.decks.length} deck(s):\n`);
-  for (const deck of state.decks.slice(-20)) {
-    const date = new Date(deck.createdAt).toLocaleDateString();
-    console.log(`  ${deck.id}  ${deck.status.padEnd(14)} ${date}  "${deck.hookText.slice(0, 60)}"`);
+  if (state.decks.length > 0) {
+    console.log(`\n${state.decks.length} deck(s):\n`);
+    for (const deck of state.decks.slice(-20)) {
+      const date = new Date(deck.createdAt).toLocaleDateString();
+      console.log(`  ${deck.id}  ${deck.status.padEnd(14)} ${date}  "${deck.hookText.slice(0, 60)}"`);
+    }
+  }
+
+  if (state.videos.length > 0) {
+    console.log(`\n${state.videos.length} video(s):\n`);
+    for (const video of state.videos.slice(-20)) {
+      const date = new Date(video.createdAt).toLocaleDateString();
+      console.log(`  ${video.id}  ${video.status.padEnd(14)} ${date}  ${video.durationSeconds}s  "${video.hookText.slice(0, 50)}"`);
+    }
   }
 }
 
@@ -219,6 +350,8 @@ async function run(): Promise<void> {
   switch (command) {
     case 'generate':
       return cmdGenerate();
+    case 'generate-video':
+      return cmdGenerateVideo();
     case 'post-x':
       return cmdPostX();
     case 'post-tiktok':

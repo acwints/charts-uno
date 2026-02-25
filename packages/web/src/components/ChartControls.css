@@ -484,6 +484,11 @@
   border-color: var(--accent);
 }
 
+.branding-upgrade-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 .toggle-item {
   display: flex;
   align-items: center;

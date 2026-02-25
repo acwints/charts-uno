@@ -24,8 +24,10 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
+import type { WatermarkSettings } from '../services/exportService';
 import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
+import type { ChartLogoOption } from './ChartPreview';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
 import './ChartControls.css';
@@ -34,7 +36,15 @@ interface ChartControlsProps {
   config: ChartConfig;
   onChange: (config: ChartConfig) => void;
   data: ChartData;
+  watermark?: WatermarkSettings;
+  logoOptions?: ChartLogoOption[];
+  logoSelectionValue?: string;
+  canCustomizeBranding?: boolean;
+  onLogoSelectionChange?: (value: string) => void;
 }
+
+const BRANDING_NONE_VALUE = '__none__';
+const BRANDING_CHARTSUNO_VALUE = '__chartsuno__';
 
 const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; special?: boolean }[] = [
   { id: 'bar', icon: BarChart3, label: 'Bar' },
@@ -87,7 +97,16 @@ const COMBO_CHART_TYPES: { id: SeriesChartType; icon: typeof BarChart3; label: s
 
 const COMBO_ELIGIBLE_TYPES: Set<ChartType> = new Set(['bar', 'line', 'area']);
 
-export function ChartControls({ config, onChange, data }: ChartControlsProps) {
+export function ChartControls({
+  config,
+  onChange,
+  data,
+  watermark,
+  logoOptions = [],
+  logoSelectionValue = BRANDING_CHARTSUNO_VALUE,
+  canCustomizeBranding = false,
+  onLogoSelectionChange,
+}: ChartControlsProps) {
   const styleVariantOptions = BASE_STYLE_VARIANT_OPTIONS;
 
   const updateConfig = (updates: Partial<ChartConfig>) => {
@@ -446,6 +465,32 @@ export function ChartControls({ config, onChange, data }: ChartControlsProps) {
                   </option>
                 ))}
               </select>
+            </label>
+          )}
+          {onLogoSelectionChange && (
+            <label className="baseline-mode-control">
+              <span className="baseline-mode-label">Chart Branding</span>
+              <select
+                className="baseline-mode-select"
+                value={logoSelectionValue}
+                onChange={(event) => onLogoSelectionChange(event.target.value)}
+                aria-label="Choose chart logo"
+                disabled={!canCustomizeBranding}
+              >
+                <option value={BRANDING_NONE_VALUE}>None</option>
+                <option value={BRANDING_CHARTSUNO_VALUE}>Chartsuno</option>
+                {logoOptions.map((logoOption) => (
+                  <option key={logoOption.teamId} value={logoOption.logoUrl}>
+                    {logoOption.teamName}
+                  </option>
+                ))}
+              </select>
+              {!canCustomizeBranding && (
+                <span className="branding-upgrade-hint">Sign in to customize chart branding</span>
+              )}
+              {watermark?.enabled === false && canCustomizeBranding && (
+                <span className="branding-upgrade-hint">Branding hidden for this chart</span>
+              )}
             </label>
           )}
         </div>

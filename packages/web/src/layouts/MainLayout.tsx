@@ -24,6 +24,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
   const isNewRoute = location.pathname === '/new';
   const hideSidebar = isChartPage || (!isAuthenticated && isNewRoute);
+  const shouldAnimateRoute = !prefersReducedMotion && !isNewRoute;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -39,7 +40,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         {isAuthenticated && !hideSidebar && <DashboardSidebar />}
 
         <main className="main">
-          {prefersReducedMotion ? (
+          {!shouldAnimateRoute ? (
             <div className="app-route-shell">{routeContent}</div>
           ) : (
             <AnimatePresence mode="wait" initial={false}>

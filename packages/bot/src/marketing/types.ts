@@ -1,4 +1,5 @@
 import type { ChartData, ChartConfig } from '@chartsuno/shared';
+import type { VideoProject } from './video/types.js';
 
 // ─── Hook Types ────────────────────────────────────────────────────
 
@@ -66,12 +67,16 @@ export interface CarouselDeck {
 
 export type Platform = 'x' | 'tiktok';
 
+export type PostFormat = 'carousel' | 'video';
+
 export interface PostResult {
   platform: Platform;
   postId: string;
   url?: string;
   postedAt: string;
   deckId: string;
+  videoId?: string;
+  format: PostFormat;
 }
 
 // ─── Analytics Types ───────────────────────────────────────────────
@@ -119,8 +124,11 @@ export interface DailyReport {
 
 export interface MarketingState {
   decks: CarouselDeck[];
+  videos: VideoProject[];
   posts: PostResult[];
   metrics: PostMetrics[];
   hookPerformance: HookPerformance[];
   lastDailyReport: string | null;
 }
+
+export type { VideoProject } from './video/types.js';

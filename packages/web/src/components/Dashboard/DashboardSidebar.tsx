@@ -49,6 +49,7 @@ export function DashboardSidebar() {
   const teamSpaces = teams.filter((team) => !team.is_personal);
 
   const handleCreateNew = () => {
+    closeMobileNav();
     reset();
     navigate('/new');
   };
@@ -75,6 +76,7 @@ export function DashboardSidebar() {
           <button
             className={`sidebar-create-btn ${isCollapsed ? 'sidebar-create-btn--collapsed' : ''}`}
             onClick={handleCreateNew}
+            type="button"
             title={isCollapsed ? 'Create New' : undefined}
           >
             <Sparkles size={16} />

@@ -27,8 +27,6 @@ import {
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import Check from 'lucide-react/dist/esm/icons/check';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
@@ -54,10 +52,6 @@ interface ChartPreviewProps {
   data: ChartData;
   config: ChartConfig;
   watermark?: WatermarkSettings;
-  canToggleLogo?: boolean;
-  onToggleLogo?: () => void;
-  logoOptions?: ChartLogoOption[];
-  onSelectLogo?: (logoUrl: string | null) => void;
 }
 
 export interface ChartLogoOption {
@@ -70,10 +64,6 @@ export function ChartPreview({
   data,
   config,
   watermark,
-  canToggleLogo,
-  onToggleLogo,
-  logoOptions = [],
-  onSelectLogo,
 }: ChartPreviewProps) {
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
@@ -1148,43 +1138,6 @@ export function ChartPreview({
                   </>
                 )}
               </div>
-            )}
-            {watermark?.enabled !== false && onSelectLogo && logoOptions.length > 0 && (
-              <select
-                className="chart-logo-select"
-                value={watermark?.customLogoUrl ?? ''}
-                onChange={(event) => onSelectLogo(event.target.value || null)}
-                disabled={!canToggleLogo}
-                aria-label="Select team logo"
-                style={{
-                  color: theme.textMuted,
-                  borderColor: theme.border,
-                  background: theme.cardBackground,
-                }}
-              >
-                <option value="">Chartsuno</option>
-                {logoOptions.map((logoOption) => (
-                  <option key={logoOption.teamId} value={logoOption.logoUrl}>
-                    {logoOption.teamName}
-                  </option>
-                ))}
-              </select>
-            )}
-            {onToggleLogo && (
-              <button
-                className="chart-brand-toggle"
-                onClick={onToggleLogo}
-                disabled={!canToggleLogo}
-                aria-label={watermark?.enabled !== false ? 'Hide logo' : 'Show logo'}
-                aria-pressed={watermark?.enabled !== false}
-                title={canToggleLogo
-                  ? (watermark?.enabled !== false ? 'Hide logo' : 'Show logo')
-                  : 'Upgrade to Pro to toggle logo'
-                }
-                style={{ color: theme.textMuted }}
-              >
-                {watermark?.enabled !== false ? <Eye size={12} /> : <EyeOff size={12} />}
-              </button>
             )}
           </div>
         </div>

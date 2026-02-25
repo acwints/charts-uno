@@ -8,6 +8,7 @@ const MAX_METRICS = 2000;
 
 const DEFAULT_STATE: MarketingState = {
   decks: [],
+  videos: [],
   posts: [],
   metrics: [],
   hookPerformance: [],

@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { marketingConfig, logger } from '../config.js';
 import type { CarouselDeck, PostResult } from '../types.js';
+import type { VideoProject } from '../video/types.js';
 
 interface UploadPostResponse {
   success?: boolean;
@@ -30,6 +31,7 @@ export async function postToTikTok(
       postId: 'dry-run',
       postedAt: new Date().toISOString(),
       deckId: deck.id,
+      format: 'carousel',
     };
   }
 
@@ -83,6 +85,88 @@ export async function postToTikTok(
     postId: requestId,
     postedAt: new Date().toISOString(),
     deckId: deck.id,
+    format: 'carousel',
+  };
+}
+
+/**
+ * Post a video to TikTok via the Upload-Post API.
+ * Sends the final MP4 as a base64-encoded video.
+ */
+export async function postVideoToTikTok(
+  video: VideoProject,
+  caption: string,
+  options: { dryRun?: boolean } = {},
+): Promise<PostResult> {
+  if (options.dryRun) {
+    logger.info({
+      caption: caption.slice(0, 100),
+      videoId: video.id,
+      profile: marketingConfig.marketing.tiktokProfile,
+    }, '[DRY RUN] Would post video to TikTok via Upload-Post');
+
+    return {
+      platform: 'tiktok',
+      postId: 'dry-run',
+      postedAt: new Date().toISOString(),
+      deckId: video.id,
+      videoId: video.id,
+      format: 'video',
+    };
+  }
+
+  const { uploadPostApiKey, uploadPostApiUrl, tiktokProfile } = marketingConfig.marketing;
+
+  if (!uploadPostApiKey || !tiktokProfile) {
+    throw new Error('UPLOAD_POST_API_KEY and TIKTOK_PROFILE are required for TikTok posting');
+  }
+
+  if (!video.finalVideoPath) {
+    throw new Error('Video has no final video path — render it first');
+  }
+
+  const videoBuffer = await readFile(video.finalVideoPath);
+  const videoBase64 = videoBuffer.toString('base64');
+
+  logger.info({ profile: tiktokProfile, videoId: video.id }, 'Posting video to TikTok via Upload-Post');
+
+  const response = await fetch(`${uploadPostApiUrl}/api/upload_videos`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Apikey ${uploadPostApiKey}`,
+    },
+    body: JSON.stringify({
+      profile_username: tiktokProfile,
+      title: caption.slice(0, 150),
+      description: caption,
+      video: videoBase64,
+      platforms: ['tiktok'],
+      async_upload: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Upload-Post video API failed (${response.status}): ${errorText}`);
+  }
+
+  const result = (await response.json()) as UploadPostResponse;
+
+  if (result.error) {
+    throw new Error(`Upload-Post video error: ${result.error}`);
+  }
+
+  const requestId = result.request_id ?? 'unknown';
+  logger.info({ requestId }, 'TikTok video post submitted successfully');
+
+  return {
+    platform: 'tiktok',
+    postId: requestId,
+    postedAt: new Date().toISOString(),
+    deckId: video.id,
+    videoId: video.id,
+    format: 'video',
   };
 }
 

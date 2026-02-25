@@ -14,6 +14,9 @@
   },
   "dependencies": {
     "@chartsuno/shared": "workspace:*",
+    "@chartsuno/video": "workspace:*",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
     "@google/generative-ai": "^0.24.1",
     "chart.js": "^4.5.1",
     "pino": "^9.0.0",

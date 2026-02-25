@@ -28,6 +28,7 @@ export async function postToX(
       url: 'https://x.com/dry-run',
       postedAt: new Date().toISOString(),
       deckId: deck.id,
+      format: 'carousel',
     };
   }
 
@@ -75,5 +76,6 @@ export async function postToX(
     url,
     postedAt: new Date().toISOString(),
     deckId: deck.id,
+    format: 'carousel',
   };
 }
