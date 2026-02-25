@@ -42,3 +42,6 @@ __pycache__
 # Local temp/state artifacts
 tmp/
 .tmp_*
+
+# TikTok marketing (contains API keys)
+tiktok-marketing/

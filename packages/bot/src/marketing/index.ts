@@ -1,0 +1,14 @@
+export type * from './types.js';
+export { marketingConfig, validateMarketingConfig } from './config.js';
+export { loadMarketingState, saveMarketingState, updateMarketingState } from './state.js';
+export { selectHook, HOOK_LIBRARY } from './content/hooks.js';
+export { planSlides } from './content/slides.js';
+export { generateCaption } from './content/captions.js';
+export { generateImage } from './image/imagen.js';
+export { applyTextOverlay } from './image/overlay.js';
+export { generateScreenshot } from './image/screenshot.js';
+export { composeDeck } from './image/composer.js';
+export { postToX } from './platforms/x-poster.js';
+export { postToTikTok, checkTikTokUploadStatus } from './platforms/tiktok-poster.js';
+export { classifyPerformance, getQuadrantAdvice, updateHookPerformance } from './analytics/tracker.js';
+export { generateDailyReport } from './analytics/report.js';

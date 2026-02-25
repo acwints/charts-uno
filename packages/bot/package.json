@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "auth": "tsx src/setup-oauth2.ts",
     "tweet": "tsx src/post-tweet.ts",
+    "marketing": "tsx src/marketing-cli.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

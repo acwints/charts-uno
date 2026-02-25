@@ -10,7 +10,9 @@ import { NotFound } from './pages/NotFound';
 import { UserDashboardPage, TeamDashboardPage, TeamActivityPage } from './pages/Dashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { AssistantProvider } from './contexts/AssistantProvider';
+import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -33,6 +35,7 @@ function AppWithTeam() {
 
           {/* Public routes */}
           <Route path="feed" element={<ChartFeedPage />} />
+          <Route path="new" element={<ChartBuilder />} />
           <Route path="chart">
             <Route index element={<ChartView />} />
             <Route path=":id" element={<ChartView />} />
@@ -52,8 +55,6 @@ function AppWithTeam() {
               <Route path="activity" element={<TeamActivityPage />} />
             </Route>
 
-            <Route path="new" element={<ChartBuilder />} />
-
             <Route path="settings">
               <Route index element={<SettingsPage />} />
               <Route path=":tab" element={<SettingsPage />} />
@@ -72,7 +73,11 @@ function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   if (isAuthenticated) {
@@ -86,15 +91,17 @@ function HomeRoute() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <ToastProvider>
-          <AssistantProvider>
-            <BrowserRouter>
-              <AppWithTeam />
-            </BrowserRouter>
-          </AssistantProvider>
-        </ToastProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <AssistantProvider>
+              <BrowserRouter>
+                <AppWithTeam />
+              </BrowserRouter>
+            </AssistantProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

@@ -22,7 +22,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const routeContent = children || <Outlet context={{ openAuthModal }} />;
 
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
-  const isCreationFlow = isChartPage || location.pathname === '/new';
+  const isNewRoute = location.pathname === '/new';
+  const hideSidebar = isChartPage || (!isAuthenticated && isNewRoute);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,7 +36,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Header onAuthOpen={openAuthModal} />
 
       <div className="app-body">
-        {isAuthenticated && !isCreationFlow && <DashboardSidebar />}
+        {isAuthenticated && !hideSidebar && <DashboardSidebar />}
 
         <main className="main">
           {prefersReducedMotion ? (
