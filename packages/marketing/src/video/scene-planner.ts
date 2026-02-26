@@ -1,4 +1,4 @@
-import { COMP_IDS, SCENE_DURATIONS } from '../remotion/index.js';
+import { COMP_IDS, SCENE_DURATIONS } from '../remotion/lib/constants.js';
 import { COLOR_PALETTES } from '@chartsuno/shared';
 import type { ResolvedHook } from '../types.js';
 import { marketingConfig } from '../config.js';

@@ -2,7 +2,7 @@ import { resolve, join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { FPS, VIDEO_WIDTH, VIDEO_HEIGHT, COMP_IDS, secondsToFrames } from '../remotion/index.js';
+import { FPS, VIDEO_WIDTH, VIDEO_HEIGHT, COMP_IDS, secondsToFrames } from '../remotion/lib/constants.js';
 import { logger, marketingConfig } from '../config.js';
 import type { ScenePlan, RenderJob, CaptureMethod } from './types.js';
 import {
