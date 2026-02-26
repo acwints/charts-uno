@@ -26,4 +26,4 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN mkdir -p /data
 
-CMD ["node", "packages/marketing/dist/cli.js"]
+CMD ["node", "packages/marketing/dist/server.js"]

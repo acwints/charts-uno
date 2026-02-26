@@ -4,9 +4,9 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/cli.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/cli.js",
+    "start": "node dist/server.js",
     "cli": "tsx src/cli.ts",
     "lint": "tsc --noEmit"
   },
