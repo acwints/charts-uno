@@ -8,12 +8,13 @@ import {
   TOTAL_DURATION,
   secondsToFrames,
   COMP_IDS,
-} from './lib/constants.js';
-import { HookReveal, type HookRevealProps } from './compositions/HookReveal.js';
-import { ChartTransform, type ChartTransformProps } from './compositions/ChartTransform.js';
-import { CTASlide, type CTASlideProps } from './compositions/CTASlide.js';
-import { FullVideo, type FullVideoProps } from './compositions/FullVideo.js';
-import { COLOR_PALETTES } from './lib/colors.js';
+} from './lib/constants';
+import { HookReveal, type HookRevealProps } from './compositions/HookReveal';
+import { ChartTransform, type ChartTransformProps } from './compositions/ChartTransform';
+import { CTASlide, type CTASlideProps } from './compositions/CTASlide';
+import { FullVideo, type FullVideoProps } from './compositions/FullVideo';
+import { BrowserScreenshots, type BrowserScreenshotsProps } from './compositions/BrowserScreenshots';
+import { COLOR_PALETTES } from './lib/colors';
 
 // Default props for Remotion Studio previews
 const DEFAULT_BAR_DATA = {
@@ -37,6 +38,7 @@ const HookRevealComp: AnyComp = HookReveal;
 const ChartTransformComp: AnyComp = ChartTransform;
 const CTASlideComp: AnyComp = CTASlide;
 const FullVideoComp: AnyComp = FullVideo;
+const BrowserScreenshotsComp: AnyComp = BrowserScreenshots;
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -116,6 +118,19 @@ export const RemotionRoot: React.FC = () => {
             ctaUrl: 'chartsuno.com',
           },
         } satisfies FullVideoProps}
+      />
+
+      <Composition
+        id={COMP_IDS.browserScreenshots}
+        component={BrowserScreenshotsComp}
+        durationInFrames={secondsToFrames(SCENE_DURATIONS.transform)}
+        fps={FPS}
+        width={VIDEO_WIDTH}
+        height={VIDEO_HEIGHT}
+        defaultProps={{
+          screenshotPaths: [],
+          zoomAmount: 1.06,
+        } satisfies BrowserScreenshotsProps}
       />
     </>
   );

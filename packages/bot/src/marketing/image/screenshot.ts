@@ -2,19 +2,14 @@ import sharp from 'sharp';
 import type { ChartData, ChartConfig } from '@chartsuno/shared';
 import { renderChartToPng, getDefaultConfig } from '../../chart/renderer.js';
 import { marketingConfig, logger } from '../config.js';
+import { SAMPLE_LABELS, SAMPLE_VALUES_1, SAMPLE_VALUES_2 } from '../constants.js';
 import type { ScreenshotConfig } from '../types.js';
-
-// ─── Pre-built chart data for before/after contrast ────────────────
-
-const SAMPLE_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-const SAMPLE_SERIES_1 = [42, 58, 35, 72, 61, 89];
-const SAMPLE_SERIES_2 = [28, 45, 52, 38, 67, 54];
 
 const SAMPLE_DATA: ChartData = {
   labels: SAMPLE_LABELS,
   series: [
-    { name: 'Revenue', data: SAMPLE_SERIES_1 },
-    { name: 'Users', data: SAMPLE_SERIES_2 },
+    { name: 'Revenue', data: SAMPLE_VALUES_1 },
+    { name: 'Users', data: SAMPLE_VALUES_2 },
   ],
   sourceType: 'paste',
   suggestedTitle: 'Q1-Q2 Performance',

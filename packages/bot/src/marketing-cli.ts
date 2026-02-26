@@ -9,6 +9,7 @@ import {
   generateCaption,
   composeDeck,
   postToX,
+  postVideoToX,
   postToTikTok,
   postVideoToTikTok,
   generateDailyReport,
@@ -16,10 +17,14 @@ import {
   planScenes,
   renderAllScenes,
   assembleVideo,
+  prependAvatarClip,
+  generateAvatarScene,
+  generateAvatarScript,
 } from './marketing/index.js';
 import { logger } from './marketing/config.js';
 import type { HookCategory, CarouselDeck } from './marketing/types.js';
 import type { VideoProject } from './marketing/video/types.js';
+import type { CaptureMethod } from './marketing/video/types.js';
 
 // ─── CLI Argument Parsing ──────────────────────────────────────────
 
@@ -38,7 +43,7 @@ function hasFlag(name: string): boolean {
 const COMMANDS: Record<string, string> = {
   generate: 'Generate a new 6-slide carousel deck',
   'generate-video': 'Generate a marketing video (5 scenes, ~18s)',
-  'post-x': 'Post a deck to X/Twitter',
+  'post-x': 'Post a deck or video to X/Twitter',
   'post-tiktok': 'Post a deck or video to TikTok via Upload-Post',
   'post-all': 'Post to both X and TikTok',
   analytics: 'Check analytics for recent posts',
@@ -58,6 +63,12 @@ function printUsage(): void {
   console.log('  --video <id|latest>         Select video by ID or "latest"');
   console.log('  --days <n>                  Analytics window in days (default: 3)');
   console.log('  --dry-run                   Skip actual API calls');
+  console.log('\nVideo options:');
+  console.log('  --with-avatar               Add HeyGen talking-head intro (requires HEYGEN_API_KEY)');
+  console.log('  --music <path>              Add background music track');
+  console.log('  --music-volume <0.0-1.0>    Music volume (default: 0.15)');
+  console.log('  --capture <method>          Capture method: remotion (default), browser-video, browser-screenshots, browser-remotion');
+  console.log('  --capture-url <url>         Override capture URL (default: https://chartsuno.com)');
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -102,7 +113,7 @@ async function resolveVideo(): Promise<VideoProject> {
 
 async function cmdGenerate(): Promise<void> {
   const dryRun = hasFlag('dry-run');
-  if (!dryRun) validateMarketingConfig();
+  if (!dryRun) validateMarketingConfig({ requireGoogle: true });
   const state = await loadMarketingState();
 
   // Select hook
@@ -151,6 +162,11 @@ async function cmdGenerate(): Promise<void> {
 
 async function cmdGenerateVideo(): Promise<void> {
   const dryRun = hasFlag('dry-run');
+  const withAvatar = hasFlag('with-avatar');
+  const musicPath = getFlag('music') || marketingConfig.marketing.musicPath || undefined;
+  const musicVolume = parseFloat(getFlag('music-volume') ?? String(marketingConfig.marketing.musicVolume));
+  const captureMethod = (getFlag('capture') as CaptureMethod) ?? 'remotion';
+  const captureUrl = getFlag('capture-url') ?? undefined;
   const state = await loadMarketingState();
 
   // Select hook
@@ -159,13 +175,17 @@ async function cmdGenerateVideo(): Promise<void> {
   console.log(`\nHook: "${hook.text}" [${hook.category}]`);
 
   // Plan scenes
-  const scenes = planScenes(hook, marketingConfig.marketing.ctaUrl);
-  console.log(`Planned ${scenes.length} scenes (${scenes.reduce((s, sc) => s + sc.durationSeconds, 0)}s total)`);
+  const scenes = planScenes(hook, marketingConfig.marketing.ctaUrl, { captureMethod, captureUrl });
+  if (captureMethod !== 'remotion') {
+    console.log(`Capture method: ${captureMethod}${captureUrl ? ` (url: ${captureUrl})` : ''}`);
+  }
+  const totalDuration = scenes.reduce((s, sc) => s + sc.durationSeconds, 0);
+  console.log(`Planned ${scenes.length} scenes (${totalDuration}s total)`);
 
   // Generate video
   const videoId = randomUUID().slice(0, 8);
   const outputDir = join(marketingConfig.marketing.videosDir, videoId);
-  const finalVideoPath = join(outputDir, 'final.mp4');
+  let finalVideoPath = join(outputDir, 'final.mp4');
 
   console.log(`\nRendering video ${videoId}...${dryRun ? ' (dry run)' : ''}`);
 
@@ -183,12 +203,39 @@ async function cmdGenerateVideo(): Promise<void> {
     }
   }
 
-  // Assemble final video
-  console.log('\nAssembling final video...');
-  await assembleVideo(renderJobs, finalVideoPath, {
+  // Assemble final video (with optional music)
+  const assembleTarget = withAvatar ? join(outputDir, 'main.mp4') : finalVideoPath;
+  console.log(`\nAssembling video...${musicPath ? ' (with background music)' : ''}`);
+  await assembleVideo(renderJobs, assembleTarget, {
     dryRun,
     ffmpegPath: marketingConfig.marketing.ffmpegPath,
+    musicPath,
+    musicVolume,
   });
+
+  // Optional: HeyGen avatar intro
+  if (withAvatar && !dryRun) {
+    if (!marketingConfig.marketing.heygenApiKey) {
+      console.warn('HEYGEN_API_KEY not set — skipping avatar intro');
+    } else {
+      console.log('\nGenerating HeyGen avatar intro...');
+      const script = generateAvatarScript(hook.text);
+      console.log(`Avatar script: "${script}"`);
+
+      const avatarPath = await generateAvatarScene({
+        script,
+        outputDir,
+        filename: 'avatar-intro.mp4',
+      });
+
+      console.log('Prepending avatar clip to video...');
+      await prependAvatarClip(avatarPath, assembleTarget, finalVideoPath, {
+        ffmpegPath: marketingConfig.marketing.ffmpegPath,
+      });
+    }
+  } else if (withAvatar && dryRun) {
+    console.log('[DRY RUN] Would generate HeyGen avatar intro');
+  }
 
   // Save to state
   const video: VideoProject = {
@@ -203,7 +250,7 @@ async function cmdGenerateVideo(): Promise<void> {
     renderJobs,
     finalVideoPath,
     status: 'ready',
-    durationSeconds: scenes.reduce((s, sc) => s + sc.durationSeconds, 0),
+    durationSeconds: totalDuration,
   };
 
   await updateMarketingState((s) => ({
@@ -215,11 +262,38 @@ async function cmdGenerateVideo(): Promise<void> {
   console.log(`Output: ${finalVideoPath}`);
   console.log(`\nNext steps:`);
   console.log(`  pnpm --filter @chartsuno/bot marketing -- post-tiktok --video ${videoId}`);
+  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-x --video ${videoId}`);
 }
 
 async function cmdPostX(): Promise<void> {
-  validateMarketingConfig();
   const dryRun = hasFlag('dry-run');
+
+  // Check if posting a video or a carousel deck
+  if (hasFlag('video') || getFlag('video')) {
+    const video = await resolveVideo();
+    const caption = generateCaption(
+      { id: video.hookId, category: video.hookCategory, text: video.hookText },
+      'x',
+      marketingConfig.marketing.ctaUrl,
+    );
+
+    console.log(`\nPosting video ${video.id} to X...${dryRun ? ' (dry run)' : ''}`);
+    const result = await postVideoToX(video, caption, { dryRun });
+
+    await updateMarketingState((s) => ({
+      ...s,
+      posts: [...s.posts, result],
+      videos: s.videos.map((v) =>
+        v.id === video.id
+          ? { ...v, status: v.status === 'posted-tiktok' ? 'posted-both' : 'posted-x' }
+          : v,
+      ),
+    }));
+
+    console.log(`Posted video to X: ${result.url}`);
+    return;
+  }
+
   const deck = await resolveDeck();
   const caption = deck.caption ?? generateCaption(
     { id: deck.hookId, category: deck.hookCategory, text: deck.hookText },
@@ -247,6 +321,7 @@ async function cmdPostX(): Promise<void> {
 async function cmdPostTikTok(): Promise<void> {
   validateMarketingConfig({ requireTikTok: true });
   const dryRun = hasFlag('dry-run');
+  const draft = hasFlag('draft');
 
   // Check if posting a video or a carousel deck
   if (hasFlag('video') || getFlag('video')) {
@@ -257,8 +332,11 @@ async function cmdPostTikTok(): Promise<void> {
       marketingConfig.marketing.ctaUrl,
     );
 
-    console.log(`\nPosting video ${video.id} to TikTok...${dryRun ? ' (dry run)' : ''}`);
-    const result = await postVideoToTikTok(video, caption, { dryRun });
+    const scheduledDate = getFlag('schedule');
+    const draftLabel = draft ? ' (draft)' : '';
+    const scheduleLabel = scheduledDate ? ` (scheduled: ${scheduledDate})` : '';
+    console.log(`\nPosting video ${video.id} to TikTok...${dryRun ? ' (dry run)' : ''}${draftLabel}${scheduleLabel}`);
+    const result = await postVideoToTikTok(video, caption, { dryRun, scheduledDate, draft });
 
     await updateMarketingState((s) => ({
       ...s,

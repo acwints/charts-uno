@@ -1,0 +1,5 @@
+file 'data/marketing/videos/108bbd34/scene-1.mp4'
+file 'data/marketing/videos/108bbd34/scene-2.mp4'
+file 'data/marketing/videos/108bbd34/scene-3.mp4'
+file 'data/marketing/videos/108bbd34/scene-4.mp4'
+file 'data/marketing/videos/108bbd34/scene-5.mp4'

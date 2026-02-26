@@ -4,6 +4,8 @@ import { marketingConfig, logger } from './config.js';
 import type { MarketingState } from './types.js';
 
 const MAX_DECKS = 500;
+const MAX_VIDEOS = 200;
+const MAX_POSTS = 1000;
 const MAX_METRICS = 2000;
 
 const DEFAULT_STATE: MarketingState = {
@@ -42,6 +44,8 @@ export async function saveMarketingState(state: MarketingState): Promise<void> {
   const pruned: MarketingState = {
     ...state,
     decks: state.decks.slice(-MAX_DECKS),
+    videos: state.videos.slice(-MAX_VIDEOS),
+    posts: state.posts.slice(-MAX_POSTS),
     metrics: state.metrics.slice(-MAX_METRICS),
   };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { interpolate } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
 
 interface GlowBackgroundProps {
   /** 0→1 progress for subtle glow animation */

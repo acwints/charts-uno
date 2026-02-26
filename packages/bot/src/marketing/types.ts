@@ -46,9 +46,13 @@ export interface GeneratedSlide {
   overlayApplied: boolean;
 }
 
+// ─── Shared Status ────────────────────────────────────────────────
+
+export type PostingStatus = 'ready' | 'posted-x' | 'posted-tiktok' | 'posted-both';
+
 // ─── Deck Types ────────────────────────────────────────────────────
 
-export type DeckStatus = 'draft' | 'ready' | 'posted-x' | 'posted-tiktok' | 'posted-both';
+export type DeckStatus = 'draft' | PostingStatus;
 
 export interface CarouselDeck {
   id: string;
@@ -69,15 +73,24 @@ export type Platform = 'x' | 'tiktok';
 
 export type PostFormat = 'carousel' | 'video';
 
-export interface PostResult {
+interface BasePostResult {
   platform: Platform;
   postId: string;
   url?: string;
   postedAt: string;
-  deckId: string;
-  videoId?: string;
-  format: PostFormat;
 }
+
+interface CarouselPostResult extends BasePostResult {
+  format: 'carousel';
+  contentId: string;
+}
+
+interface VideoPostResult extends BasePostResult {
+  format: 'video';
+  contentId: string;
+}
+
+export type PostResult = CarouselPostResult | VideoPostResult;
 
 // ─── Analytics Types ───────────────────────────────────────────────
 
@@ -131,4 +144,3 @@ export interface MarketingState {
   lastDailyReport: string | null;
 }
 
-export type { VideoProject } from './video/types.js';

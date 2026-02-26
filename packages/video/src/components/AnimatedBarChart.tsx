@@ -1,6 +1,6 @@
 import React from 'react';
 import { interpolate } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
 
 export interface BarChartData {
   labels: string[];

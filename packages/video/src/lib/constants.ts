@@ -31,4 +31,5 @@ export const COMP_IDS = {
   chartTransform: 'ChartTransform',
   ctaSlide: 'CTASlide',
   fullVideo: 'FullVideo',
+  browserScreenshots: 'BrowserScreenshots',
 } as const;

@@ -12,7 +12,12 @@ export const marketingConfig = {
     slidesDir: process.env.MARKETING_SLIDES_DIR || './data/marketing/slides',
     videosDir: process.env.MARKETING_VIDEOS_DIR || './data/marketing/videos',
     ffmpegPath: process.env.FFMPEG_PATH || 'ffmpeg',
+    musicPath: process.env.MARKETING_MUSIC_PATH || '',
+    musicVolume: parseFloat(process.env.MARKETING_MUSIC_VOLUME || '0.15'),
+    heygenApiKey: process.env.HEYGEN_API_KEY || '',
     ctaUrl: process.env.MARKETING_CTA_URL || 'https://chartsuno.com',
+    agentBrowserCommand: process.env.AGENT_BROWSER_CMD || 'agent-browser',
+    captureUrl: process.env.CAPTURE_URL || 'https://chartsuno.com',
     imagenModel: 'imagen-4.0-fast-generate-001',
     imagenAspectRatio: '9:16',
     slideWidth: 1024,
@@ -20,10 +25,16 @@ export const marketingConfig = {
   },
 };
 
-export function validateMarketingConfig(options: { requireTikTok?: boolean } = {}): void {
+interface ValidateOptions {
+  requireGoogle?: boolean;
+  requireX?: boolean;
+  requireTikTok?: boolean;
+}
+
+export function validateMarketingConfig(options: ValidateOptions = {}): void {
   const missing: string[] = [];
 
-  if (!marketingConfig.google.apiKey) {
+  if (options.requireGoogle && !marketingConfig.google.apiKey) {
     missing.push('GOOGLE_API_KEY');
   }
 

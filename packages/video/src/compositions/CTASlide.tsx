@@ -6,8 +6,8 @@ import {
   interpolate,
   Easing,
 } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
-import { GlowBackground } from '../components/GlowBackground.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
+import { GlowBackground } from '../components/GlowBackground';
 
 export interface CTASlideProps {
   ctaText: string;

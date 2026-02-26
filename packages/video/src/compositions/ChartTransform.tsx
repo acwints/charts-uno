@@ -6,10 +6,24 @@ import {
   interpolate,
   Easing,
 } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
-import { AnimatedBarChart, type BarChartData } from '../components/AnimatedBarChart.js';
-import { AnimatedLineChart, type LineChartData } from '../components/AnimatedLineChart.js';
-import { UGLY_COLORS } from '../lib/colors.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
+import { AnimatedBarChart, type BarChartData } from '../components/AnimatedBarChart';
+import { AnimatedLineChart, type LineChartData } from '../components/AnimatedLineChart';
+import { UGLY_COLORS } from '../lib/colors';
+
+function lerpColor(c1: string, c2: string, t: number): string {
+  const parse = (hex: string) => [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+  const [r1, g1, b1] = parse(c1);
+  const [r2, g2, b2] = parse(c2);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
 
 export interface ChartTransformProps {
   /** 'before-after' shows ugly→beautiful bar morph; 'line-showcase' shows a line chart */
@@ -85,16 +99,20 @@ export const ChartTransform: React.FC<ChartTransformProps> = ({
     durationInFrames: durationInFrames - midpoint - 10,
   });
 
-  // Blend colors between ugly and beautiful
+  // Smoothly interpolate colors between ugly and beautiful
   const currentColors = barData.colors.map((_, i) => {
     const uglyColor = UGLY_COLORS[i % UGLY_COLORS.length];
     const prettyColor = beautifulColors[i % beautifulColors.length];
-    return morphProgress < 0.5 ? uglyColor : prettyColor;
+    return lerpColor(uglyColor, prettyColor, morphProgress);
   });
 
   const currentStyle = morphProgress < 0.5 ? 'ugly' : 'beautiful';
-  const currentProgress = morphProgress < 0.5 ? uglyProgress : beautifulProgress;
-  const currentTitle = morphProgress < 0.5 ? undefined : title;
+  const currentProgress = uglyProgress + (beautifulProgress - uglyProgress) * morphProgress;
+  const titleOpacity = interpolate(morphProgress, [0.3, 0.6], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const currentTitle = titleOpacity > 0 ? title : undefined;
 
   // Flash effect at morph point
   const flashOpacity = interpolate(

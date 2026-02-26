@@ -1,6 +1,6 @@
 import React from 'react';
 import { interpolate } from 'remotion';
-import { VIDEO_WIDTH } from '../lib/constants.js';
+import { VIDEO_WIDTH } from '../lib/constants';
 
 interface TextRevealProps {
   text: string;
@@ -48,49 +48,51 @@ export const TextReveal: React.FC<TextRevealProps> = ({
 
   let wordIndex = 0;
 
+  // Compute per-line word x positions so words are centered as a group
+  const lineWordPositions = lines.map((line) => {
+    const lineText = line.join(' ');
+    const lineWidth = lineText.length * approxCharWidth;
+    const lineStartX = (VIDEO_WIDTH - lineWidth) / 2;
+    let cursor = lineStartX;
+    return line.map((word) => {
+      const x = cursor;
+      cursor += word.length * approxCharWidth + fontSize * 0.3;
+      return x;
+    });
+  });
+
   return (
     <g>
       {lines.map((line, lineIdx) => {
         const lineY = startY + lineIdx * lineHeight + fontSize;
 
-        return (
-          <text
-            key={lineIdx}
-            x={VIDEO_WIDTH / 2}
-            y={lineY}
-            textAnchor="middle"
-            fontFamily="system-ui, -apple-system, sans-serif"
-            fontWeight={fontWeight}
-            fontSize={fontSize}
-          >
-            {line.map((word, wi) => {
-              const globalIdx = wordIndex;
-              wordIndex++;
+        return line.map((word, wi) => {
+          const globalIdx = wordIndex;
+          wordIndex++;
 
-              // Each word fades in based on its position
-              const wordStart = globalIdx / wordCount;
-              const wordEnd = (globalIdx + 1) / wordCount;
-              const opacity = interpolate(progress, [wordStart, wordEnd], [0, 1], {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-              });
-              const yOffset = interpolate(opacity, [0, 1], [12, 0]);
+          const wordStart = globalIdx / wordCount;
+          const wordEnd = (globalIdx + 1) / wordCount;
+          const opacity = interpolate(progress, [wordStart, wordEnd], [0, 1], {
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
+          });
+          const yOffset = interpolate(opacity, [0, 1], [12, 0]);
 
-              return (
-                <tspan
-                  key={wi}
-                  fill={color}
-                  opacity={opacity}
-                  dy={wi === 0 ? 0 : 0}
-                  dx={wi === 0 ? 0 : fontSize * 0.3}
-                  style={{ transform: `translateY(${yOffset}px)` }}
-                >
-                  {word}
-                </tspan>
-              );
-            })}
-          </text>
-        );
+          return (
+            <text
+              key={`${lineIdx}-${wi}`}
+              x={lineWordPositions[lineIdx][wi]}
+              y={lineY + yOffset}
+              fill={color}
+              opacity={opacity}
+              fontFamily="system-ui, -apple-system, sans-serif"
+              fontWeight={fontWeight}
+              fontSize={fontSize}
+            >
+              {word}
+            </text>
+          );
+        });
       })}
     </g>
   );

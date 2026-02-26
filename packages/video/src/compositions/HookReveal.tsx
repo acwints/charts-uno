@@ -6,9 +6,9 @@ import {
   interpolate,
   Easing,
 } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
-import { GlowBackground } from '../components/GlowBackground.js';
-import { TextReveal } from '../components/TextReveal.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
+import { GlowBackground } from '../components/GlowBackground';
+import { TextReveal } from '../components/TextReveal';
 
 export interface HookRevealProps {
   hookText: string;

@@ -1,14 +1,6 @@
 import { COLOR_PALETTES } from '@chartsuno/shared';
 import type { BarChartData, LineChartData } from '@chartsuno/video';
-
-/**
- * Sample chart data used for video scenes.
- * Shared with image/screenshot.ts sample data to maintain consistency.
- */
-
-const SAMPLE_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-const SAMPLE_VALUES_1 = [42, 58, 35, 72, 61, 89];
-const SAMPLE_VALUES_2 = [28, 45, 52, 38, 67, 54];
+import { SAMPLE_LABELS, SAMPLE_VALUES_1, SAMPLE_VALUES_2 } from '../constants.js';
 
 export const DEFAULT_BAR_DATA: BarChartData = {
   labels: SAMPLE_LABELS,
@@ -24,9 +16,12 @@ export const DEFAULT_LINE_DATA: LineChartData = {
   ],
 };
 
-/** Pick a random bar color palette that isn't 'monochrome' or 'muted' */
-export function pickBeautifulPalette(): string[] {
+/** Pick a bar color palette that isn't 'monochrome' or 'muted'. Accepts optional seed for determinism. */
+export function pickBeautifulPalette(seed?: string): string[] {
   const candidates: (keyof typeof COLOR_PALETTES)[] = ['default', 'warm', 'cool', 'editorial'];
-  const key = candidates[Math.floor(Math.random() * candidates.length)];
-  return COLOR_PALETTES[key];
+  if (seed) {
+    const hash = [...seed].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return COLOR_PALETTES[candidates[hash % candidates.length]];
+  }
+  return COLOR_PALETTES[candidates[Math.floor(Math.random() * candidates.length)]];
 }

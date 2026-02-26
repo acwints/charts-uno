@@ -30,7 +30,7 @@ export async function postToTikTok(
       platform: 'tiktok',
       postId: 'dry-run',
       postedAt: new Date().toISOString(),
-      deckId: deck.id,
+      contentId: deck.id,
       format: 'carousel',
     };
   }
@@ -84,33 +84,36 @@ export async function postToTikTok(
     platform: 'tiktok',
     postId: requestId,
     postedAt: new Date().toISOString(),
-    deckId: deck.id,
+    contentId: deck.id,
     format: 'carousel',
   };
 }
 
 /**
  * Post a video to TikTok via the Upload-Post API.
- * Sends the final MP4 as a base64-encoded video.
+ * Uses the /api/upload multipart endpoint per Upload-Post docs.
+ *
+ * Options:
+ * - scheduledDate: ISO-8601 date to schedule the post (e.g. 1 hour from now)
  */
 export async function postVideoToTikTok(
   video: VideoProject,
   caption: string,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; scheduledDate?: string; draft?: boolean } = {},
 ): Promise<PostResult> {
   if (options.dryRun) {
     logger.info({
       caption: caption.slice(0, 100),
       videoId: video.id,
       profile: marketingConfig.marketing.tiktokProfile,
+      scheduledDate: options.scheduledDate,
     }, '[DRY RUN] Would post video to TikTok via Upload-Post');
 
     return {
       platform: 'tiktok',
       postId: 'dry-run',
       postedAt: new Date().toISOString(),
-      deckId: video.id,
-      videoId: video.id,
+      contentId: video.id,
       format: 'video',
     };
   }
@@ -126,24 +129,36 @@ export async function postVideoToTikTok(
   }
 
   const videoBuffer = await readFile(video.finalVideoPath);
-  const videoBase64 = videoBuffer.toString('base64');
 
-  logger.info({ profile: tiktokProfile, videoId: video.id }, 'Posting video to TikTok via Upload-Post');
+  logger.info({
+    profile: tiktokProfile,
+    videoId: video.id,
+    scheduledDate: options.scheduledDate,
+  }, 'Posting video to TikTok via Upload-Post');
 
-  const response = await fetch(`${uploadPostApiUrl}/api/upload_videos`, {
+  // Use multipart form-data per Upload-Post /api/upload docs
+  const form = new FormData();
+  form.append('video', new Blob([videoBuffer], { type: 'video/mp4' }), 'video.mp4');
+  form.append('title', caption.slice(0, 150));
+  form.append('description', caption);
+  form.append('user', tiktokProfile);
+  form.append('platform[]', 'tiktok');
+  form.append('async_upload', 'true');
+
+  if (options.draft) {
+    form.append('post_mode', 'MEDIA_UPLOAD');
+  }
+
+  if (options.scheduledDate) {
+    form.append('scheduled_date', options.scheduledDate);
+  }
+
+  const response = await fetch(`${uploadPostApiUrl}/api/upload`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       'Authorization': `Apikey ${uploadPostApiKey}`,
     },
-    body: JSON.stringify({
-      profile_username: tiktokProfile,
-      title: caption.slice(0, 150),
-      description: caption,
-      video: videoBase64,
-      platforms: ['tiktok'],
-      async_upload: true,
-    }),
+    body: form,
   });
 
   if (!response.ok) {
@@ -164,8 +179,7 @@ export async function postVideoToTikTok(
     platform: 'tiktok',
     postId: requestId,
     postedAt: new Date().toISOString(),
-    deckId: video.id,
-    videoId: video.id,
+    contentId: video.id,
     format: 'video',
   };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { interpolate } from 'remotion';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants.js';
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '../lib/constants';
 
 export interface LineChartData {
   labels: string[];
@@ -27,6 +27,7 @@ export const AnimatedLineChart: React.FC<AnimatedLineChartProps> = ({
   const allValues = series.flatMap((s) => s.values);
   const maxValue = Math.max(...allValues, 1);
   const pointCount = labels.length;
+  const pointDivisor = Math.max(pointCount - 1, 1);
 
   // Grid
   const gridLines = 5;
@@ -81,7 +82,7 @@ export const AnimatedLineChart: React.FC<AnimatedLineChartProps> = ({
 
       {/* Labels */}
       {labels.map((label, i) => {
-        const x = CHART_PADDING.left + (i / (pointCount - 1)) * CHART_WIDTH;
+        const x = CHART_PADDING.left + (i / pointDivisor) * CHART_WIDTH;
         return (
           <text
             key={`label-${i}`}
@@ -100,7 +101,7 @@ export const AnimatedLineChart: React.FC<AnimatedLineChartProps> = ({
       {/* Lines */}
       {series.map((s, si) => {
         const points = s.values.map((v, i) => {
-          const x = CHART_PADDING.left + (i / (pointCount - 1)) * CHART_WIDTH;
+          const x = CHART_PADDING.left + (i / pointDivisor) * CHART_WIDTH;
           const y = CHART_PADDING.top + CHART_HEIGHT - (v / maxValue) * CHART_HEIGHT;
           return { x, y };
         });
@@ -142,7 +143,7 @@ export const AnimatedLineChart: React.FC<AnimatedLineChartProps> = ({
             {points.map((p, i) => {
               const dotProgress = interpolate(
                 lineProgress,
-                [(i / (pointCount - 1)) * 0.9, (i / (pointCount - 1)) * 0.9 + 0.1],
+                [(i / pointDivisor) * 0.9, (i / pointDivisor) * 0.9 + 0.1],
                 [0, 1],
                 { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
               );
