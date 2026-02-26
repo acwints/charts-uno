@@ -1,5 +1,5 @@
 import { COLOR_PALETTES } from '@chartsuno/shared';
-import type { BarChartData, LineChartData } from '@chartsuno/video';
+import type { BarChartData, LineChartData } from '../remotion/index.js';
 import { SAMPLE_LABELS, SAMPLE_VALUES_1, SAMPLE_VALUES_2 } from '../constants.js';
 
 export const DEFAULT_BAR_DATA: BarChartData = {

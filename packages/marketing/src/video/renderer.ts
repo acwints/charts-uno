@@ -2,7 +2,7 @@ import { resolve, join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { FPS, VIDEO_WIDTH, VIDEO_HEIGHT, COMP_IDS, secondsToFrames } from '@chartsuno/video';
+import { FPS, VIDEO_WIDTH, VIDEO_HEIGHT, COMP_IDS, secondsToFrames } from '../remotion/index.js';
 import { logger, marketingConfig } from '../config.js';
 import type { ScenePlan, RenderJob, CaptureMethod } from './types.js';
 import {
@@ -40,10 +40,10 @@ async function ensureBundle(): Promise<string> {
 
   const { bundle } = await getBundler();
 
-  // Resolve the video package entry point
+  // Resolve the remotion entry point (now co-located in this package)
   const entryPoint = resolve(
     import.meta.dirname,
-    '../../../../video/src/index.ts',
+    '../remotion/index.ts',
   );
 
   logger.info({ entryPoint }, 'Bundling Remotion project (first run only)');
@@ -142,12 +142,6 @@ export async function renderScene(
 
 /**
  * Renders browser-captured scenes (2-4) as a shared session.
- *
- * All browser scenes share one session so the pasted data carries across.
- * The combined script runs once, capturing at scene boundaries.
- *
- * Returns render jobs for each browser scene, with individual MP4s
- * extracted from the capture.
  */
 async function renderBrowserScenes(
   browserScenes: ScenePlan[],
@@ -201,9 +195,6 @@ async function renderBrowserScenes(
   }
 }
 
-/**
- * browser-video: record real-time video, then split into per-scene clips.
- */
 async function renderBrowserVideoScenes(
   scenes: ScenePlan[],
   outputDir: string,
@@ -213,11 +204,9 @@ async function renderBrowserVideoScenes(
   const result = await captureVideo({ outputDir: captureDir });
   const videoPath = result.videoPath;
 
-  // Normalize captured video to pipeline specs
   const normalizedPath = join(captureDir, 'normalized.mp4');
   await normalizeVideo(videoPath, normalizedPath, ffmpeg);
 
-  // Split into per-scene clips based on durations
   const jobs: RenderJob[] = [];
   let offsetSeconds = 0;
 
@@ -248,18 +237,13 @@ async function renderBrowserVideoScenes(
   return jobs;
 }
 
-/**
- * Captures screenshots using agent-browser, falling back to puppeteer.
- */
 async function captureBrowserScreenshots(captureDir: string): Promise<string[]> {
-  // Try agent-browser first
   if (await isAgentBrowserAvailable()) {
     logger.info('Using agent-browser for screenshot capture');
     const result = await captureScreenshots({ outputDir: captureDir });
     return result.screenshotPaths;
   }
 
-  // Fallback to puppeteer (existing browser-capture.ts)
   logger.info('agent-browser not available, falling back to puppeteer');
   const captureUrl = marketingConfig.marketing.captureUrl;
   const steps = getTransformCaptureSteps();
@@ -272,9 +256,6 @@ async function captureBrowserScreenshots(captureDir: string): Promise<string[]> 
   return result.screenshots;
 }
 
-/**
- * browser-screenshots: assemble screenshot sets into per-scene MP4s via ffmpeg.
- */
 async function renderBrowserScreenshotScenes(
   scenes: ScenePlan[],
   outputDir: string,
@@ -282,8 +263,6 @@ async function renderBrowserScreenshotScenes(
   ffmpeg: string,
 ): Promise<RenderJob[]> {
   const jobs: RenderJob[] = [];
-
-  // Distribute screenshots across scenes proportionally
   const screenshotsPerScene = distributeScreenshots(allScreenshots, scenes);
 
   for (let i = 0; i < scenes.length; i++) {
@@ -317,10 +296,6 @@ async function renderBrowserScreenshotScenes(
   return jobs;
 }
 
-/**
- * browser-remotion: render screenshots through the BrowserScreenshots Remotion composition
- * with Ken Burns + crossfade polish.
- */
 async function renderBrowserRemotionScenes(
   scenes: ScenePlan[],
   outputDir: string,
@@ -333,7 +308,6 @@ async function renderBrowserRemotionScenes(
     const scene = scenes[i];
     const sceneScreenshots = screenshotsPerScene[i];
 
-    // Render each browser scene through the BrowserScreenshots composition
     const remotionScene: ScenePlan = {
       sceneNumber: scene.sceneNumber,
       type: scene.type,
@@ -355,9 +329,6 @@ async function renderBrowserRemotionScenes(
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-/**
- * Distributes screenshots across scenes proportionally by duration.
- */
 function distributeScreenshots(screenshots: string[], scenes: ScenePlan[]): string[][] {
   const totalDuration = scenes.reduce((sum, s) => sum + s.durationSeconds, 0);
   const result: string[][] = [];
@@ -375,9 +346,6 @@ function distributeScreenshots(screenshots: string[], scenes: ScenePlan[]): stri
   return result;
 }
 
-/**
- * Normalizes a captured video to match pipeline specs (1080x1920, h264, 30fps).
- */
 async function normalizeVideo(inputPath: string, outputPath: string, ffmpeg: string): Promise<void> {
   await execFileAsync(ffmpeg, [
     '-y',
@@ -390,38 +358,22 @@ async function normalizeVideo(inputPath: string, outputPath: string, ffmpeg: str
   ]);
 }
 
-/**
- * Determines the effective capture method, applying the fallback chain:
- * agent-browser → puppeteer → remotion
- */
 async function resolveEffectiveCaptureMethod(requested: CaptureMethod): Promise<CaptureMethod> {
   if (requested === 'remotion') return 'remotion';
 
-  // For browser methods, check if agent-browser is available
   if (await isAgentBrowserAvailable()) return requested;
 
-  // Fallback: try puppeteer for screenshot-based methods
   if (requested === 'browser-screenshots' || requested === 'browser-remotion') {
     logger.warn({ requested }, 'agent-browser not available, will use puppeteer fallback');
-    return requested; // captureBrowserScreenshots handles the puppeteer fallback internally
+    return requested;
   }
 
-  // browser-video requires agent-browser — fall back to remotion
   logger.warn({ requested }, 'agent-browser not available, falling back to remotion');
   return 'remotion';
 }
 
 // ─── Public API ───────────────────────────────────────────────────
 
-/**
- * Renders all scenes sequentially.
- *
- * Dispatches per-scene based on captureMethod:
- * - 'remotion' → existing renderScene() path
- * - 'browser-*' → renderBrowserScenes() with shared session
- *
- * Fallback chain: agent-browser → puppeteer → remotion
- */
 export async function renderAllScenes(
   scenes: ScenePlan[],
   outputDir: string,
@@ -429,22 +381,18 @@ export async function renderAllScenes(
 ): Promise<RenderJob[]> {
   const jobs: RenderJob[] = [];
 
-  // Separate Remotion scenes from browser scenes
   const remotionScenes = scenes.filter((s) => !s.captureMethod || s.captureMethod === 'remotion');
   const browserScenes = scenes.filter((s) => s.captureMethod && s.captureMethod !== 'remotion');
 
-  // If there are browser scenes, determine the effective capture method
   if (browserScenes.length > 0) {
     const requestedMethod = browserScenes[0].captureMethod!;
     const effectiveMethod = await resolveEffectiveCaptureMethod(requestedMethod);
 
     if (effectiveMethod === 'remotion') {
-      // Full fallback to remotion — re-plan all scenes as remotion
       logger.info('Browser capture unavailable, rendering all scenes via Remotion');
       return renderAllRemotionScenes(scenes, outputDir, options);
     }
 
-    // Render Remotion scenes (1, 5) first
     for (const scene of remotionScenes) {
       const job = await renderScene(scene, outputDir, options);
       jobs.push(job);
@@ -454,23 +402,17 @@ export async function renderAllScenes(
       }
     }
 
-    // Render browser scenes (2-4) as a batch
     const browserJobs = await renderBrowserScenes(browserScenes, outputDir, effectiveMethod, options);
     jobs.push(...browserJobs);
 
-    // Sort by scene number for correct assembly order
     jobs.sort((a, b) => a.sceneNumber - b.sceneNumber);
   } else {
-    // All remotion — use existing sequential path
     return renderAllRemotionScenes(scenes, outputDir, options);
   }
 
   return jobs;
 }
 
-/**
- * Renders all scenes sequentially via Remotion (original behavior).
- */
 async function renderAllRemotionScenes(
   scenes: ScenePlan[],
   outputDir: string,

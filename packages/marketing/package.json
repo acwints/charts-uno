@@ -1,18 +1,21 @@
 {
-  "name": "@chartsuno/bot",
+  "name": "@chartsuno/marketing",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/cli.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "auth": "tsx src/setup-oauth2.ts",
-    "tweet": "tsx src/post-tweet.ts",
+    "start": "node dist/cli.js",
+    "cli": "tsx src/cli.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@chartsuno/shared": "workspace:*",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "@remotion/transitions": "^4.0.0",
     "@google/generative-ai": "^0.24.1",
     "chart.js": "^4.5.1",
     "pino": "^9.0.0",
@@ -20,6 +23,8 @@
     "puppeteer": "^23.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "^3.7.0",
+    "remotion": "^4.0.0",
     "sharp": "^0.33.0",
     "twitter-api-v2": "^1.17.0"
   },

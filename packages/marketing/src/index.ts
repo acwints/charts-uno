@@ -1,5 +1,5 @@
 export type * from './types.js';
-export { marketingConfig, validateMarketingConfig } from './config.js';
+export { marketingConfig, validateMarketingConfig, logger } from './config.js';
 export { loadMarketingState, saveMarketingState, updateMarketingState } from './state.js';
 export { selectHook, HOOK_LIBRARY } from './content/hooks.js';
 export { planSlides } from './content/slides.js';

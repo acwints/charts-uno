@@ -1,12 +1,14 @@
 import sharp from 'sharp';
-import { logger } from '../config.js';
+import type { ChartLogger } from './analyzer.js';
 
 const WATERMARK_TEXT = 'chartsuno';
 const WATERMARK_FONT_SIZE = 16;
 const WATERMARK_PADDING = 20;
 const WATERMARK_OPACITY = 0.6;
 
-export async function addWatermark(imageBuffer: Buffer): Promise<Buffer> {
+export async function addWatermark(imageBuffer: Buffer, logger?: ChartLogger): Promise<Buffer> {
+  const log = logger ?? { info: console.log, error: console.error };
+
   try {
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
@@ -45,10 +47,10 @@ export async function addWatermark(imageBuffer: Buffer): Promise<Buffer> {
       .png()
       .toBuffer();
 
-    logger.info('Watermark added successfully');
+    log.info({}, 'Watermark added successfully');
     return watermarkedImage;
   } catch (error) {
-    logger.error({ error }, 'Error adding watermark');
+    log.error({ error }, 'Error adding watermark');
     throw error;
   }
 }

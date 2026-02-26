@@ -2,9 +2,22 @@ import puppeteer, { Browser } from 'puppeteer';
 import { accessSync, constants } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import type { ChartData, ChartConfig, ChartType } from '@chartsuno/shared';
-import { COLOR_PALETTES, getNumericDomainFromValues } from '@chartsuno/shared';
-import { logger } from '../config.js';
+import type { ChartData, ChartConfig, ChartType } from '../types.js';
+import { COLOR_PALETTES, getNumericDomainFromValues } from '../index.js';
+import type { ChartLogger } from './analyzer.js';
+
+const defaultLogger: ChartLogger = {
+  info: (obj, msg) => console.log(msg ?? '', obj),
+  error: (obj, msg) => console.error(msg ?? '', obj),
+  warn: (obj, msg) => console.warn(msg ?? '', obj),
+};
+
+let _logger: ChartLogger = defaultLogger;
+
+/** Set the logger used by the chart renderer. Call once at startup. */
+export function setRendererLogger(logger: ChartLogger): void {
+  _logger = logger;
+}
 
 let browser: Browser | null = null;
 const require = createRequire(import.meta.url);
@@ -44,7 +57,7 @@ async function resolveExecutablePath(): Promise<string | undefined> {
       return configuredPath;
     }
 
-    logger.warn(
+    _logger.warn?.(
       { configuredPath },
       'Configured PUPPETEER_EXECUTABLE_PATH is not executable; falling back to auto-detection'
     );
@@ -68,7 +81,7 @@ async function getBrowser(): Promise<Browser> {
         '--single-process',
       ],
     });
-    logger.info({ executablePath }, 'Puppeteer browser launched');
+    _logger.info({ executablePath }, 'Puppeteer browser launched');
   }
   return browser;
 }
@@ -106,7 +119,7 @@ export async function closeBrowser(): Promise<void> {
   if (browser) {
     await browser.close();
     browser = null;
-    logger.info('Puppeteer browser closed');
+    _logger.info({}, 'Puppeteer browser closed');
   }
 }
 
@@ -532,7 +545,7 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
       clip: { x: 0, y: 0, width: viewport.width, height: viewport.height },
     });
 
-    logger.info('Chart rendered to PNG successfully');
+    _logger.info({}, 'Chart rendered to PNG successfully');
 
     return Buffer.from(screenshot);
   } finally {

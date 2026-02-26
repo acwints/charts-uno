@@ -1,9 +1,26 @@
-import { config as botConfig, logger } from '../config.js';
+import { pino } from 'pino';
 
-export { logger };
+export const logger = pino({
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export const marketingConfig = {
-  google: botConfig.google,
+  google: {
+    apiKey: process.env.GOOGLE_API_KEY || '',
+  },
+  twitter: {
+    clientId: process.env.TWITTER_CLIENT_ID || '',
+    clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
+    apiKey: process.env.TWITTER_API_KEY || process.env.TWITTER_CLIENT_ID || '',
+    apiSecret: process.env.TWITTER_API_SECRET || process.env.TWITTER_CLIENT_SECRET || '',
+    accessToken: process.env.TWITTER_ACCESS_TOKEN || '',
+    accessSecret: process.env.TWITTER_ACCESS_SECRET || '',
+  },
   marketing: {
     uploadPostApiKey: process.env.UPLOAD_POST_API_KEY || '',
     uploadPostApiUrl: process.env.UPLOAD_POST_API_URL || 'https://api.upload-post.com',

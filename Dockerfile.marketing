@@ -3,29 +3,27 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium \
+  && apt-get install -y --no-install-recommends chromium ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/package.json
-COPY packages/bot/package.json packages/bot/package.json
+COPY packages/marketing/package.json packages/marketing/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY packages/shared packages/shared
-COPY packages/bot packages/bot
+COPY packages/marketing packages/marketing
 
 RUN pnpm --filter @chartsuno/shared build \
-  && pnpm --filter @chartsuno/bot build
+  && pnpm --filter @chartsuno/marketing build
 
 ENV NODE_ENV=production
-ENV PORT=8080
-ENV BOT_STATE_PATH=/data/bot-state.json
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-RUN mkdir -p /data && cp packages/bot/bot-state.json /data/bot-state.json || true
+RUN mkdir -p /data
 
-CMD ["node", "packages/bot/dist/index.js"]
+CMD ["node", "packages/marketing/dist/cli.js"]

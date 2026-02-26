@@ -1,0 +1,717 @@
+{
+  "decks": [
+    {
+      "id": "3d0c461a",
+      "createdAt": "2026-02-25T20:38:45.406Z",
+      "hookId": "cd-one-click",
+      "hookCategory": "curiosity-discovery",
+      "hookText": "One click changed how my entire dashboard looks",
+      "ctaText": "Try it free — chartsuno.com",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "role": "hook",
+          "headlineText": "One click changed how my entire dashboard looks",
+          "imageSource": "ai-generated",
+          "imagePrompt": "iPhone photo of a clean modern workspace with a large monitor showing a beautiful data dashboard. Minimalist desk setup, natural daylight, plant in corner. Photorealistic, natural phone camera quality, slight depth of field. No text overlays. Portrait orientation 9:16."
+        },
+        {
+          "slideNumber": 2,
+          "role": "problem",
+          "headlineText": "This is what most\npeople deal with",
+          "subText": "Ugly default charts nobody wants to present",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "ugly-before"
+          }
+        },
+        {
+          "slideNumber": 3,
+          "role": "discovery",
+          "headlineText": "Then I found\nChartsUno",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "feature-showcase"
+          }
+        },
+        {
+          "slideNumber": 4,
+          "role": "transform1",
+          "headlineText": "Same data.\nCompletely different.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 5,
+          "role": "transform2",
+          "headlineText": "Every chart type.\nEvery style.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 6,
+          "role": "cta",
+          "headlineText": "Try it free",
+          "subText": "https://chartsuno.com",
+          "imageSource": "ai-generated",
+          "imagePrompt": "Clean minimal dark gradient background, deep navy to black, subtle geometric glow accents, professional app interface aesthetic. No text, no UI elements. Abstract and premium. Portrait orientation."
+        }
+      ],
+      "generatedImages": [
+        {
+          "slideNumber": 1,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-1.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 2,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-2.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 3,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-3.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 4,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-4.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 5,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-5.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 6,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-6.png",
+          "overlayApplied": true
+        }
+      ],
+      "status": "ready",
+      "caption": "One click changed how my entire dashboard looks\n\nSame data — completely different impact.\nTry ChartsUno free: https://chartsuno.com\n\n#dataviz #charts #startup #design"
+    },
+    {
+      "id": "34bd097a",
+      "createdAt": "2026-02-25T21:00:16.859Z",
+      "hookId": "cd-same-charts",
+      "hookCategory": "curiosity-discovery",
+      "hookText": "Why do all my charts look the same? I finally fixed it.",
+      "ctaText": "Try it free — chartsuno.com",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "role": "hook",
+          "headlineText": "Why do all my charts look the same? I finally fixed it.",
+          "imageSource": "ai-generated",
+          "imagePrompt": "iPhone photo of a clean modern workspace with a large monitor showing a beautiful data dashboard. Minimalist desk setup, natural daylight, plant in corner. Photorealistic, natural phone camera quality, slight depth of field. No text overlays. Portrait orientation 9:16."
+        },
+        {
+          "slideNumber": 2,
+          "role": "problem",
+          "headlineText": "This is what most\npeople deal with",
+          "subText": "Ugly default charts nobody wants to present",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "ugly-before"
+          }
+        },
+        {
+          "slideNumber": 3,
+          "role": "discovery",
+          "headlineText": "Then I found\nChartsUno",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "feature-showcase"
+          }
+        },
+        {
+          "slideNumber": 4,
+          "role": "transform1",
+          "headlineText": "Same data.\nCompletely different.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 5,
+          "role": "transform2",
+          "headlineText": "Every chart type.\nEvery style.",
+          "imageSource": "screenshot",
+          "screenshotConfig": {
+            "variant": "beautiful-after"
+          }
+        },
+        {
+          "slideNumber": 6,
+          "role": "cta",
+          "headlineText": "Try it free",
+          "subText": "https://chartsuno.com",
+          "imageSource": "ai-generated",
+          "imagePrompt": "Clean minimal dark gradient background, deep navy to black, subtle geometric glow accents, professional app interface aesthetic. No text, no UI elements. Abstract and premium. Portrait orientation."
+        }
+      ],
+      "generatedImages": [
+        {
+          "slideNumber": 1,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-1.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 2,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-2.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 3,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-3.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 4,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-4.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 5,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-5.png",
+          "overlayApplied": true
+        },
+        {
+          "slideNumber": 6,
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-6.png",
+          "overlayApplied": true
+        }
+      ],
+      "status": "posted-x",
+      "caption": "Why do all my charts look the same? I finally fixed it.\n\nSame data — completely different impact.\nTry ChartsUno free: https://chartsuno.com\n\n#dataviz #charts #startup #design"
+    }
+  ],
+  "videos": [
+    {
+      "id": "8b45b0fd",
+      "createdAt": "2026-02-26T00:11:00.505Z",
+      "hookId": "pc-boss-charts",
+      "hookCategory": "person-conflict",
+      "hookText": "My boss said my charts look like they're from 1999",
+      "ctaText": "Try it free",
+      "ctaUrl": "https://chartsuno.com",
+      "scenes": [
+        {
+          "sceneNumber": 1,
+          "type": "hook",
+          "durationSeconds": 3,
+          "compositionId": "HookReveal",
+          "props": {
+            "hookText": "My boss said my charts look like they're from 1999"
+          }
+        },
+        {
+          "sceneNumber": 2,
+          "type": "problem",
+          "durationSeconds": 5,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "before-after",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "beautifulColors": [
+              "#1e3a5f",
+              "#c9a227",
+              "#7c3238",
+              "#2d5a3c",
+              "#5c4033",
+              "#4a4a4a",
+              "#8b6914",
+              "#1e4d6e"
+            ],
+            "title": ""
+          }
+        },
+        {
+          "sceneNumber": 3,
+          "type": "transform",
+          "durationSeconds": 6,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "before-after",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "beautifulColors": [
+              "#f97316",
+              "#ef4444",
+              "#eab308",
+              "#f59e0b",
+              "#dc2626",
+              "#ca8a04",
+              "#ea580c",
+              "#fbbf24"
+            ],
+            "title": "Q1-Q2 Performance"
+          }
+        },
+        {
+          "sceneNumber": 4,
+          "type": "showcase",
+          "durationSeconds": 4,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "line-showcase",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "lineData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Revenue",
+                  "values": [
+                    42,
+                    58,
+                    35,
+                    72,
+                    61,
+                    89
+                  ],
+                  "color": "#3b82f6"
+                },
+                {
+                  "name": "Users",
+                  "values": [
+                    28,
+                    45,
+                    52,
+                    38,
+                    67,
+                    54
+                  ],
+                  "color": "#8b5cf6"
+                }
+              ]
+            },
+            "beautifulColors": [
+              "#3b82f6",
+              "#6366f1",
+              "#06b6d4",
+              "#0ea5e9",
+              "#8b5cf6",
+              "#14b8a6",
+              "#2563eb",
+              "#22d3ee"
+            ],
+            "title": "Growth Trends"
+          }
+        },
+        {
+          "sceneNumber": 5,
+          "type": "cta",
+          "durationSeconds": 4,
+          "compositionId": "CTASlide",
+          "props": {
+            "ctaText": "Try it free",
+            "ctaUrl": "https://chartsuno.com"
+          }
+        }
+      ],
+      "renderJobs": [
+        {
+          "sceneNumber": 1,
+          "compositionId": "HookReveal",
+          "status": "done",
+          "outputPath": "data/marketing/videos/8b45b0fd/scene-1.mp4",
+          "durationMs": 0
+        },
+        {
+          "sceneNumber": 2,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/8b45b0fd/scene-2.mp4",
+          "durationMs": 0
+        },
+        {
+          "sceneNumber": 3,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/8b45b0fd/scene-3.mp4",
+          "durationMs": 0
+        },
+        {
+          "sceneNumber": 4,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/8b45b0fd/scene-4.mp4",
+          "durationMs": 0
+        },
+        {
+          "sceneNumber": 5,
+          "compositionId": "CTASlide",
+          "status": "done",
+          "outputPath": "data/marketing/videos/8b45b0fd/scene-5.mp4",
+          "durationMs": 0
+        }
+      ],
+      "finalVideoPath": "data/marketing/videos/8b45b0fd/final.mp4",
+      "status": "ready",
+      "durationSeconds": 22
+    },
+    {
+      "id": "302f2828",
+      "createdAt": "2026-02-26T00:17:15.996Z",
+      "hookId": "bp-pov-budget",
+      "hookCategory": "budget-pain",
+      "hookText": "POV: You need beautiful charts but can't afford a designer",
+      "ctaText": "Try it free",
+      "ctaUrl": "https://chartsuno.com",
+      "scenes": [
+        {
+          "sceneNumber": 1,
+          "type": "hook",
+          "durationSeconds": 3,
+          "compositionId": "HookReveal",
+          "props": {
+            "hookText": "POV: You need beautiful charts but can't afford a designer"
+          }
+        },
+        {
+          "sceneNumber": 2,
+          "type": "problem",
+          "durationSeconds": 5,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "before-after",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "beautifulColors": [
+              "#1e3a5f",
+              "#c9a227",
+              "#7c3238",
+              "#2d5a3c",
+              "#5c4033",
+              "#4a4a4a",
+              "#8b6914",
+              "#1e4d6e"
+            ],
+            "title": ""
+          }
+        },
+        {
+          "sceneNumber": 3,
+          "type": "transform",
+          "durationSeconds": 6,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "before-after",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "beautifulColors": [
+              "#f97316",
+              "#ef4444",
+              "#eab308",
+              "#f59e0b",
+              "#dc2626",
+              "#ca8a04",
+              "#ea580c",
+              "#fbbf24"
+            ],
+            "title": "Q1-Q2 Performance"
+          }
+        },
+        {
+          "sceneNumber": 4,
+          "type": "showcase",
+          "durationSeconds": 4,
+          "compositionId": "ChartTransform",
+          "props": {
+            "variant": "line-showcase",
+            "barData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "values": [
+                42,
+                58,
+                35,
+                72,
+                61,
+                89
+              ],
+              "colors": [
+                "#1e3a5f",
+                "#c9a227",
+                "#7c3238",
+                "#2d5a3c",
+                "#5c4033",
+                "#4a4a4a",
+                "#8b6914",
+                "#1e4d6e"
+              ]
+            },
+            "lineData": {
+              "labels": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Revenue",
+                  "values": [
+                    42,
+                    58,
+                    35,
+                    72,
+                    61,
+                    89
+                  ],
+                  "color": "#3b82f6"
+                },
+                {
+                  "name": "Users",
+                  "values": [
+                    28,
+                    45,
+                    52,
+                    38,
+                    67,
+                    54
+                  ],
+                  "color": "#8b5cf6"
+                }
+              ]
+            },
+            "beautifulColors": [
+              "#3b82f6",
+              "#6366f1",
+              "#06b6d4",
+              "#0ea5e9",
+              "#8b5cf6",
+              "#14b8a6",
+              "#2563eb",
+              "#22d3ee"
+            ],
+            "title": "Growth Trends"
+          }
+        },
+        {
+          "sceneNumber": 5,
+          "type": "cta",
+          "durationSeconds": 4,
+          "compositionId": "CTASlide",
+          "props": {
+            "ctaText": "Try it free",
+            "ctaUrl": "https://chartsuno.com"
+          }
+        }
+      ],
+      "renderJobs": [
+        {
+          "sceneNumber": 1,
+          "compositionId": "HookReveal",
+          "status": "done",
+          "outputPath": "data/marketing/videos/302f2828/scene-1.mp4",
+          "durationMs": 7408
+        },
+        {
+          "sceneNumber": 2,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/302f2828/scene-2.mp4",
+          "durationMs": 4416
+        },
+        {
+          "sceneNumber": 3,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/302f2828/scene-3.mp4",
+          "durationMs": 5190
+        },
+        {
+          "sceneNumber": 4,
+          "compositionId": "ChartTransform",
+          "status": "done",
+          "outputPath": "data/marketing/videos/302f2828/scene-4.mp4",
+          "durationMs": 3760
+        },
+        {
+          "sceneNumber": 5,
+          "compositionId": "CTASlide",
+          "status": "done",
+          "outputPath": "data/marketing/videos/302f2828/scene-5.mp4",
+          "durationMs": 9788
+        }
+      ],
+      "finalVideoPath": "data/marketing/videos/302f2828/final.mp4",
+      "status": "posted-tiktok",
+      "durationSeconds": 22
+    }
+  ],
+  "posts": [
+    {
+      "platform": "x",
+      "postId": "dry-run",
+      "url": "https://x.com/dry-run",
+      "postedAt": "2026-02-25T21:07:50.525Z",
+      "deckId": "34bd097a"
+    },
+    {
+      "platform": "tiktok",
+      "postId": "6898358154264ae3a76762a3c4f2e6cf",
+      "postedAt": "2026-02-26T01:12:09.545Z",
+      "contentId": "302f2828",
+      "format": "video"
+    }
+  ],
+  "metrics": [],
+  "hookPerformance": [],
+  "lastDailyReport": null
+}

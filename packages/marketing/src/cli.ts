@@ -20,11 +20,11 @@ import {
   prependAvatarClip,
   generateAvatarScene,
   generateAvatarScript,
-} from './marketing/index.js';
-import { logger } from './marketing/config.js';
-import type { HookCategory, CarouselDeck } from './marketing/types.js';
-import type { VideoProject } from './marketing/video/types.js';
-import type { CaptureMethod } from './marketing/video/types.js';
+} from './index.js';
+import { logger } from './config.js';
+import type { HookCategory, CarouselDeck } from './types.js';
+import type { VideoProject } from './video/types.js';
+import type { CaptureMethod } from './video/types.js';
 
 // ─── CLI Argument Parsing ──────────────────────────────────────────
 
@@ -52,7 +52,7 @@ const COMMANDS: Record<string, string> = {
 };
 
 function printUsage(): void {
-  console.log('Usage: pnpm --filter @chartsuno/bot marketing -- <command> [options]\n');
+  console.log('Usage: pnpm --filter @chartsuno/marketing cli -- <command> [options]\n');
   console.log('Commands:');
   for (const [cmd, desc] of Object.entries(COMMANDS)) {
     console.log(`  ${cmd.padEnd(18)} ${desc}`);
@@ -156,8 +156,8 @@ async function cmdGenerate(): Promise<void> {
   console.log(`\nDeck ${deckId} ready.`);
   console.log(`Slides saved to: ${marketingConfig.marketing.slidesDir}/${deckId}/`);
   console.log(`\nNext steps:`);
-  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-x --deck ${deckId}`);
-  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-tiktok --deck ${deckId}`);
+  console.log(`  pnpm --filter @chartsuno/marketing cli -- post-x --deck ${deckId}`);
+  console.log(`  pnpm --filter @chartsuno/marketing cli -- post-tiktok --deck ${deckId}`);
 }
 
 async function cmdGenerateVideo(): Promise<void> {
@@ -261,8 +261,8 @@ async function cmdGenerateVideo(): Promise<void> {
   console.log(`\nVideo ${videoId} ready.`);
   console.log(`Output: ${finalVideoPath}`);
   console.log(`\nNext steps:`);
-  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-tiktok --video ${videoId}`);
-  console.log(`  pnpm --filter @chartsuno/bot marketing -- post-x --video ${videoId}`);
+  console.log(`  pnpm --filter @chartsuno/marketing cli -- post-tiktok --video ${videoId}`);
+  console.log(`  pnpm --filter @chartsuno/marketing cli -- post-x --video ${videoId}`);
 }
 
 async function cmdPostX(): Promise<void> {

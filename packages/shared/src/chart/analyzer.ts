@@ -1,29 +1,48 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { ChartData } from '@chartsuno/shared';
-import { config, logger } from '../config.js';
+import type { ChartData } from '../types.js';
+
+/** Minimal logger interface — consumers pass their own (e.g. pino). */
+export interface ChartLogger {
+  info: (obj: unknown, msg?: string) => void;
+  error: (obj: unknown, msg?: string) => void;
+  warn?: (obj: unknown, msg?: string) => void;
+  debug?: (obj: unknown, msg?: string) => void;
+}
+
+const defaultLogger: ChartLogger = {
+  info: (obj, msg) => console.log(msg ?? '', obj),
+  error: (obj, msg) => console.error(msg ?? '', obj),
+};
 
 let genAI: GoogleGenerativeAI | null = null;
 
-function getGeminiClient(): GoogleGenerativeAI {
+function getGeminiClient(apiKey: string): GoogleGenerativeAI {
   if (!genAI) {
-    genAI = new GoogleGenerativeAI(config.google.apiKey);
+    genAI = new GoogleGenerativeAI(apiKey);
   }
   return genAI;
 }
 
-export async function analyzeImageFromUrl(imageUrl: string): Promise<ChartData> {
-  logger.info({ imageUrl }, 'Analyzing image with Gemini Vision');
+export interface AnalyzeOptions {
+  apiKey: string;
+  logger?: ChartLogger;
+}
+
+export async function analyzeImageFromUrl(imageUrl: string, options: AnalyzeOptions): Promise<ChartData> {
+  const log = options.logger ?? defaultLogger;
+  log.info({ imageUrl }, 'Analyzing image with Gemini Vision');
 
   // Fetch the image and convert to base64
   const response = await fetch(imageUrl);
   const arrayBuffer = await response.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  return analyzeImageFromBuffer(buffer);
+  return analyzeImageFromBuffer(buffer, options);
 }
 
-export async function analyzeImageFromBuffer(imageBuffer: Buffer): Promise<ChartData> {
-  const client = getGeminiClient();
+export async function analyzeImageFromBuffer(imageBuffer: Buffer, options: AnalyzeOptions): Promise<ChartData> {
+  const log = options.logger ?? defaultLogger;
+  const client = getGeminiClient(options.apiKey);
   const base64 = imageBuffer.toString('base64');
   const mimeType = detectMimeType(imageBuffer);
 
@@ -78,7 +97,7 @@ Rules:
     const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
     parsed = JSON.parse(cleanContent);
   } catch {
-    logger.error({ content }, 'Failed to parse Gemini response');
+    log.error({ content }, 'Failed to parse Gemini response');
     throw new Error('Failed to parse response: ' + content);
   }
 
@@ -91,7 +110,7 @@ Rules:
     throw new Error('Invalid data structure returned');
   }
 
-  logger.info(
+  log.info(
     { labels: parsed.labels.length, series: parsed.series.length },
     'Successfully extracted chart data'
   );
