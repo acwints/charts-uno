@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import type { ChartData, ChartConfig } from '@chartsuno/shared';
-import { renderChartToPng, getDefaultConfig } from '@chartsuno/shared';
+import { renderChartToPng, getDefaultConfig } from '@chartsuno/shared/node';
 import { marketingConfig, logger } from '../config.js';
 import { SAMPLE_LABELS, SAMPLE_VALUES_1, SAMPLE_VALUES_2 } from '../constants.js';
 import type { ScreenshotConfig } from '../types.js';

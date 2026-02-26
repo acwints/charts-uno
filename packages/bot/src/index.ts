@@ -2,7 +2,7 @@ import { config, validateConfig, logger } from './config.js';
 import { initializeClient, ensureFreshClient } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
-import { closeBrowser, setRendererLogger } from '@chartsuno/shared';
+import { closeBrowser, setRendererLogger } from '@chartsuno/shared/node';
 
 // Inject bot logger into shared chart renderer
 setRendererLogger(logger);

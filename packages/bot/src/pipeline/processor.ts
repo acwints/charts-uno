@@ -7,7 +7,7 @@ import {
   replyWithMedia,
   replyWithError,
 } from '../twitter/media.js';
-import { renderChartToPng, getDefaultConfig, addWatermark } from '@chartsuno/shared';
+import { renderChartToPng, getDefaultConfig, addWatermark } from '@chartsuno/shared/node';
 import { analyzeAndCreateChart, promptAndCreateChart } from '../services/chartsunoApi.js';
 import { loadState, updateState } from '../storage.js';
 import type { MentionData } from '../twitter/mentions.js';
