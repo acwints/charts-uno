@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import base64
+import re
 from typing import Optional, Dict, Any, List
 
 from google import genai
@@ -28,6 +29,246 @@ def get_client() -> genai.Client:
 
 
 MODEL_NAME = "gemini-2.5-flash"
+
+
+def _coerce_numeric_value(value: Any) -> Optional[float]:
+    """Parse numeric-like values, including compact suffixes like 70b."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+
+    text = value.strip().lower().replace(",", "")
+    if not text:
+        return None
+
+    # Strip common currency symbols/codes.
+    text = re.sub(r"^(usd|eur|gbp)\s*", "", text)
+    text = re.sub(r"^[\$€£]\s*", "", text)
+
+    multiplier = 1.0
+    suffix_match = re.search(r"(k|m|b|t)$", text)
+    if suffix_match:
+        suffix = suffix_match.group(1)
+        if suffix == "k":
+            multiplier = 1_000.0
+        elif suffix == "m":
+            multiplier = 1_000_000.0
+        elif suffix == "b":
+            multiplier = 1_000_000_000.0
+        elif suffix == "t":
+            multiplier = 1_000_000_000_000.0
+        text = text[:-1].strip()
+
+    try:
+        return float(text) * multiplier
+    except ValueError:
+        return None
+
+
+async def _plan_prompt_output(prompt: str) -> Dict[str, Any]:
+    """Plan output structure and fact-preservation constraints."""
+    client = get_client()
+    planning_prompt = f"""You are a chart-orchestration planner.
+
+Given user input, infer the most useful table/chart structure and extract explicit facts.
+
+User prompt:
+{prompt}
+
+Return ONLY valid JSON (no markdown):
+{{
+  "outputShape": "entity_comparison" | "time_series" | "distribution" | "geographic" | "synthetic",
+  "reasoning": "1-2 sentence rationale",
+  "explicitFacts": [
+    {{"entity": "name", "metric": "metric name", "value": "raw value string from prompt"}}
+  ],
+  "closedEntitySet": true | false,
+  "preferredLabelField": "Entity" | null,
+  "preferredMetrics": ["Metric A", "Metric B"],
+  "preferredType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table" | null
+}}
+
+Rules:
+- Extract explicit facts when entities and values are directly stated.
+- Set closedEntitySet=true when the text reads like a fixed, explicit list.
+- Prefer table/bar for entity comparisons and line for time trends.
+- If facts are sparse, set outputShape to synthetic.
+"""
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=planning_prompt,
+    )
+    content = response.text or ""
+    if not content:
+        return {"outputShape": "synthetic", "reasoning": "No planning response"}
+
+    try:
+        clean_content = content.replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+        parsed = json.loads(clean_content)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    return {"outputShape": "synthetic", "reasoning": "Planning parse failed"}
+
+
+async def _generate_candidate_from_plan(prompt: str, plan: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate a candidate chart using the orchestration plan."""
+    client = get_client()
+    output_shape = str(plan.get("outputShape") or "synthetic")
+    reasoning = str(plan.get("reasoning") or "").strip()
+    explicit_facts = plan.get("explicitFacts", [])
+    closed_entity_set = bool(plan.get("closedEntitySet", False))
+    preferred_label_field = plan.get("preferredLabelField")
+    preferred_metrics = plan.get("preferredMetrics", [])
+    preferred_type = plan.get("preferredType")
+
+    generation_prompt = f"""You are a data-visualization generator for a chart app.
+
+Use this orchestration plan:
+- outputShape: {output_shape}
+- plannerReasoning: {reasoning or "n/a"}
+- explicitFacts: {json.dumps(explicit_facts, ensure_ascii=False)}
+- closedEntitySet: {closed_entity_set}
+- preferredLabelField: {preferred_label_field}
+- preferredMetrics: {json.dumps(preferred_metrics, ensure_ascii=False)}
+- preferredType: {preferred_type}
+
+User prompt:
+{prompt}
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "labels": ["label1", "label2", ...],
+  "series": [
+    {{"name": "Series Name", "data": [num1 | null, num2 | null, ...]}}
+  ],
+  "suggestedTitle": "A clear, descriptive title for the chart",
+  "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
+  "stacked": true | false,
+  "barLayout": "horizontal" | "vertical",
+  "xAxisLabel": "Label for the x-axis",
+  "yAxisLabel": "Label for the y-axis",
+  "xAxisType": "year" | "date" | "category" | "number",
+  "yAxisFormat": "currency" | "percentage" | "number",
+  "yAxisPrefix": "" | "$" | "€" | "£" | etc,
+  "yAxisSuffix": "" | "%" | " units" | etc,
+  "aiReasoning": "Brief user-facing explanation"
+}}
+
+Rules:
+- Keep labels length aligned with every series data length.
+- Preserve explicit facts when they are present and numeric.
+- If closedEntitySet=true, avoid introducing extra entities unless required to make chartable output.
+- Prefer practical output over clever output: table/bar for entity comparisons, line for temporal trends.
+- If facts are sparse, infer a useful but plausible dataset.
+"""
+    response = client.models.generate_content(model=MODEL_NAME, contents=generation_prompt)
+    content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+    parsed = json.loads(content)
+    if not parsed.get("labels") or not parsed.get("series"):
+        raise ValueError("Invalid data structure returned")
+    return parsed
+
+
+async def _self_critique_candidate(prompt: str, plan: Dict[str, Any], candidate: Dict[str, Any]) -> Dict[str, Any]:
+    """Run a model-side quality check and optional repair pass."""
+    client = get_client()
+    critique_prompt = f"""You are a chart-output critic. Evaluate whether candidate JSON is useful and faithful to the prompt.
+
+Prompt:
+{prompt}
+
+Plan:
+{json.dumps(plan, ensure_ascii=False)}
+
+Candidate chart JSON:
+{json.dumps(candidate, ensure_ascii=False)}
+
+Return ONLY valid JSON:
+{{
+  "verdict": "accept" | "repair",
+  "issues": ["short issue"],
+  "repaired": <full chart JSON object or null>,
+  "reasoning": "brief"
+}}
+
+Checks:
+- Explicit facts preserved when present (entity, metric, value).
+- No unnecessary invented entities when closedEntitySet=true.
+- Practical chart structure for the user intent.
+- labels/series alignment remains valid.
+"""
+    response = client.models.generate_content(model=MODEL_NAME, contents=critique_prompt)
+    content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
+    parsed = json.loads(content)
+    if parsed.get("verdict") == "repair" and isinstance(parsed.get("repaired"), dict):
+        repaired = parsed["repaired"]
+        if repaired.get("labels") and repaired.get("series"):
+            return repaired
+    return candidate
+
+
+def _apply_explicit_fact_guardrails(plan: Dict[str, Any], chart: Dict[str, Any]) -> Dict[str, Any]:
+    """Lightweight deterministic guardrails for explicit prompt facts."""
+    explicit_facts = plan.get("explicitFacts")
+    if not isinstance(explicit_facts, list) or not explicit_facts:
+        return chart
+
+    labels = [str(v) for v in chart.get("labels", [])]
+    series = chart.get("series", [])
+    if not labels or not isinstance(series, list):
+        return chart
+
+    label_idx = {label.lower(): idx for idx, label in enumerate(labels)}
+    series_idx = {
+        str(s.get("name", "")).strip().lower(): idx
+        for idx, s in enumerate(series)
+        if isinstance(s, dict)
+    }
+
+    closed_entity_set = bool(plan.get("closedEntitySet", False))
+    fact_entities: List[str] = []
+
+    for fact in explicit_facts:
+        if not isinstance(fact, dict):
+            continue
+        entity = str(fact.get("entity") or "").strip()
+        metric = str(fact.get("metric") or "").strip()
+        value = _coerce_numeric_value(fact.get("value"))
+        if not entity or not metric or value is None:
+            continue
+
+        fact_entities.append(entity)
+        row = label_idx.get(entity.lower())
+        col = series_idx.get(metric.lower())
+        if row is None or col is None:
+            continue
+
+        data = series[col].get("data")
+        if not isinstance(data, list):
+            continue
+        while len(data) < len(labels):
+            data.append(None)
+        data[row] = value
+        series[col]["data"] = data
+
+    if closed_entity_set and fact_entities:
+        keep = {name.lower() for name in fact_entities}
+        keep_indices = [idx for idx, label in enumerate(labels) if label.lower() in keep]
+        if keep_indices:
+            chart["labels"] = [labels[idx] for idx in keep_indices]
+            for s in series:
+                data = s.get("data")
+                if isinstance(data, list):
+                    s["data"] = [data[idx] if idx < len(data) else None for idx in keep_indices]
+
+    chart["series"] = series
+    return chart
 
 
 async def analyze_image(image_base64: str, mime_type: str, user_prompt: Optional[str] = None) -> Dict[str, Any]:
@@ -497,131 +738,50 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
 
     Pipeline:
     1) Try real-data research providers (FRED, BigQuery public datasets)
-    2) Fall back to synthetic/plausible generation
+    2) Plan the most useful output shape
+    3) Generate + self-critique/repair
+    4) Apply lightweight explicit-fact guardrails
     """
     # First pass: attempt grounded research from external datasets.
     researched = await research_chart_from_prompt(prompt)
     if researched and researched.get("labels") and researched.get("series"):
         return researched
 
-    client = get_client()
+    # Second pass: orchestration + generation.
+    plan = await _plan_prompt_output(prompt)
+    candidate = await _generate_candidate_from_plan(prompt, plan)
+    reviewed = await _self_critique_candidate(prompt, plan, candidate)
+    guarded = _apply_explicit_fact_guardrails(plan, reviewed)
 
-    # Check if this is a geographic/map prompt
-    prompt_lower = prompt.lower()
-    is_geographic = any(kw in prompt_lower for kw in [
-        "by state", "by country", "by countries", "by region", "by province",
-        "map", "geographic", "regional", "states", "countries",
-        "us population", "world population", "gdp by", "per capita",
-        "each state", "every state", "all states", "50 states",
-        "each country", "every country", "all countries",
-    ])
-
-    if is_geographic:
-        # Determine scope
-        is_us = any(kw in prompt_lower for kw in [
-            "state", "states", "us ", "u.s.", "united states", "america",
-            "california", "texas", "new york", "florida",
-        ])
-        map_scope = "us-states" if is_us else "world"
-
-        system_prompt = f"""You are a data visualization expert. The user wants geographic/map data. Generate plausible, realistic data for a map visualization.
-
-User prompt: {prompt}
-
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{{
-  "labels": [],
-  "series": [],
-  "suggestedTitle": "A clear, descriptive title for the map",
-  "suggestedType": "map",
-  "mapScope": "{map_scope}",
-  "mapRegions": [
-    {{"id": "XX", "name": "Region Name", "value": 123456}}
-  ],
-  "yAxisLabel": "Value label (e.g., Population, GDP, Sales)"
-}}
-
-Rules for mapRegions:
-- For US states: use 2-letter state codes as id (CA, TX, NY, FL, etc.)
-- For world countries: use ISO 3166-1 alpha-3 codes as id (USA, GBR, CHN, JPN, etc.)
-- Include 10-50 regions depending on the request
-- Generate realistic, plausible values based on real-world data
-- name should be the full region name (California, Texas, United States, etc.)
-- value must be a number
-
-Examples:
-- US state: {{"id": "CA", "name": "California", "value": 39538223}}
-- Country: {{"id": "USA", "name": "United States", "value": 331002651}}
-
-For US states prompts, include major states like CA, TX, FL, NY, PA, IL, OH, GA, NC, MI, etc.
-For world prompts, include major countries like USA, CHN, IND, BRA, RUS, JPN, DEU, GBR, FRA, etc.
-
-Use real-world knowledge to make the data convincing (actual population figures, GDP values, etc.)."""
-    else:
-        system_prompt = f"""You are a data visualization expert. The user will describe a chart they want to see. Your job is to invent plausible, realistic data that matches their description.
-
-User prompt: {prompt}
-
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{{
-  "labels": ["label1", "label2", ...],
-  "series": [
-    {{"name": "Series Name", "data": [num1, num2, ...]}}
-  ],
-  "suggestedTitle": "A clear, descriptive title for the chart",
-  "suggestedType": "bar" | "line" | "area" | "pie" | "radar" | "scatter" | "table",
-  "stacked": true | false,
-  "barLayout": "horizontal" | "vertical",
-  "xAxisLabel": "Label for the x-axis",
-  "yAxisLabel": "Label for the y-axis",
-  "xAxisType": "year" | "date" | "category" | "number",
-  "yAxisFormat": "currency" | "percentage" | "number",
-  "yAxisPrefix": "" | "$" | "€" | "£" | etc,
-  "yAxisSuffix": "" | "%" | " units" | etc
-}}
-
-Rules:
-- labels array must match the length of each data array
-- All data values must be numbers
-- Generate realistic, plausible data that matches the user's description
-- Use real-world knowledge to make the data convincing (e.g., actual programming language popularity rankings, typical SaaS growth curves, realistic market share percentages)
-- Choose suggestedType based on what best represents the data (trends = line, comparisons = bar, proportions = pie, etc.)
-- Include 5-15 data points unless the user specifies otherwise
-- Set stacked to true only if the data naturally represents stacked categories
-- For data that naturally suits horizontal bars (many categories, long names, ranked comparisons), set barLayout to "horizontal". Otherwise set "vertical".
-- If the prompt is too vague, make reasonable assumptions and generate something useful
-
-Axis formatting rules:
-- When labels represent years (e.g., 1999, 2000, 2023), set xAxisType to "year" and use integer year values as labels (never decimals)
-- When labels represent dates, set xAxisType to "date"
-- When labels are text categories (e.g., product names, countries), set xAxisType to "category"
-- When values represent money/prices/revenue/cost/salary, set yAxisFormat to "currency" and yAxisPrefix to the appropriate symbol ("$" for USD, "€" for EUR, etc.)
-- When values represent percentages, set yAxisFormat to "percentage" and yAxisSuffix to "%"
-- For large currency values (millions), the chart will auto-format to compact notation (e.g., $1.5M) - just provide raw numbers
-- Default to yAxisFormat "number" with empty prefix/suffix if no special formatting needed"""
-
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=system_prompt,
-    )
-    content = response.text
-
-    if not content:
-        raise ValueError("No response from AI")
-
-    clean_content = content.replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
-    parsed = json.loads(clean_content)
-
-    if "error" in parsed:
-        raise ValueError(parsed["error"])
-
-    if not parsed.get("labels") or not parsed.get("series"):
+    if "error" in guarded:
+        raise ValueError(guarded["error"])
+    if not guarded.get("labels") or not guarded.get("series"):
         raise ValueError("Invalid data structure returned")
 
-    # Coerce labels to strings
-    parsed["labels"] = [str(label) for label in parsed["labels"]]
+    labels = [str(label) for label in guarded.get("labels", [])]
+    label_count = len(labels)
+    series_list = guarded.get("series", [])
+    normalized_series: List[Dict[str, Any]] = []
+    for raw_series in series_list:
+        if not isinstance(raw_series, dict):
+            continue
+        name = str(raw_series.get("name") or "Series")
+        raw_data = raw_series.get("data")
+        if not isinstance(raw_data, list):
+            raw_data = []
 
-    return parsed
+        normalized_data: List[Optional[float]] = []
+        for idx in range(label_count):
+            value = raw_data[idx] if idx < len(raw_data) else None
+            normalized_data.append(_coerce_numeric_value(value))
+        normalized_series.append({"name": name, "data": normalized_data})
+
+    if not normalized_series:
+        raise ValueError("Invalid data structure returned")
+
+    guarded["labels"] = labels
+    guarded["series"] = normalized_series
+    return guarded
 
 
 # Color palettes matching the frontend
