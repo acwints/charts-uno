@@ -65,6 +65,40 @@ export function ChartPreview({
   config,
   watermark,
 }: ChartPreviewProps) {
+  const getNiceStep = (value: number): number => {
+    if (!Number.isFinite(value) || value <= 0) return 1;
+    const exponent = Math.floor(Math.log10(value));
+    const magnitude = 10 ** exponent;
+    const residual = value / magnitude;
+    if (residual <= 1) return magnitude;
+    if (residual <= 2) return 2 * magnitude;
+    if (residual <= 5) return 5 * magnitude;
+    return 10 * magnitude;
+  };
+
+  const toNiceDomain = (
+    domain: [number, number] | undefined,
+    options?: { tickCount?: number; lockZeroMin?: boolean },
+  ): [number, number] | undefined => {
+    if (!domain) return undefined;
+    let [min, max] = domain;
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return domain;
+    if (max < min) [min, max] = [max, min];
+
+    const tickCount = Math.max(options?.tickCount ?? 5, 2);
+    const lockZeroMin = options?.lockZeroMin === true && min >= 0;
+    const baseMin = lockZeroMin ? 0 : min;
+    const range = Math.max(max - baseMin, 1e-9);
+    const step = getNiceStep(range / (tickCount - 1));
+
+    const niceMin = lockZeroMin ? 0 : Math.floor(baseMin / step) * step;
+    let niceMax = Math.ceil(max / step) * step;
+    if (niceMax <= niceMin) {
+      niceMax = niceMin + step;
+    }
+    return [niceMin, niceMax];
+  };
+
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -216,32 +250,37 @@ export function ChartPreview({
     (config.type === 'bar' || config.type === 'line' || config.type === 'area') &&
     config.barLayout !== 'horizontal';
   const combo = comboCompatibleBase && isComboChart(config);
+  const rightAxisSeriesList = useMemo(() => {
+    if (!combo) return [] as string[];
+    return getSeriesForAxis(data, config, 'right');
+  }, [combo, data, config]);
+  const rightYAxisLabel = config.rightYAxisLabel ?? rightAxisSeriesList[0];
 
   const rightYAxisFormat = useMemo(() => {
-    const label = (config.rightYAxisLabel || '').toLowerCase();
+    const label = (rightYAxisLabel || '').toLowerCase();
     if (/(\$|usd|eur|gbp|price|cost|revenue|salary|income|spend|budget|dollar|euro|pound)/.test(label)) return 'currency';
     if (/(percent|%|rate|ratio|share|proportion)/.test(label)) return 'percentage';
     // Heuristic: if the label contains savings/margin/growth/etc. and all right-axis values
     // are in 0-100 range, treat as percentage
     if (/\b(savings?|margin|efficiency|utilization|growth|change|returns?|yield)\b/i.test(label)) {
-      const rightNames = combo ? new Set(getSeriesForAxis(data, config, 'right')) : new Set<string>();
+      const rightNames = new Set(rightAxisSeriesList);
       const vals = data.series
         .filter((s) => rightNames.has(s.name))
         .flatMap((s) => s.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v)));
       if (vals.length > 0 && vals.every((v) => v >= 0 && v <= 100)) return 'percentage';
     }
     return 'number';
-  }, [combo, data, config]);
+  }, [data, rightAxisSeriesList, rightYAxisLabel]);
 
   const rightYAxisPrefix = useMemo(() => {
     if (rightYAxisFormat === 'currency') {
-      const label = (config.rightYAxisLabel || '').toLowerCase();
+      const label = (rightYAxisLabel || '').toLowerCase();
       if (/eur|euro|€/.test(label)) return '€';
       if (/gbp|pound|£/.test(label)) return '£';
       return '$';
     }
     return '';
-  }, [rightYAxisFormat, config.rightYAxisLabel]);
+  }, [rightYAxisFormat, rightYAxisLabel]);
 
   const rightYAxisSuffix = useMemo(() => {
     return rightYAxisFormat === 'percentage' ? '%' : '';
@@ -249,10 +288,15 @@ export function ChartPreview({
 
   const rightSeriesValues = useMemo(() => {
     if (!combo) return [];
-    const rightNames = new Set(getSeriesForAxis(data, config, 'right'));
+    const rightNames = new Set(rightAxisSeriesList);
     return data.series
       .filter((s) => rightNames.has(s.name))
       .flatMap((s) => s.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v)));
+  }, [combo, data, rightAxisSeriesList]);
+
+  const leftAxisSeriesNames = useMemo(() => {
+    if (!combo) return [] as string[];
+    return getSeriesForAxis(data, config, 'left');
   }, [combo, data, config]);
 
   const rightAxisDecimalPlaces = useMemo(() => getAdaptiveDecimalPlaces(rightSeriesValues), [rightSeriesValues]);
@@ -275,25 +319,30 @@ export function ChartPreview({
 
   const leftSeriesDomain = useMemo((): [number, number] | undefined => {
     if (!combo) return undefined;
-    const leftNames = new Set(getSeriesForAxis(data, config, 'left'));
+    const leftNames = new Set(leftAxisSeriesNames);
     const values = data.series
       .filter((s) => leftNames.has(s.name))
       .flatMap((s) => s.data);
-    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
-  }, [combo, data, config]);
+    const domain = getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+    // Keep zero baseline for bar-like comparisons, but snap to human-friendly tick bounds.
+    const lockZeroMin = (config.yAxisBaselineMode ?? 'auto') === 'zero' || ((config.yAxisBaselineMode ?? 'auto') === 'auto' && (domain?.[0] ?? 0) === 0);
+    return toNiceDomain(domain, { lockZeroMin });
+  }, [combo, data, config, leftAxisSeriesNames]);
 
   const rightSeriesDomain = useMemo((): [number, number] | undefined => {
     if (!combo) return undefined;
     const values = rightSeriesValues;
     if (values.length === 0) return undefined;
-    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+    const domain = getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+    const lockZeroMin = (config.yAxisBaselineMode ?? 'auto') === 'zero' || ((config.yAxisBaselineMode ?? 'auto') === 'auto' && (domain?.[0] ?? 0) === 0);
+    return toNiceDomain(domain, { lockZeroMin });
   }, [combo, rightSeriesValues, config.yAxisBaselineMode]);
 
   // Set of right-axis series names for tooltip formatting
   const rightAxisSeriesNames = useMemo(() => {
     if (!combo) return new Set<string>();
-    return new Set(getSeriesForAxis(data, config, 'right'));
-  }, [combo, data, config]);
+    return new Set(rightAxisSeriesList);
+  }, [combo, rightAxisSeriesList]);
 
   // Format X-axis year ticks as integers (no decimals)
   const formatXAxisYearTick = useCallback((value: number): string => {
@@ -319,7 +368,9 @@ export function ChartPreview({
   const barValueAxisDomain = useMemo((): [number, number] | undefined => {
     if (!isBarLike) return undefined;
     const values = data.series.flatMap((series) => series.data);
-    return getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+    const domain = getNumericDomainFromValues(values, { mode: config.yAxisBaselineMode ?? 'auto' });
+    const lockZeroMin = (config.yAxisBaselineMode ?? 'auto') === 'zero' || ((config.yAxisBaselineMode ?? 'auto') === 'auto' && (domain?.[0] ?? 0) === 0);
+    return toNiceDomain(domain, { lockZeroMin });
   }, [config.yAxisBaselineMode, data.series, isBarLike]);
 
   // Calculate domain with padding for numeric axes
@@ -342,7 +393,9 @@ export function ChartPreview({
   );
 
   const xAxisLabel = data.xAxisLabel;
-  const yAxisLabel = data.yAxisLabel ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const yAxisLabel = data.yAxisLabel
+    ?? (combo ? leftAxisSeriesNames[0] : undefined)
+    ?? (data.series.length === 1 ? data.series[0].name : undefined);
   const xAxisLabelLayout = useMemo(
     () => computeCartesianXAxisLabelConfig(adaptiveAxis, xAxisLabel),
     [adaptiveAxis, xAxisLabel],
@@ -675,8 +728,8 @@ export function ChartPreview({
 
     // --- Combo chart (dual-axis, mixed series types) ---
     if (combo) {
-      const rightYAxisLabelConfig = config.rightYAxisLabel ? {
-        value: config.rightYAxisLabel,
+      const rightYAxisLabelConfig = rightYAxisLabel ? {
+        value: rightYAxisLabel,
         angle: 90,
         position: 'insideRight' as const,
         offset: 8,

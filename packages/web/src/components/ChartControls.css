@@ -79,6 +79,51 @@
   font-weight: 400;
 }
 
+/* Segmented tab switcher */
+.controls-segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.controls-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--control-font-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.controls-segment:hover,
+.controls-segment:active {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.controls-segment.active {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+}
+
+.controls-segment:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Full-width chart type row */
 .controls-type-row {
   display: block;
@@ -863,6 +908,11 @@
   }
 
   .control-input-title {
+    transition: none;
+    animation: none;
+  }
+
+  .controls-segment {
     transition: none;
     animation: none;
   }

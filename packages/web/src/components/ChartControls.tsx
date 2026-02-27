@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import BarChart2 from 'lucide-react/dist/esm/icons/bar-chart-2';
@@ -96,6 +97,7 @@ const COMBO_CHART_TYPES: { id: SeriesChartType; icon: typeof BarChart3; label: s
 ];
 
 const COMBO_ELIGIBLE_TYPES: Set<ChartType> = new Set(['bar', 'line', 'area']);
+type ControlsTab = 'logic' | 'style';
 
 export function ChartControls({
   config,
@@ -107,6 +109,7 @@ export function ChartControls({
   canCustomizeBranding = false,
   onLogoSelectionChange,
 }: ChartControlsProps) {
+  const [activeTab, setActiveTab] = useState<ControlsTab>('logic');
   const styleVariantOptions = BASE_STYLE_VARIANT_OPTIONS;
 
   const updateConfig = (updates: Partial<ChartConfig>) => {
@@ -130,6 +133,9 @@ export function ChartControls({
   const comboSuggestion = !combo && showComboControls
     ? suggestComboConfig(data, config.type)
     : null;
+  const showPointToggle = config.type === 'line' || config.type === 'area';
+  const showStackedToggle = config.type === 'bar' && data.series.length > 1;
+  const showHorizontalToggle = config.type === 'bar';
 
   const applyComboSuggestion = () => {
     if (!comboSuggestion) return;
@@ -225,373 +231,403 @@ export function ChartControls({
         </div>
       </div>
 
-      {/* Full-width chart type */}
-      <div className="controls-type-row">
-        <div className="chart-type-grid">
-          {CHART_TYPES.map((type) => (
-            <button
-              key={type.id}
-              className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
-              onClick={() => handleTypeChange(type.id)}
-              title={type.label}
-            >
-              <type.icon size={18} />
-              <span className="type-label">{type.label}</span>
-            </button>
-          ))}
-        </div>
-        {comboAvailable && (
-          <div className="type-quick-actions">
-            <button
-              className={`type-button combo-entry-button ${combo ? 'active' : ''}`}
-              onClick={enableCombo}
-              title="Enable combo chart (dual axis)"
-              disabled={combo}
-              aria-pressed={combo}
-            >
-              <Columns2 size={16} />
-              <span className="type-label">{combo ? 'Combo Enabled' : 'Enable Combo'}</span>
-            </button>
-          </div>
-        )}
-        {data.aiReasoning && config.type !== 'infographic' && (
-          <div className="ai-reasoning">
-            <Sparkles size={12} />
-            <span>{data.aiReasoning}</span>
-          </div>
-        )}
+      <div className="controls-segmented" role="tablist" aria-label="Chart controls sections">
+        <button
+          role="tab"
+          type="button"
+          aria-selected={activeTab === 'logic'}
+          aria-controls="controls-panel-logic"
+          className={`controls-segment ${activeTab === 'logic' ? 'active' : ''}`}
+          onClick={() => setActiveTab('logic')}
+        >
+          <BarChart3 size={14} />
+          <span>Chart &amp; Data</span>
+        </button>
+        <button
+          role="tab"
+          type="button"
+          aria-selected={activeTab === 'style'}
+          aria-controls="controls-panel-style"
+          className={`controls-segment ${activeTab === 'style' ? 'active' : ''}`}
+          onClick={() => setActiveTab('style')}
+        >
+          <Paintbrush size={14} />
+          <span>Styling</span>
+        </button>
       </div>
 
-      {/* AI Mode selector (only when infographic/AI Magic is selected) */}
-      {config.type === 'infographic' && (
-        <div className="controls-ai-mode">
-          <div className="ai-mode-grid">
-            {AI_MODE_OPTIONS.map((mode) => (
-              <button
-                key={mode.id}
-                className={`ai-mode-button ${config.aiMode === mode.id ? 'active' : ''}`}
-                onClick={() => updateConfig({ aiMode: mode.id, aiReadyToGenerate: false })}
-                title={mode.description}
-              >
-                <mode.icon size={16} />
-                <span className="ai-mode-label">{mode.label}</span>
-              </button>
-            ))}
-          </div>
-          {config.aiMode === 'custom' && (
-            <div className="ai-custom-prompt">
-              <textarea
-                className="ai-custom-prompt-input"
-                placeholder="Describe how you want the AI to visualize your data..."
-                value={config.aiCustomPrompt ?? ''}
-                onChange={(e) => updateConfig({ aiCustomPrompt: e.target.value })}
-                rows={3}
-              />
-            </div>
-          )}
-          <button
-            className="ai-generate-button"
-            onClick={() => updateConfig({ aiReadyToGenerate: true })}
-            disabled={config.aiMode === 'custom' && !config.aiCustomPrompt?.trim()}
-          >
-            <Play size={16} />
-            <span>Generate</span>
-          </button>
-        </div>
-      )}
-
-      {/* Map options (only when map is selected) */}
-      {config.type === 'map' && (
-        <div className="controls-map-options">
-          <div className="map-options-row">
-            <div className="map-option-group">
-              <span className="map-option-label">Scope</span>
-              <div className="map-scope-grid">
-                {MAP_SCOPE_OPTIONS.map((scopeOpt) => (
-                  <button
-                    key={scopeOpt.id}
-                    className={`map-scope-button ${config.mapScope === scopeOpt.id ? 'active' : ''}`}
-                    onClick={() => updateConfig({ mapScope: scopeOpt.id })}
-                    title={scopeOpt.description}
-                  >
-                    <scopeOpt.icon size={14} />
-                    <span>{scopeOpt.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="map-option-group">
-              <span className="map-option-label">Style</span>
-              <div className="map-variant-grid">
-                {MAP_VARIANT_OPTIONS.map((variantOpt) => (
-                  <button
-                    key={variantOpt.id}
-                    className={`map-variant-button ${config.mapVariant === variantOpt.id ? 'active' : ''}`}
-                    onClick={() => updateConfig({ mapVariant: variantOpt.id })}
-                    title={variantOpt.description}
-                  >
-                    <span>{variantOpt.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          {(!data.mapRegions || data.mapRegions.length === 0) && (
-            <div className="map-no-data-hint">
-              <MapPin size={14} />
-              <span>Use an AI prompt like "US population by state" to generate map data</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Color Studio (always visible) */}
-      <ColorStudio
-        config={config}
-        onChange={onChange}
-        seriesNames={data.series.map(s => s.name)}
-      />
-
-      {/* Two-column grid for remaining controls */}
-      <div className="controls-grid">
-        <div className="control-section">
-          <SectionHeader icon={Paintbrush} label="Style Variant" />
-          <div className="style-variant-grid">
-            {styleVariantOptions.map((variant) => {
-              const variantConfig = STYLE_VARIANTS[variant.id];
-              const isBrand = variant.id === 'brand';
-              return (
+      {activeTab === 'logic' && (
+        <div id="controls-panel-logic" role="tabpanel">
+          <div className="controls-type-row">
+            <div className="chart-type-grid">
+              {CHART_TYPES.map((type) => (
                 <button
-                  key={variant.id}
-                  className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''} ${isBrand ? 'brand' : ''}`}
-                  onClick={() => updateConfig({ styleVariant: variant.id })}
-                  title={variantConfig.description}
+                  key={type.id}
+                  className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
+                  onClick={() => handleTypeChange(type.id)}
+                  title={type.label}
                 >
-                  <variant.icon size={16} />
-                  <span className="variant-label">{variant.label}</span>
+                  <type.icon size={18} />
+                  <span className="type-label">{type.label}</span>
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="control-section">
-          <SectionHeader icon={Grid} label="Display Options" />
-          <div className="toggle-list">
-            <label className="toggle-item">
-              <input
-                type="checkbox"
-                checked={config.showGrid}
-                onChange={(e) => updateConfig({ showGrid: e.target.checked })}
-              />
-              <span className="toggle-switch" />
-              <span className="toggle-label">Show Grid</span>
-            </label>
-
-            <label className="toggle-item">
-              <input
-                type="checkbox"
-                checked={config.showLegend}
-                onChange={(e) => updateConfig({ showLegend: e.target.checked })}
-              />
-              <span className="toggle-switch" />
-              <span className="toggle-label">Show Legend</span>
-            </label>
-
-            <label className="toggle-item">
-              <input
-                type="checkbox"
-                checked={config.showValues}
-                onChange={(e) => updateConfig({ showValues: e.target.checked })}
-              />
-              <span className="toggle-switch" />
-              <span className="toggle-label">Show Values</span>
-            </label>
-
-            {(config.type === 'line' || config.type === 'area') && (
-              <label className="toggle-item">
-                <input
-                  type="checkbox"
-                  checked={config.showPoints}
-                  onChange={(e) => updateConfig({ showPoints: e.target.checked })}
-                />
-                <span className="toggle-switch" />
-                <span className="toggle-label">Show Points</span>
-              </label>
-            )}
-
-            {config.type === 'bar' && data.series.length > 1 && (
-              <label className="toggle-item">
-                <input
-                  type="checkbox"
-                  checked={config.stacked}
-                  onChange={(e) => updateConfig({ stacked: e.target.checked })}
-                />
-                <span className="toggle-switch" />
-                <span className="toggle-label">Stacked</span>
-              </label>
-            )}
-
-            {config.type === 'bar' && (
-              <label className="toggle-item">
-                <input
-                  type="checkbox"
-                  checked={config.barLayout === 'horizontal'}
-                  onChange={(e) => {
-                    const nextHorizontal = e.target.checked;
-                    updateConfig({
-                      barLayout: nextHorizontal ? 'horizontal' : 'vertical',
-                      ...(nextHorizontal ? { seriesConfig: undefined, rightYAxisLabel: undefined } : {}),
-                    });
-                  }}
-                />
-                <span className="toggle-switch" />
-                <span className="toggle-label">Horizontal</span>
-              </label>
-            )}
-          </div>
-          {(config.type === 'bar' || config.type === 'histogram') && (
-            <label className="baseline-mode-control">
-              <span className="baseline-mode-label">Value axis baseline</span>
-              <select
-                className="baseline-mode-select"
-                value={config.yAxisBaselineMode ?? 'auto'}
-                onChange={(e) => updateConfig({ yAxisBaselineMode: e.target.value as YAxisBaselineMode })}
-                aria-label="Value axis baseline mode"
-              >
-                {Y_AXIS_BASELINE_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {onLogoSelectionChange && (
-            <label className="baseline-mode-control">
-              <span className="baseline-mode-label">Chart Branding</span>
-              <select
-                className="baseline-mode-select"
-                value={logoSelectionValue}
-                onChange={(event) => onLogoSelectionChange(event.target.value)}
-                aria-label="Choose chart logo"
-                disabled={!canCustomizeBranding}
-              >
-                <option value={BRANDING_NONE_VALUE}>None</option>
-                <option value={BRANDING_CHARTSUNO_VALUE}>Chartsuno</option>
-                {logoOptions.map((logoOption) => (
-                  <option key={logoOption.teamId} value={logoOption.logoUrl}>
-                    {logoOption.teamName}
-                  </option>
-                ))}
-              </select>
-              {!canCustomizeBranding && (
-                <span className="branding-upgrade-hint">Sign in to customize chart branding</span>
-              )}
-              {watermark?.enabled === false && canCustomizeBranding && (
-                <span className="branding-upgrade-hint">Branding hidden for this chart</span>
-              )}
-            </label>
-          )}
-        </div>
-
-        <div className="control-section data-summary full-width">
-          <SectionHeader icon={Hash} label="Data Summary" />
-          <div className="data-grid">
-            {data.series.map((series, idx) => (
-              <div key={series.name} className="data-series-item">
-                <div
-                  className="series-color"
-                  style={{ background: effectiveColors[idx % effectiveColors.length] }}
-                />
-                <span className="series-name">{series.name}</span>
-                <span className="series-stats">
-                  {(() => {
-                    const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-                    if (numericValues.length === 0) return 'No numeric data';
-                    const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
-                    const min = Math.min(...numericValues);
-                    const max = Math.max(...numericValues);
-                    return `${formatter.format(min)} — ${formatter.format(max)}`;
-                  })()}
-                </span>
+              ))}
+            </div>
+            {comboAvailable && (
+              <div className="type-quick-actions">
+                <button
+                  className={`type-button combo-entry-button ${combo ? 'active' : ''}`}
+                  onClick={enableCombo}
+                  title="Enable combo chart (dual axis)"
+                  disabled={combo}
+                  aria-pressed={combo}
+                >
+                  <Columns2 size={16} />
+                  <span className="type-label">{combo ? 'Combo Enabled' : 'Enable Combo'}</span>
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {showComboControls && (
-          <div className="control-section combo-section full-width">
-            <SectionHeader icon={Columns2} label="Dual Axis" />
-            {comboSuggestion && (
-              <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
-                <Sparkles size={12} />
-                <span>
-                  Mixed units detected — click to show{' '}
-                  <strong>{Object.keys(comboSuggestion.seriesConfig).join(', ')}</strong>{' '}
-                  as % on the right axis
-                </span>
-              </button>
             )}
-            <div className="combo-series-grid">
-              {data.series.map((series, idx) => {
-                const resolved = resolveSeriesConfig(series.name, config);
-                return (
-                  <div key={series.name} className="combo-series-row">
+            {data.aiReasoning && config.type !== 'infographic' && (
+              <div className="ai-reasoning">
+                <Sparkles size={12} />
+                <span>{data.aiReasoning}</span>
+              </div>
+            )}
+          </div>
+
+          {config.type === 'infographic' && (
+            <div className="controls-ai-mode">
+              <div className="ai-mode-grid">
+                {AI_MODE_OPTIONS.map((mode) => (
+                  <button
+                    key={mode.id}
+                    className={`ai-mode-button ${config.aiMode === mode.id ? 'active' : ''}`}
+                    onClick={() => updateConfig({ aiMode: mode.id, aiReadyToGenerate: false })}
+                    title={mode.description}
+                  >
+                    <mode.icon size={16} />
+                    <span className="ai-mode-label">{mode.label}</span>
+                  </button>
+                ))}
+              </div>
+              {config.aiMode === 'custom' && (
+                <div className="ai-custom-prompt">
+                  <textarea
+                    className="ai-custom-prompt-input"
+                    placeholder="Describe how you want the AI to visualize your data..."
+                    value={config.aiCustomPrompt ?? ''}
+                    onChange={(e) => updateConfig({ aiCustomPrompt: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              )}
+              <button
+                className="ai-generate-button"
+                onClick={() => updateConfig({ aiReadyToGenerate: true })}
+                disabled={config.aiMode === 'custom' && !config.aiCustomPrompt?.trim()}
+              >
+                <Play size={16} />
+                <span>Generate</span>
+              </button>
+            </div>
+          )}
+
+          {config.type === 'map' && (
+            <div className="controls-map-options">
+              <div className="map-options-row">
+                <div className="map-option-group">
+                  <span className="map-option-label">Scope</span>
+                  <div className="map-scope-grid">
+                    {MAP_SCOPE_OPTIONS.map((scopeOpt) => (
+                      <button
+                        key={scopeOpt.id}
+                        className={`map-scope-button ${config.mapScope === scopeOpt.id ? 'active' : ''}`}
+                        onClick={() => updateConfig({ mapScope: scopeOpt.id })}
+                        title={scopeOpt.description}
+                      >
+                        <scopeOpt.icon size={14} />
+                        <span>{scopeOpt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="map-option-group">
+                  <span className="map-option-label">Style</span>
+                  <div className="map-variant-grid">
+                    {MAP_VARIANT_OPTIONS.map((variantOpt) => (
+                      <button
+                        key={variantOpt.id}
+                        className={`map-variant-button ${config.mapVariant === variantOpt.id ? 'active' : ''}`}
+                        onClick={() => updateConfig({ mapVariant: variantOpt.id })}
+                        title={variantOpt.description}
+                      >
+                        <span>{variantOpt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {(!data.mapRegions || data.mapRegions.length === 0) && (
+                <div className="map-no-data-hint">
+                  <MapPin size={14} />
+                  <span>Use an AI prompt like "US population by state" to generate map data</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="controls-grid">
+            <div className="control-section">
+              <SectionHeader icon={Grid} label="Chart Logic" />
+              <div className="toggle-list">
+                {showStackedToggle && (
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={config.stacked}
+                      onChange={(e) => updateConfig({ stacked: e.target.checked })}
+                    />
+                    <span className="toggle-switch" />
+                    <span className="toggle-label">Stacked</span>
+                  </label>
+                )}
+                {showHorizontalToggle && (
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={config.barLayout === 'horizontal'}
+                      onChange={(e) => {
+                        const nextHorizontal = e.target.checked;
+                        updateConfig({
+                          barLayout: nextHorizontal ? 'horizontal' : 'vertical',
+                          ...(nextHorizontal ? { seriesConfig: undefined, rightYAxisLabel: undefined } : {}),
+                        });
+                      }}
+                    />
+                    <span className="toggle-switch" />
+                    <span className="toggle-label">Horizontal Layout</span>
+                  </label>
+                )}
+              </div>
+              {(config.type === 'bar' || config.type === 'histogram') && (
+                <label className="baseline-mode-control">
+                  <span className="baseline-mode-label">Value axis baseline</span>
+                  <select
+                    className="baseline-mode-select"
+                    value={config.yAxisBaselineMode ?? 'auto'}
+                    onChange={(e) => updateConfig({ yAxisBaselineMode: e.target.value as YAxisBaselineMode })}
+                    aria-label="Value axis baseline mode"
+                  >
+                    {Y_AXIS_BASELINE_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+
+            <div className="control-section data-summary full-width">
+              <SectionHeader icon={Hash} label="Data Summary" />
+              <div className="data-grid">
+                {data.series.map((series, idx) => (
+                  <div key={series.name} className="data-series-item">
                     <div
                       className="series-color"
                       style={{ background: effectiveColors[idx % effectiveColors.length] }}
                     />
-                    <span className="combo-series-name">{series.name}</span>
-                    <div className="combo-series-controls">
-                      <div className="combo-type-selector" role="group" aria-label={`Chart type for ${series.name}`}>
-                        {COMBO_CHART_TYPES.map((ct) => (
-                          <button
-                            key={ct.id}
-                            className={`combo-type-btn ${resolved.chartType === ct.id ? 'active' : ''}`}
-                            onClick={() => updateSeriesConfig(series.name, { chartType: ct.id })}
-                            aria-label={`${ct.label} chart for ${series.name}`}
-                            aria-pressed={resolved.chartType === ct.id}
-                            title={ct.label}
-                          >
-                            <ct.icon size={12} />
-                          </button>
-                        ))}
-                      </div>
-                      <div className="combo-axis-selector" role="group" aria-label={`Axis for ${series.name}`}>
-                        {(['left', 'right'] as AxisSide[]).map((side) => (
-                          <button
-                            key={side}
-                            className={`combo-axis-btn ${resolved.axis === side ? 'active' : ''}`}
-                            onClick={() => updateSeriesConfig(series.name, { axis: side })}
-                            aria-label={`${side === 'left' ? 'Left' : 'Right'} axis for ${series.name}`}
-                            aria-pressed={resolved.axis === side}
-                            title={`${side === 'left' ? 'Left' : 'Right'} axis`}
-                          >
-                            {side === 'left' ? 'L' : 'R'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <span className="series-name">{series.name}</span>
+                    <span className="series-stats">
+                      {(() => {
+                        const numericValues = series.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+                        if (numericValues.length === 0) return 'No numeric data';
+                        const formatter = createFixedNumberFormatter(getAdaptiveDecimalPlaces(numericValues));
+                        const min = Math.min(...numericValues);
+                        const max = Math.max(...numericValues);
+                        return `${formatter.format(min)} — ${formatter.format(max)}`;
+                      })()}
+                    </span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-            {hasRightAxis && (
-              <div className="combo-right-axis-label">
-                <input
-                  type="text"
-                  className="combo-right-axis-input"
-                  placeholder="Right axis label..."
-                  value={config.rightYAxisLabel ?? ''}
-                  onChange={(e) => updateConfig({ rightYAxisLabel: e.target.value || undefined })}
-                  spellCheck={false}
-                />
+
+            {showComboControls && (
+              <div className="control-section combo-section full-width">
+                <SectionHeader icon={Columns2} label="Dual Axis" />
+                {comboSuggestion && (
+                  <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
+                    <Sparkles size={12} />
+                    <span>
+                      Mixed units detected — click to show{' '}
+                      <strong>{Object.keys(comboSuggestion.seriesConfig).join(', ')}</strong>{' '}
+                      as % on the right axis
+                    </span>
+                  </button>
+                )}
+                <div className="combo-series-grid">
+                  {data.series.map((series, idx) => {
+                    const resolved = resolveSeriesConfig(series.name, config);
+                    return (
+                      <div key={series.name} className="combo-series-row">
+                        <div
+                          className="series-color"
+                          style={{ background: effectiveColors[idx % effectiveColors.length] }}
+                        />
+                        <span className="combo-series-name">{series.name}</span>
+                        <div className="combo-series-controls">
+                          <div className="combo-type-selector" role="group" aria-label={`Chart type for ${series.name}`}>
+                            {COMBO_CHART_TYPES.map((ct) => (
+                              <button
+                                key={ct.id}
+                                className={`combo-type-btn ${resolved.chartType === ct.id ? 'active' : ''}`}
+                                onClick={() => updateSeriesConfig(series.name, { chartType: ct.id })}
+                                aria-label={`${ct.label} chart for ${series.name}`}
+                                aria-pressed={resolved.chartType === ct.id}
+                                title={ct.label}
+                              >
+                                <ct.icon size={12} />
+                              </button>
+                            ))}
+                          </div>
+                          <div className="combo-axis-selector" role="group" aria-label={`Axis for ${series.name}`}>
+                            {(['left', 'right'] as AxisSide[]).map((side) => (
+                              <button
+                                key={side}
+                                className={`combo-axis-btn ${resolved.axis === side ? 'active' : ''}`}
+                                onClick={() => updateSeriesConfig(series.name, { axis: side })}
+                                aria-label={`${side === 'left' ? 'Left' : 'Right'} axis for ${series.name}`}
+                                aria-pressed={resolved.axis === side}
+                                title={`${side === 'left' ? 'Left' : 'Right'} axis`}
+                              >
+                                {side === 'left' ? 'L' : 'R'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {hasRightAxis && (
+                  <div className="combo-right-axis-label">
+                    <input
+                      type="text"
+                      className="combo-right-axis-input"
+                      placeholder="Right axis label..."
+                      value={config.rightYAxisLabel ?? ''}
+                      onChange={(e) => updateConfig({ rightYAxisLabel: e.target.value || undefined })}
+                      spellCheck={false}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {activeTab === 'style' && (
+        <div id="controls-panel-style" role="tabpanel">
+          <ColorStudio
+            config={config}
+            onChange={onChange}
+            seriesNames={data.series.map((s) => s.name)}
+          />
+          <div className="controls-grid">
+            <div className="control-section">
+              <SectionHeader icon={Paintbrush} label="Style Variant" />
+              <div className="style-variant-grid">
+                {styleVariantOptions.map((variant) => {
+                  const variantConfig = STYLE_VARIANTS[variant.id];
+                  const isBrand = variant.id === 'brand';
+                  return (
+                    <button
+                      key={variant.id}
+                      className={`style-variant-button ${config.styleVariant === variant.id ? 'active' : ''} ${isBrand ? 'brand' : ''}`}
+                      onClick={() => updateConfig({ styleVariant: variant.id })}
+                      title={variantConfig.description}
+                    >
+                      <variant.icon size={16} />
+                      <span className="variant-label">{variant.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="control-section">
+              <SectionHeader icon={Grid} label="Display Options" />
+              <div className="toggle-list">
+                <label className="toggle-item">
+                  <input
+                    type="checkbox"
+                    checked={config.showGrid}
+                    onChange={(e) => updateConfig({ showGrid: e.target.checked })}
+                  />
+                  <span className="toggle-switch" />
+                  <span className="toggle-label">Show Grid</span>
+                </label>
+                <label className="toggle-item">
+                  <input
+                    type="checkbox"
+                    checked={config.showLegend}
+                    onChange={(e) => updateConfig({ showLegend: e.target.checked })}
+                  />
+                  <span className="toggle-switch" />
+                  <span className="toggle-label">Show Legend</span>
+                </label>
+                <label className="toggle-item">
+                  <input
+                    type="checkbox"
+                    checked={config.showValues}
+                    onChange={(e) => updateConfig({ showValues: e.target.checked })}
+                  />
+                  <span className="toggle-switch" />
+                  <span className="toggle-label">Show Values</span>
+                </label>
+                {showPointToggle && (
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={config.showPoints}
+                      onChange={(e) => updateConfig({ showPoints: e.target.checked })}
+                    />
+                    <span className="toggle-switch" />
+                    <span className="toggle-label">Show Points</span>
+                  </label>
+                )}
+              </div>
+              {onLogoSelectionChange && (
+                <label className="baseline-mode-control">
+                  <span className="baseline-mode-label">Chart Branding</span>
+                  <select
+                    className="baseline-mode-select"
+                    value={logoSelectionValue}
+                    onChange={(event) => onLogoSelectionChange(event.target.value)}
+                    aria-label="Choose chart logo"
+                    disabled={!canCustomizeBranding}
+                  >
+                    <option value={BRANDING_NONE_VALUE}>None</option>
+                    <option value={BRANDING_CHARTSUNO_VALUE}>Chartsuno</option>
+                    {logoOptions.map((logoOption) => (
+                      <option key={logoOption.teamId} value={logoOption.logoUrl}>
+                        {logoOption.teamName}
+                      </option>
+                    ))}
+                  </select>
+                  {!canCustomizeBranding && (
+                    <span className="branding-upgrade-hint">Sign in to customize chart branding</span>
+                  )}
+                  {watermark?.enabled === false && canCustomizeBranding && (
+                    <span className="branding-upgrade-hint">Branding hidden for this chart</span>
+                  )}
+                </label>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="controls-footer">
         <div className="ai-badge">
