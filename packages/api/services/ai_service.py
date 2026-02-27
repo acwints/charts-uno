@@ -3,6 +3,7 @@ import json
 import logging
 import base64
 import re
+from datetime import date
 from typing import Optional, Dict, Any, List
 
 from google import genai
@@ -68,6 +69,41 @@ def _coerce_numeric_value(value: Any) -> Optional[float]:
         return None
 
 
+def _extract_relative_year_window(prompt: str, today: Optional[date] = None) -> Optional[Dict[str, int]]:
+    """Infer relative year windows like 'past decade' or 'last 10 years'."""
+    lower = prompt.lower()
+    now = today or date.today()
+    years: Optional[int] = None
+
+    if re.search(r"\b(past|last)\s+decade\b", lower):
+        years = 10
+    else:
+        match = re.search(r"\b(past|last)\s+(\d{1,2})\s+years?\b", lower)
+        if match:
+            parsed = int(match.group(2))
+            if 2 <= parsed <= 50:
+                years = parsed
+
+    if not years:
+        return None
+
+    end_year = now.year
+    start_year = end_year - years + 1
+    return {
+        "count": years,
+        "startYear": start_year,
+        "endYear": end_year,
+    }
+
+
+def _labels_match_year_window(labels: List[str], window: Optional[Dict[str, int]]) -> bool:
+    """Check if labels exactly match an expected contiguous year window."""
+    if not window:
+        return True
+    expected = [str(year) for year in range(window["startYear"], window["endYear"] + 1)]
+    return labels == expected
+
+
 async def _plan_prompt_output(prompt: str) -> Dict[str, Any]:
     """Plan output structure and fact-preservation constraints."""
     client = get_client()
@@ -116,7 +152,12 @@ Rules:
     return {"outputShape": "synthetic", "reasoning": "Planning parse failed"}
 
 
-async def _generate_candidate_from_plan(prompt: str, plan: Dict[str, Any]) -> Dict[str, Any]:
+async def _generate_candidate_from_plan(
+    prompt: str,
+    plan: Dict[str, Any],
+    year_window: Optional[Dict[str, int]] = None,
+    force_year_window: bool = False,
+) -> Dict[str, Any]:
     """Generate a candidate chart using the orchestration plan."""
     client = get_client()
     output_shape = str(plan.get("outputShape") or "synthetic")
@@ -126,6 +167,16 @@ async def _generate_candidate_from_plan(prompt: str, plan: Dict[str, Any]) -> Di
     preferred_label_field = plan.get("preferredLabelField")
     preferred_metrics = plan.get("preferredMetrics", [])
     preferred_type = plan.get("preferredType")
+    today_iso = date.today().isoformat()
+    year_window_line = "none"
+    year_window_rules = ""
+    if year_window:
+        year_window_line = f"{year_window['startYear']}..{year_window['endYear']} ({year_window['count']} years)"
+        strictness = "REQUIRED" if force_year_window else "required when applicable"
+        year_window_rules = f"""
+- Relative year window: {year_window_line}
+- This is {strictness}. If the prompt asks for "past/last N years" or "past decade", labels MUST be yearly strings from {year_window['startYear']} to {year_window['endYear']} in ascending order.
+- Do not return older ranges unless the user explicitly asks for a fixed historical period."""
 
     generation_prompt = f"""You are a data-visualization generator for a chart app.
 
@@ -137,6 +188,8 @@ Use this orchestration plan:
 - preferredLabelField: {preferred_label_field}
 - preferredMetrics: {json.dumps(preferred_metrics, ensure_ascii=False)}
 - preferredType: {preferred_type}
+- currentDate: {today_iso}
+- expectedRelativeYearWindow: {year_window_line}
 
 User prompt:
 {prompt}
@@ -166,6 +219,8 @@ Rules:
 - If closedEntitySet=true, avoid introducing extra entities unless required to make chartable output.
 - Prefer practical output over clever output: table/bar for entity comparisons, line for temporal trends.
 - If facts are sparse, infer a useful but plausible dataset.
+- For time-sensitive factual prompts, prefer up-to-date real-world values over stale templates.
+{year_window_rules}
 """
     response = client.models.generate_content(model=MODEL_NAME, contents=generation_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
@@ -175,7 +230,12 @@ Rules:
     return parsed
 
 
-async def _self_critique_candidate(prompt: str, plan: Dict[str, Any], candidate: Dict[str, Any]) -> Dict[str, Any]:
+async def _self_critique_candidate(
+    prompt: str,
+    plan: Dict[str, Any],
+    candidate: Dict[str, Any],
+    year_window: Optional[Dict[str, int]] = None,
+) -> Dict[str, Any]:
     """Run a model-side quality check and optional repair pass."""
     client = get_client()
     critique_prompt = f"""You are a chart-output critic. Evaluate whether candidate JSON is useful and faithful to the prompt.
@@ -185,6 +245,9 @@ Prompt:
 
 Plan:
 {json.dumps(plan, ensure_ascii=False)}
+
+Current date: {date.today().isoformat()}
+Expected relative year window: {json.dumps(year_window) if year_window else "none"}
 
 Candidate chart JSON:
 {json.dumps(candidate, ensure_ascii=False)}
@@ -202,6 +265,7 @@ Checks:
 - No unnecessary invented entities when closedEntitySet=true.
 - Practical chart structure for the user intent.
 - labels/series alignment remains valid.
+- For relative-time prompts (e.g. past decade/last N years), year labels must match the expected recent window.
 """
     response = client.models.generate_content(model=MODEL_NAME, contents=critique_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
@@ -749,8 +813,26 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
 
     # Second pass: orchestration + generation.
     plan = await _plan_prompt_output(prompt)
-    candidate = await _generate_candidate_from_plan(prompt, plan)
-    reviewed = await _self_critique_candidate(prompt, plan, candidate)
+    year_window = _extract_relative_year_window(prompt, date.today())
+    candidate = await _generate_candidate_from_plan(prompt, plan, year_window=year_window)
+    reviewed = await _self_critique_candidate(prompt, plan, candidate, year_window=year_window)
+
+    # One retry with strict temporal anchoring for relative-year prompts.
+    if year_window:
+        reviewed_labels = [str(label) for label in reviewed.get("labels", [])]
+        if not _labels_match_year_window(reviewed_labels, year_window):
+            retry_candidate = await _generate_candidate_from_plan(
+                prompt,
+                plan,
+                year_window=year_window,
+                force_year_window=True,
+            )
+            reviewed = await _self_critique_candidate(
+                prompt,
+                plan,
+                retry_candidate,
+                year_window=year_window,
+            )
     guarded = _apply_explicit_fact_guardrails(plan, reviewed)
 
     if "error" in guarded:
