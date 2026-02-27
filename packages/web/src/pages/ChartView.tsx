@@ -28,6 +28,14 @@ import type { WatermarkSettings } from '../services/exportService';
 const BRANDING_NONE_VALUE = '__none__';
 const BRANDING_CHARTSUNO_VALUE = '__chartsuno__';
 
+function getSpreadsheetComparableData(data: ChartData) {
+  return {
+    labels: data.labels,
+    series: data.series,
+    xAxisLabel: data.xAxisLabel,
+  };
+}
+
 export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -282,7 +290,8 @@ export function ChartView() {
 
   const isDataDirty = useMemo(() => {
     if (!chartData || !originalData) return false;
-    return JSON.stringify(chartData) !== JSON.stringify(originalData);
+    return JSON.stringify(getSpreadsheetComparableData(chartData))
+      !== JSON.stringify(getSpreadsheetComparableData(originalData));
   }, [chartData, originalData]);
 
   const handleDataReset = () => {
