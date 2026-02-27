@@ -10,13 +10,55 @@
   overflow-y: auto;
 }
 
+/* Top layout: title/source on left, branding on right */
+.controls-top-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-3) 0 var(--space-3);
+}
+
 /* Full-width title row */
 .controls-top-row {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   width: 100%;
-  padding: var(--space-3) var(--space-3) 0 var(--space-3);
+}
+
+.controls-branding-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.controls-branding-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.controls-branding-select {
+  width: 100%;
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.controls-branding-select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .control-source-link {
@@ -181,26 +223,14 @@
   border-color: var(--accent);
 }
 
-.type-button.recommended {
-  border-color: rgba(245, 158, 11, 0.65);
-}
-
-.type-button.recommended.active {
-  border-color: var(--accent);
-}
-
-.type-recommendation-badge {
+.type-recommendation-icon {
   position: absolute;
   top: 4px;
   right: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--text-muted);
   pointer-events: none;
 }
 
@@ -890,6 +920,10 @@
     max-height: none;
   }
 
+  .controls-top-layout {
+    grid-template-columns: 1fr;
+  }
+
   .chart-type-grid {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -944,6 +978,11 @@
   }
 
   .control-input-title {
+    transition: none;
+    animation: none;
+  }
+
+  .controls-branding-select {
     transition: none;
     animation: none;
   }

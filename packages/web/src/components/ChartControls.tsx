@@ -24,6 +24,7 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
+import Info from 'lucide-react/dist/esm/icons/info';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
@@ -211,26 +212,54 @@ export function ChartControls({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
-      {/* Full-width title + source link */}
-      <div className="controls-top-row">
-        <input
-          type="text"
-          className="control-input-title"
-          placeholder="Chart title..."
-          value={config.title}
-          onChange={(e) => updateConfig({ title: e.target.value })}
-        />
-        <div className="control-source-link">
-          <ExternalLink size={14} className="source-link-icon" />
+      {/* Top controls: title/source on left, branding on right */}
+      <div className="controls-top-layout">
+        <div className="controls-top-row">
           <input
-            type="url"
-            className="control-input-source"
-            placeholder="Source URL (optional)"
-            value={config.sourceLink ?? ''}
-            onChange={(e) => updateConfig({ sourceLink: e.target.value || undefined })}
-            spellCheck={false}
+            type="text"
+            className="control-input-title"
+            placeholder="Chart title..."
+            value={config.title}
+            onChange={(e) => updateConfig({ title: e.target.value })}
           />
+          <div className="control-source-link">
+            <ExternalLink size={14} className="source-link-icon" />
+            <input
+              type="url"
+              className="control-input-source"
+              placeholder="Source URL (optional)"
+              value={config.sourceLink ?? ''}
+              onChange={(e) => updateConfig({ sourceLink: e.target.value || undefined })}
+              spellCheck={false}
+            />
+          </div>
         </div>
+        {onLogoSelectionChange && (
+          <label className="controls-branding-column">
+            <span className="controls-branding-label">Chart Branding</span>
+            <select
+              className="controls-branding-select"
+              value={logoSelectionValue}
+              onChange={(event) => onLogoSelectionChange(event.target.value)}
+              aria-label="Choose chart logo"
+              disabled={!canCustomizeBranding}
+            >
+              <option value={BRANDING_NONE_VALUE}>None</option>
+              <option value={BRANDING_CHARTSUNO_VALUE}>Chartsuno</option>
+              {logoOptions.map((logoOption) => (
+                <option key={logoOption.teamId} value={logoOption.logoUrl}>
+                  {logoOption.teamName}
+                </option>
+              ))}
+            </select>
+            {!canCustomizeBranding && (
+              <span className="branding-upgrade-hint">Sign in to customize chart branding</span>
+            )}
+            {watermark?.enabled === false && canCustomizeBranding && (
+              <span className="branding-upgrade-hint">Branding hidden for this chart</span>
+            )}
+          </label>
+        )}
       </div>
 
       <div className="controls-segmented" role="tablist" aria-label="Chart controls sections">
@@ -268,7 +297,7 @@ export function ChartControls({
                   className={`type-button-wrap ${recommendedType === type.id ? 'has-recommendation' : ''}`}
                 >
                   <button
-                    className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''} ${recommendedType === type.id ? 'recommended' : ''}`}
+                    className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
                     onClick={() => handleTypeChange(type.id)}
                     aria-label={recommendedType === type.id ? `${type.label} (recommended)` : type.label}
                     onMouseEnter={() => {
@@ -287,8 +316,8 @@ export function ChartControls({
                     <type.icon size={18} />
                     <span className="type-label">{type.label}</span>
                     {recommendedType === type.id && (
-                      <span className="type-recommendation-badge" aria-hidden="true">
-                        <Sparkles size={10} />
+                      <span className="type-recommendation-icon" aria-hidden="true">
+                        <Info size={10} />
                       </span>
                     )}
                   </button>
@@ -620,32 +649,6 @@ export function ChartControls({
                   </label>
                 )}
               </div>
-              {onLogoSelectionChange && (
-                <label className="baseline-mode-control">
-                  <span className="baseline-mode-label">Chart Branding</span>
-                  <select
-                    className="baseline-mode-select"
-                    value={logoSelectionValue}
-                    onChange={(event) => onLogoSelectionChange(event.target.value)}
-                    aria-label="Choose chart logo"
-                    disabled={!canCustomizeBranding}
-                  >
-                    <option value={BRANDING_NONE_VALUE}>None</option>
-                    <option value={BRANDING_CHARTSUNO_VALUE}>Chartsuno</option>
-                    {logoOptions.map((logoOption) => (
-                      <option key={logoOption.teamId} value={logoOption.logoUrl}>
-                        {logoOption.teamName}
-                      </option>
-                    ))}
-                  </select>
-                  {!canCustomizeBranding && (
-                    <span className="branding-upgrade-hint">Sign in to customize chart branding</span>
-                  )}
-                  {watermark?.enabled === false && canCustomizeBranding && (
-                    <span className="branding-upgrade-hint">Branding hidden for this chart</span>
-                  )}
-                </label>
-              )}
             </div>
           </div>
         </div>

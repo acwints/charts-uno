@@ -68,6 +68,7 @@ export interface ChartResponse {
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
     aiReasoning?: string;
+    aiSummary?: string;
     userPrompt?: string;
     sourcePrompt?: string;
   };
@@ -101,6 +102,7 @@ export interface CreateChartData {
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
     aiReasoning?: string;
+    aiSummary?: string;
     userPrompt?: string;
     sourcePrompt?: string;
   };
