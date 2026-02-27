@@ -47,5 +47,5 @@ jobs:
       - name: Bot Build
         run: pnpm --filter @chartsuno/bot build
 
-      - name: Bot Renderer Import Smoke Test
-        run: node -e "import('./packages/bot/dist/chart/renderer.js').then(() => console.log('renderer import ok'))"
+      - name: Shared Node Entry Smoke Test
+        run: node -e "import('./packages/shared/dist/node.js').then(() => console.log('shared node entry import ok'))"
