@@ -466,7 +466,11 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         : input;
       const generatedData = await generateChartFromPrompt(promptForGeneration);
       const normalizedData = splitLikelyTiedLabels(generatedData, input);
-      onSubmit({ ...normalizedData, userPrompt: optionalInstructions || undefined });
+      onSubmit({
+        ...normalizedData,
+        userPrompt: optionalInstructions || undefined,
+        sourcePrompt: input,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate chart');
     } finally {

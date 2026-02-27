@@ -137,9 +137,12 @@ export function ChartView() {
           data: {
             labels: chartData.labels,
             series: chartData.series,
+            verifiedData: chartData.verifiedData,
             suggestedType: chartData.suggestedType,
             suggestedTitle: chartData.suggestedTitle,
             aiReasoning: chartData.aiReasoning,
+            userPrompt: chartData.userPrompt,
+            sourcePrompt: chartData.sourcePrompt,
             ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
           },
           config: chartConfig,
@@ -153,9 +156,12 @@ export function ChartView() {
         data: {
           labels: chartData.labels,
           series: chartData.series,
+          verifiedData: chartData.verifiedData,
           suggestedType: chartData.suggestedType,
           suggestedTitle: chartData.suggestedTitle,
             aiReasoning: chartData.aiReasoning,
+          userPrompt: chartData.userPrompt,
+          sourcePrompt: chartData.sourcePrompt,
           ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
         },
         config: chartConfig,
@@ -202,9 +208,12 @@ export function ChartView() {
             labels: chart.data.labels,
             series: chart.data.series,
             sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
+            verifiedData: chart.data.verifiedData,
             suggestedTitle: chart.title || chart.config.title,
             suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
           aiReasoning: chart.data.aiReasoning,
+            userPrompt: chart.data.userPrompt,
+            sourcePrompt: chart.data.sourcePrompt,
             ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
           };
           setChartData(data);
@@ -252,6 +261,7 @@ export function ChartView() {
   }, [id, chartData, navigate]);
 
   const isImageSource = chartData?.sourceType === 'image';
+  const isPromptSource = chartData?.sourceType === 'prompt';
 
   useEffect(() => {
     if (!chartData) {
@@ -420,6 +430,27 @@ export function ChartView() {
                 data={chartData}
                 onDataChange={setChartData}
               />
+            </div>
+          )}
+          {isPromptSource && chartData.sourcePrompt && (
+            <div className="prompt-source-panel">
+              <div className="prompt-source-header">
+                <span className="prompt-source-label">RECONSTRUCTION PROMPT</span>
+                <span
+                  className={`prompt-source-status ${chartData.verifiedData ? 'verified' : 'unverified'}`}
+                  aria-label={chartData.verifiedData ? 'Verified source-backed data' : 'Unverified AI-generated data'}
+                  title={chartData.verifiedData ? 'Verified source-backed data' : 'Unverified AI-generated data'}
+                >
+                  {chartData.verifiedData ? 'Verified data' : 'Unverified AI estimate'}
+                </span>
+              </div>
+              <p className="prompt-source-text">{chartData.sourcePrompt}</p>
+              {!chartData.verifiedData && (
+                <p className="prompt-source-note">
+                  This chart was generated from your prompt and may contain synthetic or approximate values.
+                  Verify against a trusted source before publishing as factual.
+                </p>
+              )}
             </div>
           )}
           <EditableSpreadsheet

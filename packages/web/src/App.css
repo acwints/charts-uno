@@ -217,6 +217,73 @@
   border-radius: var(--radius-sm);
 }
 
+/* Prompt source panel for described charts in Data tab */
+.prompt-source-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  flex-shrink: 0;
+}
+
+.prompt-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.prompt-source-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.prompt-source-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.prompt-source-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.prompt-source-status.verified {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.prompt-source-status.unverified {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.prompt-source-note {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 
 .chart-sidebar {
   display: flex;

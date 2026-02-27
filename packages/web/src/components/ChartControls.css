@@ -142,6 +142,8 @@
 
 .type-button-wrap {
   position: relative;
+  display: flex;
+  min-width: 0;
 }
 
 .type-quick-actions {
@@ -153,6 +155,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
+  width: 100%;
   gap: 2px;
   padding: var(--space-2) var(--space-1);
   font-family: var(--font-body);

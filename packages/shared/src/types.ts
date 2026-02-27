@@ -35,6 +35,8 @@ export interface ChartData {
   yAxisFormat?: YAxisFormat;
   yAxisPrefix?: string;
   yAxisSuffix?: string;
+  // Original natural-language prompt used to generate described charts.
+  sourcePrompt?: string;
   // Map-specific data (used when suggestedType === 'map')
   mapRegions?: MapRegion[];
   mapScope?: MapScope;

@@ -63,10 +63,13 @@ export interface ChartResponse {
   data: {
     labels: string[];
     series: { name: string; data: Array<number | null>; confidence?: Array<number | null> }[];
+    verifiedData?: boolean;
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
     aiReasoning?: string;
+    userPrompt?: string;
+    sourcePrompt?: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
@@ -93,10 +96,13 @@ export interface CreateChartData {
   data: {
     labels: string[];
     series: { name: string; data: Array<number | null>; confidence?: Array<number | null> }[];
+    verifiedData?: boolean;
     suggestedType?: string;
     suggestedTitle?: string;
     sourceImage?: { base64: string; mimeType: string };
     aiReasoning?: string;
+    userPrompt?: string;
+    sourcePrompt?: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
