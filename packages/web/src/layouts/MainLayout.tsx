@@ -43,15 +43,15 @@ export function MainLayout({ children }: MainLayoutProps) {
           {!shouldAnimateRoute ? (
             <div className="app-route-shell">{routeContent}</div>
           ) : (
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="sync" initial={false}>
               <motion.div
                 key={location.pathname}
                 className="app-route-shell"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
+                initial={false}
+                animate={{ y: 0 }}
+                exit={{ y: -4 }}
                 transition={{
-                  duration: 0.22,
+                  duration: 0.18,
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
