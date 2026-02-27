@@ -123,6 +123,7 @@ export function ChartControls({
     COMBO_ELIGIBLE_TYPES.has(config.type) &&
     config.barLayout !== 'horizontal';
   const showComboControls = comboCompatibleBase && comboAvailable;
+  const recommendedType = data.aiReasoning && config.type !== 'infographic' ? data.suggestedType : undefined;
 
   const combo = comboCompatibleBase && isComboChart(config);
   const hasRightAxis = combo && data.series.some(
@@ -261,15 +262,30 @@ export function ChartControls({
           <div className="controls-type-row">
             <div className="chart-type-grid">
               {CHART_TYPES.map((type) => (
-                <button
+                <div
                   key={type.id}
-                  className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
-                  onClick={() => handleTypeChange(type.id)}
-                  title={type.label}
+                  className={`type-button-wrap ${recommendedType === type.id ? 'has-recommendation' : ''}`}
                 >
-                  <type.icon size={18} />
-                  <span className="type-label">{type.label}</span>
-                </button>
+                  <button
+                    className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''} ${recommendedType === type.id ? 'recommended' : ''}`}
+                    onClick={() => handleTypeChange(type.id)}
+                    title={type.label}
+                    aria-label={recommendedType === type.id ? `${type.label} (recommended)` : type.label}
+                  >
+                    <type.icon size={18} />
+                    <span className="type-label">{type.label}</span>
+                    {recommendedType === type.id && (
+                      <span className="type-recommendation-badge" aria-hidden="true">
+                        <Sparkles size={10} />
+                      </span>
+                    )}
+                  </button>
+                  {recommendedType === type.id && data.aiReasoning && (
+                    <div className="type-button-tooltip" role="tooltip">
+                      {data.aiReasoning}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             {comboAvailable && (
@@ -284,12 +300,6 @@ export function ChartControls({
                   <Columns2 size={16} />
                   <span className="type-label">{combo ? 'Combo Enabled' : 'Enable Combo'}</span>
                 </button>
-              </div>
-            )}
-            {data.aiReasoning && config.type !== 'infographic' && (
-              <div className="ai-reasoning">
-                <Sparkles size={12} />
-                <span>{data.aiReasoning}</span>
               </div>
             )}
           </div>

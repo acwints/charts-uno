@@ -140,6 +140,10 @@
   width: 100%;
 }
 
+.type-button-wrap {
+  position: relative;
+}
+
 .type-quick-actions {
   margin-top: var(--space-2);
 }
@@ -170,6 +174,54 @@
   background: var(--accent-subtle);
   color: var(--accent);
   border-color: var(--accent);
+}
+
+.type-button.recommended {
+  border-color: rgba(245, 158, 11, 0.65);
+}
+
+.type-button.recommended.active {
+  border-color: var(--accent);
+}
+
+.type-recommendation-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  pointer-events: none;
+}
+
+.type-button-tooltip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: min(340px, 72vw);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 140ms;
+}
+
+.type-button-wrap.has-recommendation:hover .type-button-tooltip,
+.type-button-wrap.has-recommendation:focus-within .type-button-tooltip {
+  opacity: 1;
 }
 
 .type-button:disabled {
@@ -204,27 +256,6 @@
 .type-label {
   font-size: var(--control-font-xs);
   font-weight: 500;
-}
-
-/* AI Reasoning */
-.ai-reasoning {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding: var(--space-2);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08));
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  line-height: 1.3;
-  color: var(--text-secondary);
-}
-
-.ai-reasoning svg {
-  flex-shrink: 0;
-  color: #a78bfa;
-  margin-top: 1px;
 }
 
 /* AI Mode Selector */
@@ -920,6 +951,10 @@
   .type-button {
     transition: none;
     animation: none;
+  }
+
+  .type-button-tooltip {
+    transition: none;
   }
 
   .style-variant-button {

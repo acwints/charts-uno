@@ -895,6 +895,7 @@ async def generate_infographic(
     - 'custom': Use custom_prompt for generation guidance
     """
     client = get_client()
+    max_reference_image_bytes = 2_000_000
 
     colors = COLOR_PALETTES.get(color_scheme, COLOR_PALETTES["default"])
 
@@ -995,16 +996,27 @@ DATA (use this as the ONLY source of truth):
 
 Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start with <svg and end with </svg>."""
 
+    response = None
     if source_image_base64 and source_image_mime_type:
-        image_bytes = base64.b64decode(source_image_base64)
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=[
-                prompt,
-                types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
-            ],
-        )
-    else:
+        try:
+            image_bytes = base64.b64decode(source_image_base64, validate=True)
+            if len(image_bytes) > max_reference_image_bytes:
+                logger.info(
+                    "Skipping reference image for infographic generation: image too large (%s bytes)",
+                    len(image_bytes),
+                )
+            else:
+                response = client.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=[
+                        prompt,
+                        types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
+                    ],
+                )
+        except Exception as e:
+            logger.warning("Skipping reference image for infographic generation: %s", e)
+
+    if response is None:
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=prompt,
