@@ -12,10 +12,10 @@ export interface MentionData {
 
 function parseAction(text: string): MentionData['action'] | null {
   const normalized = text.toLowerCase();
-  if (normalized.includes('reverse it')) {
+  if (/\breverse(?:\s+it|\s+this)?\b/.test(normalized)) {
     return 'reverse';
   }
-  if (normalized.includes('chart it')) {
+  if (/\bchart(?:\s+it|\s+this)?\b/.test(normalized)) {
     return 'chart';
   }
   return null;
@@ -31,7 +31,7 @@ export async function pollMentions(): Promise<MentionData[]> {
     const botUsername = me.data.username.toLowerCase();
 
     const params: Parameters<typeof client.v2.search>[1] = {
-      max_results: 10,
+      max_results: 100,
       'tweet.fields': ['referenced_tweets', 'author_id'],
     };
 
@@ -39,7 +39,9 @@ export async function pollMentions(): Promise<MentionData[]> {
       params.since_id = state.lastSinceId;
     }
 
-    const query = `@${botUsername} ("chart it" OR "reverse it") -from:${botUsername}`;
+    // Fetch all direct mentions first, then apply trigger phrase parsing locally.
+    // This avoids brittle dependence on exact phrase matching in X query syntax.
+    const query = `@${botUsername} -from:${botUsername}`;
     const response = await client.v2.search(query, params);
 
     if (!response.data.data) {
@@ -59,15 +61,21 @@ export async function pollMentions(): Promise<MentionData[]> {
       }
     }
 
+    let skippedByAllowedUser = 0;
+    let skippedByPhrase = 0;
+    let skippedByNotReply = 0;
+
     for (const tweet of response.data.data) {
       // Check if this is from an allowed user
       if (config.bot.allowedUserIds.length > 0 && !config.bot.allowedUserIds.includes(tweet.author_id || '')) {
+        skippedByAllowedUser += 1;
         logger.debug({ authorId: tweet.author_id }, 'Skipping mention from non-allowed user');
         continue;
       }
 
       const action = parseAction(tweet.text);
       if (!action) {
+        skippedByPhrase += 1;
         logger.debug({ text: tweet.text }, 'Skipping mention without valid trigger phrase');
         continue;
       }
@@ -76,6 +84,7 @@ export async function pollMentions(): Promise<MentionData[]> {
       const replyToTweet = tweet.referenced_tweets?.find((ref) => ref.type === 'replied_to');
 
       if (!replyToTweet) {
+        skippedByNotReply += 1;
         logger.debug({ mentionId: tweet.id }, 'Skipping mention that is not a reply');
         continue;
       }
@@ -91,6 +100,20 @@ export async function pollMentions(): Promise<MentionData[]> {
       logger.info(
         { mentionId: tweet.id, parentTweetId: replyToTweet.id, action },
         'Found valid trigger mention'
+      );
+    }
+
+    if (response.data.data.length > 0 && mentions.length === 0) {
+      logger.info(
+        {
+          fetched: response.data.data.length,
+          skippedByAllowedUser,
+          skippedByPhrase,
+          skippedByNotReply,
+          hasAllowedUsersList: config.bot.allowedUserIds.length > 0,
+          sinceId: state.lastSinceId,
+        },
+        'Fetched mentions, but none matched trigger requirements'
       );
     }
   } catch (error) {
