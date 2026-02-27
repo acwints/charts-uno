@@ -110,6 +110,7 @@ export function ChartControls({
   onLogoSelectionChange,
 }: ChartControlsProps) {
   const [activeTab, setActiveTab] = useState<ControlsTab>('logic');
+  const [isRecommendationTooltipOpen, setIsRecommendationTooltipOpen] = useState(false);
   const styleVariantOptions = BASE_STYLE_VARIANT_OPTIONS;
 
   const updateConfig = (updates: Partial<ChartConfig>) => {
@@ -269,8 +270,19 @@ export function ChartControls({
                   <button
                     className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''} ${recommendedType === type.id ? 'recommended' : ''}`}
                     onClick={() => handleTypeChange(type.id)}
-                    title={type.label}
                     aria-label={recommendedType === type.id ? `${type.label} (recommended)` : type.label}
+                    onMouseEnter={() => {
+                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(true);
+                    }}
+                    onMouseLeave={() => {
+                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(false);
+                    }}
+                    onFocus={() => {
+                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(true);
+                    }}
+                    onBlur={() => {
+                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(false);
+                    }}
                   >
                     <type.icon size={18} />
                     <span className="type-label">{type.label}</span>
@@ -280,14 +292,14 @@ export function ChartControls({
                       </span>
                     )}
                   </button>
-                  {recommendedType === type.id && data.aiReasoning && (
-                    <div className="type-button-tooltip" role="tooltip">
-                      {data.aiReasoning}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
+            {recommendedType && data.aiReasoning && isRecommendationTooltipOpen && (
+              <div className="type-button-tooltip type-button-tooltip--right" role="tooltip">
+                {data.aiReasoning}
+              </div>
+            )}
             {comboAvailable && (
               <div className="type-quick-actions">
                 <button

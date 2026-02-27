@@ -127,6 +127,7 @@
 /* Full-width chart type row */
 .controls-type-row {
   display: block;
+  position: relative;
   width: 100%;
   padding: var(--space-2) var(--space-3) var(--space-3) var(--space-3);
   border-bottom: var(--border-subtle);
@@ -198,17 +199,15 @@
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
+  background: var(--accent-subtle);
+  color: var(--accent);
   pointer-events: none;
 }
 
 .type-button-tooltip {
   position: absolute;
-  left: 50%;
   top: calc(100% + 8px);
-  transform: translateX(-50%);
-  width: min(340px, 72vw);
+  width: min(420px, 90vw);
   padding: var(--space-2) var(--space-3);
   font-size: 0.72rem;
   line-height: 1.35;
@@ -223,8 +222,10 @@
   transition: opacity 140ms;
 }
 
-.type-button-wrap.has-recommendation:hover .type-button-tooltip,
-.type-button-wrap.has-recommendation:focus-within .type-button-tooltip {
+.type-button-tooltip--right {
+  right: var(--space-3);
+  left: auto;
+  transform: none;
   opacity: 1;
 }
 
