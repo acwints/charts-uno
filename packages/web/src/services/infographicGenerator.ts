@@ -1,5 +1,6 @@
 import type { ChartData, ColorScheme, ThemeMode, AiMode } from '../types';
 import { API_BASE_URL } from './apiBase';
+import { normalizeInfographicSvg } from './svgSanitizer';
 
 const MAX_SOURCE_IMAGE_BYTES = 1_500_000; // ~1.5MB raw image payload
 
@@ -76,5 +77,8 @@ export async function generateInfographic(
   }
 
   const result = await response.json();
-  return result.svg;
+  if (typeof result.svg !== 'string') {
+    throw new Error('Infographic generation failed: missing SVG payload');
+  }
+  return normalizeInfographicSvg(result.svg);
 }

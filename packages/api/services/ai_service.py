@@ -1011,6 +1011,7 @@ STRICT RULES:
 5. Use clean geometric shapes: rectangles, circles, arcs, lines. No organic/blob shapes.
 6. Fixed viewBox="0 0 1600 1200". The SVG must be self-contained with no external dependencies.
 7. Use font-family 'Manrope', sans-serif for ALL text elements.
+8. Every numeric SVG attribute MUST be a final numeric literal (e.g., y="742.5"). Never output arithmetic expressions like y="800 - (x * 3)" or height="value * scale".
 
 LAYOUT GUIDELINES:
 - Title at top (28-36px, bold, color: {theme_colors["primaryText"]})
