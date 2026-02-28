@@ -55,10 +55,10 @@ interface ChartPreviewProps {
 }
 
 interface ValueLabelProps {
-  x?: number;
-  y?: number;
-  value?: number | string;
-  index?: number;
+  x?: number | string;
+  y?: number | string;
+  value?: number | string | null;
+  index?: number | string;
 }
 
 export interface ChartLogoOption {
@@ -426,16 +426,19 @@ export function ChartPreview({
   const renderSmartValueLabel = useCallback(
     (seriesName: string, formatter: (value: number) => string) =>
       ({ x, y, value, index }: ValueLabelProps) => {
-        if (typeof x !== 'number' || typeof y !== 'number') return null;
-        if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-        if (typeof index !== 'number') return null;
+        const xNum = typeof x === 'number' ? x : Number(x);
+        const yNum = typeof y === 'number' ? y : Number(y);
+        const valueNum = typeof value === 'number' ? value : Number(value);
+        const indexNum = typeof index === 'number' ? index : Number(index);
+        if (!Number.isFinite(xNum) || !Number.isFinite(yNum)) return '';
+        if (!Number.isFinite(valueNum) || !Number.isFinite(indexNum)) return '';
 
-        const dy = crowdedPointLabelOffsets.get(`${seriesName}:${index}`) ?? -8;
+        const dy = crowdedPointLabelOffsets.get(`${seriesName}:${indexNum}`) ?? -8;
 
         return (
           <text
-            x={x}
-            y={y + dy}
+            x={xNum}
+            y={yNum + dy}
             textAnchor="middle"
             dominantBaseline={dy > 0 ? 'hanging' : 'auto'}
             fill={theme.textMuted}
@@ -443,7 +446,7 @@ export function ChartPreview({
             fontFamily="var(--font-mono)"
             pointerEvents="none"
           >
-            {formatter(value)}
+            {formatter(valueNum)}
           </text>
         );
       },
