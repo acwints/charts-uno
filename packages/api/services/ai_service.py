@@ -104,6 +104,29 @@ def _labels_match_year_window(labels: List[str], window: Optional[Dict[str, int]
     return labels == expected
 
 
+def _has_missing_series_points(chart: Dict[str, Any]) -> bool:
+    """Return True when any series has missing/null points for known labels."""
+    labels = chart.get("labels")
+    series = chart.get("series")
+    if not isinstance(labels, list) or not isinstance(series, list):
+        return False
+    expected_len = len(labels)
+    if expected_len == 0:
+        return False
+
+    for entry in series:
+        if not isinstance(entry, dict):
+            continue
+        data = entry.get("data")
+        if not isinstance(data, list):
+            return True
+        if len(data) < expected_len:
+            return True
+        if any(point is None for point in data[:expected_len]):
+            return True
+    return False
+
+
 async def _plan_prompt_output(prompt: str) -> Dict[str, Any]:
     """Plan output structure and fact-preservation constraints."""
     client = get_client()
@@ -157,6 +180,7 @@ async def _generate_candidate_from_plan(
     plan: Dict[str, Any],
     year_window: Optional[Dict[str, int]] = None,
     force_year_window: bool = False,
+    force_full_coverage: bool = False,
 ) -> Dict[str, Any]:
     """Generate a candidate chart using the orchestration plan."""
     client = get_client()
@@ -177,6 +201,11 @@ async def _generate_candidate_from_plan(
 - Relative year window: {year_window_line}
 - This is {strictness}. If the prompt asks for "past/last N years" or "past decade", labels MUST be yearly strings from {year_window['startYear']} to {year_window['endYear']} in ascending order.
 - Do not return older ranges unless the user explicitly asks for a fixed historical period."""
+    full_coverage_rules = ""
+    if force_full_coverage:
+        full_coverage_rules = """
+- Full series coverage is REQUIRED: do not leave null/missing values for the returned labels.
+- If data is unavailable, choose a fully sourced subset window instead of returning nulls."""
 
     generation_prompt = f"""You are a data-visualization generator for a chart app.
 
@@ -221,6 +250,7 @@ Rules:
 - If facts are sparse, infer a useful but plausible dataset.
 - For time-sensitive factual prompts, prefer up-to-date real-world values over stale templates.
 {year_window_rules}
+{full_coverage_rules}
 """
     response = client.models.generate_content(model=MODEL_NAME, contents=generation_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
@@ -235,6 +265,7 @@ async def _self_critique_candidate(
     plan: Dict[str, Any],
     candidate: Dict[str, Any],
     year_window: Optional[Dict[str, int]] = None,
+    require_full_coverage: bool = False,
 ) -> Dict[str, Any]:
     """Run a model-side quality check and optional repair pass."""
     client = get_client()
@@ -248,6 +279,7 @@ Plan:
 
 Current date: {date.today().isoformat()}
 Expected relative year window: {json.dumps(year_window) if year_window else "none"}
+Require full coverage: {require_full_coverage}
 
 Candidate chart JSON:
 {json.dumps(candidate, ensure_ascii=False)}
@@ -266,6 +298,7 @@ Checks:
 - Practical chart structure for the user intent.
 - labels/series alignment remains valid.
 - For relative-time prompts (e.g. past decade/last N years), year labels must match the expected recent window.
+- When full coverage is required, do not leave null/missing values across the returned labels.
 """
     response = client.models.generate_content(model=MODEL_NAME, contents=critique_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
@@ -820,18 +853,24 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
     # One retry with strict temporal anchoring for relative-year prompts.
     if year_window:
         reviewed_labels = [str(label) for label in reviewed.get("labels", [])]
-        if not _labels_match_year_window(reviewed_labels, year_window):
+        needs_retry = (
+            not _labels_match_year_window(reviewed_labels, year_window)
+            or _has_missing_series_points(reviewed)
+        )
+        if needs_retry:
             retry_candidate = await _generate_candidate_from_plan(
                 prompt,
                 plan,
                 year_window=year_window,
                 force_year_window=True,
+                force_full_coverage=True,
             )
             reviewed = await _self_critique_candidate(
                 prompt,
                 plan,
                 retry_candidate,
                 year_window=year_window,
+                require_full_coverage=True,
             )
     guarded = _apply_explicit_fact_guardrails(plan, reviewed)
 

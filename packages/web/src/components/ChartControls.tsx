@@ -236,7 +236,7 @@ export function ChartControls({
         </div>
         {onLogoSelectionChange && (
           <label className="controls-branding-column">
-            <span className="controls-branding-label">Chart Branding</span>
+            <span className="controls-branding-label">Logo</span>
             <select
               className="controls-branding-select"
               value={logoSelectionValue}
