@@ -101,6 +101,16 @@ function toNiceDomain(
   return [niceMin, niceMax];
 }
 
+function isLikelyDateLabel(label: string): boolean {
+  const trimmed = label.trim();
+  if (!trimmed) return false;
+  // Support common chart date formats without forcing strict parsing rules.
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(trimmed)) return true;
+  if (/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/.test(trimmed)) return true;
+  if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(trimmed)) return true;
+  return Number.isFinite(Date.parse(trimmed));
+}
+
 export function ChartPreview({
   data,
   config,
@@ -500,6 +510,12 @@ export function ChartPreview({
     () => computeAdaptiveAxisConfig(data.labels, isHorizontal),
     [data.labels, isHorizontal],
   );
+  const preferPreserveEndTicks = useMemo(() => {
+    if (isYearLabels || data.xAxisType === 'date') return data.labels.length >= 16;
+    if (data.labels.length < 16) return false;
+    const dateLikeCount = data.labels.filter(isLikelyDateLabel).length;
+    return dateLikeCount / data.labels.length >= 0.7;
+  }, [data.labels, data.xAxisType, isYearLabels]);
 
   const xAxisLabel = data.xAxisLabel;
   const yAxisLabel = data.yAxisLabel
@@ -550,7 +566,7 @@ export function ChartPreview({
       }
     : {
         top: 20,
-        right: combo ? 50 : 5,
+        right: combo ? (rightYAxisLabel ? 14 : 8) : 5,
         bottom: adaptiveBottom,
         left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
       };
@@ -693,6 +709,10 @@ export function ChartPreview({
     const adaptiveTick = adaptiveAxis.needsCustomTick
       ? <AdaptiveXAxisTick fill={theme.textMuted} config={adaptiveAxis} />
       : undefined;
+    const categoricalInterval =
+      adaptiveAxis.tickInterval !== undefined
+        ? (preferPreserveEndTicks ? 'preserveEnd' : adaptiveAxis.tickInterval)
+        : (preferPreserveEndTicks ? 'preserveEnd' : 'preserveStartEnd');
 
     const xAxisElement = isYearLabels ? (
       <XAxis
@@ -701,8 +721,8 @@ export function ChartPreview({
         tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
-        padding={{ left: 20, right: 20 }}
-        interval={adaptiveAxis.tickInterval ?? 0}
+        padding={{ left: 12, right: 4 }}
+        interval={categoricalInterval}
         label={xAxisLabelConfig}
       />
     ) : isNumericLabels ? (
@@ -725,8 +745,8 @@ export function ChartPreview({
         tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
         tickLine={{ stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
-        padding={{ left: 20, right: 20 }}
-        interval={adaptiveAxis.tickInterval ?? 0}
+        padding={{ left: 12, right: 4 }}
+        interval={categoricalInterval}
         label={xAxisLabelConfig}
       />
     );
@@ -839,11 +859,21 @@ export function ChartPreview({
 
     // --- Combo chart (dual-axis, mixed series types) ---
     if (combo) {
+      const rightAxisTickWidth = Math.max(
+        46,
+        Math.min(
+          72,
+          Math.max(
+            formatRightYAxisTick(rightSeriesDomain?.[0] ?? 0).length,
+            formatRightYAxisTick(rightSeriesDomain?.[1] ?? 0).length,
+          ) * 7 + 10,
+        ),
+      );
       const rightYAxisLabelConfig = rightYAxisLabel ? {
         value: rightYAxisLabel,
         angle: 90,
         position: 'insideRight' as const,
-        offset: 8,
+        offset: 4,
         fill: theme.textMuted,
         fontSize: 11,
         fontFamily: 'var(--font-mono)',
@@ -887,6 +917,7 @@ export function ChartPreview({
           <YAxis
             yAxisId="right"
             orientation="right"
+            width={rightAxisTickWidth}
             stroke={theme.textMuted}
             tick={{ fill: theme.textMuted, fontSize: 12 }}
             tickLine={{ stroke: theme.textMuted }}
