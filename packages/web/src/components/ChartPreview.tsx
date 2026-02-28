@@ -57,7 +57,7 @@ interface ChartPreviewProps {
 interface ValueLabelProps {
   x?: number | string;
   y?: number | string;
-  value?: number | string | null;
+  value?: unknown;
   index?: number | string;
 }
 
