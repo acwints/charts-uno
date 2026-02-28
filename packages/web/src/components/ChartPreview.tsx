@@ -54,6 +54,13 @@ interface ChartPreviewProps {
   watermark?: WatermarkSettings;
 }
 
+interface ValueLabelProps {
+  x?: number;
+  y?: number;
+  value?: number | string;
+  index?: number;
+}
+
 export interface ChartLogoOption {
   teamId: string;
   teamName: string;
@@ -343,6 +350,105 @@ export function ChartPreview({
     if (!combo) return new Set<string>();
     return new Set(rightAxisSeriesList);
   }, [combo, rightAxisSeriesList]);
+
+  const crowdedPointLabelOffsets = useMemo(() => {
+    const offsets = new Map<string, number>();
+    const lineLikeSeries = data.series
+      .map((series) => {
+        if (combo) {
+          const resolved = resolveSeriesConfig(series.name, config);
+          if (resolved.chartType !== 'line' && resolved.chartType !== 'area') return null;
+          return { name: series.name, axis: resolved.axis as 'left' | 'right' };
+        }
+        if (config.type !== 'line' && config.type !== 'area') return null;
+        return { name: series.name, axis: 'left' as const };
+      })
+      .filter((series): series is { name: string; axis: 'left' | 'right' } => series !== null);
+
+    if (lineLikeSeries.length < 2) return offsets;
+
+    const axisRanges = new Map<'left' | 'right', number>();
+    (['left', 'right'] as const).forEach((axis) => {
+      const axisValues = lineLikeSeries
+        .filter((series) => series.axis === axis)
+        .flatMap((series) => {
+          const match = data.series.find((entry) => entry.name === series.name);
+          if (!match) return [] as number[];
+          return match.data.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+        });
+      if (axisValues.length === 0) {
+        axisRanges.set(axis, 0);
+        return;
+      }
+      const min = Math.min(...axisValues);
+      const max = Math.max(...axisValues);
+      axisRanges.set(axis, Math.max(max - min, 0));
+    });
+
+    for (let index = 0; index < data.labels.length; index += 1) {
+      (['left', 'right'] as const).forEach((axis) => {
+        const points = lineLikeSeries
+          .filter((series) => series.axis === axis)
+          .map((series) => {
+            const match = data.series.find((entry) => entry.name === series.name);
+            const raw = match?.data[index];
+            if (typeof raw !== 'number' || !Number.isFinite(raw)) return null;
+            return { name: series.name, value: raw };
+          })
+          .filter((point): point is { name: string; value: number } => point !== null);
+
+        if (points.length < 2) return;
+
+        const sorted = [...points].sort((a, b) => b.value - a.value);
+        const axisRange = axisRanges.get(axis) ?? 0;
+        const crowdedThreshold = Math.max(axisRange * 0.06, 1);
+
+        sorted.forEach((point, rank) => {
+          const nearestGap = Math.min(
+            ...sorted
+              .filter((candidate) => candidate.name !== point.name)
+              .map((candidate) => Math.abs(candidate.value - point.value)),
+          );
+
+          if (!Number.isFinite(nearestGap) || nearestGap > crowdedThreshold) return;
+
+          const band = Math.floor(rank / 2);
+          const isUpperSlot = rank % 2 === 0;
+          const dy = isUpperSlot ? -(8 + band * 8) : (14 + band * 8);
+          offsets.set(`${point.name}:${index}`, dy);
+        });
+      });
+    }
+
+    return offsets;
+  }, [combo, config, data]);
+
+  const renderSmartValueLabel = useCallback(
+    (seriesName: string, formatter: (value: number) => string) =>
+      ({ x, y, value, index }: ValueLabelProps) => {
+        if (typeof x !== 'number' || typeof y !== 'number') return null;
+        if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+        if (typeof index !== 'number') return null;
+
+        const dy = crowdedPointLabelOffsets.get(`${seriesName}:${index}`) ?? -8;
+
+        return (
+          <text
+            x={x}
+            y={y + dy}
+            textAnchor="middle"
+            dominantBaseline={dy > 0 ? 'hanging' : 'auto'}
+            fill={theme.textMuted}
+            fontSize={11}
+            fontFamily="var(--font-mono)"
+            pointerEvents="none"
+          >
+            {formatter(value)}
+          </text>
+        );
+      },
+    [crowdedPointLabelOffsets, theme.textMuted],
+  );
 
   // Format X-axis year ticks as integers (no decimals)
   const formatXAxisYearTick = useCallback((value: number): string => {
@@ -850,15 +956,10 @@ export function ChartPreview({
                     {config.showValues && (
                       <LabelList
                         dataKey={series.name}
-                        position="top"
-                        fill={theme.textMuted}
-                        fontSize={11}
-                        offset={8}
-                        formatter={(value) =>
-                          typeof value === 'number'
-                            ? (resolved.axis === 'right' ? formatRightYAxisTick(value) : formatYAxisTick(value))
-                            : value
-                        }
+                        content={renderSmartValueLabel(
+                          series.name,
+                          resolved.axis === 'right' ? formatRightYAxisTick : formatYAxisTick,
+                        )}
                       />
                     )}
                   </Line>
@@ -891,15 +992,10 @@ export function ChartPreview({
                     {config.showValues && (
                       <LabelList
                         dataKey={series.name}
-                        position="top"
-                        fill={theme.textMuted}
-                        fontSize={11}
-                        offset={8}
-                        formatter={(value) =>
-                          typeof value === 'number'
-                            ? (resolved.axis === 'right' ? formatRightYAxisTick(value) : formatYAxisTick(value))
-                            : value
-                        }
+                        content={renderSmartValueLabel(
+                          series.name,
+                          resolved.axis === 'right' ? formatRightYAxisTick : formatYAxisTick,
+                        )}
                       />
                     )}
                   </Area>
@@ -1016,11 +1112,7 @@ export function ChartPreview({
                 {config.showValues && (
                   <LabelList
                     dataKey={series.name}
-                    position="top"
-                    fill={theme.textMuted}
-                    fontSize={11}
-                    offset={8}
-                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
+                    content={renderSmartValueLabel(series.name, formatYAxisTick)}
                   />
                 )}
               </Line>
@@ -1063,11 +1155,7 @@ export function ChartPreview({
                 {config.showValues && (
                   <LabelList
                     dataKey={series.name}
-                    position="top"
-                    fill={theme.textMuted}
-                    fontSize={11}
-                    offset={8}
-                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
+                    content={renderSmartValueLabel(series.name, formatYAxisTick)}
                   />
                 )}
               </Area>

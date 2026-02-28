@@ -101,6 +101,15 @@ async function prepareElementForCapture(element: HTMLElement): Promise<void> {
   });
 }
 
+async function waitForFontsReady(): Promise<void> {
+  if (!('fonts' in document)) return;
+  try {
+    await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+  } catch {
+    // Font readiness is best-effort and should not block export.
+  }
+}
+
 function resolveCaptureTarget(element: HTMLElement): HTMLElement {
   if (element.classList.contains('chart-preview')) return element;
   const preview = element.querySelector<HTMLElement>('.chart-preview');
@@ -116,6 +125,11 @@ function shouldApplyWatermarkOverlay(element: HTMLElement): boolean {
 async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
   const captureTarget = resolveCaptureTarget(element);
   await prepareElementForCapture(captureTarget);
+  await waitForFontsReady();
+  const rect = captureTarget.getBoundingClientRect();
+  const captureWidth = Math.ceil(Math.max(rect.width, captureTarget.scrollWidth));
+  // Add a little breathing room so x-axis labels never get clipped.
+  const captureHeight = Math.ceil(Math.max(rect.height, captureTarget.scrollHeight) + 28);
 
   captureTarget.classList.add('is-exporting');
   try {
@@ -125,8 +139,74 @@ async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasEl
       scale: 2,
       logging: false,
       useCORS: true,
-      width: Math.ceil(captureTarget.getBoundingClientRect().width),
-      height: Math.ceil(captureTarget.getBoundingClientRect().height),
+      width: captureWidth,
+      height: captureHeight,
+      onclone: (clonedDoc, clonedElement) => {
+        // Keep export layout stable even if stylesheet parsing fails in the cloned document.
+        const cloneTarget = clonedElement as HTMLElement;
+        cloneTarget.style.paddingBottom = '28px';
+        cloneTarget.style.overflow = 'visible';
+        const headerTop = cloneTarget.querySelector<HTMLElement>('.chart-header-top');
+        if (headerTop) {
+          headerTop.style.display = 'flex';
+          headerTop.style.alignItems = 'center';
+          headerTop.style.justifyContent = 'space-between';
+          headerTop.style.gap = '16px';
+          headerTop.style.flexWrap = 'nowrap';
+        }
+
+        const brandArea = cloneTarget.querySelector<HTMLElement>('.chart-brand-area');
+        if (brandArea) {
+          brandArea.style.display = 'flex';
+          brandArea.style.alignItems = 'center';
+          brandArea.style.gap = '6px';
+          brandArea.style.flexShrink = '0';
+          brandArea.style.marginLeft = 'auto';
+        }
+
+        const chartBrand = cloneTarget.querySelector<HTMLElement>('.chart-brand');
+        if (chartBrand) {
+          chartBrand.style.display = 'flex';
+          chartBrand.style.alignItems = 'center';
+          chartBrand.style.gap = '4px';
+          chartBrand.style.fontStyle = 'italic';
+          chartBrand.style.opacity = '0.5';
+          chartBrand.style.flexShrink = '0';
+          chartBrand.style.fontFamily = 'var(--font-display), Georgia, "Times New Roman", serif';
+        }
+
+        const chartMeta = cloneTarget.querySelector<HTMLElement>('.chart-meta');
+        if (chartMeta) {
+          chartMeta.style.display = 'none';
+        }
+
+        const chartSource = cloneTarget.querySelector<HTMLElement>('.chart-source');
+        if (chartSource) {
+          chartSource.style.display = 'none';
+        }
+
+        const chartContainer = cloneTarget.querySelector<HTMLElement>('.chart-container');
+        if (chartContainer) {
+          chartContainer.style.overflow = 'visible';
+          chartContainer.style.paddingBottom = '20px';
+        }
+
+        const title = cloneTarget.querySelector<HTMLElement>('.chart-title');
+        if (title) {
+          title.style.fontFamily = 'var(--font-display), Georgia, "Times New Roman", serif';
+        }
+
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+          .chart-brand-logo {
+            max-height: 16px;
+            max-width: 92px;
+            width: auto;
+            object-fit: contain;
+          }
+        `;
+        clonedDoc.head.appendChild(style);
+      },
     });
   } finally {
     captureTarget.classList.remove('is-exporting');
