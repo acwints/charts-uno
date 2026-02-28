@@ -13,7 +13,7 @@
 /* Top layout: title/source on left, branding on right */
 .controls-top-layout {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 2fr);
   gap: var(--space-2);
   width: 100%;
   padding: var(--space-3) var(--space-3) 0 var(--space-3);
@@ -33,6 +33,8 @@
   justify-content: center;
   gap: var(--space-1);
   min-width: 0;
+  border-left: 1px solid var(--bg-tertiary);
+  padding-left: var(--space-3);
 }
 
 .controls-branding-label {
@@ -923,6 +925,11 @@
 
   .controls-top-layout {
     grid-template-columns: 1fr;
+  }
+
+  .controls-branding-column {
+    border-left: none;
+    padding-left: 0;
   }
 
   .chart-type-grid {
