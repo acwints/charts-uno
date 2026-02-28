@@ -50,8 +50,9 @@
   width: 100%;
   min-height: var(--control-height-md);
   padding: var(--space-1) var(--space-2);
-  font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
   color: var(--text-secondary);
   background: var(--bg-tertiary);
   border: var(--border-subtle);
