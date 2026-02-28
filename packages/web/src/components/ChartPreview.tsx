@@ -67,45 +67,45 @@ export interface ChartLogoOption {
   logoUrl: string;
 }
 
+function getNiceStep(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  const exponent = Math.floor(Math.log10(value));
+  const magnitude = 10 ** exponent;
+  const residual = value / magnitude;
+  if (residual <= 1) return magnitude;
+  if (residual <= 2) return 2 * magnitude;
+  if (residual <= 5) return 5 * magnitude;
+  return 10 * magnitude;
+}
+
+function toNiceDomain(
+  domain: [number, number] | undefined,
+  options?: { tickCount?: number; lockZeroMin?: boolean },
+): [number, number] | undefined {
+  if (!domain) return undefined;
+  let [min, max] = domain;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return domain;
+  if (max < min) [min, max] = [max, min];
+
+  const tickCount = Math.max(options?.tickCount ?? 5, 2);
+  const lockZeroMin = options?.lockZeroMin === true && min >= 0;
+  const baseMin = lockZeroMin ? 0 : min;
+  const range = Math.max(max - baseMin, 1e-9);
+  const step = getNiceStep(range / (tickCount - 1));
+
+  const niceMin = lockZeroMin ? 0 : Math.floor(baseMin / step) * step;
+  let niceMax = Math.ceil(max / step) * step;
+  if (niceMax <= niceMin) {
+    niceMax = niceMin + step;
+  }
+  return [niceMin, niceMax];
+}
+
 export function ChartPreview({
   data,
   config,
   watermark,
 }: ChartPreviewProps) {
-  const getNiceStep = (value: number): number => {
-    if (!Number.isFinite(value) || value <= 0) return 1;
-    const exponent = Math.floor(Math.log10(value));
-    const magnitude = 10 ** exponent;
-    const residual = value / magnitude;
-    if (residual <= 1) return magnitude;
-    if (residual <= 2) return 2 * magnitude;
-    if (residual <= 5) return 5 * magnitude;
-    return 10 * magnitude;
-  };
-
-  const toNiceDomain = (
-    domain: [number, number] | undefined,
-    options?: { tickCount?: number; lockZeroMin?: boolean },
-  ): [number, number] | undefined => {
-    if (!domain) return undefined;
-    let [min, max] = domain;
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return domain;
-    if (max < min) [min, max] = [max, min];
-
-    const tickCount = Math.max(options?.tickCount ?? 5, 2);
-    const lockZeroMin = options?.lockZeroMin === true && min >= 0;
-    const baseMin = lockZeroMin ? 0 : min;
-    const range = Math.max(max - baseMin, 1e-9);
-    const step = getNiceStep(range / (tickCount - 1));
-
-    const niceMin = lockZeroMin ? 0 : Math.floor(baseMin / step) * step;
-    let niceMax = Math.ceil(max / step) * step;
-    if (niceMax <= niceMin) {
-      niceMax = niceMin + step;
-    }
-    return [niceMin, niceMax];
-  };
-
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 

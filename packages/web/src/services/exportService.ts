@@ -7,6 +7,34 @@ export interface WatermarkSettings {
   customLogoUrl: string | null;
 }
 
+const EXPORT_SCALE = 2;
+const EXPORT_BOTTOM_CAPTURE_PADDING = 28;
+const EXPORT_CONTAINER_BOTTOM_PADDING = 20;
+
+type CaptureProfileId = 'clean-export' | 'wysiwyg-share';
+
+interface CaptureProfile {
+  hideMeta: boolean;
+  hideSource: boolean;
+  extraBottomPadding: number;
+  containerBottomPadding: number;
+}
+
+const CAPTURE_PROFILES: Record<CaptureProfileId, CaptureProfile> = {
+  'clean-export': {
+    hideMeta: true,
+    hideSource: true,
+    extraBottomPadding: EXPORT_BOTTOM_CAPTURE_PADDING,
+    containerBottomPadding: EXPORT_CONTAINER_BOTTOM_PADDING,
+  },
+  'wysiwyg-share': {
+    hideMeta: false,
+    hideSource: false,
+    extraBottomPadding: EXPORT_BOTTOM_CAPTURE_PADDING,
+    containerBottomPadding: EXPORT_CONTAINER_BOTTOM_PADDING,
+  },
+};
+
 export async function exportToCSV(data: ChartData, filename: string = 'chart-data'): Promise<void> {
   // Build rows with labels as first column, series as subsequent columns
   const headers = ['Label', ...data.series.map(s => s.name)];
@@ -122,90 +150,37 @@ function shouldApplyWatermarkOverlay(element: HTMLElement): boolean {
   return !captureTarget.classList.contains('chart-preview');
 }
 
-async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
+function getCaptureProfile(profileId: CaptureProfileId): CaptureProfile {
+  return CAPTURE_PROFILES[profileId];
+}
+
+async function renderElementToCanvas(
+  element: HTMLElement,
+  profileId: CaptureProfileId,
+): Promise<HTMLCanvasElement> {
+  const profile = getCaptureProfile(profileId);
   const captureTarget = resolveCaptureTarget(element);
   await prepareElementForCapture(captureTarget);
   await waitForFontsReady();
   const rect = captureTarget.getBoundingClientRect();
   const captureWidth = Math.ceil(Math.max(rect.width, captureTarget.scrollWidth));
   // Add a little breathing room so x-axis labels never get clipped.
-  const captureHeight = Math.ceil(Math.max(rect.height, captureTarget.scrollHeight) + 28);
+  const captureHeight = Math.ceil(Math.max(rect.height, captureTarget.scrollHeight) + profile.extraBottomPadding);
 
   captureTarget.classList.add('is-exporting');
   try {
     // Use null to preserve the chart card's rendered background colors.
     return await html2canvas(captureTarget, {
       backgroundColor: null,
-      scale: 2,
+      scale: EXPORT_SCALE,
       logging: false,
       useCORS: true,
       width: captureWidth,
       height: captureHeight,
-      onclone: (clonedDoc, clonedElement) => {
-        // Keep export layout stable even if stylesheet parsing fails in the cloned document.
+      onclone: (_clonedDoc, clonedElement) => {
+        // Keep export output clean while preserving original chart styling.
         const cloneTarget = clonedElement as HTMLElement;
-        cloneTarget.style.paddingBottom = '28px';
-        cloneTarget.style.overflow = 'visible';
-        const headerTop = cloneTarget.querySelector<HTMLElement>('.chart-header-top');
-        if (headerTop) {
-          headerTop.style.display = 'flex';
-          headerTop.style.alignItems = 'center';
-          headerTop.style.justifyContent = 'space-between';
-          headerTop.style.gap = '16px';
-          headerTop.style.flexWrap = 'nowrap';
-        }
-
-        const brandArea = cloneTarget.querySelector<HTMLElement>('.chart-brand-area');
-        if (brandArea) {
-          brandArea.style.display = 'flex';
-          brandArea.style.alignItems = 'center';
-          brandArea.style.gap = '6px';
-          brandArea.style.flexShrink = '0';
-          brandArea.style.marginLeft = 'auto';
-        }
-
-        const chartBrand = cloneTarget.querySelector<HTMLElement>('.chart-brand');
-        if (chartBrand) {
-          chartBrand.style.display = 'flex';
-          chartBrand.style.alignItems = 'center';
-          chartBrand.style.gap = '4px';
-          chartBrand.style.fontStyle = 'italic';
-          chartBrand.style.opacity = '0.5';
-          chartBrand.style.flexShrink = '0';
-          chartBrand.style.fontFamily = 'var(--font-display), Georgia, "Times New Roman", serif';
-        }
-
-        const chartMeta = cloneTarget.querySelector<HTMLElement>('.chart-meta');
-        if (chartMeta) {
-          chartMeta.style.display = 'none';
-        }
-
-        const chartSource = cloneTarget.querySelector<HTMLElement>('.chart-source');
-        if (chartSource) {
-          chartSource.style.display = 'none';
-        }
-
-        const chartContainer = cloneTarget.querySelector<HTMLElement>('.chart-container');
-        if (chartContainer) {
-          chartContainer.style.overflow = 'visible';
-          chartContainer.style.paddingBottom = '20px';
-        }
-
-        const title = cloneTarget.querySelector<HTMLElement>('.chart-title');
-        if (title) {
-          title.style.fontFamily = 'var(--font-display), Georgia, "Times New Roman", serif';
-        }
-
-        const style = clonedDoc.createElement('style');
-        style.textContent = `
-          .chart-brand-logo {
-            max-height: 16px;
-            max-width: 92px;
-            width: auto;
-            object-fit: contain;
-          }
-        `;
-        clonedDoc.head.appendChild(style);
+        applyExportCloneCleanup(cloneTarget, profile);
       },
     });
   } finally {
@@ -213,25 +188,49 @@ async function renderElementToCanvas(element: HTMLElement): Promise<HTMLCanvasEl
   }
 }
 
-export async function exportToPNG(
-  element: HTMLElement,
-  filename: string = 'chart',
-  watermark?: WatermarkSettings
-): Promise<void> {
-  const canvas = await renderElementToCanvas(element);
+function applyExportCloneCleanup(cloneTarget: HTMLElement, profile: CaptureProfile): void {
+  cloneTarget.style.paddingBottom = `${profile.extraBottomPadding}px`;
+  cloneTarget.style.overflow = 'visible';
 
-  // Apply watermark if enabled
-  if (watermark?.enabled !== false && shouldApplyWatermarkOverlay(element)) {
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      if (watermark?.customLogoUrl) {
-        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width);
-      } else {
-        drawTextWatermark(ctx, canvas.width);
-      }
+  if (profile.hideMeta) {
+    const chartMeta = cloneTarget.querySelector<HTMLElement>('.chart-meta');
+    if (chartMeta) {
+      chartMeta.style.display = 'none';
     }
   }
 
+  if (profile.hideSource) {
+    const chartSource = cloneTarget.querySelector<HTMLElement>('.chart-source');
+    if (chartSource) {
+      chartSource.style.display = 'none';
+    }
+  }
+
+  const chartContainer = cloneTarget.querySelector<HTMLElement>('.chart-container');
+  if (chartContainer) {
+    chartContainer.style.overflow = 'visible';
+    chartContainer.style.paddingBottom = `${profile.containerBottomPadding}px`;
+  }
+}
+
+async function applyWatermarkOverlay(
+  canvas: HTMLCanvasElement,
+  element: HTMLElement,
+  watermark?: WatermarkSettings,
+): Promise<void> {
+  if (watermark?.enabled === false || !shouldApplyWatermarkOverlay(element)) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  if (watermark?.customLogoUrl) {
+    await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width);
+    return;
+  }
+
+  drawTextWatermark(ctx, canvas.width);
+}
+
+function downloadCanvasAsPng(canvas: HTMLCanvasElement, filename: string): void {
   const url = canvas.toDataURL('image/png');
   const link = document.createElement('a');
   link.href = url;
@@ -241,24 +240,8 @@ export async function exportToPNG(
   document.body.removeChild(link);
 }
 
-export async function copyImageToClipboard(
-  element: HTMLElement,
-  watermark?: WatermarkSettings
-): Promise<void> {
-  const canvas = await renderElementToCanvas(element);
-
-  if (watermark?.enabled !== false && shouldApplyWatermarkOverlay(element)) {
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      if (watermark?.customLogoUrl) {
-        await drawLogoWatermark(ctx, watermark.customLogoUrl, canvas.width);
-      } else {
-        drawTextWatermark(ctx, canvas.width);
-      }
-    }
-  }
-
-  const blob = await new Promise<Blob>((resolve, reject) => {
+async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(createdBlob => {
       if (createdBlob) {
         resolve(createdBlob);
@@ -267,6 +250,25 @@ export async function copyImageToClipboard(
       }
     }, 'image/png');
   });
+}
+
+export async function exportToPNG(
+  element: HTMLElement,
+  filename: string = 'chart',
+  watermark?: WatermarkSettings
+): Promise<void> {
+  const canvas = await renderElementToCanvas(element, 'clean-export');
+  await applyWatermarkOverlay(canvas, element, watermark);
+  downloadCanvasAsPng(canvas, filename);
+}
+
+export async function copyImageToClipboard(
+  element: HTMLElement,
+  watermark?: WatermarkSettings
+): Promise<void> {
+  const canvas = await renderElementToCanvas(element, 'wysiwyg-share');
+  await applyWatermarkOverlay(canvas, element, watermark);
+  const blob = await canvasToPngBlob(canvas);
 
   const clipboardItem = new ClipboardItem({ 'image/png': blob });
   await navigator.clipboard.write([clipboardItem]);

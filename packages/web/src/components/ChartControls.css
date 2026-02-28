@@ -226,42 +226,6 @@
   border-color: var(--accent);
 }
 
-.type-recommendation-icon {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.type-button-tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  width: min(420px, 90vw);
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: var(--text-secondary);
-  background: var(--bg-primary);
-  border: var(--border-subtle);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-card);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 20;
-  transition: opacity 140ms;
-}
-
-.type-button-tooltip--right {
-  right: var(--space-3);
-  left: auto;
-  transform: none;
-  opacity: 1;
-}
-
 .type-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -1003,10 +967,6 @@
   .type-button {
     transition: none;
     animation: none;
-  }
-
-  .type-button-tooltip {
-    transition: none;
   }
 
   .style-variant-button {

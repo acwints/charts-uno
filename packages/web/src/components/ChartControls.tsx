@@ -24,7 +24,6 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
-import Info from 'lucide-react/dist/esm/icons/info';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
@@ -111,7 +110,6 @@ export function ChartControls({
   onLogoSelectionChange,
 }: ChartControlsProps) {
   const [activeTab, setActiveTab] = useState<ControlsTab>('logic');
-  const [isRecommendationTooltipOpen, setIsRecommendationTooltipOpen] = useState(false);
   const styleVariantOptions = BASE_STYLE_VARIANT_OPTIONS;
 
   const updateConfig = (updates: Partial<ChartConfig>) => {
@@ -125,7 +123,7 @@ export function ChartControls({
     COMBO_ELIGIBLE_TYPES.has(config.type) &&
     config.barLayout !== 'horizontal';
   const showComboControls = comboCompatibleBase && comboAvailable;
-  const recommendedType = data.aiReasoning && config.type !== 'infographic' ? data.suggestedType : undefined;
+  const recommendedType = config.type !== 'infographic' ? data.suggestedType : undefined;
 
   const combo = comboCompatibleBase && isComboChart(config);
   const hasRightAxis = combo && data.series.some(
@@ -294,41 +292,19 @@ export function ChartControls({
               {CHART_TYPES.map((type) => (
                 <div
                   key={type.id}
-                  className={`type-button-wrap ${recommendedType === type.id ? 'has-recommendation' : ''}`}
+                  className="type-button-wrap"
                 >
                   <button
                     className={`type-button ${config.type === type.id ? 'active' : ''} ${type.special ? 'special' : ''}`}
                     onClick={() => handleTypeChange(type.id)}
                     aria-label={recommendedType === type.id ? `${type.label} (recommended)` : type.label}
-                    onMouseEnter={() => {
-                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(true);
-                    }}
-                    onMouseLeave={() => {
-                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(false);
-                    }}
-                    onFocus={() => {
-                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(true);
-                    }}
-                    onBlur={() => {
-                      if (recommendedType === type.id) setIsRecommendationTooltipOpen(false);
-                    }}
                   >
                     <type.icon size={18} />
                     <span className="type-label">{type.label}</span>
-                    {recommendedType === type.id && (
-                      <span className="type-recommendation-icon" aria-hidden="true">
-                        <Info size={10} />
-                      </span>
-                    )}
                   </button>
                 </div>
               ))}
             </div>
-            {recommendedType && data.aiReasoning && isRecommendationTooltipOpen && (
-              <div className="type-button-tooltip type-button-tooltip--right" role="tooltip">
-                {data.aiReasoning}
-              </div>
-            )}
             {comboAvailable && (
               <div className="type-quick-actions">
                 <button

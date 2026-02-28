@@ -488,11 +488,16 @@ export function ChartView() {
       ) : (
         <div className="chart-workspace">
           <div className="chart-column" ref={chartCaptureRef}>
-            {chartData.aiSummary && (
-              <div className="chart-ai-summary">
-                <span className="section-label chart-ai-label">AI Insight</span>
-                <p className="chart-ai-text">{chartData.aiSummary}</p>
-              </div>
+            {(chartData.aiSummary || chartData.aiReasoning) && (
+              <details className="chart-ai-summary" open>
+                <summary className="section-label chart-ai-label">AI Insight</summary>
+                {chartData.aiSummary && (
+                  <p className="chart-ai-text">{chartData.aiSummary}</p>
+                )}
+                {chartData.aiReasoning && (
+                  <p className="chart-ai-text chart-ai-text--reasoning">{chartData.aiReasoning}</p>
+                )}
+              </details>
             )}
             <ChartPreview
               data={chartData}
