@@ -7,7 +7,7 @@ import {
   ZoomableGroup,
 } from 'react-simple-maps';
 import type { ChartData, ChartConfig, ColorTheme } from '../types';
-import { getGeoId } from '../services/geoData';
+import { getGeoId, normalizeRegionId } from '../services/geoData';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import './MapChart.css';
 
@@ -73,13 +73,42 @@ export function MapChart({ data, config, theme, colors }: MapChartProps) {
 
   const scope = config.mapScope ?? data.mapScope ?? 'us-states';
   const variant = config.mapVariant ?? 'choropleth';
-  const regions = useMemo(() => data.mapRegions ?? [], [data.mapRegions]);
+  const regions = useMemo(() => {
+    if (data.mapRegions && data.mapRegions.length > 0) {
+      return data.mapRegions
+        .map((region) => {
+          const normalizedId = normalizeRegionId(scope, region.id)
+            ?? normalizeRegionId(scope, region.name)
+            ?? region.id.trim().toUpperCase();
+          return { id: normalizedId, name: region.name, value: region.value };
+        })
+        .filter((region) => Number.isFinite(region.value));
+    }
+
+    const labels = data.labels ?? [];
+    const primarySeries = data.series[0];
+    if (!primarySeries) return [];
+
+    return labels
+      .map((label, index) => {
+        const rawValue = primarySeries.data[index];
+        if (!Number.isFinite(rawValue)) return null;
+        const normalizedId = normalizeRegionId(scope, label);
+        if (!normalizedId) return null;
+        return {
+          id: normalizedId,
+          name: label,
+          value: rawValue,
+        };
+      })
+      .filter((region): region is { id: string; name: string; value: number } => region !== null);
+  }, [data.labels, data.mapRegions, data.series, scope]);
 
   // Build a lookup map from region ID to value
   const regionValueMap = useMemo(() => {
     const map = new Map<string, { value: number; name: string }>();
     for (const region of regions) {
-      const geoId = getGeoId(scope, region.id);
+      const geoId = getGeoId(scope, region.id) ?? getGeoId(scope, region.name);
       if (geoId) {
         map.set(geoId, { value: region.value, name: region.name });
       }
