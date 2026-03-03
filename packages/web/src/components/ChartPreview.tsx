@@ -558,26 +558,19 @@ export function ChartPreview({
     });
     return count;
   }, [data.series]);
-  const adaptiveBottom = (hideAxisLabels ? 10 : adaptiveAxis.bottomMargin)
-    + (hideAxisTitles ? 0 : xAxisLabelLayout.extraBottomMargin);
+  const adaptiveBottom = adaptiveAxis.bottomMargin + xAxisLabelLayout.extraBottomMargin;
   const chartMargins = isHorizontal
     ? {
         top: 20,
         right: 30,
-        bottom: hideAxisLabels
-          ? (yAxisLabel && !hideAxisTitles ? 25 : 5)
-          : (yAxisLabel && !hideAxisTitles ? 25 : 5),
-        left: hideAxisLabels
-          ? (xAxisLabel && !hideAxisTitles ? 30 : 10)
-          : horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
+        bottom: yAxisLabel ? 25 : 5,
+        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
       }
     : {
         top: 20,
-        right: combo ? (rightYAxisLabel && !hideAxisTitles ? 14 : 8) : 5,
+        right: combo ? (rightYAxisLabel ? 14 : 8) : 5,
         bottom: adaptiveBottom,
-        left: hideAxisLabels
-          ? (yAxisLabel && !hideAxisTitles ? 30 : 10)
-          : isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel && !hideAxisTitles ? 15 : 5),
+        left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
       };
 
   const pieData = useMemo(() => {
@@ -810,7 +803,7 @@ export function ChartPreview({
       <YAxis
         type="category"
         dataKey="name"
-        width={hideAxisLabels ? 10 : horizontalCategoryAxis.axisWidth}
+        width={horizontalCategoryAxis.axisWidth}
         stroke={theme.textMuted}
         tick={hideAxisLabels ? false :
           <AdaptiveYAxisCategoryTick
@@ -926,7 +919,7 @@ export function ChartPreview({
           <YAxis
             yAxisId="right"
             orientation="right"
-            width={hideAxisLabels ? 10 : rightAxisTickWidth}
+            width={rightAxisTickWidth}
             stroke={theme.textMuted}
             tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
             tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}

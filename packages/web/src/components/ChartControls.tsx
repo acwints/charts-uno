@@ -613,6 +613,17 @@ export function ChartControls({
                   <span className="toggle-switch" />
                   <span className="toggle-label">Show Values</span>
                 </label>
+                {showPointToggle && (
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={config.showPoints}
+                      onChange={(e) => updateConfig({ showPoints: e.target.checked })}
+                    />
+                    <span className="toggle-switch" />
+                    <span className="toggle-label">Show Points</span>
+                  </label>
+                )}
                 <label className="toggle-item">
                   <input
                     type="checkbox"
@@ -631,17 +642,6 @@ export function ChartControls({
                   <span className="toggle-switch" />
                   <span className="toggle-label">Axis Labels</span>
                 </label>
-                {showPointToggle && (
-                  <label className="toggle-item">
-                    <input
-                      type="checkbox"
-                      checked={config.showPoints}
-                      onChange={(e) => updateConfig({ showPoints: e.target.checked })}
-                    />
-                    <span className="toggle-switch" />
-                    <span className="toggle-label">Show Points</span>
-                  </label>
-                )}
               </div>
             </div>
           </div>

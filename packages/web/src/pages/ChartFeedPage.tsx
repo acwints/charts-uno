@@ -31,6 +31,8 @@ export function ChartFeedPage() {
         showValues: chart.config.showValues ?? false,
         showPoints: (chart.config as Record<string, unknown>).showPoints as boolean ?? true,
         showBorder: (chart.config as Record<string, unknown>).showBorder as boolean ?? true,
+        showAxisTitles: (chart.config as Record<string, unknown>).showAxisTitles as boolean ?? true,
+        showAxisLabels: (chart.config as Record<string, unknown>).showAxisLabels as boolean ?? true,
         animate: chart.config.animate ?? true,
         stacked: (chart.config as Record<string, unknown>).stacked as boolean ?? false,
         yAxisBaselineMode: ((chart.config as Record<string, unknown>).yAxisBaselineMode as ChartConfig['yAxisBaselineMode']) ?? 'auto',

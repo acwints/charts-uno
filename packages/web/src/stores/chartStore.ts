@@ -21,6 +21,8 @@ const defaultConfig: ChartConfig = {
   showValues: false,
   showPoints: true,
   showBorder: true,
+  showAxisTitles: true,
+  showAxisLabels: true,
   animate: true,
   stacked: false,
   yAxisBaselineMode: 'auto',
