@@ -102,6 +102,8 @@ export interface ChartConfig {
   showValues: boolean;
   showPoints: boolean;
   showBorder: boolean;
+  showAxisTitles?: boolean;
+  showAxisLabels?: boolean;
   animate: boolean;
   title: string;
   stacked: boolean;
@@ -133,6 +135,8 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
   showValues: false,
   showPoints: true,
   showBorder: true,
+  showAxisTitles: true,
+  showAxisLabels: true,
   animate: true,
   stacked: false,
   yAxisBaselineMode: 'auto',

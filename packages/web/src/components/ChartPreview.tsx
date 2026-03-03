@@ -521,6 +521,8 @@ export function ChartPreview({
   const yAxisLabel = data.yAxisLabel
     ?? (combo ? leftAxisSeriesNames[0] : undefined)
     ?? (data.series.length === 1 ? data.series[0].name : undefined);
+  const hideAxisLabels = config.showAxisLabels === false;
+  const hideAxisTitles = config.showAxisTitles === false;
   const xAxisLabelLayout = useMemo(
     () => computeCartesianXAxisLabelConfig(adaptiveAxis, xAxisLabel),
     [adaptiveAxis, xAxisLabel],
@@ -556,19 +558,26 @@ export function ChartPreview({
     });
     return count;
   }, [data.series]);
-  const adaptiveBottom = adaptiveAxis.bottomMargin + xAxisLabelLayout.extraBottomMargin;
+  const adaptiveBottom = (hideAxisLabels ? 10 : adaptiveAxis.bottomMargin)
+    + (hideAxisTitles ? 0 : xAxisLabelLayout.extraBottomMargin);
   const chartMargins = isHorizontal
     ? {
         top: 20,
         right: 30,
-        bottom: yAxisLabel ? 25 : 5,
-        left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
+        bottom: hideAxisLabels
+          ? (yAxisLabel && !hideAxisTitles ? 25 : 5)
+          : (yAxisLabel && !hideAxisTitles ? 25 : 5),
+        left: hideAxisLabels
+          ? (xAxisLabel && !hideAxisTitles ? 30 : 10)
+          : horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
       }
     : {
         top: 20,
-        right: combo ? (rightYAxisLabel ? 14 : 8) : 5,
+        right: combo ? (rightYAxisLabel && !hideAxisTitles ? 14 : 8) : 5,
         bottom: adaptiveBottom,
-        left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
+        left: hideAxisLabels
+          ? (yAxisLabel && !hideAxisTitles ? 30 : 10)
+          : isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel && !hideAxisTitles ? 15 : 5),
       };
 
   const pieData = useMemo(() => {
@@ -695,7 +704,7 @@ export function ChartPreview({
       />
     );
 
-    const xAxisLabelConfig = xAxisLabel ? {
+    const xAxisLabelConfig = xAxisLabel && !hideAxisTitles ? {
       value: xAxisLabel,
       position: 'insideBottom' as const,
       offset: xAxisLabelLayout.offset,
@@ -718,8 +727,8 @@ export function ChartPreview({
       <XAxis
         dataKey="name"
         stroke={theme.textMuted}
-        tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
-        tickLine={{ stroke: theme.textMuted }}
+        tick={hideAxisLabels ? false : (adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize })}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         padding={{ left: 12, right: 4 }}
         interval={categoricalInterval}
@@ -731,8 +740,8 @@ export function ChartPreview({
         dataKey="x"
         domain={numericDomain}
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
-        tickLine={{ stroke: theme.textMuted }}
+        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         allowDecimals={false}
         tickFormatter={formatXAxisYearTick}
@@ -742,8 +751,8 @@ export function ChartPreview({
       <XAxis
         dataKey="name"
         stroke={theme.textMuted}
-        tick={adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize }}
-        tickLine={{ stroke: theme.textMuted }}
+        tick={hideAxisLabels ? false : (adaptiveTick ?? { fill: theme.textMuted, fontSize: adaptiveAxis.fontSize })}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         padding={{ left: 12, right: 4 }}
         interval={categoricalInterval}
@@ -751,7 +760,7 @@ export function ChartPreview({
       />
     );
 
-    const yAxisLabelConfig = yAxisLabel ? {
+    const yAxisLabelConfig = yAxisLabel && !hideAxisTitles ? {
       value: yAxisLabel,
       angle: -90,
       position: (isVerticalBar && verticalValueAxis.preferOutsideLabel ? 'left' as const : 'insideLeft' as const),
@@ -767,8 +776,8 @@ export function ChartPreview({
     const yAxisElement = (
       <YAxis
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
-        tickLine={{ stroke: theme.textMuted }}
+        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         domain={!isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         tickFormatter={formatYAxisTick}
@@ -782,11 +791,11 @@ export function ChartPreview({
         type="number"
         domain={isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         stroke={theme.textMuted}
-        tick={{ fill: theme.textMuted, fontSize: 12 }}
-        tickLine={{ stroke: theme.textMuted }}
+        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         tickFormatter={formatYAxisTick}
-        label={yAxisLabel ? {
+        label={yAxisLabel && !hideAxisTitles ? {
           value: yAxisLabel,
           position: 'insideBottom' as const,
           offset: -10,
@@ -801,18 +810,18 @@ export function ChartPreview({
       <YAxis
         type="category"
         dataKey="name"
-        width={horizontalCategoryAxis.axisWidth}
+        width={hideAxisLabels ? 10 : horizontalCategoryAxis.axisWidth}
         stroke={theme.textMuted}
-        tick={
+        tick={hideAxisLabels ? false :
           <AdaptiveYAxisCategoryTick
             fill={theme.textMuted}
             fontSize={horizontalCategoryAxis.fontSize}
             maxTickLength={horizontalCategoryAxis.maxTickLength}
           />
         }
-        tickLine={{ stroke: theme.textMuted }}
+        tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
-        label={xAxisLabel ? {
+        label={xAxisLabel && !hideAxisTitles ? {
           value: xAxisLabel,
           angle: -90,
           position: horizontalCategoryAxis.preferOutsideLabel ? 'left' : 'insideLeft',
@@ -869,7 +878,7 @@ export function ChartPreview({
           ) * 7 + 10,
         ),
       );
-      const rightYAxisLabelConfig = rightYAxisLabel ? {
+      const rightYAxisLabelConfig = rightYAxisLabel && !hideAxisTitles ? {
         value: rightYAxisLabel,
         angle: 90,
         position: 'insideRight' as const,
@@ -907,8 +916,8 @@ export function ChartPreview({
           <YAxis
             yAxisId="left"
             stroke={theme.textMuted}
-            tick={{ fill: theme.textMuted, fontSize: 12 }}
-            tickLine={{ stroke: theme.textMuted }}
+            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+            tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
             axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
             domain={leftSeriesDomain}
             tickFormatter={formatYAxisTick}
@@ -917,10 +926,10 @@ export function ChartPreview({
           <YAxis
             yAxisId="right"
             orientation="right"
-            width={rightAxisTickWidth}
+            width={hideAxisLabels ? 10 : rightAxisTickWidth}
             stroke={theme.textMuted}
-            tick={{ fill: theme.textMuted, fontSize: 12 }}
-            tickLine={{ stroke: theme.textMuted }}
+            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+            tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
             axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
             domain={rightSeriesDomain}
             tickFormatter={formatRightYAxisTick}
@@ -1231,7 +1240,7 @@ export function ChartPreview({
             <PolarGrid stroke={theme.grid} strokeOpacity={theme.gridOpacity * 2} />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: theme.textMuted, fontSize: 12 }}
+              tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
             />
             {tooltipElement}
             {legendElement}
