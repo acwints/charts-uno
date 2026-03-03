@@ -517,7 +517,9 @@ export function ChartPreview({
     return dateLikeCount / data.labels.length >= 0.7;
   }, [data.labels, data.xAxisType, isYearLabels]);
 
-  const xAxisLabel = data.xAxisLabel;
+  const xAxisLabel = data.xAxisLabel
+    ?? (isYearLabels ? 'Year' : undefined)
+    ?? (data.xAxisType === 'date' ? 'Date' : undefined);
   const yAxisLabel = data.yAxisLabel
     ?? (combo ? leftAxisSeriesNames[0] : undefined)
     ?? (data.series.length === 1 ? data.series[0].name : undefined);
