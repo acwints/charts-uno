@@ -711,10 +711,15 @@ export function ChartPreview({
     const adaptiveTick = adaptiveAxis.needsCustomTick
       ? <AdaptiveXAxisTick fill={theme.textMuted} config={adaptiveAxis} />
       : undefined;
-    const categoricalInterval =
-      adaptiveAxis.tickInterval !== undefined
-        ? (preferPreserveEndTicks ? 'preserveEnd' : adaptiveAxis.tickInterval)
-        : (preferPreserveEndTicks ? 'preserveEnd' : 'preserveStartEnd');
+    // Year labels are always 4 chars — they fit comfortably even at high density.
+    // Use an explicit numeric interval instead of Recharts' auto-hide modes
+    // ('preserveEnd'/'preserveStartEnd') which over-aggressively drop labels.
+    const categoricalInterval: number | 'preserveEnd' | 'preserveStartEnd' =
+      isYearLabels
+        ? (adaptiveAxis.tickInterval ?? 0)
+        : adaptiveAxis.tickInterval !== undefined
+          ? (preferPreserveEndTicks ? 'preserveEnd' : adaptiveAxis.tickInterval)
+          : (preferPreserveEndTicks ? 'preserveEnd' : 'preserveStartEnd');
 
     const xAxisElement = isYearLabels ? (
       <XAxis
