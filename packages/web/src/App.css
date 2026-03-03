@@ -360,11 +360,6 @@
   margin: var(--space-2) 0 0 0;
 }
 
-.chart-ai-text--reasoning {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
 @media (max-width: 1024px) {
   .chart-workspace {
     grid-template-columns: 1fr;
