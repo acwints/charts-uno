@@ -93,11 +93,17 @@ function toNiceDomain(
   const range = Math.max(max - baseMin, 1e-9);
   const step = getNiceStep(range / (tickCount - 1));
 
-  const niceMin = lockZeroMin ? 0 : Math.floor(baseMin / step) * step;
+  let niceMin = lockZeroMin ? 0 : Math.floor(baseMin / step) * step;
   let niceMax = Math.ceil(max / step) * step;
   if (niceMax <= niceMin) {
     niceMax = niceMin + step;
   }
+
+  // Ensure nice bounds fully contain the data — prevents Recharts from
+  // auto-extending the axis with ugly fractional tick values.
+  if (niceMax < max) niceMax += step;
+  if (!lockZeroMin && niceMin > min) niceMin -= step;
+
   return [niceMin, niceMax];
 }
 
