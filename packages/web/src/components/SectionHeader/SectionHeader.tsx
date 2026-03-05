@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 interface SectionHeaderProps {
   icon: LucideIcon;
   label: string;
-  as?: 'div' | 'span' | 'label';
+  as?: 'div' | 'span' | 'label' | 'summary';
   className?: string;
 }
 

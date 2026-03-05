@@ -50,12 +50,12 @@ export function getSeriesForAxis(
 const COMBO_ELIGIBLE: Set<ChartType> = new Set(['bar', 'line', 'area']);
 
 const PERCENTAGE_NAME_RE =
-  /\b(savings?|percent(age)?|rates?|ratio|share|proportion|margin|efficiency|utilization|growth|change|returns?|yield)\b/i;
+  /\b(savings?|percent(age)?|rates?|ratio|share|proportion|margin|efficiency|utilization|growth|change|returns?|yield|decline|drop|loss|reduction|decrease|churn|attrition)\b/i;
 
 /**
- * Heuristic: detect series that look like percentages among series that don't.
- * Returns a suggested combo config if the data looks like it should be dual-axis,
- * or null if no suggestion.
+ * Heuristic: detect series that look like percentages or small-scale metrics
+ * among series with much larger values. Returns a suggested combo config if the
+ * data looks like it should be dual-axis, or null if no suggestion.
  */
 export function suggestComboConfig(
   data: ChartData,
@@ -69,20 +69,22 @@ export function suggestComboConfig(
     const nums = s.data.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
     const min = nums.length > 0 ? Math.min(...nums) : 0;
     const max = nums.length > 0 ? Math.max(...nums) : 0;
+    const absMax = Math.max(Math.abs(min), Math.abs(max));
     const nameHintsPct = PERCENTAGE_NAME_RE.test(s.name);
-    const rangeIs0To100 = nums.length > 0 && min >= 0 && max <= 100;
-    return { name: s.name, min, max, nameHintsPct, rangeIs0To100, count: nums.length };
+    // Accept percentage-like ranges: 0..100 or -100..0 (e.g. decline %)
+    const rangeIsPctLike = nums.length > 0 && absMax <= 100;
+    return { name: s.name, min, max, absMax, nameHintsPct, rangeIsPctLike, count: nums.length };
   });
 
-  // Find candidate percentage series: name hints + values in 0-100
-  const pctCandidates = stats.filter((s) => s.nameHintsPct && s.rangeIs0To100 && s.count > 0);
+  // Find candidate percentage / small-scale series: name hints + values in -100..100
+  const pctCandidates = stats.filter((s) => s.nameHintsPct && s.rangeIsPctLike && s.count > 0);
   const otherSeries = stats.filter((s) => !pctCandidates.includes(s));
 
   if (pctCandidates.length === 0 || otherSeries.length === 0) return null;
 
-  // Only suggest if the non-pct series have a meaningfully larger max value
-  const otherMax = Math.max(...otherSeries.map((s) => s.max));
-  if (otherMax <= 100) return null; // Scales are similar, no need
+  // Only suggest if the non-pct series have a meaningfully larger scale
+  const otherAbsMax = Math.max(...otherSeries.map((s) => s.absMax));
+  if (otherAbsMax <= 100) return null; // Scales are similar, no need
 
   const seriesConfig: Record<string, SeriesOverride> = {};
   for (const s of pctCandidates) {
