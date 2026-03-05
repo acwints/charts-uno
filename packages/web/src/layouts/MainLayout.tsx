@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Header } from '../components/Header';
 import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
@@ -74,9 +74,15 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       <footer className="footer">
         <div className="footer-content">
-          <span className="footer-brand">Chartsuno</span>
-          <span className="footer-divider">•</span>
-          <span className="footer-tagline">Data visualization, elevated</span>
+          <div className="footer-left">
+            <span className="footer-brand">Chartsuno</span>
+            <span className="footer-divider">•</span>
+            <span className="footer-tagline">Data visualization, elevated</span>
+          </div>
+          <nav className="footer-links">
+            <Link to="/new" className="footer-link">Create</Link>
+            <Link to="/feed" className="footer-link">Explore</Link>
+          </nav>
         </div>
       </footer>
 

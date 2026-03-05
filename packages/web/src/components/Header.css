@@ -71,6 +71,28 @@
   letter-spacing: 0.03em;
 }
 
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.header-link {
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.header-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -240,6 +262,10 @@
     display: none;
   }
 
+  .header-links {
+    display: none;
+  }
+
   .logo-badge {
     display: none;
   }
@@ -251,6 +277,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .header-hamburger {
+    transition: none;
+  }
+
+  .header-link {
     transition: none;
   }
 

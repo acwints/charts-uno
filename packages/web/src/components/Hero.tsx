@@ -30,9 +30,9 @@ export function Hero({ showAuthCta = false, onAuthOpen }: HeroProps) {
         {showAuthCta && onAuthOpen && (
           <div className="hero-actions">
             <Button variant="primary" size="lg" onClick={onAuthOpen}>
-              Sign in to save charts
+              Get Started Free
             </Button>
-            <p className="hero-note">Billing and account setup happen after you sign in.</p>
+            <p className="hero-note">No credit card required. Start creating charts instantly.</p>
           </div>
         )}
       </motion.div>

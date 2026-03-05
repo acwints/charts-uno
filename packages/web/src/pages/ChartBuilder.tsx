@@ -4,6 +4,8 @@ import { motion } from 'motion/react';
 import { Hero } from '../components/Hero';
 import { DataInput } from '../components/DataInput';
 import { ValueOfCharts } from '../components/ValueOfCharts';
+import { Features } from '../components/Features';
+import { BottomCTA } from '../components/BottomCTA';
 import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
 import { recommendChartType } from '../services/chartTypeRecommender';
@@ -96,7 +98,13 @@ export function ChartBuilder() {
     >
       <Hero showAuthCta={!isAuthenticated} onAuthOpen={context?.openAuthModal} />
       <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
-      {!isAuthenticated && <ValueOfCharts />}
+      {!isAuthenticated && (
+        <>
+          <Features />
+          <ValueOfCharts />
+          <BottomCTA onAuthOpen={context?.openAuthModal} isAuthenticated={false} />
+        </>
+      )}
     </motion.div>
   );
 }

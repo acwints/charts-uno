@@ -89,7 +89,7 @@ function splitLikelyTiedLabels(data: ChartData, rawInput: string): ChartData {
 }
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
-  const [mode, setMode] = useState<InputMode>('image');
+  const [mode, setMode] = useState<InputMode>('paste');
   const [pasteContent, setPasteContent] = useState('');
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');

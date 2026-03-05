@@ -1,0 +1,39 @@
+{
+  "app": {
+    "name": "ChartsUno",
+    "description": "A beautiful chart design tool that turns boring default charts into stunning, presentation-ready data visualizations",
+    "audience": "Startup founders, product managers, designers, and anyone who presents data — people who want their charts to look as good as their ideas",
+    "problem": "Default chart tools produce ugly, generic charts that undermine credibility in pitches, reports, and dashboards",
+    "differentiator": "Instant beautiful charts with real-time customization — color schemes, themes, animations — no design skills needed",
+    "appStoreUrl": "https://chartsuno.com",
+    "category": "productivity",
+    "isMobileApp": false
+  },
+  "imageGen": {
+    "provider": "openai",
+    "apiKey": "YOUR_OPENAI_KEY",
+    "model": "gpt-image-1.5"
+  },
+  "uploadPost": {
+    "apiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFjd2ludHM3OEBnbWFpbC5jb20iLCJleHAiOjQ5MjU2NDkzNDEsImp0aSI6IjM2OTEzODdkLTI1ZmItNDE5Yy1iYjRjLWNlNTgwOTMyZmI4NyJ9.vDYE0wbnfI-Y1YY7f6v4Rl95fCJ3x8-TEMuu3Kafjt8",
+    "profile": "chartsuno",
+    "platforms": [
+      "tiktok"
+    ]
+  },
+  "revenuecat": {
+    "enabled": false,
+    "v2SecretKey": "",
+    "projectId": ""
+  },
+  "posting": {
+    "schedule": [
+      "07:30",
+      "16:30",
+      "21:00"
+    ],
+    "crossPost": []
+  },
+  "competitors": "/Users/andrewwinter/Documents/GitHub/charts-uno/marketing/tiktok/competitor-research.json",
+  "strategy": "/Users/andrewwinter/Documents/GitHub/charts-uno/marketing/tiktok/strategy.json"
+}

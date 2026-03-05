@@ -1,0 +1,15 @@
+{
+  "hooks": [],
+  "postingSchedule": [
+    "07:30",
+    "16:30",
+    "21:00"
+  ],
+  "hookCategories": {
+    "testing": [],
+    "proven": [],
+    "dropped": []
+  },
+  "crossPostPlatforms": [],
+  "notes": ""
+}
