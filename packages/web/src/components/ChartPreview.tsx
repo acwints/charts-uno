@@ -355,6 +355,14 @@ export function ChartPreview({
     return toNiceDomain(domain, { lockZeroMin });
   }, [combo, rightSeriesValues, config.yAxisBaselineMode]);
 
+  // Reverse right axis when all values are negative (e.g. decline %) so largest magnitude is at top
+  const rightAxisReversed = useMemo(() => {
+    if (!combo) return false;
+    const values = rightSeriesValues;
+    if (values.length === 0) return false;
+    return values.every(v => typeof v === 'number' && v < 0);
+  }, [combo, rightSeriesValues]);
+
   // Set of right-axis series names for tooltip formatting
   const rightAxisSeriesNames = useMemo(() => {
     if (!combo) return new Set<string>();
@@ -760,11 +768,14 @@ export function ChartPreview({
       />
     );
 
+    const preferOutsideYLabel = isVerticalBar && verticalValueAxis.preferOutsideLabel;
     const yAxisLabelConfig = yAxisLabel && !hideAxisTitles ? {
       value: yAxisLabel,
       angle: -90,
-      position: (isVerticalBar && verticalValueAxis.preferOutsideLabel ? 'left' as const : 'insideLeft' as const),
-      offset: isVerticalBar ? verticalValueAxis.labelOffset : 8,
+      position: (preferOutsideYLabel ? 'left' as const : 'insideLeft' as const),
+      offset: isVerticalBar
+        ? verticalValueAxis.labelOffset
+        : Math.max(8, Math.min(18, Math.round(yAxisLabel.length * 0.3) + 6)),
       dy: isVerticalBar
         ? verticalValueAxis.dy
         : Math.min(10, Math.max(2, Math.floor(yAxisLabel.length / 10))),
@@ -882,7 +893,7 @@ export function ChartPreview({
         value: rightYAxisLabel,
         angle: 90,
         position: 'insideRight' as const,
-        offset: 4,
+        offset: Math.max(6, Math.min(14, Math.round(rightAxisTickWidth * 0.12) + 2)),
         fill: theme.textMuted,
         fontSize: 11,
         fontFamily: 'var(--font-mono)',
@@ -932,6 +943,7 @@ export function ChartPreview({
             tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
             axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
             domain={rightSeriesDomain}
+            reversed={rightAxisReversed}
             tickFormatter={formatRightYAxisTick}
             label={rightYAxisLabelConfig}
           />

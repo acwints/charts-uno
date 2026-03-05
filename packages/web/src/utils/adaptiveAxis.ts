@@ -94,10 +94,12 @@ export function computeAdaptiveAxisConfig(
   // rotate early to avoid collisions for dense categorical axes.
   if (overlapRatio > 0.85) {
     const fontSize: 10 | 11 = maxLabelLength > 14 ? 10 : 11;
-    const displayLength = Math.min(maxLabelLength, MAX_TICK_LENGTH);
+    const lengths = getLabelLengths(labels);
+    const p80Length = getLengthAtPercentile(lengths, 0.8);
+    const displayLength = Math.min(p80Length, MAX_TICK_LENGTH);
     const bottomMargin = Math.min(
-      Math.round(displayLength * estimateCharWidth(fontSize) * SIN_45) + 8,
-      120,
+      Math.round(displayLength * estimateCharWidth(fontSize) * SIN_45) + 6,
+      90,
     );
 
     return {
@@ -136,10 +138,12 @@ export function computeAdaptiveAxisConfig(
 
   // Rotate -45deg
   const fontSize: 10 | 11 = maxLabelLength > 15 ? 10 : 11;
-  const displayLength = Math.min(maxLabelLength, MAX_TICK_LENGTH);
+  const lengths = getLabelLengths(labels);
+  const p80Length = getLengthAtPercentile(lengths, 0.8);
+  const displayLength = Math.min(p80Length, MAX_TICK_LENGTH);
   const bottomMargin = Math.min(
-    Math.round(displayLength * CHAR_WIDTH_PX * SIN_45) + 8,
-    120,
+    Math.round(displayLength * CHAR_WIDTH_PX * SIN_45) + 6,
+    90,
   );
 
   return {
@@ -236,8 +240,10 @@ export function computeCartesianXAxisLabelConfig(
     };
   }
 
+  // Scale offset with rotated label height so the axis title clears tick labels
+  const rotatedOffset = Math.min(-18, -(adaptiveAxis.bottomMargin * 0.35 + 10));
   return {
-    offset: adaptiveAxis.angle !== 0 ? -24 : -10,
-    extraBottomMargin: adaptiveAxis.angle !== 0 ? 30 : 20,
+    offset: adaptiveAxis.angle !== 0 ? rotatedOffset : -10,
+    extraBottomMargin: adaptiveAxis.angle !== 0 ? 20 : 18,
   };
 }

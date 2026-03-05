@@ -24,10 +24,12 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
+import ArrowLeftRight from 'lucide-react/dist/esm/icons/arrow-left-right';
 import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
+import { transposeChartData } from '../utils/transposeData';
 import type { ChartLogoOption } from './ChartPreview';
 import { ColorStudio } from './ColorStudio';
 import { SectionHeader } from './SectionHeader';
@@ -37,6 +39,7 @@ interface ChartControlsProps {
   config: ChartConfig;
   onChange: (config: ChartConfig) => void;
   data: ChartData;
+  onDataChange?: (data: ChartData) => void;
   watermark?: WatermarkSettings;
   logoOptions?: ChartLogoOption[];
   logoSelectionValue?: string;
@@ -103,6 +106,7 @@ export function ChartControls({
   config,
   onChange,
   data,
+  onDataChange,
   watermark,
   logoOptions = [],
   logoSelectionValue = BRANDING_CHARTSUNO_VALUE,
@@ -435,6 +439,17 @@ export function ChartControls({
                   </label>
                 )}
               </div>
+              {onDataChange && data.series.length > 0 && data.labels.length > 0 && (
+                <button
+                  className="swap-axes-btn"
+                  onClick={() => onDataChange(transposeChartData(data))}
+                  aria-label="Swap rows and columns"
+                  title="Swap rows and columns — transpose categories and series"
+                >
+                  <ArrowLeftRight size={13} />
+                  <span>Swap Rows &amp; Columns</span>
+                </button>
+              )}
               {(config.type === 'bar' || config.type === 'histogram') && (
                 <label className="baseline-mode-control">
                   <span className="baseline-mode-label">Value axis baseline</span>
@@ -454,8 +469,8 @@ export function ChartControls({
               )}
             </div>
 
-            <div className="control-section data-summary full-width">
-              <SectionHeader icon={Hash} label="Data Summary" />
+            <details className="control-section data-summary full-width collapsible-section">
+              <SectionHeader as="summary" icon={Hash} label="Data Summary" />
               <div className="data-grid">
                 {data.series.map((series, idx) => (
                   <div key={series.name} className="data-series-item">
@@ -477,11 +492,11 @@ export function ChartControls({
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
 
             {showComboControls && (
-              <div className="control-section combo-section full-width">
-                <SectionHeader icon={Columns2} label="Dual Axis" />
+              <details className="control-section combo-section full-width collapsible-section">
+                <SectionHeader as="summary" icon={Columns2} label="Dual Axis" />
                 {comboSuggestion && (
                   <button className="combo-suggest-banner" onClick={applyComboSuggestion}>
                     <Sparkles size={12} />
@@ -548,7 +563,7 @@ export function ChartControls({
                     />
                   </div>
                 )}
-              </div>
+              </details>
             )}
           </div>
         </div>

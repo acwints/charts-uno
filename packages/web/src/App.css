@@ -141,8 +141,7 @@
   display: grid;
   grid-template-columns: 6fr 5fr;
   gap: var(--space-2);
-  min-height: clamp(420px, 75vh, 760px);
-  align-items: stretch;
+  align-items: start;
 }
 
 .chart-data-editor {
@@ -290,6 +289,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  max-height: clamp(420px, 75vh, 760px);
 }
 
 .chart-column {
@@ -297,6 +297,7 @@
   flex-direction: column;
   gap: var(--space-3);
   min-height: 0;
+  height: clamp(420px, 75vh, 760px);
   flex: 1;
 }
 
@@ -366,6 +367,14 @@
     grid-template-rows: auto auto;
     height: auto;
     min-height: auto;
+  }
+
+  .chart-column {
+    height: clamp(320px, 60vh, 600px);
+  }
+
+  .chart-sidebar {
+    max-height: none;
   }
 
   .data-editor-top-row {

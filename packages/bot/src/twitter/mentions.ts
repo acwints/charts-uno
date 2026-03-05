@@ -76,7 +76,7 @@ export async function pollMentions(): Promise<MentionData[]> {
       const action = parseAction(tweet.text);
       if (!action) {
         skippedByPhrase += 1;
-        logger.debug({ text: tweet.text }, 'Skipping mention without valid trigger phrase');
+        logger.info({ text: tweet.text, mentionId: tweet.id }, 'Skipping mention without valid trigger phrase');
         continue;
       }
 

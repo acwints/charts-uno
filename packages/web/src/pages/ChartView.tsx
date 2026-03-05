@@ -505,6 +505,7 @@ export function ChartView() {
               config={chartConfig}
               onChange={setChartConfig}
               data={chartData}
+              onDataChange={setChartData}
               watermark={watermarkSettings}
               logoOptions={logoOptions}
               logoSelectionValue={logoSelectionValue}
