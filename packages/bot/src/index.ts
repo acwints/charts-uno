@@ -2,7 +2,7 @@ import { config, validateConfig, logger } from './config.js';
 import { initializeClient, ensureFreshClient } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
-import { updateState } from './storage.js';
+import { loadSeedState, saveState, loadState } from './storage.js';
 import { closeBrowser, setRendererLogger } from '@chartsuno/shared/node';
 
 // Inject bot logger into shared chart renderer
@@ -141,10 +141,17 @@ async function start(): Promise<void> {
     try {
       validateConfig();
 
-      // Allow resetting the since_id checkpoint via env var
+      // Allow full state reset via env var (reseeds OAuth2 tokens + clears sinceId)
       if (process.env.RESET_SINCE_ID === 'true') {
-        logger.warn('RESET_SINCE_ID is set; clearing lastSinceId checkpoint');
-        await updateState({ lastSinceId: null, processedMentions: [] });
+        const seed = await loadSeedState();
+        if (seed) {
+          logger.warn('RESET_SINCE_ID is set; replacing state with seed (fresh OAuth2 + cleared sinceId)');
+          await saveState({ ...seed, lastSinceId: null, processedMentions: [] });
+        } else {
+          const current = await loadState();
+          logger.warn('RESET_SINCE_ID is set; clearing lastSinceId checkpoint');
+          await saveState({ ...current, lastSinceId: null, processedMentions: [] });
+        }
       }
 
       await initializeClient();
