@@ -1,4 +1,4 @@
-import { getReadOnlyClient } from './client.js';
+import { getReadOnlyClient, getAuthMode } from './client.js';
 import { config, logger } from '../config.js';
 import { loadState, updateState } from '../storage.js';
 
@@ -27,27 +27,34 @@ export async function pollMentions(): Promise<MentionData[]> {
 
   try {
     const state = await loadState();
-    const me = await client.v2.me();
-    const botUsername = me.data.username.toLowerCase();
 
-    const params: Parameters<typeof client.v2.search>[1] = {
+    // Use mentions timeline endpoint (more reliable than search)
+    const userId = config.bot.userId;
+    const params: Record<string, unknown> = {
       max_results: 100,
-      'tweet.fields': ['referenced_tweets', 'author_id'],
+      'tweet.fields': ['referenced_tweets', 'author_id', 'created_at'],
     };
 
     if (state.lastSinceId) {
       params.since_id = state.lastSinceId;
     }
 
-    // Fetch all direct mentions first, then apply trigger phrase parsing locally.
-    // This avoids brittle dependence on exact phrase matching in X query syntax.
-    const query = `@${botUsername} -from:${botUsername}`;
-    const response = await client.v2.search(query, params);
+    logger.info(
+      { sinceId: state.lastSinceId, authMode: getAuthMode(), userId },
+      'Fetching mentions timeline'
+    );
+
+    const response = await client.v2.userMentionTimeline(userId, params);
 
     if (!response.data.data) {
       logger.debug('No new mentions found');
       return [];
     }
+
+    logger.info(
+      { count: response.data.data.length, newestId: response.data.meta?.newest_id },
+      'Mentions timeline returned results'
+    );
 
     // Update since_id checkpoint (handles both cold start and normal polls)
     if (response.data.meta?.newest_id) {
@@ -66,6 +73,11 @@ export async function pollMentions(): Promise<MentionData[]> {
     let skippedByNotReply = 0;
 
     for (const tweet of response.data.data) {
+      // Skip tweets from the bot itself
+      if (tweet.author_id === userId) {
+        continue;
+      }
+
       // Check if this is from an allowed user
       if (config.bot.allowedUserIds.length > 0 && !config.bot.allowedUserIds.includes(tweet.author_id || '')) {
         skippedByAllowedUser += 1;
