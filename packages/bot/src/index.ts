@@ -2,6 +2,7 @@ import { config, validateConfig, logger } from './config.js';
 import { initializeClient, ensureFreshClient } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
+import { updateState } from './storage.js';
 import { closeBrowser, setRendererLogger } from '@chartsuno/shared/node';
 
 // Inject bot logger into shared chart renderer
@@ -139,6 +140,13 @@ async function start(): Promise<void> {
 
     try {
       validateConfig();
+
+      // Allow resetting the since_id checkpoint via env var
+      if (process.env.RESET_SINCE_ID === 'true') {
+        logger.warn('RESET_SINCE_ID is set; clearing lastSinceId checkpoint');
+        await updateState({ lastSinceId: null, processedMentions: [] });
+      }
+
       await initializeClient();
 
       logger.info(
