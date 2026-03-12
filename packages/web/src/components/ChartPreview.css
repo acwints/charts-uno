@@ -211,10 +211,10 @@
 
 .chart-meta-item--unverified {
   padding: 2px 6px;
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
   border-radius: 999px;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -442,7 +442,7 @@
 }
 
 .infographic-placeholder-icon {
-  color: #a78bfa;
+  color: var(--chart-2);
   opacity: 0.6;
 }
 

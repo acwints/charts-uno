@@ -99,7 +99,7 @@ class Chart(Base):
     source_url = Column(Text, nullable=True)
 
     # Metadata
-    is_public = Column(Integer, default=0)  # 0 = private, 1 = public
+    is_public = Column(Boolean, default=False)
     view_count = Column(Integer, default=0)
     like_count = Column(Integer, default=0)
 

@@ -35,14 +35,14 @@
 
 .orb-ring--middle {
   inset: 8px;
-  border-bottom-color: #8b5cf6;
+  border-bottom-color: var(--chart-2);
   border-left-color: rgba(139, 92, 246, 0.2);
   animation: orb-spin-reverse 2s linear infinite;
 }
 
 .orb-ring--inner {
   inset: 16px;
-  border-top-color: #06b6d4;
+  border-top-color: var(--chart-3);
   border-right-color: rgba(6, 182, 212, 0.15);
   animation: orb-spin 1.5s linear infinite;
 }
@@ -74,20 +74,20 @@
 
 .orb-dot--1 {
   animation: orbit-1 3s linear infinite;
-  background: #3b82f6;
-  box-shadow: 0 0 6px #3b82f6;
+  background: var(--chart-1);
+  box-shadow: 0 0 6px var(--chart-1);
 }
 
 .orb-dot--2 {
   animation: orbit-2 4s linear infinite;
-  background: #8b5cf6;
-  box-shadow: 0 0 6px #8b5cf6;
+  background: var(--chart-2);
+  box-shadow: 0 0 6px var(--chart-2);
 }
 
 .orb-dot--3 {
   animation: orbit-3 3.5s linear infinite;
-  background: #06b6d4;
-  box-shadow: 0 0 6px #06b6d4;
+  background: var(--chart-3);
+  box-shadow: 0 0 6px var(--chart-3);
 }
 
 /* ─── Text ─── */
@@ -137,7 +137,7 @@
 .progress-fill {
   height: 100%;
   border-radius: 2px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+  background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3));
   background-size: 200% 100%;
   animation: progress-shimmer 2s linear infinite;
   transition: width 0.15s ease-out;

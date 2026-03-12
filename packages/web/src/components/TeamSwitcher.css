@@ -65,12 +65,12 @@
 }
 
 .team-switcher__plan--pro {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--chart-2), var(--chart-2));
   color: white;
 }
 
 .team-switcher__plan--business {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, var(--chart-5), var(--warning));
   color: white;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .team-switcher__avatar--personal {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, var(--accent), var(--accent));
   color: white;
   font-size: 12px;
   font-weight: 600;

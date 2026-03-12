@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -6,23 +6,7 @@ interface ApiOptions {
 }
 
 async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-  const { method = 'GET', body } = options;
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include cookies for auth
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  return response.json();
+  return fetchApiJson<T>(endpoint, options);
 }
 
 // Auth
@@ -72,8 +56,7 @@ export interface ChartResponse {
     userPrompt?: string;
     sourcePrompt?: string;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any;
+  config: Record<string, unknown>;
   source_type: string | null;
   is_public: boolean;
   view_count: number;
@@ -106,8 +89,7 @@ export interface CreateChartData {
     userPrompt?: string;
     sourcePrompt?: string;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any;
+  config: Record<string, unknown>;
   source_type?: string;
   is_public?: boolean;
 }

@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { ChartType, ColorScheme, ThemeMode } from '../types';
 import { COLOR_PALETTES, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, getTheme } from '../types';
 import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
@@ -21,10 +22,10 @@ interface MiniChartPreviewData {
 }
 
 interface MiniChartPreviewConfig {
-  type?: string;
-  colorScheme?: string;
-  themeMode?: string;
-  barLayout?: string;
+  type?: ChartType;
+  colorScheme?: ColorScheme;
+  themeMode?: ThemeMode;
+  barLayout?: 'horizontal' | 'vertical';
   yAxisBaselineMode?: 'auto' | 'zero' | 'data';
   customColors?: {
     background?: string;

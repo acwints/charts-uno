@@ -1,31 +1,22 @@
 import type { ChartData } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
-export async function analyzeImage(file: File): Promise<ChartData> {
-  // Convert file to base64
-  const base64 = await fileToBase64(file);
-  // Remove the data URL prefix for the API
-  const base64Data = base64.split(',')[1];
+interface ImageAnalysisApiResponse {
+  labels: string[];
+  series: ChartData['series'];
+  suggestedTitle?: string;
+  suggestedType?: string;
+  stacked?: boolean;
+  barLayout?: string;
+  aiReasoning?: string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+}
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/analyze-image`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      image_base64: base64Data,
-      mime_type: file.type,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Image analysis failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
-
+function toChartData(
+  parsed: ImageAnalysisApiResponse,
+  sourceImage: { base64: string; mimeType: string },
+): ChartData {
   return {
     labels: parsed.labels,
     series: parsed.series,
@@ -37,53 +28,39 @@ export async function analyzeImage(file: File): Promise<ChartData> {
     aiReasoning: parsed.aiReasoning,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
-    sourceImage: {
-      base64: base64Data,
-      mimeType: file.type,
-    },
+    sourceImage,
   };
+}
+
+export async function analyzeImage(file: File): Promise<ChartData> {
+  const base64 = await fileToBase64(file);
+  const base64Data = base64.split(',')[1];
+
+  const parsed = await fetchApiJson<ImageAnalysisApiResponse>('/api/ai/analyze-image', {
+    method: 'POST',
+    body: {
+      image_base64: base64Data,
+      mime_type: file.type,
+    },
+  });
+
+  return toChartData(parsed, { base64: base64Data, mimeType: file.type });
 }
 
 export async function reanalyzeImageWithNotes(
   sourceImage: { base64: string; mimeType: string },
   userPrompt: string
 ): Promise<ChartData> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/analyze-image`, {
+  const parsed = await fetchApiJson<ImageAnalysisApiResponse>('/api/ai/analyze-image', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
+    body: {
       image_base64: sourceImage.base64,
       mime_type: sourceImage.mimeType,
       user_prompt: userPrompt,
-    }),
+    },
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Image analysis failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
-
-  return {
-    labels: parsed.labels,
-    series: parsed.series,
-    sourceType: 'image',
-    suggestedTitle: parsed.suggestedTitle,
-    suggestedType: parsed.suggestedType,
-    suggestedStacked: parsed.stacked ?? undefined,
-    suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
-    aiReasoning: parsed.aiReasoning,
-    xAxisLabel: parsed.xAxisLabel,
-    yAxisLabel: parsed.yAxisLabel,
-    sourceImage: {
-      base64: sourceImage.base64,
-      mimeType: sourceImage.mimeType,
-    },
-  };
+  return toChartData(parsed, sourceImage);
 }
 
 function fileToBase64(file: File): Promise<string> {

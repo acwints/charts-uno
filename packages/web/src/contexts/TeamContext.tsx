@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   type ReactNode,
 } from 'react';
 import {
@@ -118,26 +119,22 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
     fetchUsage();
   }, [fetchUsage]);
 
-  const canCreateChart = usage?.can_create_chart ?? true;
-  const canInviteMember = usage?.can_invite_member ?? false;
-  const remainingCharts = usage?.charts_remaining ?? -1;
+  const value = useMemo<TeamContextValue>(() => ({
+    teams,
+    currentTeam,
+    usage,
+    isLoading,
+    error,
+    switchTeam,
+    refetchTeams: fetchTeams,
+    refetchUsage: fetchUsage,
+    canCreateChart: usage?.can_create_chart ?? true,
+    canInviteMember: usage?.can_invite_member ?? false,
+    remainingCharts: usage?.charts_remaining ?? -1,
+  }), [teams, currentTeam, usage, isLoading, error, switchTeam, fetchTeams, fetchUsage]);
 
   return (
-    <TeamContext.Provider
-      value={{
-        teams,
-        currentTeam,
-        usage,
-        isLoading,
-        error,
-        switchTeam,
-        refetchTeams: fetchTeams,
-        refetchUsage: fetchUsage,
-        canCreateChart,
-        canInviteMember,
-        remainingCharts,
-      }}
-    >
+    <TeamContext.Provider value={value}>
       {children}
     </TeamContext.Provider>
   );

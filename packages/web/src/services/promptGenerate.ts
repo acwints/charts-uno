@@ -1,22 +1,11 @@
 import type { ChartData } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
 export async function generateChartFromPrompt(prompt: string): Promise<ChartData> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/generate`, {
+  const parsed = await fetchApiJson<Record<string, unknown>>('/api/ai/generate', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({ prompt }),
+    body: { prompt },
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Chart generation failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
 
   return {
     labels: parsed.labels,

@@ -1,5 +1,5 @@
 import type { ChartData } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
 export interface PublicDatasetOption {
   id: string;
@@ -10,18 +10,7 @@ export interface PublicDatasetOption {
 }
 
 export async function getPublicDatasets(): Promise<PublicDatasetOption[]> {
-  const response = await fetch(`${API_BASE_URL}/api/datasets/public`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Failed to load datasets' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
+  const parsed = await fetchApiJson<{ datasets?: PublicDatasetOption[] }>('/api/datasets/public');
   return parsed.datasets || [];
 }
 
@@ -31,34 +20,26 @@ export async function generateChartFromPublicDataset(input: {
   topN: number;
   chartTypeHint?: 'line' | 'bar' | 'area' | 'table' | 'auto';
 }): Promise<ChartData> {
-  const response = await fetch(`${API_BASE_URL}/api/datasets/public/generate`, {
+  const parsed = await fetchApiJson<Record<string, unknown>>('/api/datasets/public/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
+    body: {
       dataset_id: input.datasetId,
       prompt: input.prompt,
       top_n: input.topN,
       chart_type_hint: input.chartTypeHint && input.chartTypeHint !== 'auto' ? input.chartTypeHint : null,
-    }),
+    },
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Dataset chart generation failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
   return {
-    labels: parsed.labels,
-    series: parsed.series,
+    labels: parsed.labels as string[],
+    series: parsed.series as ChartData['series'],
     sourceType: 'datasets',
     verifiedData: parsed.verifiedData === true,
-    suggestedTitle: parsed.suggestedTitle,
-    suggestedType: parsed.suggestedType,
-    aiReasoning: parsed.aiReasoning,
-    sourceLink: parsed.sourceLink,
-    xAxisLabel: parsed.xAxisLabel,
-    yAxisLabel: parsed.yAxisLabel,
+    suggestedTitle: parsed.suggestedTitle as string | undefined,
+    suggestedType: parsed.suggestedType as string | undefined,
+    aiReasoning: parsed.aiReasoning as string | undefined,
+    sourceLink: parsed.sourceLink as string | undefined,
+    xAxisLabel: parsed.xAxisLabel as string | undefined,
+    yAxisLabel: parsed.yAxisLabel as string | undefined,
   };
 }

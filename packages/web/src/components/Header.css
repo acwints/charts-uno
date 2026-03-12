@@ -210,13 +210,13 @@
 }
 
 .user-menu-item--danger {
-  color: #ef4444;
+  color: var(--error);
 }
 
 .user-menu-item--danger:hover,
 .user-menu-item--danger:active {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
 }
 
 /* Hamburger button - hidden on desktop */

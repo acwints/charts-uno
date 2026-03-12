@@ -1,5 +1,5 @@
 import type { ChartData, ChartConfig } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
 export interface ChatMessage {
   id: string;
@@ -35,13 +35,14 @@ export async function sendChatMessage(
     content: msg.content,
   }));
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+  const result = await fetchApiJson<{
+    message: string;
+    updatedData?: Partial<ChartData>;
+    updatedConfig?: Partial<ChartConfig>;
+    changes: { dataModified: boolean; configModified: boolean; summary: string };
+  }>('/api/ai/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
+    body: {
       message: userMessage,
       current_data: {
         labels: currentData.labels,
@@ -62,15 +63,8 @@ export async function sendChatMessage(
         barLayout: currentConfig.barLayout || 'vertical',
       },
       chat_history: recentHistory,
-    }),
+    },
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Chat request failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const result = await response.json();
 
   return {
     message: result.message,

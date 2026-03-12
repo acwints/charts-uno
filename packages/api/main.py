@@ -86,6 +86,14 @@ from schemas import (
     BrandInferRequest,
     BrandInferResponse,
 )
+from helpers import (
+    get_chart_or_404,
+    assert_chart_owner,
+    get_cookie_domain,
+    verify_bot_token,
+    build_bot_chart_config,
+    handle_ai_errors,
+)
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
@@ -369,8 +377,7 @@ async def set_auth_cookie(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    request_host = request.url.hostname or ""
-    cookie_domain = ".chartsuno.com" if request_host.endswith("chartsuno.com") else None
+    cookie_domain = get_cookie_domain(request)
 
     # Set httpOnly cookie
     response.set_cookie(
@@ -390,8 +397,7 @@ async def set_auth_cookie(
 @app.post("/api/auth/logout")
 async def logout(request: Request, response: Response):
     """Clear the authentication cookie"""
-    request_host = request.url.hostname or ""
-    cookie_domain = ".chartsuno.com" if request_host.endswith("chartsuno.com") else None
+    cookie_domain = get_cookie_domain(request)
 
     response.delete_cookie(
         key="auth_token",
@@ -596,7 +602,7 @@ async def create_chart(
         config=chart_data.config.model_dump(),
         source_type=chart_data.source_type,
         source_url=chart_data.source_url,
-        is_public=0,
+        is_public=False,
     )
 
     db.add(chart)
@@ -652,7 +658,7 @@ async def list_public_charts(
     db: Session = Depends(get_db),
 ):
     """List public charts (discover page)"""
-    query = db.query(Chart).filter(Chart.is_public == 1)
+    query = db.query(Chart).filter(Chart.is_public.is_(True))
 
     # Exclude charts created by the bot service user
     bot_user_id = BOT_CHART_OWNER_ID
@@ -696,10 +702,7 @@ async def get_chart(
     db: Session = Depends(get_db),
 ):
     """Get a single chart by ID"""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+    chart = get_chart_or_404(db, chart_id)
 
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
@@ -719,13 +722,8 @@ async def update_chart(
     db: Session = Depends(get_db),
 ):
     """Update a chart"""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-
-    if chart.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
 
     # Update fields
     if chart_data.title is not None:
@@ -737,7 +735,7 @@ async def update_chart(
     if chart_data.config is not None:
         chart.config = chart_data.config.model_dump()
     if chart_data.is_public is not None:
-        chart.is_public = 1 if chart_data.is_public else 0
+        chart.is_public = bool(chart_data.is_public)
 
     db.commit()
     db.refresh(chart)
@@ -752,11 +750,8 @@ async def get_chart_publish_targets(
     db: Session = Depends(get_db),
 ):
     """Get feed/team publish targets for a chart."""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-    if chart.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
 
     return ChartPublishTargetsResponse(
         chart_id=chart.id,
@@ -773,14 +768,11 @@ async def update_chart_publish_targets(
     db: Session = Depends(get_db),
 ):
     """Update feed/team publish targets for a chart."""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-    if chart.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
 
     if publish_data.is_public is not None:
-        chart.is_public = 1 if publish_data.is_public else 0
+        chart.is_public = bool(publish_data.is_public)
 
     if publish_data.team_ids is not None:
         requested_team_ids = sorted({team_id for team_id in publish_data.team_ids if team_id})
@@ -839,13 +831,8 @@ async def delete_chart(
     db: Session = Depends(get_db),
 ):
     """Delete a chart"""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-
-    if chart.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
 
     db.delete(chart)
     db.commit()
@@ -864,10 +851,7 @@ async def save_chart(
     db: Session = Depends(get_db),
 ):
     """Save/bookmark a chart"""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+    chart = get_chart_or_404(db, chart_id)
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -878,7 +862,7 @@ async def save_chart(
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Chart already saved")
+        raise HTTPException(status_code=409, detail="Chart already saved")
 
     saved = SavedChart(user_id=current_user.id, chart_id=chart_id)
     db.add(saved)
@@ -953,10 +937,7 @@ async def like_chart(
     db: Session = Depends(get_db),
 ):
     """Like a chart"""
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+    chart = get_chart_or_404(db, chart_id)
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -967,7 +948,7 @@ async def like_chart(
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Chart already liked")
+        raise HTTPException(status_code=409, detail="Chart already liked")
 
     like = Like(user_id=current_user.id, chart_id=chart_id)
     db.add(like)
@@ -1041,30 +1022,25 @@ async def list_liked_charts(
 
 @app.post("/api/ai/analyze-image", response_model=ImageAnalysisResponse)
 @limiter.limit("10/minute")
+@handle_ai_errors("Image analysis")
 async def analyze_image_endpoint(
     request: Request,
     data: ImageAnalysisRequest,
 ):
     """Analyze an image and extract chart data using AI."""
-    try:
-        result = await analyze_image(data.image_base64, data.mime_type, data.user_prompt)
-        return ImageAnalysisResponse(
-            labels=result["labels"],
-            series=result["series"],
-            verifiedData=result.get("verifiedData"),
-            suggestedTitle=result.get("suggestedTitle"),
-            suggestedType=result.get("suggestedType"),
-            stacked=result.get("stacked"),
-            xAxisLabel=result.get("xAxisLabel"),
-            yAxisLabel=result.get("yAxisLabel"),
-            barLayout=result.get("barLayout"),
-            aiReasoning=result.get("aiReasoning"),
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Image analysis failed: {e}")
-        raise HTTPException(status_code=500, detail="Image analysis failed")
+    result = await analyze_image(data.image_base64, data.mime_type, data.user_prompt)
+    return ImageAnalysisResponse(
+        labels=result["labels"],
+        series=result["series"],
+        verifiedData=result.get("verifiedData"),
+        suggestedTitle=result.get("suggestedTitle"),
+        suggestedType=result.get("suggestedType"),
+        stacked=result.get("stacked"),
+        xAxisLabel=result.get("xAxisLabel"),
+        yAxisLabel=result.get("yAxisLabel"),
+        barLayout=result.get("barLayout"),
+        aiReasoning=result.get("aiReasoning"),
+    )
 
 
 def _resolve_bot_chart_owner(db: Session) -> User:
@@ -1113,11 +1089,7 @@ async def bot_analyze_and_create_chart(
     db: Session = Depends(get_db),
 ):
     """Analyze an image with the same AI pipeline as web upload and create a public chart."""
-    token = request.headers.get("x-bot-token", "")
-    if not BOT_INTERNAL_API_TOKEN:
-        raise HTTPException(status_code=503, detail="Bot internal API token is not configured")
-    if not token or not secrets.compare_digest(token, BOT_INTERNAL_API_TOKEN):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    verify_bot_token(request, BOT_INTERNAL_API_TOKEN)
 
     try:
         result = await analyze_image(payload.image_base64, payload.mime_type, payload.user_prompt)
@@ -1142,24 +1114,7 @@ async def bot_analyze_and_create_chart(
         "barLayout": result.get("barLayout"),
     }
 
-    suggested_type = result.get("suggestedType") or "bar"
-    show_legend = len(result.get("series", [])) > 1
-    chart_config = {
-        "type": suggested_type,
-        "colorScheme": "default",
-        "styleVariant": "professional",
-        "themeMode": "dark",
-        "showGrid": True,
-        "showLegend": show_legend,
-        "showValues": False,
-        "showPoints": True,
-        "showBorder": False,
-        "animate": False,
-        "title": result.get("suggestedTitle") or "AI Chart",
-        "stacked": bool(result.get("stacked")),
-    }
-    if result.get("barLayout") in {"horizontal", "vertical"}:
-        chart_config["barLayout"] = result["barLayout"]
+    chart_config = build_bot_chart_config(result)
 
     chart = Chart(
         user_id=owner.id,
@@ -1170,7 +1125,7 @@ async def bot_analyze_and_create_chart(
         config=chart_config,
         source_type="image",
         source_url=payload.source_url,
-        is_public=1,
+        is_public=True,
     )
     db.add(chart)
     db.commit()
@@ -1200,11 +1155,7 @@ async def bot_prompt_and_create_chart(
     db: Session = Depends(get_db),
 ):
     """Generate chart data from text prompt and create a public chart for bot replies."""
-    token = request.headers.get("x-bot-token", "")
-    if not BOT_INTERNAL_API_TOKEN:
-        raise HTTPException(status_code=503, detail="Bot internal API token is not configured")
-    if not token or not secrets.compare_digest(token, BOT_INTERNAL_API_TOKEN):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    verify_bot_token(request, BOT_INTERNAL_API_TOKEN)
 
     try:
         result = await generate_chart_from_prompt(payload.prompt)
@@ -1234,24 +1185,7 @@ async def bot_prompt_and_create_chart(
         "yAxisSuffix": result.get("yAxisSuffix"),
     }
 
-    suggested_type = result.get("suggestedType") or "bar"
-    show_legend = len(result.get("series", [])) > 1
-    chart_config = {
-        "type": suggested_type,
-        "colorScheme": "default",
-        "styleVariant": "professional",
-        "themeMode": "dark",
-        "showGrid": True,
-        "showLegend": show_legend,
-        "showValues": False,
-        "showPoints": True,
-        "showBorder": False,
-        "animate": False,
-        "title": result.get("suggestedTitle") or "AI Chart",
-        "stacked": bool(result.get("stacked")),
-    }
-    if result.get("barLayout") in {"horizontal", "vertical"}:
-        chart_config["barLayout"] = result["barLayout"]
+    chart_config = build_bot_chart_config(result)
 
     chart = Chart(
         user_id=owner.id,
@@ -1262,7 +1196,7 @@ async def bot_prompt_and_create_chart(
         config=chart_config,
         source_type="prompt",
         source_url=payload.source_url,
-        is_public=1,
+        is_public=True,
     )
     db.add(chart)
     db.commit()
@@ -1286,80 +1220,65 @@ async def bot_prompt_and_create_chart(
 
 @app.post("/api/ai/chat", response_model=ChatResponse)
 @limiter.limit("20/minute")
+@handle_ai_errors("Chat processing")
 async def chat_endpoint(
     request: Request,
     data: ChatRequest,
 ):
     """Chat with AI about chart data."""
-    try:
-        result = await chat_with_chart(
-            message=data.message,
-            current_data=data.current_data.model_dump(),
-            current_config=data.current_config.model_dump(),
-            chat_history=[h.model_dump() for h in data.chat_history],
-        )
-        return ChatResponse(
-            message=result["message"],
-            updatedData=result.get("updatedData"),
-            updatedConfig=result.get("updatedConfig"),
-            changes=result["changes"],
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Chat failed: {e}")
-        raise HTTPException(status_code=500, detail="Chat processing failed")
+    result = await chat_with_chart(
+        message=data.message,
+        current_data=data.current_data.model_dump(),
+        current_config=data.current_config.model_dump(),
+        chat_history=[h.model_dump() for h in data.chat_history],
+    )
+    return ChatResponse(
+        message=result["message"],
+        updatedData=result.get("updatedData"),
+        updatedConfig=result.get("updatedConfig"),
+        changes=result["changes"],
+    )
 
 
 @app.post("/api/ai/recommend", response_model=ChartRecommendResponse)
 @limiter.limit("20/minute")
+@handle_ai_errors("Recommendation")
 async def recommend_chart_endpoint(
     request: Request,
     data: ChartRecommendRequest,
 ):
     """Get AI recommendation for the best chart type."""
-    try:
-        result = await recommend_chart_type(
-            data=data.data.model_dump(),
-            preferred_type=data.preferred_type,
-            user_prompt=data.user_prompt,
-        )
-        return ChartRecommendResponse(
-            type=result["type"],
-            reasoning=result["reasoning"],
-            summary=result["summary"],
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Recommendation failed: {e}")
-        raise HTTPException(status_code=500, detail="Recommendation failed")
+    result = await recommend_chart_type(
+        data=data.data.model_dump(),
+        preferred_type=data.preferred_type,
+        user_prompt=data.user_prompt,
+    )
+    return ChartRecommendResponse(
+        type=result["type"],
+        reasoning=result["reasoning"],
+        summary=result["summary"],
+    )
 
 
 @app.post("/api/ai/infographic", response_model=InfographicResponse)
 @limiter.limit("5/minute")
+@handle_ai_errors("Infographic generation")
 async def infographic_endpoint(
     request: Request,
     data: InfographicRequest,
 ):
     """Generate an SVG infographic for chart data."""
-    try:
-        svg = await generate_infographic(
-            data=data.data.model_dump(),
-            title=data.title,
-            color_scheme=data.color_scheme,
-            theme=data.theme,
-            source_image_base64=data.source_image_base64,
-            source_image_mime_type=data.source_image_mime_type,
-            ai_mode=data.ai_mode,
-            custom_prompt=data.custom_prompt,
-        )
-        return InfographicResponse(svg=svg)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Infographic generation failed: {e}")
-        raise HTTPException(status_code=500, detail="Infographic generation failed")
+    svg = await generate_infographic(
+        data=data.data.model_dump(),
+        title=data.title,
+        color_scheme=data.color_scheme,
+        theme=data.theme,
+        source_image_base64=data.source_image_base64,
+        source_image_mime_type=data.source_image_mime_type,
+        ai_mode=data.ai_mode,
+        custom_prompt=data.custom_prompt,
+    )
+    return InfographicResponse(svg=svg)
 
 
 @app.post("/api/ai/generate", response_model=ImageAnalysisResponse)

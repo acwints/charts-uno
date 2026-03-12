@@ -1,5 +1,5 @@
 import type { ChartData } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { fetchApiJson } from './apiBase';
 
 export interface TickerResult {
   symbol: string;
@@ -11,42 +11,23 @@ export async function searchTickers(query: string): Promise<TickerResult[]> {
   if (!query || query.trim().length < 1) {
     return [];
   }
-
-  const response = await fetch(`${API_BASE_URL}/api/stocks/search`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({ query }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Ticker search failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  return response.json();
+  return fetchApiJson('/api/stocks/search', { method: 'POST', body: { query } });
 }
 
 export async function fetchStockData(ticker: string, range: string, ticker2?: string): Promise<ChartData> {
-  const response = await fetch(`${API_BASE_URL}/api/stocks/prices`, {
+  const parsed = await fetchApiJson<{
+    labels: string[];
+    series: ChartData['series'];
+    suggestedTitle?: string;
+    suggestedType?: string;
+    xAxisLabel?: string;
+    yAxisLabel?: string;
+  }>('/api/stocks/prices', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({ ticker, range, ticker2: ticker2 || null }),
+    body: { ticker, range, ticker2: ticker2 || null },
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Stock data fetch failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  const parsed = await response.json();
   const symbol = ticker.toUpperCase();
-
   return {
     labels: parsed.labels,
     series: parsed.series,
@@ -65,19 +46,9 @@ export async function fetchStockInsights(
   series: { name: string; data: Array<number | null> }[],
   title: string
 ): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/api/stocks/insights`, {
+  const result = await fetchApiJson<{ insight: string }>('/api/stocks/insights', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({ labels, series, title }),
+    body: { labels, series, title },
   });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch stock insights');
-  }
-
-  const result = await response.json();
   return result.insight;
 }

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ChartData } from '../types.js';
+import { detectMimeType } from '../mime.js';
 
 /** Minimal logger interface — consumers pass their own (e.g. pino). */
 export interface ChartLogger {
@@ -124,23 +125,3 @@ Rules:
   };
 }
 
-function detectMimeType(buffer: Buffer): string {
-  // Check PNG signature
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
-    return 'image/png';
-  }
-  // Check JPEG signature
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-    return 'image/jpeg';
-  }
-  // Check GIF signature
-  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
-    return 'image/gif';
-  }
-  // Check WebP signature
-  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46) {
-    return 'image/webp';
-  }
-  // Default to PNG
-  return 'image/png';
-}
