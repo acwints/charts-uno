@@ -7,6 +7,8 @@ import { ChartFeedPage } from './pages/ChartFeedPage';
 import { SettingsPage } from './pages/Settings';
 import { InviteAccept } from './pages/InviteAccept';
 import { NotFound } from './pages/NotFound';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 import { UserDashboardPage, TeamDashboardPage, TeamActivityPage } from './pages/Dashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -41,6 +43,8 @@ function AppWithTeam() {
             <Route path=":id" element={<ChartView />} />
           </Route>
           <Route path="invite/:token" element={<InviteAccept />} />
+          <Route path="terms" element={<TermsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
 
           {/* Auth-required dashboard routes */}
           <Route element={<ProtectedRoute />}>

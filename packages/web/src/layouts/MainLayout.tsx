@@ -82,6 +82,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           <nav className="footer-links">
             <Link to="/new" className="footer-link">Create</Link>
             <Link to="/feed" className="footer-link">Explore</Link>
+            <Link to="/terms" className="footer-link">Terms</Link>
+            <Link to="/privacy" className="footer-link">Privacy</Link>
           </nav>
         </div>
       </footer>
