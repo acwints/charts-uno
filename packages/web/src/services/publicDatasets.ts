@@ -1,4 +1,4 @@
-import type { ChartData } from '../types';
+import type { ChartData, ChartType } from '../types';
 import { fetchApiJson } from './apiBase';
 
 export interface PublicDatasetOption {
@@ -20,7 +20,17 @@ export async function generateChartFromPublicDataset(input: {
   topN: number;
   chartTypeHint?: 'line' | 'bar' | 'area' | 'table' | 'auto';
 }): Promise<ChartData> {
-  const parsed = await fetchApiJson<Record<string, unknown>>('/api/datasets/public/generate', {
+  const parsed = await fetchApiJson<{
+    labels: string[];
+    series: ChartData['series'];
+    verifiedData?: boolean;
+    suggestedTitle?: string;
+    suggestedType?: ChartType;
+    aiReasoning?: string;
+    sourceLink?: string;
+    xAxisLabel?: string;
+    yAxisLabel?: string;
+  }>('/api/datasets/public/generate', {
     method: 'POST',
     body: {
       dataset_id: input.datasetId,
@@ -31,15 +41,15 @@ export async function generateChartFromPublicDataset(input: {
   });
 
   return {
-    labels: parsed.labels as string[],
-    series: parsed.series as ChartData['series'],
+    labels: parsed.labels,
+    series: parsed.series,
     sourceType: 'datasets',
     verifiedData: parsed.verifiedData === true,
-    suggestedTitle: parsed.suggestedTitle as string | undefined,
-    suggestedType: parsed.suggestedType as string | undefined,
-    aiReasoning: parsed.aiReasoning as string | undefined,
-    sourceLink: parsed.sourceLink as string | undefined,
-    xAxisLabel: parsed.xAxisLabel as string | undefined,
-    yAxisLabel: parsed.yAxisLabel as string | undefined,
+    suggestedTitle: parsed.suggestedTitle,
+    suggestedType: parsed.suggestedType,
+    aiReasoning: parsed.aiReasoning,
+    sourceLink: parsed.sourceLink,
+    xAxisLabel: parsed.xAxisLabel,
+    yAxisLabel: parsed.yAxisLabel,
   };
 }

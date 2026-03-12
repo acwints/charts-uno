@@ -1,4 +1,4 @@
-import type { ChartData } from '../types';
+import type { ChartData, ChartType } from '../types';
 import { fetchApiJson } from './apiBase';
 
 export interface TickerResult {
@@ -19,7 +19,7 @@ export async function fetchStockData(ticker: string, range: string, ticker2?: st
     labels: string[];
     series: ChartData['series'];
     suggestedTitle?: string;
-    suggestedType?: string;
+    suggestedType?: ChartType;
     xAxisLabel?: string;
     yAxisLabel?: string;
   }>('/api/stocks/prices', {

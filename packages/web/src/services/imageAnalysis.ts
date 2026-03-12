@@ -1,11 +1,11 @@
-import type { ChartData } from '../types';
+import type { ChartData, ChartType } from '../types';
 import { fetchApiJson } from './apiBase';
 
 interface ImageAnalysisApiResponse {
   labels: string[];
   series: ChartData['series'];
   suggestedTitle?: string;
-  suggestedType?: string;
+  suggestedType?: ChartType;
   stacked?: boolean;
   barLayout?: string;
   aiReasoning?: string;

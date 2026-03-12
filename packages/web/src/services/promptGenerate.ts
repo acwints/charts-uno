@@ -1,8 +1,26 @@
-import type { ChartData } from '../types';
+import type { ChartData, ChartType, XAxisType, YAxisFormat } from '../types';
 import { fetchApiJson } from './apiBase';
 
+interface PromptGenerateApiResponse {
+  labels: string[];
+  series: ChartData['series'];
+  verifiedData?: boolean;
+  suggestedTitle?: string;
+  suggestedType?: ChartType;
+  stacked?: boolean;
+  barLayout?: string;
+  aiReasoning?: string;
+  sourceLink?: string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  xAxisType?: XAxisType;
+  yAxisFormat?: YAxisFormat;
+  yAxisPrefix?: string;
+  yAxisSuffix?: string;
+}
+
 export async function generateChartFromPrompt(prompt: string): Promise<ChartData> {
-  const parsed = await fetchApiJson<Record<string, unknown>>('/api/ai/generate', {
+  const parsed = await fetchApiJson<PromptGenerateApiResponse>('/api/ai/generate', {
     method: 'POST',
     body: { prompt },
   });

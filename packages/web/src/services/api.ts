@@ -56,7 +56,8 @@ export interface ChartResponse {
     userPrompt?: string;
     sourcePrompt?: string;
   };
-  config: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any;
   source_type: string | null;
   is_public: boolean;
   view_count: number;
@@ -89,7 +90,8 @@ export interface CreateChartData {
     userPrompt?: string;
     sourcePrompt?: string;
   };
-  config: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any;
   source_type?: string;
   is_public?: boolean;
 }
