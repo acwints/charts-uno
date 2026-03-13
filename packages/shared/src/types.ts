@@ -14,7 +14,7 @@ export type YAxisBaselineMode = 'auto' | 'zero' | 'data';
 export interface ChartData {
   labels: string[];
   series: DataSeries[];
-  sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets';
+  sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets' | 'sql';
   verifiedData?: boolean;
   suggestedTitle?: string;
   suggestedType?: ChartType;
@@ -40,6 +40,11 @@ export interface ChartData {
   // Map-specific data (used when suggestedType === 'map')
   mapRegions?: MapRegion[];
   mapScope?: MapScope;
+  // SQL source metadata (for refresh)
+  sqlConnectionId?: string;
+  sqlQuery?: string;
+  sqlLabelColumn?: string;
+  sqlSeriesColumns?: string[];
 }
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'histogram' | 'table' | 'infographic' | 'map';

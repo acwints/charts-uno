@@ -101,6 +101,7 @@ class Chart(Base):
 
     # Auto-refresh parameters (for cron-based data updates)
     refresh_query = Column(JSON, nullable=True)  # e.g. {"ticker": "AAPL", "range": "1Y"}
+    sql_connection_id = Column(String(36), ForeignKey("sql_connections.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Metadata
     is_public = Column(Boolean, default=False)
@@ -113,6 +114,7 @@ class Chart(Base):
     # Relationships
     user = relationship("User", back_populates="charts")
     team = relationship("Team", back_populates="charts")
+    sql_connection = relationship("SqlConnection", back_populates="charts")
     saved_by = relationship("SavedChart", back_populates="chart", cascade="all, delete-orphan")
     likes = relationship("Like", back_populates="chart", cascade="all, delete-orphan")
     publications = relationship("ChartPublication", back_populates="chart", cascade="all, delete-orphan")
@@ -213,6 +215,7 @@ class Team(Base):
     charts = relationship("Chart", back_populates="team", cascade="all, delete-orphan")
     chart_publications = relationship("ChartPublication", back_populates="team", cascade="all, delete-orphan")
     dashboards = relationship("Dashboard", back_populates="team", cascade="all, delete-orphan")
+    sql_connections = relationship("SqlConnection", back_populates="team", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_teams_owner_created", "owner_id", "created_at"),
@@ -288,6 +291,35 @@ class Subscription(Base):
     __table_args__ = (
         Index("ix_subscriptions_polar_sub", "polar_subscription_id"),
         Index("ix_subscriptions_status", "status"),
+    )
+
+
+class SqlConnection(Base):
+    """Team-scoped SQL database connection for live chart data."""
+    __tablename__ = "sql_connections"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    host = Column(Text, nullable=False)  # Fernet-encrypted
+    port = Column(Integer, default=5432, nullable=False)
+    database_name = Column(Text, nullable=False)  # Fernet-encrypted
+    username = Column(Text, nullable=False)  # Fernet-encrypted
+    encrypted_password = Column(Text, nullable=False)  # Fernet-encrypted
+    ssl_required = Column(Boolean, default=True, nullable=False)
+    status = Column(String(50), default="untested", nullable=False)  # "untested", "ok", "error"
+    status_message = Column(Text, nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    team = relationship("Team", back_populates="sql_connections")
+    creator = relationship("User")
+    charts = relationship("Chart", back_populates="sql_connection")
+
+    __table_args__ = (
+        Index("ix_sql_connections_team", "team_id"),
     )
 
 

@@ -25,7 +25,7 @@ from slowapi.errors import RateLimitExceeded
 from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
     Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
-    Dashboard, DashboardItem, generate_uuid,
+    Dashboard, DashboardItem, SqlConnection, generate_uuid,
 )
 from dependencies import (
     get_current_user,
@@ -94,6 +94,13 @@ from schemas import (
     DashboardItemResponse,
     DashboardItemsAddRequest,
     DashboardItemsBulkUpdate,
+    # SQL Connection schemas
+    SqlConnectionCreate,
+    SqlConnectionUpdate,
+    SqlConnectionResponse,
+    SqlConnectionListResponse,
+    SqlQueryRequest,
+    SqlQueryResponse,
 )
 from helpers import (
     get_chart_or_404,
@@ -104,6 +111,7 @@ from helpers import (
     handle_ai_errors,
     get_dashboard_or_404,
     assert_dashboard_access,
+    get_sql_connection_or_404,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
@@ -614,6 +622,8 @@ async def create_chart(
         source_type=chart_data.source_type,
         source_url=chart_data.source_url,
         is_public=False,
+        sql_connection_id=chart_data.sql_connection_id,
+        refresh_query=chart_data.refresh_query,
     )
 
     db.add(chart)
@@ -3254,6 +3264,12 @@ async def cron_refresh_dashboards(
                     chart.data = new_data
                     chart.updated_at = datetime.utcnow()
                     refreshed += 1
+            elif source == "sql" and chart.sql_connection_id and query_params.get("sql"):
+                new_data = await _refresh_sql_chart(chart, db)
+                if new_data:
+                    chart.data = new_data
+                    chart.updated_at = datetime.utcnow()
+                    refreshed += 1
         except Exception as e:
             logger.error(f"Failed to refresh chart {chart.id}: {e}")
             errors += 1
@@ -3294,6 +3310,272 @@ async def _refresh_dataset_chart(params: dict) -> Optional[dict]:
         return None
     except Exception as e:
         logger.error(f"Dataset refresh failed: {e}")
+        return None
+
+
+# ============================================================================
+# SQL Connections
+# ============================================================================
+
+from utils.crypto import encrypt_credential, decrypt_credential
+from services.sql_connection_service import (
+    validate_sql_query,
+    execute_user_sql,
+    test_connection as test_sql_connection,
+    sql_rows_to_chart_data,
+)
+
+
+def _sql_connection_to_response(conn: SqlConnection) -> SqlConnectionResponse:
+    """Convert a SqlConnection model to response with masked credentials."""
+    try:
+        host = decrypt_credential(conn.host)
+        db_name = decrypt_credential(conn.database_name)
+        username = decrypt_credential(conn.username)
+    except Exception:
+        host = "***"
+        db_name = "***"
+        username = "***"
+
+    return SqlConnectionResponse(
+        id=conn.id,
+        team_id=conn.team_id,
+        name=conn.name,
+        host_masked=host,
+        port=conn.port,
+        database_name_masked=db_name,
+        username_masked=username,
+        ssl_required=conn.ssl_required,
+        status=conn.status,
+        status_message=conn.status_message,
+        created_by=conn.created_by,
+        created_at=conn.created_at,
+        updated_at=conn.updated_at,
+    )
+
+
+@app.post("/api/teams/{team_id}/sql-connections", response_model=SqlConnectionResponse)
+async def create_sql_connection(
+    team_id: str,
+    data: SqlConnectionCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new SQL database connection (admin+ only)."""
+    _get_team_with_access(db, team_id, current_user, require_admin=True)
+
+    conn = SqlConnection(
+        team_id=team_id,
+        name=data.name,
+        host=encrypt_credential(data.host),
+        port=data.port,
+        database_name=encrypt_credential(data.database_name),
+        username=encrypt_credential(data.username),
+        encrypted_password=encrypt_credential(data.password),
+        ssl_required=data.ssl_required,
+        created_by=current_user.id,
+    )
+    db.add(conn)
+    db.commit()
+    db.refresh(conn)
+    return _sql_connection_to_response(conn)
+
+
+@app.get("/api/teams/{team_id}/sql-connections", response_model=SqlConnectionListResponse)
+async def list_sql_connections(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all SQL connections for a team (member+ can view)."""
+    _get_team_with_access(db, team_id, current_user)
+
+    connections = db.query(SqlConnection).filter(
+        SqlConnection.team_id == team_id
+    ).order_by(SqlConnection.created_at.desc()).all()
+
+    return SqlConnectionListResponse(
+        connections=[_sql_connection_to_response(c) for c in connections],
+        total=len(connections),
+    )
+
+
+@app.get("/api/teams/{team_id}/sql-connections/{connection_id}", response_model=SqlConnectionResponse)
+async def get_sql_connection(
+    team_id: str,
+    connection_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get a SQL connection (member+ can view)."""
+    _get_team_with_access(db, team_id, current_user)
+    conn = get_sql_connection_or_404(db, connection_id)
+    if conn.team_id != team_id:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+    return _sql_connection_to_response(conn)
+
+
+@app.put("/api/teams/{team_id}/sql-connections/{connection_id}", response_model=SqlConnectionResponse)
+async def update_sql_connection(
+    team_id: str,
+    connection_id: str,
+    data: SqlConnectionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a SQL connection (admin+ only)."""
+    _get_team_with_access(db, team_id, current_user, require_admin=True)
+    conn = get_sql_connection_or_404(db, connection_id)
+    if conn.team_id != team_id:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+
+    if data.name is not None:
+        conn.name = data.name
+    if data.host is not None:
+        conn.host = encrypt_credential(data.host)
+    if data.port is not None:
+        conn.port = data.port
+    if data.database_name is not None:
+        conn.database_name = encrypt_credential(data.database_name)
+    if data.username is not None:
+        conn.username = encrypt_credential(data.username)
+    if data.password is not None:
+        conn.encrypted_password = encrypt_credential(data.password)
+    if data.ssl_required is not None:
+        conn.ssl_required = data.ssl_required
+
+    # Reset status on any credential change
+    conn.status = "untested"
+    conn.status_message = None
+
+    db.commit()
+    db.refresh(conn)
+    return _sql_connection_to_response(conn)
+
+
+@app.delete("/api/teams/{team_id}/sql-connections/{connection_id}")
+async def delete_sql_connection(
+    team_id: str,
+    connection_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a SQL connection (admin+ only)."""
+    _get_team_with_access(db, team_id, current_user, require_admin=True)
+    conn = get_sql_connection_or_404(db, connection_id)
+    if conn.team_id != team_id:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+    db.delete(conn)
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/teams/{team_id}/sql-connections/{connection_id}/test")
+async def test_sql_connection_endpoint(
+    team_id: str,
+    connection_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Test a SQL connection and update its status (admin+ only)."""
+    _get_team_with_access(db, team_id, current_user, require_admin=True)
+    conn = get_sql_connection_or_404(db, connection_id)
+    if conn.team_id != team_id:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+
+    success, message = await test_sql_connection(conn)
+    conn.status = "ok" if success else "error"
+    conn.status_message = message
+    db.commit()
+
+    return {"status": conn.status, "message": message}
+
+
+@app.post("/api/teams/{team_id}/sql-connections/{connection_id}/query", response_model=SqlQueryResponse)
+@limiter.limit("10/minute")
+async def query_sql_connection(
+    request: Request,
+    team_id: str,
+    connection_id: str,
+    data: SqlQueryRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Execute a SQL query against a connection and return results (member+ can query)."""
+    _get_team_with_access(db, team_id, current_user)
+    conn = get_sql_connection_or_404(db, connection_id)
+    if conn.team_id != team_id:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+
+    try:
+        validate_sql_query(data.sql)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        columns, rows = await execute_user_sql(conn, data.sql)
+    except Exception as e:
+        logger.error(f"SQL query execution failed: {e}")
+        raise HTTPException(status_code=400, detail=f"Query execution failed: {e}")
+
+    # Update connection status on successful query
+    conn.status = "ok"
+    conn.status_message = None
+    db.commit()
+
+    # Limit rows returned to frontend for preview
+    preview_rows = rows[:50]
+
+    chart_data = sql_rows_to_chart_data(
+        columns, rows,
+        label_column=data.label_column,
+        series_columns=data.series_columns,
+    )
+
+    return SqlQueryResponse(
+        columns=columns,
+        rows=preview_rows,
+        row_count=len(rows),
+        chart_data=chart_data,
+    )
+
+
+async def _refresh_sql_chart(chart: Chart, db: Session) -> Optional[dict]:
+    """Refresh a SQL-sourced chart using its stored connection and query."""
+    try:
+        conn = db.query(SqlConnection).filter(SqlConnection.id == chart.sql_connection_id).first()
+        if not conn:
+            logger.warning(f"SQL connection {chart.sql_connection_id} not found for chart {chart.id}")
+            return None
+        if conn.status == "error":
+            logger.info(f"Skipping chart {chart.id} — connection {conn.id} is in error state")
+            return None
+
+        query_params = chart.refresh_query
+        sql = query_params.get("sql")
+        if not sql:
+            return None
+
+        columns, rows = await execute_user_sql(conn, sql)
+        chart_data = sql_rows_to_chart_data(
+            columns, rows,
+            label_column=query_params.get("label_column"),
+            series_columns=query_params.get("series_columns"),
+        )
+
+        # Update connection status
+        conn.status = "ok"
+        conn.status_message = None
+
+        return chart_data
+    except Exception as e:
+        logger.error(f"SQL chart refresh failed for chart {chart.id}: {e}")
+        # Update connection status to error
+        if chart.sql_connection_id:
+            conn = db.query(SqlConnection).filter(SqlConnection.id == chart.sql_connection_id).first()
+            if conn:
+                conn.status = "error"
+                conn.status_message = str(e)[:500]
         return None
 
 

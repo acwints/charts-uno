@@ -76,6 +76,8 @@ class ChartCreate(BaseModel):
     source_type: Optional[str] = None
     source_url: Optional[str] = None
     is_public: bool = False
+    sql_connection_id: Optional[str] = None
+    refresh_query: Optional[Dict[str, Any]] = None
 
 
 class ChartUpdate(BaseModel):
@@ -571,3 +573,64 @@ class DashboardItemsAddRequest(BaseModel):
 
 class DashboardItemsBulkUpdate(BaseModel):
     items: List[DashboardItemUpdate]
+
+
+# ============================================
+# SQL Connection Schemas
+# ============================================
+
+class SqlConnectionCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    host: str = Field(..., min_length=1)
+    port: int = Field(default=5432, ge=1, le=65535)
+    database_name: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+    ssl_required: bool = True
+
+
+class SqlConnectionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    host: Optional[str] = Field(None, min_length=1)
+    port: Optional[int] = Field(None, ge=1, le=65535)
+    database_name: Optional[str] = Field(None, min_length=1)
+    username: Optional[str] = Field(None, min_length=1)
+    password: Optional[str] = Field(None, min_length=1)
+    ssl_required: Optional[bool] = None
+
+
+class SqlConnectionResponse(BaseModel):
+    id: str
+    team_id: str
+    name: str
+    host_masked: str  # e.g. "db.example.com" (decrypted for display, not the password)
+    port: int
+    database_name_masked: str
+    username_masked: str
+    ssl_required: bool
+    status: str
+    status_message: Optional[str] = None
+    created_by: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SqlConnectionListResponse(BaseModel):
+    connections: List[SqlConnectionResponse]
+    total: int
+
+
+class SqlQueryRequest(BaseModel):
+    sql: str = Field(..., min_length=1)
+    label_column: Optional[str] = None
+    series_columns: Optional[List[str]] = None
+
+
+class SqlQueryResponse(BaseModel):
+    columns: List[str]
+    rows: List[Dict[str, Any]]
+    row_count: int
+    chart_data: Dict[str, Any]  # {"labels": [...], "series": [...]}

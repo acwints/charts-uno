@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@chartsuno/shared": "workspace:*",
+    "@codemirror/lang-sql": "^6.10.0",
     "@google/generative-ai": "^0.24.1",
     "@tanstack/react-table": "^8.21.3",
+    "@uiw/react-codemirror": "^4.25.8",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.563.0",
     "motion": "^12.29.2",

@@ -1,0 +1,19 @@
+.sql-editor {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.sql-editor .cm-editor {
+  font-size: 0.8125rem;
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+.sql-editor .cm-editor.cm-focused {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.sql-editor .cm-gutters {
+  border-right: 1px solid var(--border-subtle);
+}

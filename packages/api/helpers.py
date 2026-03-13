@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
-from models.database import Chart, Dashboard, User, TeamMember
+from models.database import Chart, Dashboard, SqlConnection, User, TeamMember
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,14 @@ def assert_dashboard_access(db: Session, dashboard: Dashboard, user: User) -> No
         if member:
             return
     raise HTTPException(status_code=403, detail="Access denied")
+
+
+def get_sql_connection_or_404(db: Session, connection_id: str) -> SqlConnection:
+    """Fetch a SQL connection by ID or raise 404."""
+    conn = db.query(SqlConnection).filter(SqlConnection.id == connection_id).first()
+    if not conn:
+        raise HTTPException(status_code=404, detail="SQL connection not found")
+    return conn
 
 
 def get_cookie_domain(request: Request) -> Optional[str]:

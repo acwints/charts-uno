@@ -1,0 +1,147 @@
+/* Connection form */
+.conn-form-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+
+.conn-form-close:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.conn-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.conn-form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.conn-form-checkbox input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.conn-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* Connection list */
+.conn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.conn-item {
+  margin-bottom: 0;
+}
+
+.conn-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.conn-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conn-item-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.conn-item-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conn-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.conn-item-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-md);
+}
+
+/* Status badge */
+.conn-status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.conn-status--ok {
+  background: var(--success-bg, rgba(34, 197, 94, 0.1));
+  color: var(--success, #22c55e);
+}
+
+.conn-status--error {
+  background: var(--error-subtle, rgba(239, 68, 68, 0.1));
+  color: var(--error, #ef4444);
+}
+
+.conn-status--untested {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .conn-form-row {
+    flex-direction: column;
+  }
+
+  .conn-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .conn-item-actions {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conn-form-close {
+    transition: none;
+  }
+}

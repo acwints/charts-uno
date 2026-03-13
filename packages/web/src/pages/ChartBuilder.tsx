@@ -26,7 +26,7 @@ export function ChartBuilder() {
   const handleDataSubmit = useCallback(async (data: ChartData) => {
     // For structured data sources (stocks, sheets), skip AI recommendation
     // These sources already have a known chart type and don't need analysis
-    const skipAI = data.sourceType === 'stocks' || data.sourceType === 'sheets';
+    const skipAI = data.sourceType === 'stocks' || data.sourceType === 'sheets' || data.sourceType === 'sql';
 
     if (skipAI) {
       const chartType = data.suggestedType ?? 'line';

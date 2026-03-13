@@ -177,6 +177,14 @@ export function ChartView() {
         config: chartConfig,
         source_type: chartData.sourceType || 'paste',
         is_public: false,
+        ...(chartData.sourceType === 'sql' && chartData.sqlConnectionId ? {
+          sql_connection_id: chartData.sqlConnectionId,
+          refresh_query: {
+            sql: chartData.sqlQuery,
+            label_column: chartData.sqlLabelColumn,
+            series_columns: chartData.sqlSeriesColumns,
+          },
+        } : {}),
       });
       setIsPublishedToFeed(result.is_public);
       setPublishedTeamIds([]);

@@ -94,6 +94,8 @@ export interface CreateChartData {
   config: any;
   source_type?: string;
   is_public?: boolean;
+  sql_connection_id?: string;
+  refresh_query?: Record<string, unknown>;
 }
 
 export async function createChart(data: CreateChartData): Promise<ChartResponse> {
@@ -552,4 +554,80 @@ export async function removeDashboardItem(dashboardId: string, itemId: string): 
 
 export async function getTeamDashboards(teamId: string, limit = 20, offset = 0): Promise<DashboardListResponse> {
   return apiRequest(`/api/teams/${teamId}/dashboards?limit=${limit}&offset=${offset}`);
+}
+
+// SQL Connections
+export interface SqlConnectionResponse {
+  id: string;
+  team_id: string;
+  name: string;
+  host_masked: string;
+  port: number;
+  database_name_masked: string;
+  username_masked: string;
+  ssl_required: boolean;
+  status: 'untested' | 'ok' | 'error';
+  status_message: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface SqlConnectionListResponse {
+  connections: SqlConnectionResponse[];
+  total: number;
+}
+
+export interface SqlQueryResponse {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+  chart_data: {
+    labels: string[];
+    series: { name: string; data: Array<number | null> }[];
+  };
+}
+
+export async function getSqlConnections(teamId: string): Promise<SqlConnectionListResponse> {
+  return apiRequest(`/api/teams/${teamId}/sql-connections`);
+}
+
+export async function createSqlConnection(teamId: string, data: {
+  name: string;
+  host: string;
+  port: number;
+  database_name: string;
+  username: string;
+  password: string;
+  ssl_required?: boolean;
+}): Promise<SqlConnectionResponse> {
+  return apiRequest(`/api/teams/${teamId}/sql-connections`, { method: 'POST', body: data });
+}
+
+export async function updateSqlConnection(teamId: string, connectionId: string, data: {
+  name?: string;
+  host?: string;
+  port?: number;
+  database_name?: string;
+  username?: string;
+  password?: string;
+  ssl_required?: boolean;
+}): Promise<SqlConnectionResponse> {
+  return apiRequest(`/api/teams/${teamId}/sql-connections/${connectionId}`, { method: 'PUT', body: data });
+}
+
+export async function deleteSqlConnection(teamId: string, connectionId: string): Promise<void> {
+  await apiRequest(`/api/teams/${teamId}/sql-connections/${connectionId}`, { method: 'DELETE' });
+}
+
+export async function testSqlConnection(teamId: string, connectionId: string): Promise<{ status: string; message: string }> {
+  return apiRequest(`/api/teams/${teamId}/sql-connections/${connectionId}/test`, { method: 'POST' });
+}
+
+export async function querySqlConnection(teamId: string, connectionId: string, data: {
+  sql: string;
+  label_column?: string;
+  series_columns?: string[];
+}): Promise<SqlQueryResponse> {
+  return apiRequest(`/api/teams/${teamId}/sql-connections/${connectionId}/query`, { method: 'POST', body: data });
 }

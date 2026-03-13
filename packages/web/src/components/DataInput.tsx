@@ -8,7 +8,8 @@ import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import Database from 'lucide-react/dist/esm/icons/database';
+import DatabaseIcon from 'lucide-react/dist/esm/icons/database';
+import ServerIcon from 'lucide-react/dist/esm/icons/server';
 import Search from 'lucide-react/dist/esm/icons/search';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Check from 'lucide-react/dist/esm/icons/check';
@@ -21,11 +22,13 @@ import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
 import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
 import { getPublicDatasets, generateChartFromPublicDataset, type PublicDatasetOption } from '../services/publicDatasets';
+import { useAuth } from '../hooks/useAuth';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
+import { SqlDataInput } from './SqlDataInput';
 import { Button } from './Button';
 import './DataInput.css';
 
-type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'stocks' | 'datasets';
+type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'stocks' | 'datasets' | 'sql';
 
 const STOCK_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD'] as const;
 
@@ -40,8 +43,9 @@ const INPUT_MODES = [
   { id: 'image' as const, icon: Image, label: 'Upload Image' },
   { id: 'sheets' as const, icon: Link2, label: 'Google Sheets' },
   { id: 'stocks' as const, icon: TrendingUp, label: 'Stocks' },
-  { id: 'datasets' as const, icon: Database, label: 'Public Datasets' },
-];
+  { id: 'datasets' as const, icon: DatabaseIcon, label: 'Public Datasets' },
+  { id: 'sql' as const, icon: ServerIcon, label: 'Database', authRequired: true },
+] as const;
 
 function splitLikelyTiedLabels(data: ChartData, rawInput: string): ChartData {
   const tieHintPattern = /(^|\n)\s*(?:t\d+|tie\s*\d+|tied)\b/i;
@@ -89,6 +93,7 @@ function splitLikelyTiedLabels(data: ChartData, rawInput: string): ChartData {
 }
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
+  const { isAuthenticated } = useAuth();
   const [mode, setMode] = useState<InputMode>('paste');
   const [pasteContent, setPasteContent] = useState('');
   const [sheetsUrl, setSheetsUrl] = useState('');
@@ -554,7 +559,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   return (
     <div className={`data-input ${isPromptPanelOpen ? 'data-input--instructions-open' : 'data-input--instructions-collapsed'}`}>
       <div className="input-mode-tabs">
-        {INPUT_MODES.map((inputMode) => (
+        {INPUT_MODES.filter((m) => !('authRequired' in m && m.authRequired) || isAuthenticated).map((inputMode) => (
           <button
             key={inputMode.id}
             className={`mode-tab ${mode === inputMode.id ? 'active' : ''}`}
@@ -880,7 +885,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
               )}
               <div className="datasets-input-top">
                 <div className="datasets-select-wrapper">
-                  <Database size={18} className="datasets-select-icon" />
+                  <DatabaseIcon size={18} className="datasets-select-icon" />
                   <select
                     className="datasets-select"
                     value={selectedDatasetId}
@@ -963,11 +968,15 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 onClick={handlePublicDatasetSubmit}
                 disabled={isProcessing || isGeneratingDatasetChart || isLoadingDatasets || !selectedDatasetId || !datasetPrompt.trim()}
               >
-                <Database size={18} />
+                <DatabaseIcon size={18} />
                 <span>Generate from Dataset</span>
                 <ArrowRight size={18} />
               </Button>
               </div>
+            )}
+
+            {mode === 'sql' && (
+              <SqlDataInput onSubmit={onSubmit} isProcessing={isProcessing} />
             )}
           </motion.div>
         </AnimatePresence>
