@@ -114,7 +114,6 @@ export function DashboardViewPage() {
                     <ChartPreview
                       data={item.chart.data as ChartData}
                       config={item.chart.config as ChartConfig}
-                      animate={false}
                     />
                   </div>
                 </Link>
