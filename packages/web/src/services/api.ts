@@ -460,3 +460,96 @@ export async function inferTeamBrand(teamId: string, domain: string): Promise<Br
     body: { domain },
   });
 }
+
+// Dashboards
+export interface DashboardItemResponse {
+  id: string;
+  chart_id: string;
+  position: number;
+  width: number;
+  height: number;
+  created_at: string;
+  chart: ChartResponse | null;
+}
+
+export interface DashboardResponse {
+  id: string;
+  user_id: string;
+  team_id: string | null;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  auto_refresh: boolean;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string | null;
+  item_count: number;
+  items: DashboardItemResponse[] | null;
+  user: User | null;
+}
+
+export interface DashboardListResponse {
+  dashboards: DashboardResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export async function getDashboards(limit = 20, offset = 0): Promise<DashboardListResponse> {
+  return apiRequest(`/api/dashboards?limit=${limit}&offset=${offset}`);
+}
+
+export async function getDashboard(dashboardId: string): Promise<DashboardResponse> {
+  return apiRequest(`/api/dashboards/${dashboardId}`);
+}
+
+export async function createDashboard(data: {
+  name: string;
+  description?: string;
+  team_id?: string;
+  is_public?: boolean;
+  auto_refresh?: boolean;
+  config?: Record<string, unknown>;
+}): Promise<DashboardResponse> {
+  return apiRequest('/api/dashboards', { method: 'POST', body: data });
+}
+
+export async function updateDashboard(dashboardId: string, data: {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+  auto_refresh?: boolean;
+  config?: Record<string, unknown>;
+}): Promise<DashboardResponse> {
+  return apiRequest(`/api/dashboards/${dashboardId}`, { method: 'PUT', body: data });
+}
+
+export async function deleteDashboard(dashboardId: string): Promise<void> {
+  await apiRequest(`/api/dashboards/${dashboardId}`, { method: 'DELETE' });
+}
+
+export async function addDashboardItems(dashboardId: string, items: {
+  chart_id: string;
+  position?: number;
+  width?: number;
+  height?: number;
+}[]): Promise<DashboardResponse> {
+  return apiRequest(`/api/dashboards/${dashboardId}/items`, { method: 'POST', body: { items } });
+}
+
+export async function updateDashboardItems(dashboardId: string, items: {
+  id: string;
+  position?: number;
+  width?: number;
+  height?: number;
+}[]): Promise<DashboardResponse> {
+  return apiRequest(`/api/dashboards/${dashboardId}/items`, { method: 'PUT', body: { items } });
+}
+
+export async function removeDashboardItem(dashboardId: string, itemId: string): Promise<void> {
+  await apiRequest(`/api/dashboards/${dashboardId}/items/${itemId}`, { method: 'DELETE' });
+}
+
+export async function getTeamDashboards(teamId: string, limit = 20, offset = 0): Promise<DashboardListResponse> {
+  return apiRequest(`/api/teams/${teamId}/dashboards?limit=${limit}&offset=${offset}`);
+}

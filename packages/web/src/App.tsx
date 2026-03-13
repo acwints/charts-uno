@@ -10,6 +10,7 @@ import { NotFound } from './pages/NotFound';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { UserDashboardPage, TeamDashboardPage, TeamActivityPage } from './pages/Dashboard';
+import { DashboardsListPage, DashboardViewPage, DashboardEditPage } from './pages/Dashboards';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -52,6 +53,12 @@ function AppWithTeam() {
               <Route index element={<UserDashboardPage tab="all" />} />
               <Route path="published" element={<UserDashboardPage tab="published" />} />
               <Route path="liked" element={<UserDashboardPage tab="liked" />} />
+            </Route>
+
+            <Route path="dashboards">
+              <Route index element={<DashboardsListPage />} />
+              <Route path=":id" element={<DashboardViewPage />} />
+              <Route path=":id/edit" element={<DashboardEditPage />} />
             </Route>
 
             <Route path="team/:slug">

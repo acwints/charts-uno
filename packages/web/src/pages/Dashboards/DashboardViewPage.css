@@ -1,0 +1,212 @@
+.dbview-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.dbview-loading,
+.dbview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-16);
+  gap: var(--space-4);
+  color: var(--text-muted);
+}
+
+.dbview-error a {
+  color: var(--accent);
+}
+
+.dbview-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dbview-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbview-back:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbview-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbview-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dbview-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dbview-description {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.dbview-header-badges {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dbview-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.dbview-edit-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbview-edit-link:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.dbview-edit-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-16);
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.dbview-empty a {
+  color: var(--accent);
+}
+
+.dbview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.dbview-item {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  min-height: 240px;
+  transition: border-color var(--transition-fast);
+}
+
+.dbview-item:hover {
+  border-color: var(--border-default);
+}
+
+.dbview-item-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dbview-item-title {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dbview-item-chart {
+  flex: 1;
+  padding: var(--space-3);
+  min-height: 0;
+}
+
+.dbview-item-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 1024px) {
+  .dbview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dbview-grid {
+    grid-template-columns: 1fr;
+    padding: var(--space-4);
+  }
+
+  .dbview-header {
+    flex-wrap: wrap;
+    padding: var(--space-4);
+  }
+
+  .dbview-header-badges {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dbview-back,
+  .dbview-edit-link,
+  .dbview-item {
+    transition: none;
+  }
+}

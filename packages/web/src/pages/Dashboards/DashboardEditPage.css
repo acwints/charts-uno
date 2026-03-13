@@ -1,0 +1,334 @@
+.dbedit-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.dbedit-loading,
+.dbedit-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-16);
+  gap: var(--space-4);
+  color: var(--text-muted);
+}
+
+.dbedit-error a {
+  color: var(--accent);
+}
+
+.dbedit-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dbedit-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbedit-back:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbedit-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbedit-header-title {
+  flex: 1;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbedit-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dbedit-view-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbedit-view-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.dbedit-view-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbedit-body {
+  flex: 1;
+  padding: var(--space-6);
+  max-width: 720px;
+}
+
+.dbedit-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.dbedit-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dbedit-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.dbedit-input {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.dbedit-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.dbedit-toggles {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.dbedit-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.dbedit-toggle input {
+  accent-color: var(--accent);
+}
+
+.dbedit-items-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.dbedit-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.dbedit-items-header h2 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbedit-items-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-10);
+  gap: var(--space-4);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-subtle);
+}
+
+.dbedit-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dbedit-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.dbedit-item-grip {
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: grab;
+}
+
+.dbedit-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dbedit-item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dbedit-item-type {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.dbedit-item-size {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dbedit-size-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dbedit-size-select {
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.dbedit-size-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbedit-item-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.dbedit-item-move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbedit-item-move:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbedit-item-move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.dbedit-item-move:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dbedit-item-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dbedit-item-delete:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.dbedit-item-delete:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  .dbedit-header {
+    padding: var(--space-4);
+  }
+
+  .dbedit-body {
+    padding: var(--space-4);
+  }
+
+  .dbedit-item-size {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dbedit-back,
+  .dbedit-view-btn,
+  .dbedit-input,
+  .dbedit-item-move,
+  .dbedit-item-delete {
+    transition: none;
+  }
+}

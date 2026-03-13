@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
-from models.database import Chart, User
+from models.database import Chart, Dashboard, User, TeamMember
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,28 @@ def assert_chart_owner(chart: Chart, user: User) -> None:
     """Raise 403 if the user does not own the chart."""
     if chart.user_id != user.id:
         raise HTTPException(status_code=403, detail="Access denied")
+
+
+def get_dashboard_or_404(db: Session, dashboard_id: str) -> Dashboard:
+    """Fetch a dashboard by ID or raise 404."""
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return dashboard
+
+
+def assert_dashboard_access(db: Session, dashboard: Dashboard, user: User) -> None:
+    """Raise 403 if user doesn't own dashboard and isn't a team member."""
+    if dashboard.user_id == user.id:
+        return
+    if dashboard.team_id:
+        member = db.query(TeamMember).filter(
+            TeamMember.team_id == dashboard.team_id,
+            TeamMember.user_id == user.id,
+        ).first()
+        if member:
+            return
+    raise HTTPException(status_code=403, detail="Access denied")
 
 
 def get_cookie_domain(request: Request) -> Optional[str]:

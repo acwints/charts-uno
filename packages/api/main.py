@@ -24,7 +24,8 @@ from slowapi.errors import RateLimitExceeded
 
 from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
-    Team, TeamMember, TeamInvitation, Subscription, ChartPublication, generate_uuid,
+    Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
+    Dashboard, DashboardItem, generate_uuid,
 )
 from dependencies import (
     get_current_user,
@@ -85,6 +86,14 @@ from schemas import (
     TeamBrandingResponse,
     BrandInferRequest,
     BrandInferResponse,
+    # Dashboard schemas
+    DashboardCreate,
+    DashboardUpdate,
+    DashboardResponse,
+    DashboardListResponse,
+    DashboardItemResponse,
+    DashboardItemsAddRequest,
+    DashboardItemsBulkUpdate,
 )
 from helpers import (
     get_chart_or_404,
@@ -93,6 +102,8 @@ from helpers import (
     verify_bot_token,
     build_bot_chart_config,
     handle_ai_errors,
+    get_dashboard_or_404,
+    assert_dashboard_access,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
@@ -2906,6 +2917,384 @@ async def admin_create_team(
         "members_added": members_added,
         "invitations": invitations_created,
     }
+
+
+# ============================================================================
+# Dashboards
+# ============================================================================
+
+
+def _dashboard_to_response(
+    dashboard: Dashboard,
+    include_items: bool = False,
+    current_user: Optional[User] = None,
+    db: Optional[Session] = None,
+) -> DashboardResponse:
+    """Convert a Dashboard model to a DashboardResponse."""
+    item_count = len(dashboard.items) if dashboard.items else 0
+    items = None
+    if include_items and dashboard.items:
+        items = []
+        for item in sorted(dashboard.items, key=lambda i: i.position):
+            chart_resp = None
+            if item.chart and db:
+                chart_resp = _chart_to_response(item.chart, current_user, db)
+            items.append(DashboardItemResponse(
+                id=item.id,
+                chart_id=item.chart_id,
+                position=item.position,
+                width=item.width,
+                height=item.height,
+                created_at=item.created_at,
+                chart=chart_resp,
+            ))
+
+    return DashboardResponse(
+        id=dashboard.id,
+        user_id=dashboard.user_id,
+        team_id=dashboard.team_id,
+        name=dashboard.name,
+        description=dashboard.description,
+        is_public=bool(dashboard.is_public),
+        auto_refresh=bool(dashboard.auto_refresh),
+        config=dashboard.config or {},
+        created_at=dashboard.created_at,
+        updated_at=dashboard.updated_at,
+        item_count=item_count,
+        items=items,
+        user=UserResponse.model_validate(dashboard.user) if dashboard.user else None,
+    )
+
+
+@app.post("/api/dashboards", response_model=DashboardResponse)
+async def create_dashboard(
+    data: DashboardCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new dashboard."""
+    # Verify team access if team_id provided
+    if data.team_id:
+        _get_team_with_access(db, data.team_id, current_user)
+
+    dashboard = Dashboard(
+        user_id=current_user.id,
+        team_id=data.team_id,
+        name=data.name,
+        description=data.description,
+        is_public=data.is_public,
+        auto_refresh=data.auto_refresh,
+        config=data.config or {},
+    )
+    db.add(dashboard)
+    db.commit()
+    db.refresh(dashboard)
+    return _dashboard_to_response(dashboard, include_items=False, current_user=current_user, db=db)
+
+
+@app.get("/api/dashboards", response_model=DashboardListResponse)
+async def list_dashboards(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List current user's dashboards."""
+    query = db.query(Dashboard).filter(Dashboard.user_id == current_user.id)
+    total = query.count()
+    dashboards = query.order_by(Dashboard.updated_at.desc()).offset(offset).limit(limit).all()
+
+    return DashboardListResponse(
+        dashboards=[_dashboard_to_response(d, include_items=False, current_user=current_user, db=db) for d in dashboards],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/dashboards/{dashboard_id}", response_model=DashboardResponse)
+async def get_dashboard(
+    dashboard_id: str,
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Get a dashboard with all items and chart data."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+
+    # Public dashboards are viewable by anyone
+    if not dashboard.is_public:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        assert_dashboard_access(db, dashboard, current_user)
+
+    return _dashboard_to_response(dashboard, include_items=True, current_user=current_user, db=db)
+
+
+@app.put("/api/dashboards/{dashboard_id}", response_model=DashboardResponse)
+async def update_dashboard(
+    dashboard_id: str,
+    data: DashboardUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update dashboard metadata."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+    assert_dashboard_access(db, dashboard, current_user)
+
+    if data.name is not None:
+        dashboard.name = data.name
+    if data.description is not None:
+        dashboard.description = data.description
+    if data.is_public is not None:
+        dashboard.is_public = data.is_public
+    if data.auto_refresh is not None:
+        dashboard.auto_refresh = data.auto_refresh
+    if data.config is not None:
+        dashboard.config = data.config
+
+    db.commit()
+    db.refresh(dashboard)
+    return _dashboard_to_response(dashboard, include_items=True, current_user=current_user, db=db)
+
+
+@app.delete("/api/dashboards/{dashboard_id}")
+async def delete_dashboard(
+    dashboard_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a dashboard."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+    assert_dashboard_access(db, dashboard, current_user)
+    db.delete(dashboard)
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/dashboards/{dashboard_id}/items", response_model=DashboardResponse)
+async def add_dashboard_items(
+    dashboard_id: str,
+    data: DashboardItemsAddRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add charts to a dashboard."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+    assert_dashboard_access(db, dashboard, current_user)
+
+    # Get current max position
+    max_pos = db.query(func.max(DashboardItem.position)).filter(
+        DashboardItem.dashboard_id == dashboard_id
+    ).scalar() or -1
+
+    for i, item_data in enumerate(data.items):
+        # Verify chart exists
+        chart = db.query(Chart).filter(Chart.id == item_data.chart_id).first()
+        if not chart:
+            raise HTTPException(status_code=404, detail=f"Chart {item_data.chart_id} not found")
+
+        # Check for duplicates
+        existing = db.query(DashboardItem).filter(
+            DashboardItem.dashboard_id == dashboard_id,
+            DashboardItem.chart_id == item_data.chart_id,
+        ).first()
+        if existing:
+            continue
+
+        position = item_data.position if item_data.position is not None else max_pos + 1 + i
+        db_item = DashboardItem(
+            dashboard_id=dashboard_id,
+            chart_id=item_data.chart_id,
+            position=position,
+            width=item_data.width,
+            height=item_data.height,
+        )
+        db.add(db_item)
+
+    db.commit()
+    db.refresh(dashboard)
+    return _dashboard_to_response(dashboard, include_items=True, current_user=current_user, db=db)
+
+
+@app.put("/api/dashboards/{dashboard_id}/items", response_model=DashboardResponse)
+async def update_dashboard_items(
+    dashboard_id: str,
+    data: DashboardItemsBulkUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Bulk update dashboard item positions and sizes."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+    assert_dashboard_access(db, dashboard, current_user)
+
+    for item_update in data.items:
+        item = db.query(DashboardItem).filter(
+            DashboardItem.id == item_update.id,
+            DashboardItem.dashboard_id == dashboard_id,
+        ).first()
+        if not item:
+            continue
+        if item_update.position is not None:
+            item.position = item_update.position
+        if item_update.width is not None:
+            item.width = item_update.width
+        if item_update.height is not None:
+            item.height = item_update.height
+
+    db.commit()
+    db.refresh(dashboard)
+    return _dashboard_to_response(dashboard, include_items=True, current_user=current_user, db=db)
+
+
+@app.delete("/api/dashboards/{dashboard_id}/items/{item_id}")
+async def remove_dashboard_item(
+    dashboard_id: str,
+    item_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a chart from a dashboard."""
+    dashboard = get_dashboard_or_404(db, dashboard_id)
+    assert_dashboard_access(db, dashboard, current_user)
+
+    item = db.query(DashboardItem).filter(
+        DashboardItem.id == item_id,
+        DashboardItem.dashboard_id == dashboard_id,
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Dashboard item not found")
+
+    db.delete(item)
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.get("/api/teams/{team_id}/dashboards", response_model=DashboardListResponse)
+async def list_team_dashboards(
+    team_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List dashboards for a team."""
+    _get_team_with_access(db, team_id, current_user)
+
+    query = db.query(Dashboard).filter(Dashboard.team_id == team_id)
+    total = query.count()
+    dashboards = query.order_by(Dashboard.updated_at.desc()).offset(offset).limit(limit).all()
+
+    return DashboardListResponse(
+        dashboards=[_dashboard_to_response(d, include_items=False, current_user=current_user, db=db) for d in dashboards],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+# ============================================================================
+# Cron: Dashboard Auto-Refresh
+# ============================================================================
+
+CRON_SECRET = os.environ.get("CRON_SECRET", "")
+
+
+@app.post("/api/internal/cron/refresh-dashboards")
+async def cron_refresh_dashboards(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Refresh chart data for dashboards with auto_refresh enabled.
+
+    Secured via CRON_SECRET header. Called by Railway cron or external scheduler.
+    """
+    if not CRON_SECRET:
+        raise HTTPException(status_code=503, detail="Cron secret not configured")
+
+    token = request.headers.get("x-cron-secret", "")
+    if not token or not secrets.compare_digest(token, CRON_SECRET):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Get all charts that belong to auto-refresh dashboards
+    auto_refresh_chart_ids = (
+        db.query(DashboardItem.chart_id)
+        .join(Dashboard, Dashboard.id == DashboardItem.dashboard_id)
+        .filter(Dashboard.auto_refresh == True)
+        .distinct()
+        .all()
+    )
+    chart_ids = [row[0] for row in auto_refresh_chart_ids]
+
+    if not chart_ids:
+        return {"status": "ok", "refreshed": 0, "skipped": 0, "errors": 0}
+
+    # Fetch charts that have refresh_query
+    charts = db.query(Chart).filter(
+        Chart.id.in_(chart_ids),
+        Chart.refresh_query.isnot(None),
+    ).limit(100).all()
+
+    refreshed = 0
+    errors = 0
+
+    for chart in charts:
+        try:
+            query_params = chart.refresh_query
+            source = chart.source_type
+
+            if source == "stock" and query_params.get("ticker"):
+                new_data = await _refresh_stock_chart(query_params)
+                if new_data:
+                    chart.data = new_data
+                    chart.updated_at = datetime.utcnow()
+                    refreshed += 1
+            elif source == "dataset" and query_params.get("dataset_id"):
+                new_data = await _refresh_dataset_chart(query_params)
+                if new_data:
+                    chart.data = new_data
+                    chart.updated_at = datetime.utcnow()
+                    refreshed += 1
+        except Exception as e:
+            logger.error(f"Failed to refresh chart {chart.id}: {e}")
+            errors += 1
+
+    db.commit()
+
+    return {
+        "status": "ok",
+        "refreshed": refreshed,
+        "skipped": len(chart_ids) - len(charts),
+        "errors": errors,
+    }
+
+
+async def _refresh_stock_chart(params: dict) -> Optional[dict]:
+    """Re-fetch stock data using stored query params."""
+    try:
+        ticker = params.get("ticker")
+        ticker2 = params.get("ticker2")
+        range_val = params.get("range", "3M")
+        result = fetch_stock_prices(ticker, range_val, ticker2)
+        return result
+    except Exception as e:
+        logger.error(f"Stock refresh failed: {e}")
+        return None
+
+
+async def _refresh_dataset_chart(params: dict) -> Optional[dict]:
+    """Re-run BigQuery query using stored params."""
+    try:
+        dataset_id = params.get("dataset_id")
+        prompt = params.get("prompt")
+        top_n = params.get("top_n", 20)
+        chart_type_hint = params.get("chart_type_hint")
+        result = await generate_chart_from_public_dataset(dataset_id, prompt, top_n, chart_type_hint)
+        if result and "labels" in result and "series" in result:
+            return {"labels": result["labels"], "series": result["series"]}
+        return None
+    except Exception as e:
+        logger.error(f"Dataset refresh failed: {e}")
+        return None
 
 
 # ============================================================================

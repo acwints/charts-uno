@@ -489,3 +489,85 @@ class BrandInferResponse(BaseModel):
     theme: str
     font_style: str
     reasoning: str
+
+
+# ============================================
+# Dashboard Schemas
+# ============================================
+
+class DashboardItemCreate(BaseModel):
+    chart_id: str
+    position: Optional[int] = None
+    width: int = Field(default=2, ge=1, le=4)
+    height: int = Field(default=1, ge=1, le=3)
+
+
+class DashboardItemUpdate(BaseModel):
+    id: str
+    position: Optional[int] = None
+    width: Optional[int] = Field(default=None, ge=1, le=4)
+    height: Optional[int] = Field(default=None, ge=1, le=3)
+
+
+class DashboardItemResponse(BaseModel):
+    id: str
+    chart_id: str
+    position: int
+    width: int
+    height: int
+    created_at: datetime
+    chart: Optional[ChartResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DashboardCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    team_id: Optional[str] = None
+    is_public: bool = False
+    auto_refresh: bool = False
+    config: Dict[str, Any] = Field(default_factory=dict)
+
+
+class DashboardUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    is_public: Optional[bool] = None
+    auto_refresh: Optional[bool] = None
+    config: Optional[Dict[str, Any]] = None
+
+
+class DashboardResponse(BaseModel):
+    id: str
+    user_id: str
+    team_id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    is_public: bool
+    auto_refresh: bool
+    config: Dict[str, Any]
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    item_count: int = 0
+    items: Optional[List[DashboardItemResponse]] = None
+    user: Optional[UserResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DashboardListResponse(BaseModel):
+    dashboards: List[DashboardResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class DashboardItemsAddRequest(BaseModel):
+    items: List[DashboardItemCreate]
+
+
+class DashboardItemsBulkUpdate(BaseModel):
+    items: List[DashboardItemUpdate]

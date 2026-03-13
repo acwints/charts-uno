@@ -79,6 +79,7 @@ class User(Base):
     team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
     sent_invitations = relationship("TeamInvitation", back_populates="inviter", cascade="all, delete-orphan")
     chart_publications = relationship("ChartPublication", back_populates="publisher", cascade="all, delete-orphan")
+    dashboards = relationship("Dashboard", back_populates="user", cascade="all, delete-orphan")
 
 
 class Chart(Base):
@@ -97,6 +98,9 @@ class Chart(Base):
     # Source information
     source_type = Column(String(50), nullable=True)  # 'upload', 'paste', 'twitter', 'url'
     source_url = Column(Text, nullable=True)
+
+    # Auto-refresh parameters (for cron-based data updates)
+    refresh_query = Column(JSON, nullable=True)  # e.g. {"ticker": "AAPL", "range": "1Y"}
 
     # Metadata
     is_public = Column(Boolean, default=False)
@@ -208,6 +212,7 @@ class Team(Base):
     subscription = relationship("Subscription", back_populates="team", uselist=False, cascade="all, delete-orphan")
     charts = relationship("Chart", back_populates="team", cascade="all, delete-orphan")
     chart_publications = relationship("ChartPublication", back_populates="team", cascade="all, delete-orphan")
+    dashboards = relationship("Dashboard", back_populates="team", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_teams_owner_created", "owner_id", "created_at"),
@@ -283,6 +288,54 @@ class Subscription(Base):
     __table_args__ = (
         Index("ix_subscriptions_polar_sub", "polar_subscription_id"),
         Index("ix_subscriptions_status", "status"),
+    )
+
+
+class Dashboard(Base):
+    """User-curated collection of charts displayed as a dashboard."""
+    __tablename__ = "dashboards"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="CASCADE"), nullable=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=False, nullable=False)
+    auto_refresh = Column(Boolean, default=False, nullable=False)
+    config = Column(JSON, nullable=False, default=dict)  # Layout settings
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="dashboards")
+    team = relationship("Team", back_populates="dashboards")
+    items = relationship("DashboardItem", back_populates="dashboard", cascade="all, delete-orphan", order_by="DashboardItem.position")
+
+    __table_args__ = (
+        Index("ix_dashboards_user_created", "user_id", "created_at"),
+        Index("ix_dashboards_team_created", "team_id", "created_at"),
+    )
+
+
+class DashboardItem(Base):
+    """A chart placed on a dashboard with layout position."""
+    __tablename__ = "dashboard_items"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    dashboard_id = Column(String(36), ForeignKey("dashboards.id", ondelete="CASCADE"), nullable=False, index=True)
+    chart_id = Column(String(36), ForeignKey("charts.id", ondelete="CASCADE"), nullable=False, index=True)
+    position = Column(Integer, default=0, nullable=False)
+    width = Column(Integer, default=2, nullable=False)   # Grid columns (1-4)
+    height = Column(Integer, default=1, nullable=False)   # Grid rows (1-3)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    dashboard = relationship("Dashboard", back_populates="items")
+    chart = relationship("Chart")
+
+    __table_args__ = (
+        UniqueConstraint("dashboard_id", "chart_id", name="uq_dashboard_chart"),
+        Index("ix_dashboard_items_dashboard_pos", "dashboard_id", "position"),
     )
 
 

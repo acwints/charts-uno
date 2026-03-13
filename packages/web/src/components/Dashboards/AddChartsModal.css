@@ -1,0 +1,205 @@
+.acm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.acm-modal {
+  width: 90%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.acm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-5) var(--space-3);
+}
+
+.acm-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.acm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.acm-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.acm-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.acm-search {
+  position: relative;
+  padding: 0 var(--space-5) var(--space-3);
+}
+
+.acm-search-icon {
+  position: absolute;
+  left: calc(var(--space-5) + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.acm-search-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) 36px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.acm-search-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.acm-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-3);
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.acm-loading,
+.acm-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.acm-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+
+.acm-item:hover:not(:disabled) {
+  background: var(--bg-secondary);
+}
+
+.acm-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.acm-item--selected {
+  background: var(--accent-subtle);
+}
+
+.acm-item--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.acm-item-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-default);
+  color: var(--accent);
+}
+
+.acm-item--selected .acm-item-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.acm-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.acm-item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acm-item-type {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.acm-item-badge {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.acm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acm-close,
+  .acm-search-input,
+  .acm-item {
+    transition: none;
+  }
+}

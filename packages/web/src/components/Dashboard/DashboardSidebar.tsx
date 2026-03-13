@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Heart from 'lucide-react/dist/esm/icons/heart';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
@@ -91,6 +92,7 @@ export function DashboardSidebar() {
         <div className="sidebar-section">
           {!isCollapsed && <div className="sidebar-section-header">Library</div>}
           <NavItem to="/dashboard" icon={<LayoutGrid size={18} />} label="My Charts" end collapsed={isCollapsed} />
+          <NavItem to="/dashboards" icon={<LayoutDashboard size={18} />} label="Dashboards" collapsed={isCollapsed} />
           <NavItem to="/dashboard/published" icon={<Globe size={18} />} label="Published" collapsed={isCollapsed} />
           <NavItem to="/dashboard/liked" icon={<Heart size={18} />} label="Liked" collapsed={isCollapsed} />
         </div>
