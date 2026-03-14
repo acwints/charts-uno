@@ -43,7 +43,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {!shouldAnimateRoute ? (
             <div className="app-route-shell">{routeContent}</div>
           ) : (
-            <AnimatePresence mode="sync" initial={false}>
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={location.pathname}
                 className="app-route-shell"
