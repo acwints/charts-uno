@@ -25,6 +25,23 @@ export interface VerticalValueAxisConfig {
   dy: number;
 }
 
+/**
+ * Tick-width-aware value axis config for all cartesian chart types.
+ * Replaces the old `computeVerticalValueAxisConfig` which ignored tick content.
+ */
+export interface ValueAxisConfig {
+  /** Left margin for the chart container */
+  leftMargin: number;
+  /** Recharts `width` prop for the YAxis element */
+  axisWidth: number;
+  /** Y-axis label offset from the axis line */
+  labelOffset: number;
+  /** Whether to position the axis label outside the plot area */
+  preferOutsideLabel: boolean;
+  /** Y-axis tick font size (adaptive based on tick width) */
+  tickFontSize: 10 | 11 | 12;
+}
+
 export interface CartesianXAxisLabelConfig {
   offset: number;
   extraBottomMargin: number;
@@ -204,26 +221,72 @@ export function computeHorizontalCategoryAxisConfig(
   };
 }
 
+/** @deprecated Use computeValueAxisConfig instead */
 export function computeVerticalValueAxisConfig(
   axisLabel?: string,
 ): VerticalValueAxisConfig {
+  const result = computeValueAxisConfig(axisLabel);
+  return {
+    leftMargin: result.leftMargin,
+    labelOffset: result.labelOffset,
+    preferOutsideLabel: result.preferOutsideLabel,
+    dy: 0,
+  };
+}
+
+/**
+ * Compute tick-width-aware value axis config for any vertical cartesian chart.
+ *
+ * @param axisLabel   The Y-axis title text (e.g., "Revenue", "male_births")
+ * @param maxTickStr  The widest formatted tick string (e.g., "$15.2M", "20M").
+ *                    When provided, axis width and font size adapt to the content.
+ */
+export function computeValueAxisConfig(
+  axisLabel?: string,
+  maxTickStr?: string,
+): ValueAxisConfig {
   const hasAxisLabel = Boolean(axisLabel && axisLabel.trim());
-  const axisLabelLength = hasAxisLabel ? axisLabel!.trim().length : 0;
+  const tickLen = maxTickStr ? maxTickStr.length : 4; // fallback "1.2K" = 4 chars
+
+  // Adaptive tick font size based on tick string width
+  let tickFontSize: 10 | 11 | 12 = 12;
+  if (tickLen > 10) tickFontSize = 10;
+  else if (tickLen > 7) tickFontSize = 11;
+
+  // Estimate pixel width of widest tick value
+  const charWidth = estimateCharWidth(tickFontSize);
+  const tickPxWidth = Math.round(tickLen * charWidth);
+
+  // Axis width: enough room for ticks + internal padding.
+  // Recharts default is 60; we derive from content.
+  const axisWidth = Math.max(
+    40,
+    Math.min(90, tickPxWidth + 14),
+  );
+
+  // Left margin: accounts for the axis label sitting outside the axis area
   const preferOutsideLabel = hasAxisLabel;
-  const baseLeftMargin = hasAxisLabel
-    ? Math.max(14, Math.min(24, Math.round(axisLabelLength * 0.35) + 12))
-    : 8;
-  const leftMargin = baseLeftMargin + (preferOutsideLabel ? 8 : 0);
+  const axisLabelLength = hasAxisLabel ? axisLabel!.trim().length : 0;
+  let leftMargin: number;
+  if (hasAxisLabel) {
+    // The rotated axis label needs space proportional to its character count,
+    // but clamped so very long labels don't blow out the chart.
+    const labelExtra = Math.max(10, Math.min(22, Math.round(axisLabelLength * 0.3) + 8));
+    leftMargin = labelExtra + (preferOutsideLabel ? 6 : 0);
+  } else {
+    leftMargin = 5;
+  }
+
   const labelOffset = preferOutsideLabel
-    ? Math.max(8, Math.min(14, Math.round(axisLabelLength * 0.2) + 8))
-    : 8;
-  const dy = Math.min(10, Math.max(2, Math.floor(axisLabelLength / 10)));
+    ? Math.max(6, Math.min(14, Math.round(axisWidth * 0.1) + 4))
+    : 6;
 
   return {
     leftMargin,
+    axisWidth,
     labelOffset,
     preferOutsideLabel,
-    dy,
+    tickFontSize,
   };
 }
 

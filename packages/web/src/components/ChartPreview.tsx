@@ -37,9 +37,9 @@ import {
   computeAdaptiveAxisConfig,
   computeCartesianXAxisLabelConfig,
   computeHorizontalCategoryAxisConfig,
-  computeVerticalValueAxisConfig,
+  computeValueAxisConfig,
 } from '../utils/adaptiveAxis';
-import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
+import { createFixedNumberFormatter, getAdaptiveDecimalPlaces, formatCompactAxisValue, estimateMaxTickString } from '../utils/numberFormat';
 import { analyzeDataForRendering } from '../utils/dataIntelligence';
 import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
@@ -257,22 +257,10 @@ export function ChartPreview({
     return createFixedNumberFormatter(axisDecimalPlaces);
   }, [axisDecimalPlaces]);
 
-  // Format Y-axis tick values with compact notation for large numbers
+  // Format Y-axis tick values with compact notation for large numbers.
+  // Uses shared formatter to eliminate trailing ".0" (15.0M → 15M).
   const formatYAxisTick = useCallback((value: number): string => {
-    const absValue = Math.abs(value);
-    let formatted: string;
-
-    if (absValue >= 1_000_000_000) {
-      formatted = `${(value / 1_000_000_000).toFixed(1)}B`;
-    } else if (absValue >= 1_000_000) {
-      formatted = `${(value / 1_000_000).toFixed(1)}M`;
-    } else if (absValue >= 1_000) {
-      formatted = `${(value / 1_000).toFixed(1)}K`;
-    } else {
-      formatted = axisNumberFormatter.format(value);
-    }
-
-    return `${yAxisPrefix}${formatted}${yAxisSuffix}`;
+    return formatCompactAxisValue(value, yAxisPrefix, yAxisSuffix, axisNumberFormatter);
   }, [axisNumberFormatter, yAxisPrefix, yAxisSuffix]);
 
   // Match tooltip precision with axis/data labels so values stay consistent across views.
@@ -339,13 +327,7 @@ export function ChartPreview({
   const rightAxisNumberFormatter = useMemo(() => createFixedNumberFormatter(rightAxisDecimalPlaces), [rightAxisDecimalPlaces]);
 
   const formatRightYAxisTick = useCallback((value: number): string => {
-    const absValue = Math.abs(value);
-    let formatted: string;
-    if (absValue >= 1_000_000_000) formatted = `${(value / 1_000_000_000).toFixed(1)}B`;
-    else if (absValue >= 1_000_000) formatted = `${(value / 1_000_000).toFixed(1)}M`;
-    else if (absValue >= 1_000) formatted = `${(value / 1_000).toFixed(1)}K`;
-    else formatted = rightAxisNumberFormatter.format(value);
-    return `${rightYAxisPrefix}${formatted}${rightYAxisSuffix}`;
+    return formatCompactAxisValue(value, rightYAxisPrefix, rightYAxisSuffix, rightAxisNumberFormatter);
   }, [rightAxisNumberFormatter, rightYAxisPrefix, rightYAxisSuffix]);
 
   const formatRightTooltipValue = useCallback((value: number): string => {
@@ -562,9 +544,29 @@ export function ChartPreview({
     () => computeHorizontalCategoryAxisConfig(data.labels, xAxisLabel),
     [data.labels, xAxisLabel],
   );
-  const verticalValueAxis = useMemo(
-    () => computeVerticalValueAxisConfig(yAxisLabel),
-    [yAxisLabel],
+  // Estimate the widest Y-axis tick string so axis width and font size
+  // adapt to the actual data magnitude (e.g., "$15.2M" vs "5").
+  const maxLeftTickStr = useMemo(() => {
+    // For combo charts, use left series domain; for single-axis, use bar or general domain
+    const domain = combo ? leftSeriesDomain : (isBarLike ? barValueAxisDomain : undefined);
+    // If no explicit domain, estimate from raw data range
+    if (!domain) {
+      const vals = numericSeriesValues;
+      if (vals.length === 0) return '0';
+      return estimateMaxTickString(
+        [Math.min(...vals), Math.max(...vals)],
+        yAxisPrefix,
+        yAxisSuffix,
+        axisNumberFormatter,
+      );
+    }
+    return estimateMaxTickString(domain, yAxisPrefix, yAxisSuffix, axisNumberFormatter);
+  }, [combo, leftSeriesDomain, isBarLike, barValueAxisDomain, numericSeriesValues, yAxisPrefix, yAxisSuffix, axisNumberFormatter]);
+
+  // Tick-width-aware value axis config for all vertical cartesian charts
+  const valueAxisConfig = useMemo(
+    () => computeValueAxisConfig(yAxisLabel, maxLeftTickStr),
+    [yAxisLabel, maxLeftTickStr],
   );
   const sourceDomain = useMemo(() => {
     const link = config.sourceLink || data.sourceLink;
@@ -590,18 +592,27 @@ export function ChartPreview({
     return count;
   }, [data.series]);
   const adaptiveBottom = adaptiveAxis.bottomMargin + xAxisLabelLayout.extraBottomMargin;
+  // Right margin: ensure last X-axis tick doesn't clip.
+  // For categorical axes the last label is centered, so half its width can overflow.
+  const rightMarginBuffer = useMemo(() => {
+    if (isHorizontal) return 30;
+    if (combo) return rightYAxisLabel ? 14 : 8;
+    const lastLabel = effectiveLabels[effectiveLabels.length - 1] ?? '';
+    // Half the last label width (centered tick) + small padding
+    return Math.max(8, Math.min(20, Math.ceil(lastLabel.length * 3.5) + 2));
+  }, [isHorizontal, combo, rightYAxisLabel, effectiveLabels]);
   const chartMargins = isHorizontal
     ? {
         top: 20,
-        right: 30,
+        right: rightMarginBuffer,
         bottom: yAxisLabel ? 25 : 5,
         left: horizontalCategoryAxis.leftMargin + (horizontalCategoryAxis.preferOutsideLabel ? 16 : 0),
       }
     : {
         top: 20,
-        right: combo ? (rightYAxisLabel ? 14 : 8) : 5,
+        right: rightMarginBuffer,
         bottom: adaptiveBottom,
-        left: isVerticalBar ? verticalValueAxis.leftMargin : (yAxisLabel ? 15 : 5),
+        left: valueAxisConfig.leftMargin,
       };
 
   const pieData = useMemo(() => {
