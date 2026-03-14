@@ -18,13 +18,6 @@ export interface HorizontalCategoryAxisConfig {
   maxTickLength: number;
 }
 
-export interface VerticalValueAxisConfig {
-  leftMargin: number;
-  labelOffset: number;
-  preferOutsideLabel: boolean;
-  dy: number;
-}
-
 /**
  * Tick-width-aware value axis config for all cartesian chart types.
  * Replaces the old `computeVerticalValueAxisConfig` which ignored tick content.
@@ -218,19 +211,6 @@ export function computeHorizontalCategoryAxisConfig(
     preferOutsideLabel,
     fontSize,
     maxTickLength,
-  };
-}
-
-/** @deprecated Use computeValueAxisConfig instead */
-export function computeVerticalValueAxisConfig(
-  axisLabel?: string,
-): VerticalValueAxisConfig {
-  const result = computeValueAxisConfig(axisLabel);
-  return {
-    leftMargin: result.leftMargin,
-    labelOffset: result.labelOffset,
-    preferOutsideLabel: result.preferOutsideLabel,
-    dy: 0,
   };
 }
 

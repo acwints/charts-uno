@@ -514,8 +514,6 @@ export function ChartPreview({
   }, [effectiveLabels, isNumericLabels]);
 
   const isHorizontal = config.type === 'bar' && config.barLayout === 'horizontal';
-  const isVerticalBar = config.type === 'bar' && !isHorizontal;
-
   const adaptiveAxis = useMemo(
     () => computeAdaptiveAxisConfig(effectiveLabels, isHorizontal),
     [effectiveLabels, isHorizontal],
@@ -800,17 +798,16 @@ export function ChartPreview({
       />
     );
 
-    const preferOutsideYLabel = isVerticalBar && verticalValueAxis.preferOutsideLabel;
+    // Y-axis label config — uses tick-width-aware valueAxisConfig for all chart types.
+    // dy=0 lets Recharts handle vertical centering for rotated labels (the old
+    // label-length-based dy heuristic produced inconsistent positioning).
+    const preferOutsideYLabel = valueAxisConfig.preferOutsideLabel;
     const yAxisLabelConfig = yAxisLabel && !hideAxisTitles ? {
       value: yAxisLabel,
       angle: -90,
       position: (preferOutsideYLabel ? 'left' as const : 'insideLeft' as const),
-      offset: isVerticalBar
-        ? verticalValueAxis.labelOffset
-        : Math.max(8, Math.min(18, Math.round(yAxisLabel.length * 0.3) + 6)),
-      dy: isVerticalBar
-        ? verticalValueAxis.dy
-        : Math.min(10, Math.max(2, Math.floor(yAxisLabel.length / 10))),
+      offset: valueAxisConfig.labelOffset,
+      dy: 0,
       fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
@@ -818,8 +815,9 @@ export function ChartPreview({
 
     const yAxisElement = (
       <YAxis
+        width={valueAxisConfig.axisWidth}
         stroke={theme.textMuted}
-        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: valueAxisConfig.tickFontSize }}
         tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         domain={!isHorizontal && isBarLike ? barValueAxisDomain : undefined}
@@ -834,7 +832,7 @@ export function ChartPreview({
         type="number"
         domain={isHorizontal && isBarLike ? barValueAxisDomain : undefined}
         stroke={theme.textMuted}
-        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+        tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: valueAxisConfig.tickFontSize }}
         tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
         axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
         tickFormatter={formatYAxisTick}
@@ -911,21 +909,18 @@ export function ChartPreview({
 
     // --- Combo chart (dual-axis, mixed series types) ---
     if (combo) {
-      const rightAxisTickWidth = Math.max(
-        46,
-        Math.min(
-          72,
-          Math.max(
-            formatRightYAxisTick(rightSeriesDomain?.[0] ?? 0).length,
-            formatRightYAxisTick(rightSeriesDomain?.[1] ?? 0).length,
-          ) * 7 + 10,
-        ),
+      const maxRightTickStr = estimateMaxTickString(
+        rightSeriesDomain,
+        rightYAxisPrefix,
+        rightYAxisSuffix,
+        rightAxisNumberFormatter,
       );
+      const rightAxisConfig = computeValueAxisConfig(rightYAxisLabel, maxRightTickStr);
       const rightYAxisLabelConfig = rightYAxisLabel && !hideAxisTitles ? {
         value: rightYAxisLabel,
         angle: 90,
         position: 'insideRight' as const,
-        offset: Math.max(6, Math.min(14, Math.round(rightAxisTickWidth * 0.12) + 2)),
+        offset: Math.max(6, Math.min(14, Math.round(rightAxisConfig.axisWidth * 0.12) + 2)),
         fill: theme.textMuted,
         fontSize: 11,
         fontFamily: 'var(--font-mono)',
@@ -958,8 +953,9 @@ export function ChartPreview({
           {xAxisElement}
           <YAxis
             yAxisId="left"
+            width={valueAxisConfig.axisWidth}
             stroke={theme.textMuted}
-            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: valueAxisConfig.tickFontSize }}
             tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
             axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
             domain={leftSeriesDomain}
@@ -969,9 +965,9 @@ export function ChartPreview({
           <YAxis
             yAxisId="right"
             orientation="right"
-            width={rightAxisTickWidth}
+            width={rightAxisConfig.axisWidth}
             stroke={theme.textMuted}
-            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: 12 }}
+            tick={hideAxisLabels ? false : { fill: theme.textMuted, fontSize: rightAxisConfig.tickFontSize }}
             tickLine={hideAxisLabels ? false : { stroke: theme.textMuted }}
             axisLine={{ stroke: theme.border, strokeOpacity: 0.5 }}
             domain={rightSeriesDomain}
