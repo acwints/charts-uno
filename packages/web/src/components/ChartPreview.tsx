@@ -40,6 +40,7 @@ import {
   computeVerticalValueAxisConfig,
 } from '../utils/adaptiveAxis';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
+import { analyzeDataForRendering } from '../utils/dataIntelligence';
 import { AdaptiveXAxisTick } from './AdaptiveAxisTick';
 import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
@@ -175,26 +176,38 @@ export function ChartPreview({
     setInfographicSvg(null);
   };
 
-  // Check if all labels can be parsed as numbers
-  const isNumericLabels = useMemo(() => {
-    return data.labels.length > 0 &&
-      data.labels.every(label => !isNaN(parseFloat(label)) && isFinite(Number(label)));
-  }, [data.labels]);
+  // Data Intelligence Layer: analyze the dataset to inform rendering decisions.
+  // Handles label normalization (e.g., "1910.0" → "1910"), temporal granularity
+  // detection (decade vs year vs month), and axis strategy (categorical vs continuous).
+  const dataHints = useMemo(
+    () => analyzeDataForRendering(data.labels, data.xAxisType),
+    [data.labels, data.xAxisType],
+  );
 
-  // Detect if labels are years (4-digit integers like 1999, 2000, 2023)
+  // Use cleaned labels throughout (strips trailing .0, trims whitespace)
+  const effectiveLabels = dataHints.cleanedLabels;
+
+  // Check if all labels can be parsed as numbers (on cleaned labels)
+  const isNumericLabels = useMemo(() => {
+    if (dataHints.forceCategorical) return false;
+    return effectiveLabels.length > 0 &&
+      effectiveLabels.every(label => !isNaN(parseFloat(label)) && isFinite(Number(label)));
+  }, [effectiveLabels, dataHints.forceCategorical]);
+
+  // Detect if labels are years — intelligence layer handles ".0" cleaning & decade detection
   const isYearLabels = useMemo(() => {
+    if (dataHints.suggestedXAxisType === 'year') return true;
     // Explicit type hint takes precedence
     if (data.xAxisType === 'year') return true;
     if (data.xAxisType === 'date' || data.xAxisType === 'category' || data.xAxisType === 'number') return false;
-    // Auto-detect: all labels are 4-digit years in reasonable range
-    return data.labels.length > 0 &&
-      data.labels.every(label => {
-        const trimmed = label.trim();
-        if (!/^\d{4}$/.test(trimmed)) return false;
-        const year = parseInt(trimmed, 10);
+    // Auto-detect: all cleaned labels are 4-digit years in reasonable range
+    return effectiveLabels.length > 0 &&
+      effectiveLabels.every(label => {
+        if (!/^\d{4}$/.test(label)) return false;
+        const year = parseInt(label, 10);
         return year >= 1800 && year <= 2100;
       });
-  }, [data.labels, data.xAxisType]);
+  }, [effectiveLabels, data.xAxisType, dataHints.suggestedXAxisType]);
 
   // Detect Y-axis format from data hints or infer from yAxisLabel
   const yAxisFormat = useMemo(() => {
@@ -484,16 +497,17 @@ export function ChartPreview({
 
   const chartData = useMemo(() => {
     return data.labels.map((label, idx) => {
+      const cleanLabel = effectiveLabels[idx] ?? label;
       const point: Record<string, string | number | null> = {
-        name: label,
-        x: isNumericLabels ? parseFloat(label) : idx,
+        name: cleanLabel,
+        x: isNumericLabels ? parseFloat(cleanLabel) : idx,
       };
       data.series.forEach((series) => {
         point[series.name] = series.data[idx];
       });
       return point;
     });
-  }, [data, isNumericLabels]);
+  }, [data, effectiveLabels, isNumericLabels]);
 
   const isBarLike = config.type === 'bar' || config.type === 'histogram';
   const canStack = data.series.length > 1;
@@ -509,29 +523,30 @@ export function ChartPreview({
   // Calculate domain with padding for numeric axes
   const numericDomain = useMemo((): [number, number] | undefined => {
     if (!isNumericLabels) return undefined;
-    const values = data.labels.map(l => parseFloat(l));
+    const values = effectiveLabels.map(l => parseFloat(l));
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min;
     const padding = Math.max(range * 0.1, 1); // 10% padding or at least 1
     return [min - padding, max + padding];
-  }, [data.labels, isNumericLabels]);
+  }, [effectiveLabels, isNumericLabels]);
 
   const isHorizontal = config.type === 'bar' && config.barLayout === 'horizontal';
   const isVerticalBar = config.type === 'bar' && !isHorizontal;
 
   const adaptiveAxis = useMemo(
-    () => computeAdaptiveAxisConfig(data.labels, isHorizontal),
-    [data.labels, isHorizontal],
+    () => computeAdaptiveAxisConfig(effectiveLabels, isHorizontal),
+    [effectiveLabels, isHorizontal],
   );
   const preferPreserveEndTicks = useMemo(() => {
-    if (isYearLabels || data.xAxisType === 'date') return data.labels.length >= 16;
-    if (data.labels.length < 16) return false;
-    const dateLikeCount = data.labels.filter(isLikelyDateLabel).length;
-    return dateLikeCount / data.labels.length >= 0.7;
-  }, [data.labels, data.xAxisType, isYearLabels]);
+    if (isYearLabels || data.xAxisType === 'date') return effectiveLabels.length >= 16;
+    if (effectiveLabels.length < 16) return false;
+    const dateLikeCount = effectiveLabels.filter(isLikelyDateLabel).length;
+    return dateLikeCount / effectiveLabels.length >= 0.7;
+  }, [effectiveLabels, data.xAxisType, isYearLabels]);
 
   const xAxisLabel = data.xAxisLabel
+    ?? dataHints.suggestedXAxisLabel
     ?? (isYearLabels ? 'Year' : undefined)
     ?? (data.xAxisType === 'date' ? 'Date' : undefined);
   const yAxisLabel = data.yAxisLabel
