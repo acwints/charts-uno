@@ -139,8 +139,8 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     const replyText =
       action === 'reverse'
-        ? `Here's your reverse table view! 📋✨\n${chartUrl}`
-        : `Here's your epic chart! 📊✨\n${chartUrl}`;
+        ? `Here's your table! 📋✨\n${chartUrl}`
+        : `Here's your chart! 📊✨\n${chartUrl}`;
     await replyWithMedia(mentionId, replyText, mediaId);
 
     logger.info({ mentionId }, 'Successfully processed mention and posted reply');

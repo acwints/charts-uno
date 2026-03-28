@@ -64,36 +64,36 @@
       "generatedImages": [
         {
           "slideNumber": 1,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-1.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-1.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 2,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-2.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-2.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 3,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-3.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-3.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 4,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-4.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-4.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 5,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-5.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-5.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 6,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-6.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/3d0c461a/slide-6.png",
           "overlayApplied": true
         }
       ],
-      "status": "ready",
+      "status": "posted-x",
       "caption": "One click changed how my entire dashboard looks\n\nSame data — completely different impact.\nTry ChartsUno free: https://chartsuno.com\n\n#dataviz #charts #startup #design"
     },
     {
@@ -160,32 +160,32 @@
       "generatedImages": [
         {
           "slideNumber": 1,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-1.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-1.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 2,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-2.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-2.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 3,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-3.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-3.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 4,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-4.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-4.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 5,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-5.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-5.png",
           "overlayApplied": true
         },
         {
           "slideNumber": 6,
-          "imagePath": "/Users/andrewwinter/Documents/GitHub/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-6.png",
+          "imagePath": "/Users/andrewwinter/Documents/GitHub/winter-ai/charts-uno/packages/bot/data/marketing/slides/34bd097a/slide-6.png",
           "overlayApplied": true
         }
       ],
@@ -709,6 +709,22 @@
       "postedAt": "2026-02-26T01:12:09.545Z",
       "contentId": "302f2828",
       "format": "video"
+    },
+    {
+      "platform": "x",
+      "postId": "dry-run",
+      "url": "https://x.com/dry-run",
+      "postedAt": "2026-03-28T05:46:34.609Z",
+      "contentId": "3d0c461a",
+      "format": "carousel"
+    },
+    {
+      "platform": "x",
+      "postId": "2037937361599012929",
+      "url": "https://x.com/chartsuno/status/2037937361599012929",
+      "postedAt": "2026-03-28T16:58:25.396Z",
+      "contentId": "3d0c461a",
+      "format": "carousel"
     }
   ],
   "metrics": [],
