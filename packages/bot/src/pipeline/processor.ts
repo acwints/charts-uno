@@ -68,14 +68,13 @@ export async function processMention(mention: MentionData): Promise<void> {
     return;
   }
 
-  await markProcessed(mentionActionKey);
-
   logger.info({ mentionId, parentTweetId }, 'Processing mention');
 
   try {
     // Step 1: Get the parent tweet (image preferred; text fallback supported)
     if (!parentTweetId) {
       await replyWithError(mentionId, "I couldn't find the tweet you're replying to!");
+      await markProcessed(mentionActionKey);
       return;
     }
 
@@ -93,6 +92,7 @@ export async function processMention(mention: MentionData): Promise<void> {
           mentionId,
           "I couldn't find an image or readable text in that tweet. Reply to a chart image or a tweet that lists data values."
         );
+        await markProcessed(mentionActionKey);
         return;
       }
       logger.info({ parentTweetId, tweetUrl: parentTweet.tweetUrl }, 'No image found; using tweet text fallback');
@@ -101,6 +101,7 @@ export async function processMention(mention: MentionData): Promise<void> {
     }
 
     if (!result) {
+      await markProcessed(mentionActionKey);
       return;
     }
     const { chartData, chartUrl } = result;
@@ -143,6 +144,9 @@ export async function processMention(mention: MentionData): Promise<void> {
         : `Here's your chart! 📊✨\n${chartUrl}`;
     await replyWithMedia(mentionId, replyText, mediaId);
 
+    // Mark as processed only AFTER the reply is successfully posted
+    await markProcessed(mentionActionKey);
+
     logger.info({ mentionId }, 'Successfully processed mention and posted reply');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -150,24 +154,33 @@ export async function processMention(mention: MentionData): Promise<void> {
     logger.error({ mentionId, errorMessage, errorStack }, 'Error processing mention');
 
     // Determine if we should reply with an error
+    let repliedWithError = false;
     if (error instanceof Error) {
       if (error.message.includes('No chartable data found')) {
         await replyWithError(
           mentionId,
           "I couldn't extract chart data from that tweet. Make sure it contains a clear chart image or explicit numeric values."
         );
+        repliedWithError = true;
       } else if (error.message.includes('Invalid data structure')) {
         await replyWithError(
           mentionId,
           "I had trouble understanding the data in that tweet. Try a clearer chart image or a cleaner text table."
         );
+        repliedWithError = true;
       } else if (error.message.includes('Request failed with code 403')) {
         await replyWithError(
           mentionId,
           "I parsed your chart, but I couldn't upload the image response due to X API permissions. I'm retrying once permissions are updated."
         );
+        repliedWithError = true;
       }
-      // For other errors, don't reply to avoid spam
+    }
+
+    // Only mark as processed if we sent a user-visible error reply (terminal failure).
+    // Transient errors (network, 500, auth) should NOT be marked — allow retry next cycle.
+    if (repliedWithError) {
+      await markProcessed(mentionActionKey);
     }
   }
 }

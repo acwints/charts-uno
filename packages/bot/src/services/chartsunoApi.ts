@@ -1,6 +1,42 @@
 import type { ChartData } from '@chartsuno/shared';
 import { detectMimeType } from '@chartsuno/shared/node';
-import { config } from '../config.js';
+import { config, logger } from '../config.js';
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url, init);
+
+      // Don't retry client errors (4xx) except 429
+      if (response.ok || (response.status >= 400 && response.status < 500 && response.status !== 429)) {
+        return response;
+      }
+
+      // Retry on 5xx and 429
+      lastError = new Error(`Chartsuno API failed (${response.status})`);
+      if (attempt < MAX_RETRIES) {
+        const delayMs = BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
+        logger.warn({ attempt: attempt + 1, status: response.status, delayMs: Math.round(delayMs) }, 'Chartsuno API error, retrying');
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    } catch (error) {
+      // Network errors — retry
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < MAX_RETRIES) {
+        const delayMs = BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
+        logger.warn({ attempt: attempt + 1, error: lastError.message, delayMs: Math.round(delayMs) }, 'Chartsuno API network error, retrying');
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }
+
+  throw lastError || new Error('Chartsuno API request failed after retries');
+}
 
 interface AnalyzeAndCreateResponse {
   chart_id: string;
@@ -49,7 +85,7 @@ function toChartData(parsed: AnalyzeAndCreateResponse, sourceType: ChartData['so
 
 export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: string): Promise<AnalyzeAndCreateResult> {
   const apiUrl = config.chartsuno.apiUrl.replace(/\/$/, '');
-  const response = await fetch(`${apiUrl}/api/internal/bot/analyze-and-create`, {
+  const response = await fetchWithRetry(`${apiUrl}/api/internal/bot/analyze-and-create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -82,7 +118,7 @@ export async function promptAndCreateChart(prompt: string, sourceUrl?: string): 
     payload.source_url = sourceUrl;
   }
 
-  const response = await fetch(`${apiUrl}/api/internal/bot/prompt-and-create`, {
+  const response = await fetchWithRetry(`${apiUrl}/api/internal/bot/prompt-and-create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

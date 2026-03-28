@@ -1,4 +1,4 @@
-import { getAuthMode, getReadOnlyClient, getReadWriteClient } from './client.js';
+import { getAuthMode, getReadOnlyClient, getReadWriteClient, ensureFreshClient } from './client.js';
 import { logger } from '../config.js';
 import { loadState } from '../storage.js';
 
@@ -96,6 +96,9 @@ export async function downloadImage(url: string): Promise<Buffer> {
 }
 
 export async function uploadMedia(imageBuffer: Buffer): Promise<string> {
+  // Ensure token is fresh before attempting upload
+  await ensureFreshClient();
+
   if (getAuthMode() === 'oauth1') {
     try {
       const mediaId = await getReadWriteClient().v1.uploadMedia(imageBuffer, { type: 'png' });

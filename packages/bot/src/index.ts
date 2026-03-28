@@ -13,9 +13,11 @@ let isRunning = false;
 let pollTimeout: NodeJS.Timeout | null = null;
 let healthServer: Server | null = null;
 let startRetryTimeout: NodeJS.Timeout | null = null;
+let consecutiveErrors = 0;
 const START_RETRY_MS = 30_000;
 const MIN_RATE_LIMIT_BACKOFF_MS = 5_000;
 const AUTH_RECOVERY_RETRY_MS = 15_000;
+const MAX_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes max backoff
 
 interface RateLimitedErrorLike {
   code?: number;
@@ -89,6 +91,8 @@ async function poll(): Promise<void> {
 
       for (const mention of mentions) {
         try {
+          // Refresh token before each mention to avoid mid-batch expiry
+          await ensureFreshClient();
           await processMention(mention);
         } catch (error) {
           logger.error({ error, mentionId: mention.mentionId }, 'Failed to process mention');
@@ -97,12 +101,16 @@ async function poll(): Promise<void> {
     } else {
       logger.info('No new trigger mentions found');
     }
+
+    // Reset consecutive error counter on successful poll
+    consecutiveErrors = 0;
   } catch (error) {
     const errorCode = getErrorCode(error);
     const rateLimitBackoffMs = getRateLimitBackoffMs(error);
     if (rateLimitBackoffMs) {
       // Poll again as soon as X indicates the limit resets.
       nextPollDelayMs = rateLimitBackoffMs;
+      consecutiveErrors = 0; // Rate limiting is expected, not an error
       logger.warn(
         { waitMs: nextPollDelayMs, retryAt: new Date(Date.now() + nextPollDelayMs).toISOString() },
         'X mention timeline rate-limited; delaying next poll'
@@ -112,15 +120,27 @@ async function poll(): Promise<void> {
       try {
         await initializeClient();
         nextPollDelayMs = AUTH_RECOVERY_RETRY_MS;
+        consecutiveErrors = 0;
         logger.info(
           { retryInMs: nextPollDelayMs },
           'Twitter client reinitialized after 401; scheduling quick retry'
         );
       } catch (reinitError) {
         logger.error({ error: reinitError }, 'Failed to reinitialize Twitter client after 401');
+        consecutiveErrors++;
       }
     } else {
-      logger.error({ error }, 'Error during poll cycle');
+      consecutiveErrors++;
+      // Exponential backoff with jitter for transient errors
+      const backoffMs = Math.min(
+        MAX_BACKOFF_MS,
+        config.bot.pollIntervalMs * Math.pow(2, consecutiveErrors - 1) + Math.random() * 2000
+      );
+      nextPollDelayMs = backoffMs;
+      logger.error(
+        { error, consecutiveErrors, backoffMs: Math.round(backoffMs) },
+        'Error during poll cycle; backing off'
+      );
     }
   }
 
