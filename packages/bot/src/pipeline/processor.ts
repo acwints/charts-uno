@@ -6,6 +6,7 @@ import {
   uploadMedia,
   replyWithMedia,
   replyWithError,
+  ParentTweetUnavailableError,
 } from '../twitter/media.js';
 import { renderChartToPng, getDefaultConfig, addWatermark } from '@chartsuno/shared/node';
 import { analyzeAndCreateChart, promptAndCreateChart } from '../services/chartsunoApi.js';
@@ -177,7 +178,13 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
     // Determine if we should reply with an error
     let repliedWithError = false;
     if (error instanceof Error) {
-      if (error.message.includes('No chartable data found')) {
+      if (error instanceof ParentTweetUnavailableError) {
+        await replyWithError(
+          mentionId,
+          "I couldn't access the tweet you're replying to. It may have been deleted, protected, or unavailable to me."
+        );
+        repliedWithError = true;
+      } else if (error.message.includes('No chartable data found')) {
         await replyWithError(
           mentionId,
           "I couldn't extract chart data from that tweet. Make sure it contains a clear chart image or explicit numeric values."

@@ -9,6 +9,13 @@ export interface TweetMediaData {
   tweetUrl: string;
 }
 
+export class ParentTweetUnavailableError extends Error {
+  constructor(tweetId: string) {
+    super(`Parent tweet ${tweetId} is unavailable or no longer accessible`);
+    this.name = 'ParentTweetUnavailableError';
+  }
+}
+
 let cachedBotUsername: string | null = null;
 
 async function getBotUsername(): Promise<string> {
@@ -47,6 +54,10 @@ export async function getParentTweetWithMedia(tweetId: string): Promise<TweetMed
     });
 
     const tweet = response.data;
+    if (!tweet) {
+      throw new ParentTweetUnavailableError(tweetId);
+    }
+
     const includes = response.includes;
 
     // Get author username
