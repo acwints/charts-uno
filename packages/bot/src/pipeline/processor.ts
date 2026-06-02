@@ -14,6 +14,9 @@ import type { MentionData } from '../twitter/mentions.js';
 
 const MAX_PROCESSED_MENTIONS = 1000;
 const CHARTABLE_TYPES = new Set(['bar', 'line', 'area', 'pie', 'radar', 'scatter']);
+const X_REPLY_COLOR_SCHEMES = ['default', 'warm', 'cool', 'editorial', 'muted'] as const;
+const X_REPLY_STYLE_VARIANTS = ['professional', 'editorial', 'minimalist', 'bold'] as const;
+const X_REPLY_THEME_MODES = ['dark', 'light'] as const;
 export type ProcessMentionResult = 'completed' | 'deferred';
 
 let processedMentions: Set<string> | null = null;
@@ -49,6 +52,10 @@ function buildPromptFromTweetText(tweetText: string, authorUsername: string): st
     '',
     tweetText.trim(),
   ].join('\n');
+}
+
+function pickRandomItem<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 export async function processMention(mention: MentionData): Promise<ProcessMentionResult> {
@@ -114,6 +121,10 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
 
     // Step 3: Render the chart with Recharts + Puppeteer
     const config = getDefaultConfig(chartData);
+    config.colorScheme = pickRandomItem(X_REPLY_COLOR_SCHEMES);
+    config.styleVariant = pickRandomItem(X_REPLY_STYLE_VARIANTS);
+    config.themeMode = pickRandomItem(X_REPLY_THEME_MODES);
+
     if (action === 'reverse') {
       config.type = 'table';
       config.showLegend = true;
@@ -128,7 +139,15 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
     }
 
     logger.info(
-      { action, chartType: config.type, labels: chartData.labels.length, series: chartData.series.length },
+      {
+        action,
+        chartType: config.type,
+        colorScheme: config.colorScheme,
+        styleVariant: config.styleVariant,
+        themeMode: config.themeMode,
+        labels: chartData.labels.length,
+        series: chartData.series.length,
+      },
       'Selected render mode for mention'
     );
     const chartPng = await renderChartToPng(chartData, config);

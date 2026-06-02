@@ -3,7 +3,9 @@ import { accessSync, constants } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import type { ChartData, ChartConfig, ChartType } from '../types.js';
-import { COLOR_PALETTES, getNumericDomainFromValues } from '../index.js';
+import { getNumericDomainFromValues } from '../axisDomain.js';
+import { applyCustomColors, COLOR_PALETTES, getTheme } from '../colors.js';
+import { getStyleVariantConfig } from '../styleVariants.js';
 import type { ChartLogger } from './analyzer.js';
 
 const defaultLogger: ChartLogger = {
@@ -164,7 +166,12 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-function buildTableHtml(data: ChartData, chartWidth: number, chartHeight: number): string {
+function sanitizeCssValue(value: string): string {
+  return value.replace(/[;{}<>]/g, '');
+}
+
+function buildTableHtml(data: ChartData, config: ChartConfig, chartWidth: number, chartHeight: number): string {
+  const variant = getStyleVariantConfig(config.styleVariant);
   const header = data.series
     .map(
       (series) => `
@@ -191,7 +198,7 @@ function buildTableHtml(data: ChartData, chartWidth: number, chartHeight: number
     .join('');
 
   return `
-    <div class="table-wrap" style="width:${chartWidth}px;height:${chartHeight}px;">
+    <div class="table-wrap table-wrap-${variant.chart.gridStyle}" style="width:${chartWidth}px;height:${chartHeight}px;">
       <table class="table">
         <thead>
           <tr>
@@ -221,10 +228,28 @@ function buildEmptyStateHtml(
     </div>`;
 }
 
-function buildShellHtml(bodyContent: string, title: string): string {
+function buildShellHtml(bodyContent: string, title: string, config: ChartConfig): string {
   const titleHtml = title
     ? `<h2 class="chart-title">${escapeHtml(title)}</h2>`
     : '';
+  const variant = getStyleVariantConfig(config.styleVariant);
+  const theme = applyCustomColors(getTheme(config.colorScheme, config.themeMode), config.customColors);
+  const palette = config.customColors?.seriesColors?.length
+    ? config.customColors.seriesColors
+    : COLOR_PALETTES[config.colorScheme];
+  const accent = palette[0] || theme.textMuted;
+  const accentSecondary = palette[1] || accent;
+  const background =
+    config.themeMode === 'dark'
+      ? `linear-gradient(135deg, ${theme.background} 0%, ${theme.cardBackground} 62%, ${accent} 160%)`
+      : `linear-gradient(135deg, ${theme.background} 0%, ${theme.cardBackground} 68%, ${accentSecondary} 175%)`;
+  const cardAlpha = config.themeMode === 'dark' ? '0.26' : '0.72';
+  const frameShadow = variant.decorations.useShadows
+    ? config.themeMode === 'dark'
+      ? '0 18px 60px rgba(0,0,0,0.28)'
+      : '0 18px 42px rgba(15,23,42,0.12)'
+    : 'none';
+  const titleWeight = config.styleVariant === 'editorial' ? 500 : config.styleVariant === 'bold' ? 700 : 600;
 
   return `
 <!DOCTYPE html>
@@ -234,23 +259,24 @@ function buildShellHtml(bodyContent: string, title: string): string {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #0f0f0f;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: ${sanitizeCssValue(theme.background)};
+      font-family: ${sanitizeCssValue(variant.fonts.body)}, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     #root {
       width: 800px;
       height: 600px;
-      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+      background: ${sanitizeCssValue(background)};
       padding: 40px;
       box-sizing: border-box;
       overflow: hidden;
     }
     .chart-title {
-      color: #ffffff;
+      color: ${sanitizeCssValue(theme.text)};
       font-size: 24px;
-      font-weight: 600;
+      font-weight: ${titleWeight};
       margin-bottom: 20px;
       text-align: center;
+      font-family: ${sanitizeCssValue(variant.fonts.display)}, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     .chart-frame {
       width: 720px;
@@ -258,24 +284,27 @@ function buildShellHtml(bodyContent: string, title: string): string {
       display: flex;
       justify-content: center;
       align-items: center;
+      border-radius: ${config.styleVariant === 'playful' ? 20 : config.styleVariant === 'editorial' ? 0 : 12}px;
+      box-shadow: ${frameShadow};
     }
     .empty-state {
-      border: 1px dashed rgba(255,255,255,0.24);
+      border: 1px dashed ${sanitizeCssValue(theme.border)};
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #9ca3af;
+      color: ${sanitizeCssValue(theme.textMuted)};
       font-size: 14px;
       text-align: center;
       padding: 16px;
+      background: color-mix(in srgb, ${sanitizeCssValue(theme.cardBackground)} 78%, transparent);
     }
     .table-wrap {
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 12px;
-      background: rgba(0,0,0,0.22);
-      color: #e5e7eb;
+      border: 1px solid ${sanitizeCssValue(theme.border)};
+      border-radius: ${config.styleVariant === 'editorial' ? 0 : config.styleVariant === 'playful' ? 18 : 12}px;
+      background: color-mix(in srgb, ${sanitizeCssValue(theme.cardBackground)} ${Math.round(Number(cardAlpha) * 100)}%, transparent);
+      color: ${sanitizeCssValue(theme.text)};
     }
     .table {
       width: 100%;
@@ -285,22 +314,22 @@ function buildShellHtml(bodyContent: string, title: string): string {
     }
     .table-cell {
       padding: 8px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid ${sanitizeCssValue(theme.border)};
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .table-head {
-      color: #f9fafb;
-      border-bottom: 1px solid rgba(255,255,255,0.16);
+      color: ${sanitizeCssValue(theme.text)};
+      border-bottom: 1px solid ${sanitizeCssValue(accent)};
       padding-top: 10px;
       padding-bottom: 10px;
     }
     .table-cell-left { text-align: left; }
     .table-cell-right { text-align: right; }
-    .table-label { color: #d1d5db; }
+    .table-label { color: ${sanitizeCssValue(theme.textMuted)}; }
     .table-value {
-      color: #e5e7eb;
+      color: ${sanitizeCssValue(theme.text)};
       font-variant-numeric: tabular-nums;
     }
   </style>
@@ -317,7 +346,11 @@ function buildShellHtml(bodyContent: string, title: string): string {
 }
 
 function getChartPayload({ data, config }: ChartPreviewServerProps) {
-  const palette = COLOR_PALETTES[config.colorScheme];
+  const theme = applyCustomColors(getTheme(config.colorScheme, config.themeMode), config.customColors);
+  const variant = getStyleVariantConfig(config.styleVariant);
+  const palette = config.customColors?.seriesColors?.length
+    ? config.customColors.seriesColors
+    : COLOR_PALETTES[config.colorScheme];
   const labels = data.labels.map((label) => String(label));
   const series = data.series.map((entry) => ({
     name: entry.name || 'Series',
@@ -337,6 +370,14 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
     labels,
     series,
     colors: palette,
+    theme,
+    style: {
+      strokeWidth: variant.chart.strokeWidth,
+      dotRadius: variant.chart.dotRadius,
+      gridStyle: variant.chart.gridStyle,
+      gridOpacity: variant.chart.gridOpacity,
+      useShadows: variant.decorations.useShadows,
+    },
     showGrid: config.showGrid,
     showLegend: config.showLegend,
     showPoints: config.showPoints,
@@ -354,7 +395,7 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
   const shouldDrawCanvas = config.type !== 'table' && canPlot;
   const bodyContent =
     config.type === 'table'
-      ? buildTableHtml(data, chartWidth, chartHeight)
+      ? buildTableHtml(data, config, chartWidth, chartHeight)
       : canPlot
         ? `<canvas id="chart-canvas" width="${chartWidth}" height="${chartHeight}"></canvas>`
         : buildEmptyStateHtml(chartWidth, chartHeight, hasRenderableSeries(data));
@@ -367,9 +408,9 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
     const viewport = { width: 800, height: 600, deviceScaleFactor: 2 };
     await page.setViewport(viewport);
 
-    const html = buildShellHtml(bodyContent, config.title || '');
+    const html = buildShellHtml(bodyContent, config.title || '', config);
 
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     if (shouldDrawCanvas) {
       await page.addScriptTag({ path: CHART_JS_UMD_PATH });
 
@@ -405,13 +446,28 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
           throw new Error('Unable to get 2D context for chart canvas');
         }
 
+        const theme = payload.theme;
+        const style = payload.style;
         const getDatasetColor = (idx: number): string => payload.colors[idx % payload.colors.length];
         const labels = payload.labels as string[];
+        const gridDash = style.gridStyle === 'dashed'
+          ? [5, 5]
+          : style.gridStyle === 'dotted'
+            ? [1, 5]
+            : [];
+        const gridOptions = {
+          color: theme.grid,
+          display: payload.showGrid && style.gridStyle !== 'none',
+          lineWidth: 1,
+          drawTicks: true,
+          tickLength: 4,
+          borderDash: gridDash,
+        };
 
         const commonDatasetOptions = {
-          borderWidth: 2,
-          pointRadius: payload.showPoints ? 3 : 0,
-          pointHoverRadius: payload.showPoints ? 4 : 0,
+          borderWidth: style.strokeWidth,
+          pointRadius: payload.showPoints ? style.dotRadius : 0,
+          pointHoverRadius: payload.showPoints ? style.dotRadius + 1 : 0,
         };
 
         let datasets: Array<Record<string, unknown>>;
@@ -426,7 +482,7 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
               label: firstSeries?.name || 'Series',
               data: pieData,
               backgroundColor: labels.map((_, idx) => getDatasetColor(idx)),
-              borderColor: '#0f172a',
+              borderColor: theme.background,
               borderWidth: 1,
             },
           ];
@@ -451,9 +507,9 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
               type: 'linear',
               min: 1,
               max: Math.max(labels.length, 1),
-              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
+              grid: gridOptions,
               ticks: {
-                color: '#888',
+                color: theme.textMuted,
                 callback(value: number | string) {
                   const idx = Number(value) - 1;
                   return Number.isInteger(idx) && idx >= 0 && idx < labels.length ? labels[idx] : '';
@@ -461,8 +517,8 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
               },
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
-              ticks: { color: '#888' },
+              grid: gridOptions,
+              ticks: { color: theme.textMuted },
             },
           };
         } else {
@@ -500,14 +556,14 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
             x: {
               stacked: chartType === 'bar' ? payload.stacked : false,
               ...(valueAxisKey === 'x' ? valueScaleOptions : {}),
-              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
-              ticks: { color: '#888', maxRotation: 45, minRotation: 45 },
+              grid: gridOptions,
+              ticks: { color: theme.textMuted, maxRotation: 45, minRotation: 45 },
             },
             y: {
               stacked: chartType === 'bar' ? payload.stacked : false,
               ...(valueAxisKey === 'y' ? valueScaleOptions : {}),
-              grid: { color: 'rgba(255,255,255,0.1)', display: payload.showGrid },
-              ticks: { color: '#888' },
+              grid: gridOptions,
+              ticks: { color: theme.textMuted },
             },
           };
         }
@@ -524,14 +580,14 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
             plugins: {
               legend: {
                 display: payload.showLegend,
-                labels: { color: '#aaa' },
+                labels: { color: theme.text },
               },
               tooltip: {
-                backgroundColor: '#1a1a1a',
-                borderColor: '#333',
+                backgroundColor: theme.cardBackground,
+                borderColor: theme.border,
                 borderWidth: 1,
-                titleColor: '#fff',
-                bodyColor: '#ccc',
+                titleColor: theme.text,
+                bodyColor: theme.textMuted,
               },
             },
           },
