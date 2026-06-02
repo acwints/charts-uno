@@ -1,5 +1,23 @@
 import { pino } from 'pino';
 
+const DEFAULT_POLL_INTERVAL_MS = 60_000;
+const MIN_POLL_INTERVAL_MS = 30_000;
+
+function parseCsvEnv(value: string | undefined): string[] {
+  return (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parsePollIntervalMs(value: string | undefined): number {
+  const parsed = Number.parseInt(value || '', 10);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_POLL_INTERVAL_MS;
+  }
+  return Math.max(MIN_POLL_INTERVAL_MS, parsed);
+}
+
 // Environment variables
 export const config = {
   twitter: {
@@ -12,8 +30,8 @@ export const config = {
   },
   bot: {
     userId: process.env.BOT_USER_ID || '',
-    allowedUserIds: (process.env.ALLOWED_USER_IDS || '').split(',').filter(Boolean),
-    pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || '300000', 10),
+    allowedUserIds: parseCsvEnv(process.env.ALLOWED_USER_IDS),
+    pollIntervalMs: parsePollIntervalMs(process.env.POLL_INTERVAL_MS),
   },
   google: {
     apiKey: process.env.GOOGLE_API_KEY || '',
@@ -54,6 +72,10 @@ export function validateConfig(): void {
 
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  if (!/^[0-9]{1,19}$/.test(config.bot.userId)) {
+    throw new Error('BOT_USER_ID must be the numeric X user id for the bot account.');
   }
 }
 

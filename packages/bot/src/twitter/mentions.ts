@@ -1,6 +1,6 @@
 import { getReadOnlyClient, getAuthMode } from './client.js';
 import { config, logger } from '../config.js';
-import { loadState, updateState } from '../storage.js';
+import { loadState } from '../storage.js';
 
 export interface MentionData {
   mentionId: string;
@@ -10,18 +10,24 @@ export interface MentionData {
   action: 'chart' | 'reverse';
 }
 
+export interface MentionPollResult {
+  mentions: MentionData[];
+  fetchedCount: number;
+  newestId: string | null;
+}
+
 function parseAction(text: string): MentionData['action'] | null {
   const normalized = text.toLowerCase();
-  if (/\breverse(?:\s+it|\s+this)?\b/.test(normalized)) {
+  if (/\b(?:reverse|table)(?:\s+(?:it|this))?\b/.test(normalized)) {
     return 'reverse';
   }
-  if (/\bchart(?:\s+it|\s+this)?\b/.test(normalized)) {
+  if (/\b(?:chart|graph|plot)(?:\s+(?:it|this))?\b/.test(normalized)) {
     return 'chart';
   }
   return null;
 }
 
-export async function pollMentions(): Promise<MentionData[]> {
+export async function pollMentions(): Promise<MentionPollResult> {
   const client = getReadOnlyClient();
   const mentions: MentionData[] = [];
 
@@ -48,25 +54,14 @@ export async function pollMentions(): Promise<MentionData[]> {
 
     if (!response.data.data) {
       logger.debug('No new mentions found');
-      return [];
+      return { mentions: [], fetchedCount: 0, newestId: null };
     }
 
+    const newestId = response.data.meta?.newest_id || null;
     logger.info(
-      { count: response.data.data.length, newestId: response.data.meta?.newest_id },
+      { count: response.data.data.length, newestId },
       'Mentions timeline returned results'
     );
-
-    // Update since_id checkpoint (handles both cold start and normal polls)
-    if (response.data.meta?.newest_id) {
-      const isFirstPoll = !state.lastSinceId;
-      await updateState({ lastSinceId: response.data.meta.newest_id });
-      if (isFirstPoll) {
-        logger.warn(
-          { newestId: response.data.meta.newest_id, resultCount: response.data.meta?.result_count || response.data.data.length },
-          'Initialized since_id checkpoint; processing found mentions'
-        );
-      }
-    }
 
     let skippedByAllowedUser = 0;
     let skippedByPhrase = 0;
@@ -128,6 +123,8 @@ export async function pollMentions(): Promise<MentionData[]> {
         'Fetched mentions, but none matched trigger requirements'
       );
     }
+
+    return { mentions, fetchedCount: response.data.data.length, newestId };
   } catch (error) {
     if (
       error &&
@@ -141,6 +138,4 @@ export async function pollMentions(): Promise<MentionData[]> {
     }
     throw error;
   }
-
-  return mentions;
 }

@@ -1,8 +1,8 @@
 import { config, validateConfig, logger } from './config.js';
-import { initializeClient, ensureFreshClient } from './twitter/client.js';
+import { initializeClient, ensureFreshClient, verifyAuthenticatedUser } from './twitter/client.js';
 import { pollMentions } from './twitter/mentions.js';
 import { processMention } from './pipeline/processor.js';
-import { loadSeedState, saveState, loadState } from './storage.js';
+import { loadSeedState, saveState, loadState, updateState } from './storage.js';
 import { closeBrowser, setRendererLogger } from '@chartsuno/shared/node';
 
 // Inject bot logger into shared chart renderer
@@ -52,6 +52,40 @@ function getRateLimitBackoffMs(error: unknown): number | null {
   return Math.max(MIN_RATE_LIMIT_BACKOFF_MS, waitMs);
 }
 
+function sortMentionsByAge<T extends { mentionId: string }>(mentions: T[]): T[] {
+  return [...mentions].sort((a, b) => {
+    const left = BigInt(a.mentionId);
+    const right = BigInt(b.mentionId);
+    if (left === right) return 0;
+    return left < right ? -1 : 1;
+  });
+}
+
+async function advanceMentionCheckpoint(newestId: string | null, deferredCount: number): Promise<void> {
+  if (!newestId) {
+    return;
+  }
+
+  if (deferredCount > 0) {
+    logger.warn(
+      { newestId, deferredCount },
+      'Not advancing mention checkpoint because some trigger mentions need retry'
+    );
+    return;
+  }
+
+  const state = await loadState();
+  if (state.lastSinceId === newestId) {
+    return;
+  }
+
+  await updateState({ lastSinceId: newestId });
+  logger.info(
+    { previousSinceId: state.lastSinceId, newestId },
+    state.lastSinceId ? 'Advanced mention checkpoint' : 'Initialized mention checkpoint'
+  );
+}
+
 function startHealthServer(): void {
   const port = Number(process.env.PORT || '8080');
 
@@ -84,7 +118,9 @@ async function poll(): Promise<void> {
     await ensureFreshClient();
 
     logger.info('Polling for mentions...');
-    const mentions = await pollMentions();
+    const mentionPoll = await pollMentions();
+    const mentions = sortMentionsByAge(mentionPoll.mentions);
+    let deferredCount = 0;
 
     if (mentions.length > 0) {
       logger.info({ count: mentions.length }, 'Found mentions to process');
@@ -93,14 +129,25 @@ async function poll(): Promise<void> {
         try {
           // Refresh token before each mention to avoid mid-batch expiry
           await ensureFreshClient();
-          await processMention(mention);
+          const result = await processMention(mention);
+          if (result === 'deferred') {
+            deferredCount += 1;
+          }
         } catch (error) {
+          deferredCount += 1;
           logger.error({ error, mentionId: mention.mentionId }, 'Failed to process mention');
         }
       }
+    } else if (mentionPoll.fetchedCount > 0) {
+      logger.info(
+        { fetchedCount: mentionPoll.fetchedCount },
+        'No new trigger mentions found'
+      );
     } else {
-      logger.info('No new trigger mentions found');
+      logger.info('No new mentions found');
     }
+
+    await advanceMentionCheckpoint(mentionPoll.newestId, deferredCount);
 
     // Reset consecutive error counter on successful poll
     consecutiveErrors = 0;
@@ -175,6 +222,7 @@ async function start(): Promise<void> {
       }
 
       await initializeClient();
+      await verifyAuthenticatedUser();
 
       logger.info(
         {

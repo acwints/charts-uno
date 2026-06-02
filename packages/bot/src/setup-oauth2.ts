@@ -68,6 +68,14 @@ async function setup(): Promise<void> {
           redirectUri: CALLBACK_URL,
         });
 
+        // Verify the tokens before saving them.
+        const me = await loggedClient.v2.me();
+        if (config.bot.userId && me.data.id !== config.bot.userId) {
+          throw new Error(
+            `Authenticated as @${me.data.username} (${me.data.id}), but BOT_USER_ID is ${config.bot.userId}. Log in as the bot account or update BOT_USER_ID.`
+          );
+        }
+
         await updateState({
           oauth2: {
             accessToken,
@@ -77,12 +85,9 @@ async function setup(): Promise<void> {
           },
         });
 
-        // Verify the tokens work
-        const me = await loggedClient.v2.me();
-
         console.log(`\nAuthenticated as @${me.data.username} (${me.data.id})`);
         console.log('Tokens saved successfully!');
-        console.log('\nYou can now start the bot with: pnpm dev:bot');
+        console.log('\nYou can now start the bot with: pnpm --filter @chartsuno/bot dev');
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end([

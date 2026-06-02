@@ -180,6 +180,22 @@ export function getReadWriteClient() {
   return client.readWrite;
 }
 
+export async function verifyAuthenticatedUser(): Promise<void> {
+  const me = await getReadOnlyClient().v2.me();
+  const authenticatedUserId = me.data.id;
+
+  if (authenticatedUserId !== config.bot.userId) {
+    throw new Error(
+      `Twitter credentials are authenticated as user ${authenticatedUserId} (@${me.data.username}), but BOT_USER_ID is ${config.bot.userId}.`
+    );
+  }
+
+  logger.info(
+    { userId: authenticatedUserId, username: me.data.username, authMode },
+    'Verified Twitter credentials match BOT_USER_ID'
+  );
+}
+
 export function getAuthMode(): 'oauth2' | 'oauth1' | null {
   return authMode;
 }

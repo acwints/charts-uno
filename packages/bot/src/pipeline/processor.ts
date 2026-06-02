@@ -14,6 +14,7 @@ import type { MentionData } from '../twitter/mentions.js';
 
 const MAX_PROCESSED_MENTIONS = 1000;
 const CHARTABLE_TYPES = new Set(['bar', 'line', 'area', 'pie', 'radar', 'scatter']);
+export type ProcessMentionResult = 'completed' | 'deferred';
 
 let processedMentions: Set<string> | null = null;
 
@@ -50,7 +51,7 @@ function buildPromptFromTweetText(tweetText: string, authorUsername: string): st
   ].join('\n');
 }
 
-export async function processMention(mention: MentionData): Promise<void> {
+export async function processMention(mention: MentionData): Promise<ProcessMentionResult> {
   const { mentionId, parentTweetId, action } = mention;
   const mentionActionKey = `${mentionId}:${action}`;
 
@@ -58,14 +59,14 @@ export async function processMention(mention: MentionData): Promise<void> {
   const processed = await getProcessedMentions();
   if (processed.has(mentionActionKey) || processed.has(mentionId)) {
     logger.debug({ mentionId, action }, 'Skipping already processed mention');
-    return;
+    return 'completed';
   }
 
   // Belt-and-suspenders dedupe: if we've already replied on X, don't post again.
   if (await hasExistingReplyToMention(mentionId)) {
     logger.info({ mentionId, action }, 'Skipping mention because bot already replied');
     await markProcessed(mentionActionKey);
-    return;
+    return 'completed';
   }
 
   logger.info({ mentionId, parentTweetId }, 'Processing mention');
@@ -75,7 +76,7 @@ export async function processMention(mention: MentionData): Promise<void> {
     if (!parentTweetId) {
       await replyWithError(mentionId, "I couldn't find the tweet you're replying to!");
       await markProcessed(mentionActionKey);
-      return;
+      return 'completed';
     }
 
     const parentTweet = await getParentTweetWithMedia(parentTweetId);
@@ -93,7 +94,7 @@ export async function processMention(mention: MentionData): Promise<void> {
           "I couldn't find an image or readable text in that tweet. Reply to a chart image or a tweet that lists data values."
         );
         await markProcessed(mentionActionKey);
-        return;
+        return 'completed';
       }
       logger.info({ parentTweetId, tweetUrl: parentTweet.tweetUrl }, 'No image found; using tweet text fallback');
       const prompt = buildPromptFromTweetText(parentTweet.tweetText, parentTweet.authorUsername);
@@ -102,7 +103,7 @@ export async function processMention(mention: MentionData): Promise<void> {
 
     if (!result) {
       await markProcessed(mentionActionKey);
-      return;
+      return 'completed';
     }
     const { chartData, chartUrl } = result;
 
@@ -148,6 +149,7 @@ export async function processMention(mention: MentionData): Promise<void> {
     await markProcessed(mentionActionKey);
 
     logger.info({ mentionId }, 'Successfully processed mention and posted reply');
+    return 'completed';
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
@@ -181,7 +183,10 @@ export async function processMention(mention: MentionData): Promise<void> {
     // Transient errors (network, 500, auth) should NOT be marked — allow retry next cycle.
     if (repliedWithError) {
       await markProcessed(mentionActionKey);
+      return 'completed';
     }
+
+    return 'deferred';
   }
 }
 
