@@ -6,7 +6,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends chromium ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.23.0
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/package.json
