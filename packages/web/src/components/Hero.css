@@ -34,6 +34,7 @@
 .hero-content {
   position: relative;
   max-width: 640px;
+  min-width: 0;
   margin: 0 auto;
   z-index: 1;
 }
@@ -56,6 +57,7 @@
   line-height: 1.2;
   margin-bottom: var(--space-3);
   color: var(--text-primary);
+  overflow-wrap: anywhere;
   animation: fadeInUp 0.6s ease backwards;
   animation-delay: 0.2s;
 }
@@ -111,6 +113,11 @@
   animation-delay: 0.4s;
 }
 
+.hero-actions .button {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .hero-note {
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -147,6 +154,25 @@
 }
 
 /* Reduce motion for accessibility */
+@media (max-width: 640px) {
+  .hero {
+    padding: var(--space-4) 0 var(--space-2);
+  }
+
+  .hero-eyebrow {
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+  }
+
+  .hero-title {
+    font-size: clamp(1.65rem, 9vw, 2.1rem);
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero::before,
   .hero::after {

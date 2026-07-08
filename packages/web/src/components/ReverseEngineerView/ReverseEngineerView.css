@@ -44,8 +44,39 @@
   max-width: 800px;
 }
 
-.re-chart-area.is-exporting .chart-ai-summary {
+.re-chart-area.is-exporting .re-ai-summary {
   display: none;
+}
+
+.re-ai-summary {
+  position: relative;
+  max-height: 132px;
+  overflow: auto;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.re-ai-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.re-ai-label {
+  display: flex;
+  align-items: center;
+}
+
+.re-ai-text {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
 .re-controls-area {

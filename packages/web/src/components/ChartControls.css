@@ -3,23 +3,22 @@
   flex-direction: column;
   background: var(--bg-secondary);
   border: var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   height: 100%;
   min-height: 0;
   overflow-y: auto;
 }
 
-/* Top layout: title/source on left, branding on right */
 .controls-top-layout {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 2fr);
-  gap: var(--space-1);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
   width: 100%;
-  padding: var(--space-2) var(--space-2) 0 var(--space-2);
+  padding: var(--space-3);
+  border-bottom: var(--border-subtle);
 }
 
-/* Full-width title row */
 .controls-top-row {
   display: flex;
   flex-direction: column;
@@ -28,13 +27,11 @@
 }
 
 .controls-branding-column {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: var(--space-1);
   min-width: 0;
-  border-left: 2px solid var(--bg-tertiary);
-  padding-left: var(--space-1);
 }
 
 .controls-branding-label {
@@ -43,7 +40,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  text-align: center;
 }
 
 .controls-branding-select {
@@ -130,7 +126,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   border-bottom: var(--border-subtle);
   background: var(--bg-secondary);
 }
@@ -170,19 +166,17 @@
   outline-offset: 1px;
 }
 
-/* Full-width chart type row */
 .controls-type-row {
   display: block;
   position: relative;
   width: 100%;
-  padding: var(--space-1) var(--space-2) var(--space-2) var(--space-1);
+  padding: var(--space-3);
   border-bottom: var(--border-subtle);
 }
 
-/* Chart Type Grid - Full width */
 .chart-type-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
   gap: var(--space-1);
   width: 100%;
 }
@@ -204,7 +198,8 @@
   justify-content: center;
   position: relative;
   width: 100%;
-  gap: 2px;
+  min-height: 58px;
+  gap: 3px;
   padding: var(--space-2) var(--space-1);
   font-family: var(--font-body);
   color: var(--text-muted);
@@ -257,8 +252,12 @@
 }
 
 .type-label {
+  max-width: 100%;
   font-size: var(--control-font-xs);
   font-weight: 500;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 /* AI Mode Selector */
@@ -447,24 +446,19 @@
   color: var(--warning);
 }
 
-/* Two-column grid for remaining controls */
 .controls-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   flex: 1;
 }
 
 .control-section {
-  padding: var(--space-2);
+  padding: var(--space-3);
   border-bottom: var(--border-subtle);
-  border-right: var(--border-subtle);
-}
-
-.control-section:nth-child(2n) {
   border-right: none;
 }
 
-.control-section:nth-last-child(-n+2) {
+.control-section:last-child {
   border-bottom: none;
 }
 
@@ -523,10 +517,9 @@
   font-weight: 500;
 }
 
-/* Toggle List - 2x2 Grid */
 .toggle-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
   gap: var(--space-2);
 }
 
@@ -594,6 +587,7 @@
 }
 
 .branding-upgrade-hint {
+  grid-column: 1 / -1;
   font-size: 0.68rem;
   color: var(--text-muted);
 }

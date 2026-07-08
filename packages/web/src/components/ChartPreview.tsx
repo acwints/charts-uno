@@ -1326,8 +1326,8 @@ export function ChartPreview({
     }
   };
 
-  const previewClassName = `chart-preview ${styleConfig.decorations.useGlow ? 'chart-preview--glow' : ''} ${styleConfig.decorations.useShadows ? 'chart-preview--shadow' : ''}`;
   const isTableView = config.type === 'table';
+  const previewClassName = `chart-preview ${isTableView ? 'chart-preview--table' : ''} ${styleConfig.decorations.useGlow ? 'chart-preview--glow' : ''} ${styleConfig.decorations.useShadows ? 'chart-preview--shadow' : ''}`;
 
   return (
     <motion.div

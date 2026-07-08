@@ -1,22 +1,9 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Check from 'lucide-react/dist/esm/icons/check';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
-import Table2 from 'lucide-react/dist/esm/icons/table-2';
-import Image from 'lucide-react/dist/esm/icons/image';
-import { ChartPreview, type ChartLogoOption } from '../components/ChartPreview';
-import { ChartControls } from '../components/ChartControls';
-import { EditableSpreadsheet } from '../components/EditableSpreadsheet/EditableSpreadsheet';
-import { ImageReasoningPanel } from '../components/ImageReasoningPanel/ImageReasoningPanel';
-import { ReverseEngineerView } from '../components/ReverseEngineerView/ReverseEngineerView';
+import type { ChartLogoOption } from '../components/ChartPreview';
+import { ChartWorkbench, type ChartEditorView } from '../components/ChartWorkbench';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ExportMenu } from '../components/ExportMenu';
-import { ShareMenu } from '../components/ShareMenu';
-import { PublishMenu } from '../components/PublishMenu';
-import { Button } from '../components/Button';
 import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
@@ -52,7 +39,7 @@ export function ChartView() {
   const [publishedTeamIds, setPublishedTeamIds] = useState<string[]>([]);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
   const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
-  const [editorView, setEditorView] = useState<'chart' | 'data'>('chart');
+  const [editorView, setEditorView] = useState<ChartEditorView>('chart');
   const [originalData, setOriginalData] = useState<ChartData | null>(null);
   const initTokenRef = useRef<string | null>(null);
   const justSavedIdRef = useRef<string | null>(null);
@@ -280,7 +267,6 @@ export function ChartView() {
   }, [id, chartData, navigate]);
 
   const isImageSource = chartData?.sourceType === 'image';
-  const isPromptSource = chartData?.sourceType === 'prompt';
 
   useEffect(() => {
     if (!chartData) {
@@ -350,179 +336,34 @@ export function ChartView() {
       transition={{ duration: 0.4 }}
       className="chart-view"
     >
-      {/* Chart toolbar with actions */}
-      <div className="chart-toolbar">
-        <div className="chart-toolbar-left">
-          <Button variant="default" size="sm" onClick={handleCreateNew}>
-            <Plus size={16} />
-            New Chart
-          </Button>
-        </div>
-        <div className="chart-toolbar-center">
-          <div className="chart-view-toggle">
-            <button
-              className={`chart-view-toggle-btn ${editorView === 'chart' ? 'is-active' : ''}`}
-              onClick={() => setEditorView('chart')}
-              aria-label="Chart view"
-              aria-pressed={editorView === 'chart'}
-            >
-              <BarChart3 size={14} />
-              Chart
-            </button>
-            <button
-              className={`chart-view-toggle-btn ${editorView === 'data' ? 'is-active' : ''}`}
-              onClick={() => setEditorView('data')}
-              aria-label="Data editor view"
-              aria-pressed={editorView === 'data'}
-            >
-              <Table2 size={14} />
-              Data
-            </button>
-          </div>
-        </div>
-        <div className="chart-toolbar-right">
-          {isAuthenticated && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSaveChart}
-              disabled={isSaving}
-              title={id ? 'Update chart' : 'Save chart'}
-            >
-              {id ? <Check size={16} /> : <Save size={16} />}
-              {isSaving ? 'Saving...' : id ? 'Update' : 'Save'}
-            </Button>
-          )}
-          {id && isAuthenticated && (
-            <PublishMenu
-              chartId={id}
-              isPublic={isPublishedToFeed}
-              publishedTeamIds={publishedTeamIds}
-              onTargetsChange={(targets) => {
-                setIsPublishedToFeed(targets.isPublic);
-                setPublishedTeamIds(targets.teamIds);
-              }}
-              teamOptions={publishTeamOptions}
-              isAuthenticated={isAuthenticated}
-            />
-          )}
-          {editorView === 'chart' && (
-            <>
-              <ExportMenu
-                data={chartData}
-                chartRef={chartCaptureRef}
-                chartId={id}
-                title={chartConfig.title}
-                watermark={watermarkSettings}
-                isAuthenticated={isAuthenticated}
-              />
-              <ShareMenu
-                chartRef={chartCaptureRef}
-                title={chartConfig.title}
-                watermark={watermarkSettings}
-                isAuthenticated={isAuthenticated}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {editorView === 'data' ? (
-        <div className="chart-data-editor">
-          {isImageSource && (
-            <div className="data-editor-top-row">
-              {chartData.sourceImage && (
-                <div className="source-image-panel">
-                  <div className="source-image-header">
-                    <Image size={14} />
-                    <span className="source-image-label">SOURCE</span>
-                  </div>
-                  <div className="source-image-preview">
-                    <img
-                      src={`data:${chartData.sourceImage.mimeType};base64,${chartData.sourceImage.base64}`}
-                      alt="Original chart source"
-                      className="source-image-img"
-                    />
-                  </div>
-                </div>
-              )}
-              <ImageReasoningPanel
-                data={chartData}
-                onDataChange={setChartData}
-              />
-            </div>
-          )}
-          {isPromptSource && chartData.sourcePrompt && (
-            <div className="prompt-source-panel">
-              <div className="prompt-source-header">
-                <span className="prompt-source-label">RECONSTRUCTION PROMPT</span>
-                <span
-                  className={`prompt-source-status ${chartData.verifiedData ? 'verified' : 'unverified'}`}
-                  aria-label={chartData.verifiedData ? 'Verified source-backed data' : 'Unverified AI-generated data'}
-                  title={chartData.verifiedData ? 'Verified source-backed data' : 'Unverified AI-generated data'}
-                >
-                  {chartData.verifiedData ? 'Verified data' : 'Unverified AI estimate'}
-                </span>
-              </div>
-              <p className="prompt-source-text">{chartData.sourcePrompt}</p>
-              {!chartData.verifiedData && (
-                <p className="prompt-source-note">
-                  This chart was generated from your prompt and may contain synthetic or approximate values.
-                  Verify against a trusted source before publishing as factual.
-                </p>
-              )}
-            </div>
-          )}
-          <EditableSpreadsheet
-            data={chartData}
-            colorScheme={chartConfig.colorScheme}
-            isDirty={isDataDirty}
-            onChange={setChartData}
-            onReset={handleDataReset}
-          />
-        </div>
-      ) : isImageSource ? (
-        <ReverseEngineerView
-          initialData={chartData}
-          config={chartConfig}
-          onConfigChange={setChartConfig}
-          chartRef={chartCaptureRef}
-          watermark={watermarkSettings}
-          logoOptions={logoOptions}
-          logoSelectionValue={logoSelectionValue}
-          canCustomizeBranding={isAuthenticated}
-          onLogoSelectionChange={handleLogoSelectionChange}
-        />
-      ) : (
-        <div className="chart-workspace">
-          <div className="chart-column" ref={chartCaptureRef}>
-            {chartData.aiSummary && (
-              <details className="chart-ai-summary" open>
-                <summary className="section-label chart-ai-label">AI Insight</summary>
-                <p className="chart-ai-text">{chartData.aiSummary}</p>
-              </details>
-            )}
-            <ChartPreview
-              data={chartData}
-              config={chartConfig}
-              watermark={watermarkSettings}
-            />
-          </div>
-          <div className="chart-sidebar">
-            <ChartControls
-              config={chartConfig}
-              onChange={setChartConfig}
-              data={chartData}
-              onDataChange={setChartData}
-              watermark={watermarkSettings}
-              logoOptions={logoOptions}
-              logoSelectionValue={logoSelectionValue}
-              canCustomizeBranding={isAuthenticated}
-              onLogoSelectionChange={handleLogoSelectionChange}
-            />
-          </div>
-        </div>
-      )}
+      <ChartWorkbench
+        data={chartData}
+        config={chartConfig}
+        chartId={id}
+        chartRef={chartCaptureRef}
+        editorView={editorView}
+        isAuthenticated={isAuthenticated}
+        isSaving={isSaving}
+        isDataDirty={isDataDirty}
+        isPublishedToFeed={isPublishedToFeed}
+        publishedTeamIds={publishedTeamIds}
+        publishTeamOptions={publishTeamOptions}
+        watermark={watermarkSettings}
+        logoOptions={logoOptions}
+        logoSelectionValue={logoSelectionValue}
+        canCustomizeBranding={isAuthenticated}
+        onCreateNew={handleCreateNew}
+        onSave={handleSaveChart}
+        onEditorViewChange={setEditorView}
+        onPublishTargetsChange={(targets) => {
+          setIsPublishedToFeed(targets.isPublic);
+          setPublishedTeamIds(targets.teamIds);
+        }}
+        onDataChange={setChartData}
+        onDataReset={handleDataReset}
+        onConfigChange={setChartConfig}
+        onLogoSelectionChange={handleLogoSelectionChange}
+      />
     </motion.div>
   );
 }

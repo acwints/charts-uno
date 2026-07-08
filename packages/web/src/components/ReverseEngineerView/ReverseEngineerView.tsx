@@ -39,9 +39,9 @@ export function ReverseEngineerView({
         <div className="re-workspace">
           <div className="re-chart-area" ref={chartRef}>
             {initialData.aiSummary && (
-              <div className="chart-ai-summary">
-                <span className="section-label chart-ai-label">AI Insight</span>
-                <p className="chart-ai-text">{initialData.aiSummary}</p>
+              <div className="re-ai-summary">
+                <span className="section-label re-ai-label">AI Insight</span>
+                <p className="re-ai-text">{initialData.aiSummary}</p>
               </div>
             )}
             <ChartPreview
