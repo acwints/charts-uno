@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, List
 
 from google import genai
 from google.genai import types
+from services.model_config import MODEL_CHART
 from services.research_service import research_chart_from_prompt
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ def get_client() -> genai.Client:
     return _client
 
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = MODEL_CHART
 
 
 def _coerce_numeric_value(value: Any) -> Optional[float]:

@@ -14,6 +14,7 @@ This file is the fast orientation layer for humans and coding agents.
 - `AGENTS.md`: global engineering rules and UI standards.
 - `packages/web/AGENTS.md`: web-specific implementation patterns.
 - `packages/api/AGENTS.md`: API structure and runtime commands.
+- `docs/ai-models-and-evals.md`: model override variables and chart-generation eval commands.
 - `scripts/check-harness.mjs`: mechanical checks for key repository invariants.
 
 ## Verification Matrix

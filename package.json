@@ -11,6 +11,8 @@
     "build:bot": "pnpm --filter @chartsuno/bot build",
     "check:harness": "node scripts/check-harness.mjs",
     "lint": "pnpm -r lint",
+    "eval:charts": "python3 scripts/eval-chart-generation.py",
+    "eval:charts:live": "python3 scripts/eval-chart-generation.py --live",
     "preview": "pnpm --filter @chartsuno/web preview"
   },
   "devDependencies": {

@@ -13,6 +13,7 @@ from services.bigquery_auth import (
     has_bigquery_credentials,
     load_bigquery_service_account_credentials,
 )
+from services.model_config import MODEL_RESEARCH
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
 
 _client: Optional[genai.Client] = None
-_MODEL_NAME = "gemini-2.5-flash"
+_MODEL_NAME = MODEL_RESEARCH
 
 
 def _get_client() -> genai.Client:

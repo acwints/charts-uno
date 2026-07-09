@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ChartData } from '../types.js';
 import { detectMimeType } from '../mime.js';
+import { resolveVisionModel } from '../modelConfig.js';
 
 /** Minimal logger interface — consumers pass their own (e.g. pino). */
 export interface ChartLogger {
@@ -26,6 +27,7 @@ function getGeminiClient(apiKey: string): GoogleGenerativeAI {
 
 export interface AnalyzeOptions {
   apiKey: string;
+  modelName?: string;
   logger?: ChartLogger;
 }
 
@@ -72,7 +74,7 @@ Rules:
 - Choose suggestedType based on the data (rankings = table, trends = line, comparisons = bar, etc.)
 - If you can't find chartable data, return: {"error": "No chartable data found"}`;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-pro' });
+  const model = client.getGenerativeModel({ model: options.modelName ?? resolveVisionModel() });
 
   const result = await model.generateContent([
     prompt,
@@ -124,4 +126,3 @@ Rules:
     suggestedType: parsed.suggestedType,
   };
 }
-

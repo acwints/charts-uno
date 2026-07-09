@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Optional
 import httpx
 import yfinance as yf
 
-from services.ai_service import get_client, MODEL_NAME
+from services.ai_service import get_client
+from services.model_config import MODEL_STOCK_INSIGHT
 
 FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 FINNHUB_BASE = "https://finnhub.io/api/v1"
@@ -138,7 +139,7 @@ Example: "AAPL gained 8.3% over this period, rising from $178.50 to $193.30. The
 Return ONLY the insight text, nothing else."""
 
     response = client.models.generate_content(
-        model=MODEL_NAME,
+        model=MODEL_STOCK_INSIGHT,
         contents=prompt,
     )
 

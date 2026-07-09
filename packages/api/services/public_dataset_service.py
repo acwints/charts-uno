@@ -2,6 +2,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 from services.bigquery_auth import has_bigquery_credentials, load_bigquery_service_account_credentials
+from services.model_config import MODEL_SQL
 
 try:
     from google import genai  # type: ignore
@@ -12,7 +13,7 @@ except Exception:  # pragma: no cover - optional at runtime
 ENABLE_BIGQUERY_PUBLIC_DATA = os.environ.get("ENABLE_BIGQUERY_PUBLIC_DATA", "").lower() in {"1", "true", "yes", "on"}
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = MODEL_SQL
 
 
 PUBLIC_DATASETS: Dict[str, Dict[str, Any]] = {

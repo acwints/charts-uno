@@ -1,0 +1,31 @@
+[
+  {
+    "id": "revenue-margin-time-series",
+    "prompt": "Create a chart from this CSV: Year,Revenue,Margin\n2020,120,18\n2021,156,22\n2022,210,27\n2023,260,31\n2024,330,35",
+    "expect": {
+      "minLabels": 5,
+      "minSeries": 2,
+      "suggestedTypes": ["bar", "line", "area", "table"],
+      "seriesNamesAny": ["Revenue", "Margin"]
+    }
+  },
+  {
+    "id": "entity-comparison-explicit-facts",
+    "prompt": "Compare three products by monthly active users: Atlas has 12000, Beacon has 18500, and Compass has 9300.",
+    "expect": {
+      "minLabels": 3,
+      "minSeries": 1,
+      "suggestedTypes": ["bar", "table"],
+      "labelNamesAny": ["Atlas", "Beacon", "Compass"]
+    }
+  },
+  {
+    "id": "research-style-year-window",
+    "prompt": "Show US unemployment rate over the last 5 years.",
+    "expect": {
+      "minLabels": 5,
+      "minSeries": 1,
+      "suggestedTypes": ["line", "area", "table"]
+    }
+  }
+]
