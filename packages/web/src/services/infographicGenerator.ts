@@ -3,6 +3,42 @@ import { API_BASE_URL } from './apiBase';
 import { normalizeInfographicSvg } from './svgSanitizer';
 
 const MAX_SOURCE_IMAGE_BYTES = 1_500_000; // ~1.5MB raw image payload
+const INFOGRAPHIC_REQUEST_TIMEOUT_MS = 60_000;
+
+async function fetchInfographic(
+  body: unknown,
+  deadline: number,
+): Promise<Response> {
+  const remainingMs = deadline - Date.now();
+  if (remainingMs <= 0) {
+    throw new Error('Infographic generation timed out after 60 seconds. Please try again.');
+  }
+
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<Response>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(new Error('Infographic generation timed out after 60 seconds. Please try again.'));
+    }, remainingMs);
+  });
+
+  try {
+    return await Promise.race([
+      fetch(`${API_BASE_URL}/api/ai/infographic`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      }),
+      timeout,
+    ]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
 
 function estimateBase64Bytes(base64: string): number {
   const sanitized = base64.replace(/^data:[^;]+;base64,/, '');
@@ -20,6 +56,7 @@ export async function generateInfographic(
   customPrompt?: string
 ): Promise<string> {
   const theme = themeMode;
+  const deadline = Date.now() + INFOGRAPHIC_REQUEST_TIMEOUT_MS;
 
   const hasSourceImage = Boolean(sourceImage?.base64 && sourceImage?.mimeType);
   const sourceImageBytes = hasSourceImage ? estimateBase64Bytes(sourceImage!.base64) : 0;
@@ -44,13 +81,7 @@ export async function generateInfographic(
       : {}),
   };
 
-  let response = await fetch(`${API_BASE_URL}/api/ai/infographic`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
+  let response = await fetchInfographic(requestBody, deadline);
 
   // Retry once without source image for gateway/proxy failures.
   if (!response.ok && hasSourceImage && [502, 503, 504].includes(response.status)) {
@@ -62,13 +93,7 @@ export async function generateInfographic(
       ai_mode: requestBody.ai_mode,
       custom_prompt: requestBody.custom_prompt,
     };
-    response = await fetch(`${API_BASE_URL}/api/ai/infographic`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(retryBody),
-    });
+    response = await fetchInfographic(retryBody, deadline);
   }
 
   if (!response.ok) {

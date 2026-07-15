@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart,
@@ -139,8 +139,15 @@ export function ChartPreview({
   const { infographicSvg, setInfographicSvg } = useChartStore();
   const [infographicLoading, setInfographicLoading] = useState(false);
   const [infographicError, setInfographicError] = useState<string | null>(null);
+  const infographicRequestInFlightRef = useRef(false);
+  const previousInfographicOptionsRef = useRef({
+    aiMode: config.aiMode,
+    customPrompt: config.aiCustomPrompt,
+  });
 
   const generateInfographicSvg = useCallback(async () => {
+    if (infographicRequestInFlightRef.current) return;
+    infographicRequestInFlightRef.current = true;
     setInfographicLoading(true);
     setInfographicError(null);
     try {
@@ -157,24 +164,41 @@ export function ChartPreview({
     } catch (err) {
       setInfographicError(err instanceof Error ? err.message : 'Failed to generate infographic');
     } finally {
+      infographicRequestInFlightRef.current = false;
       setInfographicLoading(false);
     }
   }, [data, config.title, config.colorScheme, config.themeMode, config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
 
   useEffect(() => {
-    if (config.type === 'infographic' && config.aiReadyToGenerate && !infographicSvg && !infographicLoading) {
+    if (
+      config.type === 'infographic'
+      && config.aiReadyToGenerate
+      && !infographicSvg
+      && !infographicLoading
+      && !infographicError
+    ) {
       generateInfographicSvg();
     }
-  }, [config.type, config.aiReadyToGenerate, infographicSvg, infographicLoading, generateInfographicSvg]);
+  }, [config.type, config.aiReadyToGenerate, infographicSvg, infographicLoading, infographicError, generateInfographicSvg]);
 
   // Regenerate when aiMode or customPrompt changes
   useEffect(() => {
-    if (config.type === 'infographic' && infographicSvg) {
+    const previous = previousInfographicOptionsRef.current;
+    const optionsChanged = previous.aiMode !== config.aiMode
+      || previous.customPrompt !== config.aiCustomPrompt;
+    previousInfographicOptionsRef.current = {
+      aiMode: config.aiMode,
+      customPrompt: config.aiCustomPrompt,
+    };
+
+    if (optionsChanged) {
+      setInfographicError(null);
       setInfographicSvg(null);
     }
-  }, [config.aiMode, config.aiCustomPrompt, config.type, setInfographicSvg, infographicSvg]);
+  }, [config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
 
   const regenerateInfographic = () => {
+    setInfographicError(null);
     setInfographicSvg(null);
   };
 
@@ -694,7 +718,7 @@ export function ChartPreview({
           <AIProcessingIndicator
             size="lg"
             label="Creating your infographic..."
-            hint="This may take a few seconds"
+            hint="Usually ready in under a minute"
             statusMessages={[
               'Designing layout...',
               'Generating visual elements...',
