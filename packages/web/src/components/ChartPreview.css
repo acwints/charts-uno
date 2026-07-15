@@ -124,7 +124,7 @@
   gap: 4px;
   font-family: var(--font-display);
   font-style: italic;
-  opacity: 0.5;
+  opacity: 0.9;
   height: 100%;
   flex-shrink: 0;
   transition: opacity 150ms;
@@ -145,7 +145,7 @@
 }
 
 .chart-brand:hover {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .chart-brand svg {
