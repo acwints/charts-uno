@@ -12,6 +12,12 @@ Chartsuno keeps current Gemini defaults in production, but model names can be ov
 - `CHARTSUNO_MODEL_STOCK_INSIGHT`: stock insight summary model. Defaults to `CHARTSUNO_MODEL_FAST`.
 - `CHARTSUNO_MODEL_VISION`: image/chart extraction model. Defaults to `CHARTSUNO_MODEL_PRO`.
 
+## Research Providers
+
+Prompt generation checks structured providers first (FRED and enabled BigQuery public datasets), then uses Gemini Google Search grounding for fact-seeking public-web prompts. Grounded results must include at least one source URL before they are marked `verifiedData: true`; the API returns both the legacy primary `sourceLink` and a deduplicated `sources` list for attribution.
+
+Temporal fields are dimensions rather than metrics. A returned Year series is deterministically promoted to `labels`, the chart is marked `xAxisType: "year"`, and aligned text such as winner names is retained in `categoricalColumns`.
+
 ## Eval Commands
 
 ```bash

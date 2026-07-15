@@ -26,11 +26,25 @@ class ChartDataSeries(BaseModel):
     confidence: Optional[List[Optional[float]]] = None
 
 
+class ChartCategoricalColumn(BaseModel):
+    name: str
+    data: List[str]
+
+
+class ChartSource(BaseModel):
+    title: str
+    url: str
+
+
 class ChartData(BaseModel):
     model_config = {"extra": "allow"}
 
     labels: List[str]
     series: List[ChartDataSeries]
+    categoricalColumns: Optional[List[ChartCategoricalColumn]] = None
+    verifiedData: Optional[bool] = None
+    sourceLink: Optional[str] = None
+    sources: Optional[List[ChartSource]] = None
     suggestedType: Optional[str] = None
     suggestedTitle: Optional[str] = None
     aiReasoning: Optional[str] = None
@@ -175,6 +189,7 @@ class ImageAnalysisRequest(BaseModel):
 class ImageAnalysisResponse(BaseModel):
     labels: List[str]
     series: List[ChartDataSeries]
+    categoricalColumns: Optional[List[ChartCategoricalColumn]] = None
     verifiedData: Optional[bool] = None
     suggestedTitle: Optional[str] = None
     suggestedType: Optional[str] = None
@@ -184,6 +199,7 @@ class ImageAnalysisResponse(BaseModel):
     barLayout: Optional[str] = None
     aiReasoning: Optional[str] = None
     sourceLink: Optional[str] = None
+    sources: Optional[List[ChartSource]] = None
     xAxisType: Optional[str] = None
     yAxisFormat: Optional[str] = None
     yAxisPrefix: Optional[str] = None
@@ -207,6 +223,8 @@ class BotAnalyzeAndCreateResponse(BaseModel):
     chart_url: str
     labels: List[str]
     series: List[ChartDataSeries]
+    categoricalColumns: Optional[List[ChartCategoricalColumn]] = None
+    verifiedData: Optional[bool] = None
     suggestedTitle: Optional[str] = None
     suggestedType: Optional[str] = None
     stacked: Optional[bool] = None
@@ -214,6 +232,8 @@ class BotAnalyzeAndCreateResponse(BaseModel):
     yAxisLabel: Optional[str] = None
     barLayout: Optional[str] = None
     aiReasoning: Optional[str] = None
+    sourceLink: Optional[str] = None
+    sources: Optional[List[ChartSource]] = None
 
 
 class PromptGenerateRequest(BaseModel):

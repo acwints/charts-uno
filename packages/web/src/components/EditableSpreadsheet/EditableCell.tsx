@@ -6,6 +6,7 @@ interface EditableCellProps {
   onChange: (value: string | number) => void;
   isNumeric?: boolean;
   decimalPlaces?: number;
+  useGrouping?: boolean;
   isHeader?: boolean;
 }
 
@@ -14,6 +15,7 @@ export function EditableCell({
   onChange,
   isNumeric = false,
   decimalPlaces,
+  useGrouping = true,
   isHeader = false,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -91,7 +93,7 @@ export function EditableCell({
   }, [isNumeric, decimalPlaces]);
 
   const displayValue = isNumeric && typeof value === 'number'
-    ? (numberFormatter ? numberFormatter.format(value) : value.toLocaleString())
+    ? (!useGrouping ? String(value) : (numberFormatter ? numberFormatter.format(value) : value.toLocaleString()))
     : value;
 
   return (

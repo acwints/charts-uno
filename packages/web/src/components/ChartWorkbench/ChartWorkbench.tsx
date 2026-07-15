@@ -5,6 +5,7 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Table2 from 'lucide-react/dist/esm/icons/table-2';
 import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { ChartPreview, type ChartLogoOption } from '../ChartPreview';
 import { ChartControls } from '../ChartControls';
 import { EditableSpreadsheet } from '../EditableSpreadsheet/EditableSpreadsheet';
@@ -214,6 +215,22 @@ export function ChartWorkbench({
                 </span>
               </div>
               <p className="workbench-prompt-source-text">{data.sourcePrompt}</p>
+              {data.sources && data.sources.length > 0 && (
+                <div className="workbench-prompt-source-links" aria-label="Verification sources">
+                  {data.sources.map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="workbench-prompt-source-link"
+                    >
+                      <span>{source.title}</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  ))}
+                </div>
+              )}
               {!data.verifiedData && (
                 <p className="workbench-prompt-source-note">
                   This chart was generated from your prompt and may contain synthetic or approximate values.

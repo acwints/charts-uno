@@ -90,6 +90,43 @@ def validate_chart_output(case: Dict[str, Any], chart: Dict[str, Any]) -> List[s
         if missing:
             errors.append(f"{case_id}: missing expected series: {', '.join(missing)}")
 
+    forbidden_series_names = {name.lower() for name in expect.get("forbiddenSeriesNames", [])}
+    if forbidden_series_names:
+        returned_series_names = {
+            str(entry.get("name", "")).lower()
+            for entry in series
+            if isinstance(entry, dict)
+        }
+        unexpected = sorted(forbidden_series_names & returned_series_names)
+        if unexpected:
+            errors.append(f"{case_id}: temporal fields must not be numeric series: {', '.join(unexpected)}")
+
+    expected_x_axis_type = expect.get("xAxisType")
+    if expected_x_axis_type and chart.get("xAxisType") != expected_x_axis_type:
+        errors.append(
+            f"{case_id}: expected xAxisType {expected_x_axis_type!r}, got {chart.get('xAxisType')!r}"
+        )
+
+    if expect.get("labelsAreYears"):
+        invalid_year_labels = [
+            str(label) for label in labels
+            if not (str(label).isdigit() and len(str(label)) == 4)
+        ]
+        if invalid_year_labels:
+            errors.append(f"{case_id}: expected four-digit year labels, got {invalid_year_labels[:3]}")
+
+    categorical_names_any = expect.get("categoricalColumnNamesAny", [])
+    if categorical_names_any:
+        categorical_columns = chart.get("categoricalColumns") or []
+        returned_names = {
+            str(column.get("name", "")).lower()
+            for column in categorical_columns
+            if isinstance(column, dict)
+        }
+        missing = [name for name in categorical_names_any if name.lower() not in returned_names]
+        if missing:
+            errors.append(f"{case_id}: missing categorical columns: {', '.join(missing)}")
+
     return errors
 
 

@@ -126,21 +126,12 @@ export function ChartView() {
 
     setIsSaving(true);
     try {
+      const { sourceType: _sourceType, ...storedChartData } = chartData;
+      void _sourceType;
       if (id) {
         await updateChart(id, {
           title: chartConfig.title || 'Untitled Chart',
-          data: {
-            labels: chartData.labels,
-            series: chartData.series,
-            verifiedData: chartData.verifiedData,
-            suggestedType: chartData.suggestedType,
-            suggestedTitle: chartData.suggestedTitle,
-            aiReasoning: chartData.aiReasoning,
-            aiSummary: chartData.aiSummary,
-            userPrompt: chartData.userPrompt,
-            sourcePrompt: chartData.sourcePrompt,
-            ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
-          },
+          data: storedChartData,
           config: chartConfig,
         });
         toast.success('Chart updated');
@@ -149,18 +140,7 @@ export function ChartView() {
 
       const result = await createChart({
         title: chartConfig.title || 'Untitled Chart',
-        data: {
-          labels: chartData.labels,
-          series: chartData.series,
-          verifiedData: chartData.verifiedData,
-          suggestedType: chartData.suggestedType,
-          suggestedTitle: chartData.suggestedTitle,
-            aiReasoning: chartData.aiReasoning,
-          aiSummary: chartData.aiSummary,
-          userPrompt: chartData.userPrompt,
-          sourcePrompt: chartData.sourcePrompt,
-          ...(chartData.sourceImage ? { sourceImage: chartData.sourceImage } : {}),
-        },
+        data: storedChartData,
         config: chartConfig,
         source_type: chartData.sourceType || 'paste',
         is_public: false,
@@ -209,18 +189,10 @@ export function ChartView() {
       getChart(id)
         .then(async (chart) => {
           // Populate the store with the loaded chart data
-        const data: ChartData = {
-            labels: chart.data.labels,
-            series: chart.data.series,
+          const data: ChartData = {
+            ...chart.data,
             sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
-            verifiedData: chart.data.verifiedData,
-            suggestedTitle: chart.title || chart.config.title,
-            suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
-          aiReasoning: chart.data.aiReasoning,
-            aiSummary: chart.data.aiSummary,
-            userPrompt: chart.data.userPrompt,
-            sourcePrompt: chart.data.sourcePrompt,
-            ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
+            suggestedTitle: chart.title || chart.config.title || chart.data.suggestedTitle,
           };
           setChartData(data);
           // Ensure themeMode has a default value for charts created before it was added

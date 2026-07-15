@@ -1192,7 +1192,9 @@ async def bot_prompt_and_create_chart(
     chart_data = {
         "labels": result.get("labels", []),
         "series": result.get("series", []),
+        "categoricalColumns": result.get("categoricalColumns"),
         "sourceType": "prompt",
+        "verifiedData": result.get("verifiedData"),
         "suggestedTitle": result.get("suggestedTitle"),
         "suggestedType": result.get("suggestedType"),
         "aiReasoning": result.get("aiReasoning"),
@@ -1200,6 +1202,7 @@ async def bot_prompt_and_create_chart(
         "yAxisLabel": result.get("yAxisLabel"),
         "barLayout": result.get("barLayout"),
         "sourceLink": result.get("sourceLink"),
+        "sources": result.get("sources"),
         "xAxisType": result.get("xAxisType"),
         "yAxisFormat": result.get("yAxisFormat"),
         "yAxisPrefix": result.get("yAxisPrefix"),
@@ -1229,6 +1232,8 @@ async def bot_prompt_and_create_chart(
         chart_url=chart_url,
         labels=chart_data["labels"],
         series=chart_data["series"],
+        categoricalColumns=result.get("categoricalColumns"),
+        verifiedData=result.get("verifiedData"),
         suggestedTitle=result.get("suggestedTitle"),
         suggestedType=result.get("suggestedType"),
         stacked=result.get("stacked"),
@@ -1236,6 +1241,8 @@ async def bot_prompt_and_create_chart(
         yAxisLabel=result.get("yAxisLabel"),
         barLayout=result.get("barLayout"),
         aiReasoning=result.get("aiReasoning"),
+        sourceLink=result.get("sourceLink"),
+        sources=result.get("sources"),
     )
 
 
@@ -1314,6 +1321,8 @@ async def generate_from_prompt_endpoint(
         return ImageAnalysisResponse(
             labels=result["labels"],
             series=result["series"],
+            categoricalColumns=result.get("categoricalColumns"),
+            verifiedData=result.get("verifiedData"),
             suggestedTitle=result.get("suggestedTitle"),
             suggestedType=result.get("suggestedType"),
             stacked=result.get("stacked"),
@@ -1322,6 +1331,7 @@ async def generate_from_prompt_endpoint(
             barLayout=result.get("barLayout"),
             aiReasoning=result.get("aiReasoning"),
             sourceLink=result.get("sourceLink"),
+            sources=result.get("sources"),
             xAxisType=result.get("xAxisType"),
             yAxisFormat=result.get("yAxisFormat"),
             yAxisPrefix=result.get("yAxisPrefix"),

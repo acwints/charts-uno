@@ -566,15 +566,28 @@ export function ChartPreview({
     () => computeValueAxisConfig(yAxisLabel, maxLeftTickStr),
     [yAxisLabel, maxLeftTickStr],
   );
+  const sourceLinks = useMemo(() => {
+    const links: Array<{ title: string; url: string }> = [];
+    const seen = new Set<string>();
+    const add = (title: string, url?: string) => {
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      links.push({ title, url });
+    };
+    add('Primary source', config.sourceLink);
+    data.sources?.forEach((source) => add(source.title, source.url));
+    add('Primary source', data.sourceLink);
+    return links;
+  }, [config.sourceLink, data.sourceLink, data.sources]);
   const sourceDomain = useMemo(() => {
-    const link = config.sourceLink || data.sourceLink;
+    const link = sourceLinks[0]?.url;
     if (!link) return null;
     try {
       return new URL(link).hostname.replace(/^www\./, '');
     } catch {
       return link;
     }
-  }, [config.sourceLink, data.sourceLink]);
+  }, [sourceLinks]);
   const verifiedLabel = sourceDomain
     ? `Verified real data source (${sourceDomain})`
     : 'Verified real data source';
@@ -1428,6 +1441,11 @@ export function ChartPreview({
               <thead>
                 <tr>
                   <th className="table-header-cell sticky-col" style={{ color: theme.textMuted, background: theme.cardBackground }}>{data.xAxisLabel || 'Label'}</th>
+                  {data.categoricalColumns?.map((column) => (
+                    <th key={column.name} className="table-header-cell" style={{ color: theme.textMuted, background: theme.cardBackground }}>
+                      {column.name}
+                    </th>
+                  ))}
                   {data.series.map((series, idx) => (
                     <th key={series.name} className="table-header-cell" style={{ color: theme.textMuted, background: theme.cardBackground }}>
                       <span className="series-indicator" style={{ display: 'inline-block', background: colors[idx % colors.length] }} />
@@ -1440,6 +1458,11 @@ export function ChartPreview({
                 {data.labels.map((label, rowIdx) => (
                   <tr key={label}>
                     <td className="table-cell sticky-col" style={{ color: theme.text, background: theme.background, fontWeight: 500 }}>{label}</td>
+                    {data.categoricalColumns?.map((column) => (
+                      <td key={column.name} className="table-cell" style={{ color: theme.textMuted, borderColor: theme.border }}>
+                        {column.data[rowIdx] || '—'}
+                      </td>
+                    ))}
                     {data.series.map((series) => {
                       const value = series.data[rowIdx];
                       const confidence = series.confidence?.[rowIdx];
@@ -1475,22 +1498,30 @@ export function ChartPreview({
         )}
       </div>
 
-      {config.sourceLink && (
+      {sourceLinks.length > 0 && (
         <div className="chart-source" style={{ borderColor: theme.border }}>
-          <a
-            href={config.sourceLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="chart-source-link"
-            style={{ color: theme.textMuted }}
-          >
-            <span className="chart-source-label">Source:</span>
-            <span className="chart-source-domain">{(() => {
-              try { return new URL(config.sourceLink).hostname.replace(/^www\./, ''); }
-              catch { return config.sourceLink; }
-            })()}</span>
-            <ExternalLink size={10} />
-          </a>
+          <span className="chart-source-label" style={{ color: theme.textMuted }}>
+            {sourceLinks.length === 1 ? 'Source:' : 'Sources:'}
+          </span>
+          <span className="chart-source-list">
+            {sourceLinks.map((source) => (
+              <a
+                key={source.url}
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="chart-source-link"
+                style={{ color: theme.textMuted }}
+                title={source.title}
+              >
+                <span className="chart-source-domain">{(() => {
+                  try { return new URL(source.url).hostname.replace(/^www\./, ''); }
+                  catch { return source.title; }
+                })()}</span>
+                <ExternalLink size={10} />
+              </a>
+            ))}
+          </span>
         </div>
       )}
 

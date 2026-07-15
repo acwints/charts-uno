@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from google import genai
+from google.genai import types
+from pydantic import BaseModel, Field
 from services.bigquery_auth import (
     get_bigquery_credentials_status,
     has_bigquery_credentials,
@@ -25,6 +27,37 @@ BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
 
 _client: Optional[genai.Client] = None
 _MODEL_NAME = MODEL_RESEARCH
+
+
+class _GroundedCategoricalColumn(BaseModel):
+    name: str
+    data: List[str]
+
+
+class _GroundedSeries(BaseModel):
+    name: str
+    data: List[Optional[float]]
+
+
+class _GroundedSource(BaseModel):
+    title: str
+    url: str
+
+
+class _GroundedChart(BaseModel):
+    labels: List[str]
+    categoricalColumns: List[_GroundedCategoricalColumn] = Field(default_factory=list)
+    series: List[_GroundedSeries]
+    suggestedTitle: str
+    suggestedType: str
+    xAxisLabel: str
+    yAxisLabel: str
+    xAxisType: str
+    yAxisFormat: str = "number"
+    yAxisPrefix: str = ""
+    yAxisSuffix: str = ""
+    aiReasoning: str
+    sources: List[_GroundedSource] = Field(default_factory=list)
 
 
 def _get_client() -> genai.Client:
@@ -117,6 +150,112 @@ def _is_bigquery_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
     if "bigquery" in intent.get("preferred_sources", []):
         return True
     return any(term in lower for term in trigger_terms)
+
+
+def _is_open_web_candidate(prompt: str) -> bool:
+    """Return True for fact-seeking prompts that benefit from public-web grounding."""
+    lower = prompt.lower()
+    if any(term in lower for term in [
+        "synthetic", "hypothetical", "made-up", "made up", "mock data", "sample data", "random data",
+    ]):
+        return False
+
+    factual_patterns = [
+        r"\b(current|latest|today|recent|past|previous|historical|history)\b",
+        r"\b(winner|winners|champion|champions|championship|record|records|ranking|rankings)\b",
+        r"\b(population|price|prices|rate|rates|statistics|results|score|scores)\b",
+        r"\b(by year|over time|since|from \d{4}|between \d{4})\b",
+        r"\b(top|largest|smallest|highest|lowest|most|least)\s+\d+\b",
+    ]
+    return any(re.search(pattern, lower) for pattern in factual_patterns)
+
+
+def _read_attr(value: Any, name: str) -> Any:
+    if isinstance(value, dict):
+        return value.get(name)
+    return getattr(value, name, None)
+
+
+def _extract_grounding_sources(response: Any) -> List[Dict[str, str]]:
+    candidates = _read_attr(response, "candidates") or []
+    if not candidates:
+        return []
+    metadata = _read_attr(candidates[0], "grounding_metadata")
+    if metadata is None:
+        metadata = _read_attr(candidates[0], "groundingMetadata")
+    chunks = _read_attr(metadata, "grounding_chunks") or _read_attr(metadata, "groundingChunks") or []
+
+    sources: List[Dict[str, str]] = []
+    for chunk in chunks:
+        web = _read_attr(chunk, "web")
+        url = str(_read_attr(web, "uri") or _read_attr(web, "url") or "").strip()
+        title = str(_read_attr(web, "title") or "Web source").strip()
+        if url.startswith(("https://", "http://")):
+            sources.append({"title": title, "url": url})
+    return sources
+
+
+def _normalize_sources(*source_groups: Any) -> List[Dict[str, str]]:
+    sources: List[Dict[str, str]] = []
+    seen_urls = set()
+    for group in source_groups:
+        if not isinstance(group, list):
+            continue
+        for source in group:
+            if not isinstance(source, dict):
+                continue
+            url = str(source.get("url") or "").strip()
+            title = str(source.get("title") or "Web source").strip() or "Web source"
+            if not url.startswith(("https://", "http://")) or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            sources.append({"title": title, "url": url})
+            if len(sources) >= 5:
+                return sources
+    return sources
+
+
+async def _web_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
+    if not GOOGLE_API_KEY or not _is_open_web_candidate(prompt):
+        return None
+
+    client = _get_client()
+    research_prompt = f"""Research the public web and return a source-backed chart dataset for this request:
+
+{prompt}
+
+Requirements:
+- Prefer authoritative primary sources, then reputable secondary sources for cross-checking.
+- Return only facts supported by the cited sources. Do not estimate missing values.
+- Use the temporal field (year/date) as labels and set xAxisType to year/date. Never plot Year or Date as a numeric series.
+- Put aligned non-numeric row details, such as the winner for each year, in categoricalColumns.
+- Use a line chart for time series unless the prompt explicitly requests a table.
+- Keep labels, categorical column data, and numeric series data aligned.
+- Include up to five direct source URLs used to verify the dataset.
+"""
+    response = client.models.generate_content(
+        model=_MODEL_NAME,
+        contents=research_prompt,
+        config=types.GenerateContentConfig(
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+            response_mime_type="application/json",
+            response_schema=_GroundedChart,
+        ),
+    )
+    parsed = _clean_json(response.text or "")
+    if not parsed.get("labels") or not parsed.get("series"):
+        return None
+
+    grounding_sources = _extract_grounding_sources(response)
+    if not grounding_sources:
+        return None
+    sources = _normalize_sources(grounding_sources)
+
+    parsed["sources"] = sources
+    parsed["sourceLink"] = sources[0]["url"]
+    parsed["verifiedData"] = True
+    parsed["sourceProvider"] = "gemini_web_search"
+    return parsed
 
 
 async def _fred_search_and_fetch(prompt: str, intent: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -228,6 +367,7 @@ async def _fred_search_and_fetch(prompt: str, intent: Dict[str, Any]) -> Optiona
         "yAxisLabel": units or "Value",
         "xAxisType": "year" if all(re.match(r"^\d{4}$", lab) for lab in labels) else "date",
         "sourceLink": source_link,
+        "sources": [{"title": f"FRED: {title}", "url": source_link}],
         "aiReasoning": reasoning,
         "sourceProvider": "fred",
     }
@@ -307,6 +447,10 @@ def get_research_provider_status() -> Dict[str, Any]:
     cred_status = get_bigquery_credentials_status()
     return {
         "googleApiConfigured": bool(GOOGLE_API_KEY),
+        "webSearch": {
+            "provider": "gemini",
+            "configured": bool(GOOGLE_API_KEY),
+        },
         "fredConfigured": bool(FRED_API_KEY),
         "bigquery": {
             "enabled": ENABLE_BIGQUERY_PUBLIC_DATA,
@@ -461,6 +605,7 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         "xAxisLabel": label_col,
         "yAxisLabel": series[0]["name"],
         "sourceLink": source_link,
+        "sources": [{"title": "Google Cloud public datasets", "url": source_link}],
         "aiReasoning": "Retrieved data from BigQuery public datasets.",
         "sourceProvider": "bigquery",
     }
@@ -496,5 +641,13 @@ async def research_chart_from_prompt(prompt: str) -> Optional[Dict[str, Any]]:
                 return result
         except Exception as e:
             logger.info(f"BigQuery provider failed: {e}")
+
+    if _is_open_web_candidate(prompt):
+        try:
+            result = await _web_search_and_fetch(prompt)
+            if result:
+                return result
+        except Exception as e:
+            logger.info(f"Gemini web research provider failed: {e}")
 
     return None

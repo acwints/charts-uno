@@ -153,6 +153,21 @@
   min-width: 100px;
 }
 
+.categorical-cell {
+  min-width: 140px;
+  background: var(--bg-secondary);
+}
+
+.categorical-column-header {
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.categorical-cell .cell-value {
+  color: var(--text-secondary);
+}
+
 /* Editable Cell */
 .editable-cell {
   display: flex;

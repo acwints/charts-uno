@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, List
 
 from google import genai
 from google.genai import types
+from services.chart_semantics import normalize_chart_semantics
 from services.model_config import MODEL_CHART
 from services.research_service import research_chart_from_prompt
 
@@ -227,6 +228,9 @@ User prompt:
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
   "labels": ["label1", "label2", ...],
+  "categoricalColumns": [
+    {{"name": "Optional non-numeric detail such as Winner", "data": ["value1", "value2", ...]}}
+  ],
   "series": [
     {{"name": "Series Name", "data": [num1 | null, num2 | null, ...]}}
   ],
@@ -245,9 +249,12 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
 Rules:
 - Keep labels length aligned with every series data length.
+- Keep labels length aligned with every categoricalColumns data length.
 - Preserve explicit facts when they are present and numeric.
 - If closedEntitySet=true, avoid introducing extra entities unless required to make chartable output.
 - Prefer practical output over clever output: table/bar for entity comparisons, line for temporal trends.
+- A year/date is a temporal dimension, not a numeric measure. When rows contain a year/date field, put those values in labels, set xAxisType accordingly, and do not return Year/Date as a numeric series.
+- Preserve aligned non-numeric fields (for example, a winner or event name for each year) in categoricalColumns.
 - If facts are sparse, infer a useful but plausible dataset.
 - For time-sensitive factual prompts, prefer up-to-date real-world values over stale templates.
 {year_window_rules}
@@ -298,6 +305,8 @@ Checks:
 - No unnecessary invented entities when closedEntitySet=true.
 - Practical chart structure for the user intent.
 - labels/series alignment remains valid.
+- Year/date fields are used as the temporal labels and are not plotted as numeric series.
+- Requested non-numeric row details are preserved in categoricalColumns.
 - For relative-time prompts (e.g. past decade/last N years), year labels must match the expected recent window.
 - When full coverage is required, do not leave null/missing values across the returned labels.
 """
@@ -843,7 +852,7 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
     # First pass: attempt grounded research from external datasets.
     researched = await research_chart_from_prompt(prompt)
     if researched and researched.get("labels") and researched.get("series"):
-        return researched
+        return normalize_chart_semantics(researched, prompt)
 
     # Second pass: orchestration + generation.
     plan = await _plan_prompt_output(prompt)
@@ -903,7 +912,7 @@ async def generate_chart_from_prompt(prompt: str) -> Dict[str, Any]:
 
     guarded["labels"] = labels
     guarded["series"] = normalized_series
-    return guarded
+    return normalize_chart_semantics(guarded, prompt)
 
 
 # Color palettes matching the frontend

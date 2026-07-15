@@ -4,6 +4,7 @@ import { fetchApiJson } from './apiBase';
 interface PromptGenerateApiResponse {
   labels: string[];
   series: ChartData['series'];
+  categoricalColumns?: ChartData['categoricalColumns'];
   verifiedData?: boolean;
   suggestedTitle?: string;
   suggestedType?: ChartType;
@@ -11,6 +12,7 @@ interface PromptGenerateApiResponse {
   barLayout?: string;
   aiReasoning?: string;
   sourceLink?: string;
+  sources?: ChartData['sources'];
   xAxisLabel?: string;
   yAxisLabel?: string;
   xAxisType?: XAxisType;
@@ -28,6 +30,7 @@ export async function generateChartFromPrompt(prompt: string): Promise<ChartData
   return {
     labels: parsed.labels,
     series: parsed.series,
+    categoricalColumns: parsed.categoricalColumns,
     sourceType: 'prompt',
     verifiedData: parsed.verifiedData === true,
     suggestedTitle: parsed.suggestedTitle,
@@ -36,6 +39,7 @@ export async function generateChartFromPrompt(prompt: string): Promise<ChartData
     suggestedBarLayout: parsed.barLayout === 'horizontal' ? 'horizontal' : undefined,
     aiReasoning: parsed.aiReasoning,
     sourceLink: parsed.sourceLink,
+    sources: parsed.sources,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
     xAxisType: parsed.xAxisType,

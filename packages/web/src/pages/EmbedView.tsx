@@ -21,12 +21,9 @@ export function EmbedView() {
       .then((chart) => {
         if (cancelled) return;
         const data: ChartData = {
-          labels: chart.data.labels,
-          series: chart.data.series,
+          ...chart.data,
           sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
           suggestedTitle: chart.title || (chart.config as ChartConfig).title,
-          suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
-          aiReasoning: chart.data.aiReasoning,
         };
         setChartData(data);
 

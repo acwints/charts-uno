@@ -1,4 +1,7 @@
 import { fetchApiJson } from './apiBase';
+import type { ChartData } from '../types';
+
+export type StoredChartData = Omit<ChartData, 'sourceType'>;
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -44,18 +47,7 @@ export interface ChartResponse {
   user_id: string;
   title: string | null;
   description: string | null;
-  data: {
-    labels: string[];
-    series: { name: string; data: Array<number | null>; confidence?: Array<number | null> }[];
-    verifiedData?: boolean;
-    suggestedType?: string;
-    suggestedTitle?: string;
-    sourceImage?: { base64: string; mimeType: string };
-    aiReasoning?: string;
-    aiSummary?: string;
-    userPrompt?: string;
-    sourcePrompt?: string;
-  };
+  data: StoredChartData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
   source_type: string | null;
@@ -78,18 +70,7 @@ export interface ChartListResponse {
 export interface CreateChartData {
   title?: string;
   description?: string;
-  data: {
-    labels: string[];
-    series: { name: string; data: Array<number | null>; confidence?: Array<number | null> }[];
-    verifiedData?: boolean;
-    suggestedType?: string;
-    suggestedTitle?: string;
-    sourceImage?: { base64: string; mimeType: string };
-    aiReasoning?: string;
-    aiSummary?: string;
-    userPrompt?: string;
-    sourcePrompt?: string;
-  };
+  data: StoredChartData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
   source_type?: string;

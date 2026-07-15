@@ -9,6 +9,10 @@ import { COLOR_PALETTES } from '../../types';
 import { getAdaptiveDecimalPlaces } from '../../utils/numberFormat';
 import './EditableSpreadsheet.css';
 
+function isTemporalNumericField(name: string): boolean {
+  return /^(?:calendar\s+|season\s+)?(?:year|date)s?$/i.test(name.trim());
+}
+
 interface EditableSpreadsheetProps {
   data: ChartData;
   colorScheme: ColorScheme;
@@ -50,6 +54,19 @@ export function EditableSpreadsheet({
     [data, onChange]
   );
 
+  const handleCategoricalValueChange = useCallback(
+    (columnIndex: number, dataIndex: number, value: string | number) => {
+      const categoricalColumns = (data.categoricalColumns ?? []).map((column, index) => {
+        if (index !== columnIndex) return column;
+        const newData = [...column.data];
+        newData[dataIndex] = String(value);
+        return { ...column, data: newData };
+      });
+      onChange({ ...data, categoricalColumns });
+    },
+    [data, onChange]
+  );
+
   const handleValueChange = useCallback(
     (seriesIndex: number, dataIndex: number, value: string | number) => {
       const newSeries = [...data.series];
@@ -68,22 +85,30 @@ export function EditableSpreadsheet({
 
   const addRow = useCallback(() => {
     const newLabels = [...data.labels, `Row ${data.labels.length + 1}`];
+    const categoricalColumns = data.categoricalColumns?.map((column) => ({
+      ...column,
+      data: [...column.data, ''],
+    }));
     const newSeries = data.series.map((series) => ({
       ...series,
       data: [...series.data, 0],
     }));
-    onChange({ ...data, labels: newLabels, series: newSeries });
+    onChange({ ...data, labels: newLabels, series: newSeries, categoricalColumns });
   }, [data, onChange]);
 
   const deleteRow = useCallback(
     (index: number) => {
       if (data.labels.length <= 1) return;
       const newLabels = data.labels.filter((_, i) => i !== index);
+      const categoricalColumns = data.categoricalColumns?.map((column) => ({
+        ...column,
+        data: column.data.filter((_, i) => i !== index),
+      }));
       const newSeries = data.series.map((series) => ({
         ...series,
         data: series.data.filter((_, i) => i !== index),
       }));
-      onChange({ ...data, labels: newLabels, series: newSeries });
+      onChange({ ...data, labels: newLabels, series: newSeries, categoricalColumns });
     },
     [data, onChange]
   );
@@ -145,6 +170,13 @@ export function EditableSpreadsheet({
               <th className="spreadsheet-th corner-cell">
                 <div className="corner-header">{data.xAxisLabel || 'Label'}</div>
               </th>
+              {data.categoricalColumns?.map((column, idx) => (
+                <th key={`categorical-${idx}`} className="spreadsheet-th series-header">
+                  <div className="series-header-content">
+                    <span className="categorical-column-header">{column.name}</span>
+                  </div>
+                </th>
+              ))}
               {data.series.map((series, idx) => (
                 <th key={idx} className="spreadsheet-th series-header">
                   <div className="series-header-content">
@@ -193,13 +225,22 @@ export function EditableSpreadsheet({
                     )}
                   </div>
                 </td>
+                {data.categoricalColumns?.map((column, colIdx) => (
+                  <td key={`categorical-${colIdx}`} className="spreadsheet-td categorical-cell">
+                    <EditableCell
+                      value={column.data[rowIdx] ?? ''}
+                      onChange={(v) => handleCategoricalValueChange(colIdx, rowIdx, v)}
+                    />
+                  </td>
+                ))}
                 {data.series.map((series, colIdx) => (
                   <td key={colIdx} className="spreadsheet-td value-cell">
                     <EditableCell
                       value={series.data?.[rowIdx] ?? ''}
                       onChange={(v) => handleValueChange(colIdx, rowIdx, v)}
                       isNumeric
-                      decimalPlaces={numericDecimalPlaces}
+                      decimalPlaces={isTemporalNumericField(series.name) ? 0 : numericDecimalPlaces}
+                      useGrouping={!isTemporalNumericField(series.name)}
                     />
                   </td>
                 ))}

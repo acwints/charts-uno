@@ -13,12 +13,8 @@ export function ChartFeedPage() {
   const handleChartSelect = useCallback(
     (chart: ChartResponse) => {
       const convertedData: ChartData = {
-        labels: chart.data.labels,
-        series: chart.data.series,
+        ...chart.data,
         sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
-        suggestedTitle: chart.data.suggestedTitle,
-        suggestedType: chart.data.suggestedType as ChartData['suggestedType'],
-        ...(chart.data.sourceImage ? { sourceImage: chart.data.sourceImage } : {}),
       };
 
       const newConfig: ChartConfig = {
@@ -37,6 +33,7 @@ export function ChartFeedPage() {
         stacked: (chart.config as Record<string, unknown>).stacked as boolean ?? false,
         yAxisBaselineMode: ((chart.config as Record<string, unknown>).yAxisBaselineMode as ChartConfig['yAxisBaselineMode']) ?? 'auto',
         title: chart.config.title || chart.title || '',
+        sourceLink: ((chart.config as Record<string, unknown>).sourceLink as string | undefined) ?? chart.data.sourceLink,
       };
 
       setChartData(convertedData);

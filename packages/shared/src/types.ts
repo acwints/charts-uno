@@ -6,6 +6,16 @@ export interface DataSeries {
   confidence?: Array<number | null>;
 }
 
+export interface CategoricalColumn {
+  name: string;
+  data: string[];
+}
+
+export interface ChartSource {
+  title: string;
+  url: string;
+}
+
 export type XAxisType = 'year' | 'date' | 'category' | 'number';
 export type YAxisFormat = 'currency' | 'percentage' | 'number';
 export type BarLayout = 'vertical' | 'horizontal';
@@ -14,6 +24,8 @@ export type YAxisBaselineMode = 'auto' | 'zero' | 'data';
 export interface ChartData {
   labels: string[];
   series: DataSeries[];
+  /** Non-numeric row details aligned with labels, such as a winner for each year. */
+  categoricalColumns?: CategoricalColumn[];
   sourceType: 'csv' | 'paste' | 'image' | 'sheets' | 'prompt' | 'stocks' | 'datasets' | 'sql';
   verifiedData?: boolean;
   suggestedTitle?: string;
@@ -26,6 +38,7 @@ export interface ChartData {
   yAxisLabel?: string;
   userPrompt?: string;
   sourceLink?: string;
+  sources?: ChartSource[];
   sourceImage?: {
     base64: string;
     mimeType: string;

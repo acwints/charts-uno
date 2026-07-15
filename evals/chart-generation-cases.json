@@ -27,5 +27,19 @@
       "minSeries": 1,
       "suggestedTypes": ["line", "area", "table"]
     }
+  },
+  {
+    "id": "historical-winners-temporal-dimension",
+    "prompt": "past open championship winners at royal birkdale with their year and total score",
+    "expect": {
+      "minLabels": 10,
+      "minSeries": 1,
+      "suggestedTypes": ["line"],
+      "seriesNamesAny": ["Total Score"],
+      "forbiddenSeriesNames": ["Year"],
+      "categoricalColumnNamesAny": ["Winner"],
+      "xAxisType": "year",
+      "labelsAreYears": true
+    }
   }
 ]
