@@ -610,8 +610,6 @@ export function ChartPreview({
   const verifiedLabel = sourceDomain
     ? `Verified real data source (${sourceDomain})`
     : 'Verified real data source';
-  const showUnverifiedBadge = data.sourceType === 'prompt' && data.verifiedData !== true;
-  const unverifiedLabel = 'Unverified AI-generated estimate. Verify with a trusted source before publishing as factual.';
   const lowConfidenceCount = useMemo(() => {
     let count = 0;
     data.series.forEach((series) => {
@@ -1434,15 +1432,6 @@ export function ChartPreview({
             >
               <Check size={12} />
               <span>Verified</span>
-            </span>
-          )}
-          {showUnverifiedBadge && (
-            <span
-              className="chart-meta-item chart-meta-item--unverified"
-              aria-label={unverifiedLabel}
-              title={unverifiedLabel}
-            >
-              <span>Unverified</span>
             </span>
           )}
           <span className="chart-meta-item">

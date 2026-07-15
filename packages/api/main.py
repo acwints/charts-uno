@@ -114,6 +114,7 @@ from helpers import (
     get_sql_connection_or_404,
 )
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
+from services.branding_service import materialize_browser_safe_logo_url
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 from services.research_service import get_research_provider_status, probe_research_providers
@@ -2065,6 +2066,17 @@ async def get_team_branding(
     """Get team branding settings"""
     team, _ = _get_team_with_access(db, team_id, current_user)
 
+    # Brand inference used to persist a cross-origin Google favicon URL. Embed
+    # those legacy values on first read so the logo survives canvas export.
+    if team.custom_logo_url:
+        try:
+            safe_logo_url = await materialize_browser_safe_logo_url(team.custom_logo_url)
+            if safe_logo_url != team.custom_logo_url:
+                team.custom_logo_url = safe_logo_url
+                db.commit()
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("Failed to materialize team logo for %s: %s", team_id, exc)
+
     # Check if team can customize (pro/business plan)
     can_customize = False
     if team.subscription and team.subscription.plan in ("pro", "business"):
@@ -2181,9 +2193,10 @@ async def infer_team_brand(
         team.brand_theme = result["theme"]
         team.brand_font_style = result["fontStyle"]
 
-        # Also update the logo from favicon
-        logo_url = f"https://www.google.com/s2/favicons?domain={data.domain}&sz=128"
-        team.custom_logo_url = logo_url
+        # Use the fetched favicon bytes rather than a cross-origin URL so the
+        # logo can be included in copied and downloaded chart images.
+        if result.get("logoDataUrl"):
+            team.custom_logo_url = result["logoDataUrl"]
 
         db.commit()
 

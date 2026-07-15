@@ -54,6 +54,9 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
     setExporting('csv');
     try {
       await exportToCSV(data, filename);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      toast.error('Unable to download CSV. Please try again.');
     } finally {
       setExporting(null);
       setIsOpen(false);
@@ -65,6 +68,9 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
     setExporting('png');
     try {
       await exportToPNG(chartRef.current, filename, watermark);
+    } catch (error) {
+      console.error('Failed to export PNG:', error);
+      toast.error('Unable to download PNG. Please try Copy Image instead.');
     } finally {
       setExporting(null);
       setIsOpen(false);

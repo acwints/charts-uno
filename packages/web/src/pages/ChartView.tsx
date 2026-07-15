@@ -161,7 +161,7 @@ export function ChartView() {
       return result.id;
     } catch (err) {
       console.error('Failed to save chart:', err);
-      toast.error('Failed to save chart');
+      toast.error(err instanceof Error ? err.message : 'Failed to save chart');
       return null;
     } finally {
       setIsSaving(false);

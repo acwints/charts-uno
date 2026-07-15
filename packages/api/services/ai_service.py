@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any, List
 
 from google import genai
 from google.genai import types
+from services.branding_service import image_bytes_to_data_url
 from services.chart_semantics import normalize_chart_semantics
 from services.infographic_service import build_fallback_infographic, extract_svg
 from services.model_config import MODEL_CHART
@@ -1144,7 +1145,7 @@ async def infer_brand_from_website(domain: str) -> Dict[str, Any]:
     favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
 
     try:
-        async with httpx.AsyncClient() as http_client:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as http_client:
             response = await http_client.get(favicon_url)
             if response.status_code == 200:
                 favicon_base64 = base64.b64encode(response.content).decode('utf-8')
@@ -1229,9 +1230,20 @@ Example for "notboring.co":
         defaults = ["#6366F1", "#22C55E", "#F59E0B", "#0A0A0F", "#F0F0F5"]
         validated_colors.extend(defaults[len(validated_colors):5])
 
+    logo_data_url = None
+    if favicon_base64 and favicon_mime:
+        try:
+            logo_data_url = image_bytes_to_data_url(
+                base64.b64decode(favicon_base64),
+                favicon_mime,
+            )
+        except ValueError as exc:
+            logger.warning("Ignoring invalid favicon for %s: %s", domain, exc)
+
     return {
         "colors": validated_colors[:5],
         "theme": parsed.get("theme", "dark"),
         "fontStyle": parsed.get("fontStyle", "modern"),
         "reasoning": parsed.get("reasoning", ""),
+        "logoDataUrl": logo_data_url,
     }

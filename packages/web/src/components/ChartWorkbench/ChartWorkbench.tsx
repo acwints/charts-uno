@@ -92,7 +92,7 @@ export function ChartWorkbench({
   const isImageSource = data.sourceType === 'image';
   const isPromptSource = data.sourceType === 'prompt';
   const verificationTone = getVerificationTone(data);
-  const saveLabel = isSaving ? 'Saving...' : chartId ? 'Update' : 'Save';
+  const saveLabel = isSaving ? 'Saving...' : chartId ? 'Update Chart' : 'Save Chart';
 
   return (
     <>
