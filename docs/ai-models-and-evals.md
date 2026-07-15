@@ -11,6 +11,7 @@ Chartsuno keeps current Gemini defaults in production, but model names can be ov
 - `CHARTSUNO_MODEL_SQL`: public dataset SQL drafting model. Defaults to `CHARTSUNO_MODEL_FAST`.
 - `CHARTSUNO_MODEL_STOCK_INSIGHT`: stock insight summary model. Defaults to `CHARTSUNO_MODEL_FAST`.
 - `CHARTSUNO_MODEL_VISION`: image/chart extraction model. Defaults to `CHARTSUNO_MODEL_PRO`.
+- `INFOGRAPHIC_MODEL_TIMEOUT_SECONDS`: maximum infographic model-call duration. Defaults to 35 seconds and is clamped to 10–75 seconds. Slow or failed calls return a deterministic SVG fallback instead of a gateway error.
 
 ## Research Providers
 

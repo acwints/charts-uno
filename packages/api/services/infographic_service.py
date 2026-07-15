@@ -74,15 +74,16 @@ def build_fallback_infographic(
         return "".join(svg_parts)
 
     point_count = len(labels)
-    columns = min(6, max(1, math.ceil(math.sqrt(point_count * 1.35))))
+    columns = min(point_count, 6, max(1, math.ceil(math.sqrt(point_count * 1.35))))
     rows = math.ceil(point_count / columns)
     gap = 22.0
     content_x = 40.0
-    content_y = 166.0
     content_width = 1520.0
     content_height = 994.0
     card_width = (content_width - gap * (columns - 1)) / columns
-    card_height = (content_height - gap * (rows - 1)) / rows
+    card_height = min(330.0, (content_height - gap * (rows - 1)) / rows)
+    grid_height = rows * card_height + gap * (rows - 1)
+    content_y = 166.0 + max(0.0, (content_height - grid_height) / 2)
     label_size = max(11.0, min(22.0, card_height * 0.14))
 
     for index, label in enumerate(labels):
