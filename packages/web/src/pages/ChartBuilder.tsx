@@ -16,6 +16,11 @@ interface OutletContextType {
   openAuthModal: () => void;
 }
 
+function hasTemporalPointLabels(data: ChartData): boolean {
+  return data.xAxisType === 'year'
+    && Boolean(data.categoricalColumns?.some((column) => column.data.some((value) => value.trim())));
+}
+
 export function ChartBuilder() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -38,6 +43,7 @@ export function ChartBuilder() {
         type: chartType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(hasTemporalPointLabels(data) ? { showValues: true } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
         ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));
@@ -63,6 +69,7 @@ export function ChartBuilder() {
         type: chosenType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(hasTemporalPointLabels(data) ? { showValues: true } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
         ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));
@@ -78,6 +85,7 @@ export function ChartBuilder() {
         type: fallbackType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(hasTemporalPointLabels(data) ? { showValues: true } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
         ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));

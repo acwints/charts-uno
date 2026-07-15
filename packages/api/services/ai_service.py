@@ -3,12 +3,15 @@ import json
 import logging
 import base64
 import re
+import asyncio
+import time
 from datetime import date
 from typing import Optional, Dict, Any, List
 
 from google import genai
 from google.genai import types
 from services.chart_semantics import normalize_chart_semantics
+from services.infographic_service import build_fallback_infographic, extract_svg
 from services.model_config import MODEL_CHART
 from services.research_service import research_chart_from_prompt
 
@@ -32,6 +35,14 @@ def get_client() -> genai.Client:
 
 
 MODEL_NAME = MODEL_CHART
+
+try:
+    INFOGRAPHIC_MODEL_TIMEOUT_SECONDS = max(
+        10.0,
+        min(75.0, float(os.environ.get("INFOGRAPHIC_MODEL_TIMEOUT_SECONDS", "35"))),
+    )
+except ValueError:
+    INFOGRAPHIC_MODEL_TIMEOUT_SECONDS = 35.0
 
 
 def _coerce_numeric_value(value: Any) -> Optional[float]:
@@ -757,9 +768,21 @@ async def recommend_chart_type(
 
     labels = data.get("labels", [])
     series = data.get("series", [])
+    categorical_columns = data.get("categoricalColumns", [])
 
     data_description = {
         "labels": labels,
+        "xAxisType": data.get("xAxisType"),
+        "xAxisLabel": data.get("xAxisLabel"),
+        "yAxisLabel": data.get("yAxisLabel"),
+        "categoricalColumns": [
+            {
+                "name": column.get("name"),
+                "sampleData": column.get("data", [])[:10],
+            }
+            for column in categorical_columns
+            if isinstance(column, dict)
+        ],
         "series": [
             {
                 "name": s.get("name"),
@@ -943,20 +966,12 @@ async def generate_infographic(
     - 'infographic': Visual infographic design (more creative)
     - 'custom': Use custom_prompt for generation guidance
     """
-    client = get_client()
     max_reference_image_bytes = 2_000_000
 
     colors = COLOR_PALETTES.get(color_scheme, COLOR_PALETTES["default"])
 
     labels = data.get("labels", [])
     series = data.get("series", [])
-
-    data_description = f"""
-Title: {title or 'Data Visualization'}
-Labels: {', '.join(labels)}
-Series:
-{chr(10).join(f"  - {s.get('name')}: {', '.join(str(v) for v in s.get('data', []))}" for s in series)}
-    """.strip()
 
     data_json = json.dumps(
         {
@@ -1046,7 +1061,8 @@ DATA (use this as the ONLY source of truth):
 
 Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start with <svg and end with </svg>."""
 
-    response = None
+    model_contents: Any = prompt
+    reference_image_attached = False
     if source_image_base64 and source_image_mime_type:
         try:
             image_bytes = base64.b64decode(source_image_base64, validate=True)
@@ -1056,43 +1072,62 @@ Return ONLY valid SVG code. No markdown, no explanation, no code blocks. Start w
                     len(image_bytes),
                 )
             else:
-                response = client.models.generate_content(
-                    model=MODEL_NAME,
-                    contents=[
-                        prompt,
-                        types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
-                    ],
-                )
+                model_contents = [
+                    prompt,
+                    types.Part.from_bytes(data=image_bytes, mime_type=source_image_mime_type),
+                ]
+                reference_image_attached = True
         except Exception as e:
             logger.warning("Skipping reference image for infographic generation: %s", e)
 
-    if response is None:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
+    started_at = time.monotonic()
+    logger.info(
+        "Infographic model request started model=%s mode=%s labels=%s series=%s reference_image=%s timeout_seconds=%s",
+        MODEL_NAME,
+        ai_mode,
+        len(labels),
+        len(series),
+        reference_image_attached,
+        INFOGRAPHIC_MODEL_TIMEOUT_SECONDS,
+    )
+
+    try:
+        client = get_client()
+        response = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=MODEL_NAME,
+                contents=model_contents,
+                config=types.GenerateContentConfig(
+                    candidate_count=1,
+                    temperature=0.25,
+                    max_output_tokens=8192,
+                    thinking_config=types.ThinkingConfig(thinking_level="minimal"),
+                    http_options=types.HttpOptions(
+                        timeout=int(INFOGRAPHIC_MODEL_TIMEOUT_SECONDS * 1000),
+                    ),
+                ),
+            ),
+            timeout=INFOGRAPHIC_MODEL_TIMEOUT_SECONDS + 2.0,
         )
-    content = response.text
-
-    if not content:
-        raise ValueError("No response from AI")
-
-    # Clean up the response - remove any markdown code blocks
-    svg = content.replace("```svg\n", "").replace("```xml\n", "").replace("```html\n", "").replace("\n```", "").replace("```", "").strip()
-
-    # Ensure it starts with <svg
-    if not svg.startswith("<svg"):
-        svg_start = svg.find("<svg")
-        if svg_start != -1:
-            svg = svg[svg_start:]
-        else:
-            raise ValueError("Invalid SVG response")
-
-    # Ensure it ends with </svg>
-    svg_end = svg.rfind("</svg>")
-    if svg_end != -1:
-        svg = svg[: svg_end + 6]
-
-    return svg
+        content = response.text
+        if not content:
+            raise ValueError("No response from AI")
+        svg = extract_svg(content)
+        logger.info(
+            "Infographic model request completed elapsed_ms=%s svg_bytes=%s",
+            round((time.monotonic() - started_at) * 1000),
+            len(svg.encode("utf-8")),
+        )
+        return svg
+    except Exception as exc:
+        logger.warning(
+            "Infographic model request failed; using deterministic fallback elapsed_ms=%s error_type=%s error=%s",
+            round((time.monotonic() - started_at) * 1000),
+            type(exc).__name__,
+            exc,
+            exc_info=True,
+        )
+        return build_fallback_infographic(data, title, colors, theme)
 
 
 async def infer_brand_from_website(domain: str) -> Dict[str, Any]:

@@ -62,6 +62,8 @@ interface ValueLabelProps {
   index?: number | string;
 }
 
+const POINT_DETAIL_KEY = '__pointDetail';
+
 export interface ChartLogoOption {
   teamId: string;
   teamName: string;
@@ -443,7 +445,7 @@ export function ChartPreview({
   }, [combo, config, data]);
 
   const renderSmartValueLabel = useCallback(
-    (seriesName: string, formatter: (value: number) => string) =>
+    (seriesName: string, formatter: (value: number) => string, pointLabels?: string[]) =>
       ({ x, y, value, index }: ValueLabelProps) => {
         const xNum = typeof x === 'number' ? x : Number(x);
         const yNum = typeof y === 'number' ? y : Number(y);
@@ -452,20 +454,26 @@ export function ChartPreview({
         if (!Number.isFinite(xNum) || !Number.isFinite(yNum)) return '';
         if (!Number.isFinite(valueNum) || !Number.isFinite(indexNum)) return '';
 
-        const dy = crowdedPointLabelOffsets.get(`${seriesName}:${indexNum}`) ?? -8;
+        const directLabelOffset = pointLabels
+          ? [-8, -28, -48][indexNum % 3]
+          : undefined;
+        const dy = crowdedPointLabelOffsets.get(`${seriesName}:${indexNum}`) ?? directLabelOffset ?? -8;
+        const textAnchor = pointLabels
+          ? (indexNum === 0 ? 'start' : indexNum === pointLabels.length - 1 ? 'end' : 'middle')
+          : 'middle';
 
         return (
           <text
             x={xNum}
             y={yNum + dy}
-            textAnchor="middle"
+            textAnchor={textAnchor}
             dominantBaseline={dy > 0 ? 'hanging' : 'auto'}
             fill={theme.textMuted}
-            fontSize={11}
+            fontSize={pointLabels ? 10 : 11}
             fontFamily="var(--font-mono)"
             pointerEvents="none"
           >
-            {formatter(valueNum)}
+            {pointLabels?.[indexNum] || formatter(valueNum)}
           </text>
         );
       },
@@ -477,6 +485,14 @@ export function ChartPreview({
     return String(Math.round(value));
   }, []);
 
+  const pointDetailColumn = useMemo(() => {
+    const columns = data.categoricalColumns ?? [];
+    return columns.find((column) => /^(player|winner|name)$/i.test(column.name.trim()))
+      ?? columns.find((column) => column.data.some((value) => value.trim()))
+      ?? null;
+  }, [data.categoricalColumns]);
+  const showPointDetailLabels = data.xAxisType === 'year' && pointDetailColumn !== null;
+
   const chartData = useMemo(() => {
     return data.labels.map((label, idx) => {
       const cleanLabel = effectiveLabels[idx] ?? label;
@@ -487,9 +503,12 @@ export function ChartPreview({
       data.series.forEach((series) => {
         point[series.name] = series.data[idx];
       });
+      if (pointDetailColumn) {
+        point[POINT_DETAIL_KEY] = pointDetailColumn.data[idx] ?? '';
+      }
       return point;
     });
-  }, [data, effectiveLabels, isNumericLabels]);
+  }, [data, effectiveLabels, isNumericLabels, pointDetailColumn]);
 
   const isBarLike = config.type === 'bar' || config.type === 'histogram';
   const canStack = data.series.length > 1;
@@ -897,6 +916,10 @@ export function ChartPreview({
         }}
         labelStyle={{ color: theme.text, fontWeight: 600 }}
         itemStyle={{ color: theme.textMuted }}
+        labelFormatter={(label, payload) => {
+          const detail = payload?.[0]?.payload?.[POINT_DETAIL_KEY];
+          return typeof detail === 'string' && detail ? `${label} · ${detail}` : label;
+        }}
         formatter={(value) => typeof value === 'number' ? [formatTooltipValue(value), undefined] : value}
       />
     );
@@ -1129,13 +1152,22 @@ export function ChartPreview({
                 {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
               >
                 {config.showValues && (
-                  <LabelList
-                    dataKey={series.name}
-                    position={isHorizontal ? 'right' : 'top'}
-                    fill={theme.textMuted}
-                    fontSize={11}
-                    formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
-                  />
+                  showPointDetailLabels ? (
+                    <LabelList
+                      dataKey={POINT_DETAIL_KEY}
+                      position={isHorizontal ? 'right' : 'top'}
+                      fill={theme.textMuted}
+                      fontSize={10}
+                    />
+                  ) : (
+                    <LabelList
+                      dataKey={series.name}
+                      position={isHorizontal ? 'right' : 'top'}
+                      fill={theme.textMuted}
+                      fontSize={11}
+                      formatter={(value) => typeof value === 'number' ? formatYAxisTick(value) : value}
+                    />
+                  )
                 )}
               </Bar>
             ))}
@@ -1208,7 +1240,11 @@ export function ChartPreview({
                 {config.showValues && (
                   <LabelList
                     dataKey={series.name}
-                    content={renderSmartValueLabel(series.name, formatYAxisTick)}
+                    content={renderSmartValueLabel(
+                      series.name,
+                      formatYAxisTick,
+                      showPointDetailLabels ? pointDetailColumn?.data : undefined,
+                    )}
                   />
                 )}
               </Line>
@@ -1251,7 +1287,11 @@ export function ChartPreview({
                 {config.showValues && (
                   <LabelList
                     dataKey={series.name}
-                    content={renderSmartValueLabel(series.name, formatYAxisTick)}
+                    content={renderSmartValueLabel(
+                      series.name,
+                      formatYAxisTick,
+                      showPointDetailLabels ? pointDetailColumn?.data : undefined,
+                    )}
                   />
                 )}
               </Area>

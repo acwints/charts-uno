@@ -21,6 +21,10 @@ export async function recommendChartType(
       data: {
         labels: data.labels,
         series: data.series,
+        categoricalColumns: data.categoricalColumns,
+        xAxisType: data.xAxisType,
+        xAxisLabel: data.xAxisLabel,
+        yAxisLabel: data.yAxisLabel,
         suggestedType: data.suggestedType,
         suggestedTitle: data.suggestedTitle,
         aiReasoning: data.aiReasoning,

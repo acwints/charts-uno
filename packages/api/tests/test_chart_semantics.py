@@ -57,6 +57,30 @@ class NormalizeChartSemanticsTests(unittest.TestCase):
 
         self.assertEqual([series["name"] for series in normalized["series"]], ["Revenue"])
 
+    def test_promotes_categorical_year_column_and_sorts_rows(self) -> None:
+        chart = {
+            "labels": ["Jordan Spieth", "Pádraig Harrington", "Peter Thomson"],
+            "categoricalColumns": [{"name": "Year", "data": ["2017", "2008", "1954"]}],
+            "series": [{"name": "Score to Par", "data": [-12, 3, -9]}],
+            "xAxisLabel": "Player",
+            "suggestedType": "table",
+        }
+
+        normalized = normalize_chart_semantics(
+            chart,
+            "past open championship winners at royal birkdale by player name, year, and score",
+        )
+
+        self.assertEqual(normalized["labels"], ["1954", "2008", "2017"])
+        self.assertEqual(normalized["xAxisType"], "year")
+        self.assertEqual(normalized["xAxisLabel"], "Year")
+        self.assertEqual(normalized["suggestedType"], "line")
+        self.assertEqual(normalized["series"][0]["data"], [-9, 3, -12])
+        self.assertEqual(
+            normalized["categoricalColumns"],
+            [{"name": "Player", "data": ["Peter Thomson", "Pádraig Harrington", "Jordan Spieth"]}],
+        )
+
     def test_does_not_promote_non_year_numeric_series(self) -> None:
         chart = {
             "labels": ["A", "B", "C"],
