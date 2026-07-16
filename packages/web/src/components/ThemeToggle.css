@@ -22,7 +22,7 @@
 
 .theme-toggle:hover .theme-toggle-track {
   background: var(--bg-hover);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .theme-toggle-thumb {
@@ -32,7 +32,7 @@
   height: 22px;
   background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px oklch(0 0 0 / 0.2);
   z-index: 2;
 }
 

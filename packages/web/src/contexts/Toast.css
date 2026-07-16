@@ -15,7 +15,7 @@
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  border: var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   min-width: 280px;
@@ -28,35 +28,35 @@
 }
 
 .toast--success {
-  border-left: 3px solid var(--success);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
 }
 
 .toast--success .toast-icon {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .toast--error {
-  border-left: 3px solid var(--error);
+  border-color: color-mix(in srgb, var(--error) 35%, transparent);
 }
 
 .toast--error .toast-icon {
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .toast--warning {
-  border-left: 3px solid var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
 }
 
 .toast--warning .toast-icon {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .toast--info {
-  border-left: 3px solid var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .toast--info .toast-icon {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .toast-message {

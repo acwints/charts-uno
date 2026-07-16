@@ -30,7 +30,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   }, [isOpen, onClose]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isOpen && (
         <motion.div
           className="auth-modal-backdrop"

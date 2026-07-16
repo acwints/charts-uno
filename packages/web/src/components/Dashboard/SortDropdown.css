@@ -31,6 +31,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
   padding: 2px;
   background: var(--bg-hover);
   border: none;
@@ -42,7 +44,7 @@
 
 .sort-dropdown-order:hover {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .sort-dropdown-chevron {
@@ -78,7 +80,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -88,7 +90,7 @@
 }
 
 .sort-dropdown-item--selected {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @media (prefers-reduced-motion: reduce) {

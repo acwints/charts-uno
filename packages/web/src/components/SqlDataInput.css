@@ -52,7 +52,7 @@
 }
 
 .sql-input-select:focus-visible {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .sql-input-actions {
@@ -113,7 +113,7 @@
 .sql-input-table th,
 .sql-input-table td {
   padding: var(--space-1) var(--space-2);
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
   max-width: 200px;

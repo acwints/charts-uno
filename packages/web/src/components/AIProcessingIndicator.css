@@ -28,22 +28,22 @@
 }
 
 .orb-ring--outer {
-  border-top-color: var(--accent);
-  border-right-color: rgba(59, 130, 246, 0.2);
+  border-top-color: var(--accent-text);
+  border-right-color: oklch(0.623 0.188 259.815 / 0.2);
   animation: orb-spin 2.5s linear infinite;
 }
 
 .orb-ring--middle {
   inset: 8px;
   border-bottom-color: var(--chart-2);
-  border-left-color: rgba(139, 92, 246, 0.2);
+  border-left-color: oklch(0.606 0.219 292.717 / 0.2);
   animation: orb-spin-reverse 2s linear infinite;
 }
 
 .orb-ring--inner {
   inset: 16px;
   border-top-color: var(--chart-3);
-  border-right-color: rgba(6, 182, 212, 0.15);
+  border-right-color: oklch(0.715 0.126 215.221 / 0.15);
   animation: orb-spin 1.5s linear infinite;
 }
 
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
+  color: var(--accent-text);
   animation: orb-pulse 2s ease-in-out infinite;
 }
 
@@ -104,7 +104,7 @@
 
 .ai-processing-status {
   font-size: 0.8rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-align: center;
   min-height: 1.2em;
   animation: status-fade 0.4s ease-out;
@@ -135,12 +135,15 @@
 }
 
 .progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 2px;
   background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3));
   background-size: 200% 100%;
   animation: progress-shimmer 2s linear infinite;
-  transition: width 0.15s ease-out;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.15s ease-out;
 }
 
 .progress-glow {
@@ -151,7 +154,7 @@
   border-radius: 50%;
   background: var(--accent);
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 12px var(--accent), 0 0 24px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 12px var(--accent), 0 0 24px oklch(0.623 0.188 259.815 / 0.3);
   opacity: 0.8;
   transition: left 0.15s ease-out;
 }

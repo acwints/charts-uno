@@ -46,7 +46,7 @@
   border: var(--border-subtle);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 500;
   line-height: 1;
   text-overflow: ellipsis;
@@ -55,13 +55,13 @@
 }
 
 .workbench-status-pill--verified {
-  color: var(--success);
+  color: var(--success-text);
   background: var(--success-subtle);
   border-color: color-mix(in srgb, var(--success) 28%, transparent);
 }
 
 .workbench-status-pill--warning {
-  color: var(--warning);
+  color: var(--warning-text);
   background: var(--warning-subtle);
   border-color: color-mix(in srgb, var(--warning) 32%, transparent);
 }
@@ -108,7 +108,7 @@
 .workbench-view-toggle-btn.is-active {
   background: var(--accent);
   color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.22);
 }
 
 .workbench-view-toggle-btn svg {
@@ -260,7 +260,7 @@
 .workbench-prompt-source-label {
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -281,6 +281,8 @@
   max-height: 100%;
   object-fit: contain;
   border-radius: var(--radius-sm);
+  outline: var(--image-outline);
+  outline-offset: -1px;
 }
 
 .workbench-prompt-source-panel {
@@ -307,20 +309,20 @@
   padding: 2px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-full);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
 .workbench-prompt-source-status.verified {
-  color: var(--success);
+  color: var(--success-text);
   background: var(--success-subtle);
   border-color: color-mix(in srgb, var(--success) 35%, transparent);
 }
 
 .workbench-prompt-source-status.unverified {
-  color: var(--warning);
+  color: var(--warning-text);
   background: var(--warning-subtle);
   border-color: color-mix(in srgb, var(--warning) 35%, transparent);
 }
@@ -344,8 +346,8 @@
   align-items: center;
   gap: 4px;
   max-width: 100%;
-  color: var(--accent);
-  font-size: 0.72rem;
+  color: var(--accent-text);
+  font-size: 0.75rem;
   text-decoration: none;
 }
 
@@ -369,7 +371,7 @@
 .workbench-prompt-source-note {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 

@@ -108,7 +108,7 @@ export function ShareMenu({
         <span>Share</span>
       </Button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {pasteHint && (
           <motion.div
             className="share-paste-hint"
@@ -123,7 +123,7 @@ export function ShareMenu({
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="share-dropdown"

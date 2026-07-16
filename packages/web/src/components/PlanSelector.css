@@ -28,7 +28,7 @@
 }
 
 .plan-card--highlight {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 1px var(--accent);
 }
 
@@ -44,7 +44,7 @@
   padding: 4px 12px;
   background: var(--accent);
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: 20px;
   text-transform: uppercase;
@@ -58,7 +58,7 @@
   align-items: center;
   justify-content: center;
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 10px;
   margin-bottom: 16px;
 }
@@ -124,7 +124,7 @@
 }
 
 .plan-card__limit svg {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .plan-card__features {
@@ -146,7 +146,7 @@
 .plan-card__feature svg {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .plan-card__button {
@@ -164,7 +164,7 @@
 
 .plan-card__button:hover:not(:disabled) {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: white;
 }
 
@@ -180,8 +180,8 @@
 
 .plan-card__button--current {
   background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
 }
 
 .plan-card__button--downgrade {
@@ -191,7 +191,7 @@
 
 .plan-card--highlight .plan-card__button:not(.plan-card__button--current) {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: white;
 }
 

@@ -40,7 +40,7 @@ export function MemberFilter({ members, selectedMemberId, onSelect }: MemberFilt
         <ChevronDown size={14} className={`member-filter-chevron ${isOpen ? 'member-filter-chevron--open' : ''}`} />
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="member-filter-menu"

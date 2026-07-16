@@ -82,7 +82,7 @@ export function InviteModal({
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isOpen && (
         <>
           <motion.div

@@ -14,15 +14,15 @@
   max-width: 420px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.08);
 }
 
 .invite-accept__card--error {
-  border-color: var(--error);
+  border-color: var(--error-text);
 }
 
 .invite-accept__card--success {
-  border-color: var(--success);
+  border-color: var(--success-text);
 }
 
 .invite-accept__icon {
@@ -34,22 +34,22 @@
   margin: 0 auto 1.5rem;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-radius: 50%;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .invite-accept__icon--error {
   background: color-mix(in srgb, var(--error) 10%, transparent);
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .invite-accept__icon--success {
   background: color-mix(in srgb, var(--success) 10%, transparent);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .invite-accept__spinner {
   animation: spin 1s linear infinite;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @keyframes spin {
@@ -130,7 +130,7 @@
   display: inline-block;
   padding: 0.125rem 0.5rem;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 4px;
   font-weight: 500;
   text-transform: capitalize;

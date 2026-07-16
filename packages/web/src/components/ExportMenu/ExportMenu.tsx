@@ -100,7 +100,7 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
         <span>Download</span>
       </Button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="export-dropdown"

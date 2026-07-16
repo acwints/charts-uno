@@ -48,7 +48,7 @@
 
 .team-header-badge {
   padding: var(--space-1) var(--space-2);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -57,12 +57,12 @@
 
 .team-header-badge--pro {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .team-header-badge--business {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
-  color: #a855f7;
+  background: linear-gradient(135deg, oklch(0.606 0.219 292.717 / 0.1), oklch(0.656 0.212 354.308 / 0.1));
+  color: oklch(0.627 0.233 303.9);
 }
 
 .team-header-stats {

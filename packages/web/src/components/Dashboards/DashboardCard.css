@@ -8,7 +8,7 @@
 
 .dbcard:hover {
   border-color: var(--border-default);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.08);
 }
 
 .dbcard-link {
@@ -87,11 +87,11 @@
 }
 
 .dbcard-badge--refresh {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dbcard-badge--public {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .dbcard-delete {

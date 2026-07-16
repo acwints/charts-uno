@@ -77,7 +77,7 @@ export function AIProcessingIndicator({
         <div className="progress-track">
           <div
             className="progress-fill"
-            style={{ width: `${progress}%` }}
+            style={{ transform: `scaleX(${progress / 100})` }}
           />
           <div className="progress-glow" style={{ left: `${progress}%` }} />
         </div>

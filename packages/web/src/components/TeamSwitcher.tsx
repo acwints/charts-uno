@@ -64,7 +64,7 @@ export function TeamSwitcher({ onCreateTeam }: TeamSwitcherProps) {
         />
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="team-switcher__dropdown"

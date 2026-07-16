@@ -183,7 +183,7 @@ export function BillingSettings() {
                   <div className="usage-bar">
                     <div
                       className={`usage-bar__fill ${getUsageBarClass(chartsUsagePercent)}`}
-                      style={{ width: `${chartsUsagePercent}%` }}
+                      style={{ transform: `scaleX(${chartsUsagePercent / 100})` }}
                     />
                   </div>
                 )}
@@ -201,7 +201,7 @@ export function BillingSettings() {
                   <div className="usage-bar">
                     <div
                       className={`usage-bar__fill ${getUsageBarClass(seatsUsagePercent)}`}
-                      style={{ width: `${seatsUsagePercent}%` }}
+                      style={{ transform: `scaleX(${seatsUsagePercent / 100})` }}
                     />
                   </div>
                 )}

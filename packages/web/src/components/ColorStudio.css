@@ -90,9 +90,9 @@
 }
 
 .cstudio-mode-btn.active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-subtle);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 /* ── Color scheme grid ── */
@@ -128,9 +128,9 @@
 }
 
 .cstudio-scheme.active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-subtle);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .cstudio-scheme-dots {
@@ -180,7 +180,7 @@
 .cstudio-color-input::-webkit-color-swatch { border: none; border-radius: 1px; }
 
 .cstudio-swatch-name {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-muted);
   overflow: hidden;
@@ -212,7 +212,7 @@
 }
 
 .cstudio-preset:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .cstudio-preset:focus-visible {
@@ -270,7 +270,7 @@
 }
 
 .cstudio-field-label {
-  font-size: 0.55rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -308,7 +308,7 @@
 
 .cstudio-field-hex:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 /* ── Reduced motion ── */

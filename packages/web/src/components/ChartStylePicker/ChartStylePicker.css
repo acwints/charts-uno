@@ -28,12 +28,12 @@
 }
 
 .style-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--bg-tertiary);
 }
 
 .style-card.selected {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 1px var(--accent);
 }
 
@@ -48,7 +48,7 @@
   background: var(--accent);
   border-radius: 3px;
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: white;
   letter-spacing: 0.02em;

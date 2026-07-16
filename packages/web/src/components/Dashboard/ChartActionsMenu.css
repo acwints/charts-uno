@@ -6,8 +6,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   background: var(--bg-secondary);
   border: var(--border-subtle);
@@ -46,7 +46,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -61,12 +61,12 @@
 }
 
 .chart-actions-item--danger {
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .chart-actions-item--danger:hover {
   background: var(--error-subtle);
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .chart-actions-divider {

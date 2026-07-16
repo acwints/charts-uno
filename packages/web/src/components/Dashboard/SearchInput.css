@@ -31,7 +31,7 @@
 }
 
 .search-input:focus-visible {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--bg-secondary);
 }
 
@@ -50,6 +50,16 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.search-input-clear::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
 }
 
 .search-input-clear:hover {

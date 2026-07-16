@@ -93,7 +93,7 @@ export function ChartActionsMenu({
         <MoreHorizontal size={16} />
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="chart-actions-dropdown"

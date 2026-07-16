@@ -17,7 +17,7 @@
 }
 
 .dbview-error a {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dbview-header {
@@ -124,7 +124,7 @@
 }
 
 .dbview-empty a {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dbview-grid {

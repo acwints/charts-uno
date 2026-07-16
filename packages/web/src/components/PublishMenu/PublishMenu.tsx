@@ -115,7 +115,7 @@ export function PublishMenu({
         <span>Publish</span>
       </Button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="publish-dropdown"

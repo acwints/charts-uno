@@ -20,7 +20,7 @@ export function UsageWidget({ used, limit }: UsageWidgetProps) {
       <div className="usage-bar">
         <div
           className={`usage-bar-fill ${isAtLimit ? 'usage-bar-fill--danger' : isNearLimit ? 'usage-bar-fill--warning' : ''}`}
-          style={{ width: `${percentage}%` }}
+          style={{ transform: `scaleX(${percentage / 100})` }}
         />
       </div>
       <div className="usage-count">

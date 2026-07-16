@@ -36,7 +36,7 @@
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
-  text-align: left;
+  text-align: start;
 }
 
 .settings-page__nav-item:hover {
@@ -46,7 +46,7 @@
 
 .settings-page__nav-item--active {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .settings-page__content {
@@ -60,8 +60,8 @@
   position: absolute;
   top: 24px;
   right: 24px;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,7 +120,7 @@
 }
 
 .settings-card--warning {
-  border-color: var(--warning);
+  border-color: var(--warning-text);
 }
 
 .settings-card__header {
@@ -160,7 +160,7 @@
   font-size: 12px;
   padding: 4px 8px;
   background: var(--error-subtle);
-  color: var(--error);
+  color: var(--error-text);
   border-radius: 4px;
 }
 
@@ -245,7 +245,7 @@
 .settings-warning-text {
   margin: 0;
   font-size: 14px;
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .settings-warning-link {
@@ -266,7 +266,7 @@
 
 .settings-field__input:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
@@ -297,6 +297,8 @@
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
+  outline: var(--image-outline);
+  outline-offset: -1px;
 }
 
 .settings-avatar__placeholder {
@@ -304,7 +306,7 @@
   height: 64px;
   border-radius: 50%;
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,6 +352,8 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  outline: var(--image-outline);
+  outline-offset: -1px;
 }
 
 .member-item__avatar-placeholder {
@@ -357,7 +361,7 @@
   height: 40px;
   border-radius: 50%;
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -391,7 +395,7 @@
 
 .member-item__role--owner {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .member-item__actions {
@@ -424,12 +428,14 @@
   font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .usage-stat__limit {
   font-size: 13px;
   color: var(--text-secondary);
   margin-top: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .usage-bar {
@@ -441,10 +447,13 @@
 }
 
 .usage-bar__fill {
+  width: 100%;
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s ease;
 }
 
 .usage-bar__fill--warning {
@@ -483,7 +492,7 @@
   padding: 12px;
   background: var(--warning-subtle);
   border-radius: 8px;
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .branding-upgrade__content {
@@ -624,7 +633,7 @@
 }
 
 .branding-logo-dropzone:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--text-primary);
 }
 
@@ -651,6 +660,8 @@
   max-height: 48px;
   max-width: 200px;
   width: auto;
+  outline: var(--image-outline);
+  outline-offset: -1px;
 }
 
 .branding-logo-current__actions {
@@ -660,7 +671,7 @@
 }
 
 .branding-logo-delete {
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .branding-logo-delete:hover {
@@ -687,7 +698,7 @@
 }
 
 .branding-domain-field:focus-within {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .branding-domain-icon {
@@ -738,7 +749,7 @@
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px oklch(0 0 0 / 0.2);
   transition: transform 150ms ease;
 }
 
@@ -747,11 +758,11 @@
 }
 
 .branding-color-hex {
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
   font-family: var(--font-mono);
   color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px oklch(0 0 0 / 0.5);
   font-variant-numeric: tabular-nums;
 }
 
@@ -814,7 +825,7 @@
 }
 
 .brand-color-description {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
@@ -836,7 +847,7 @@
 }
 
 .brand-color-swatch-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   transform: scale(1.05);
 }
 
@@ -866,7 +877,7 @@
 
 .brand-color-hex-input:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 @media (max-width: 768px) {

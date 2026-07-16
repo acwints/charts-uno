@@ -19,7 +19,7 @@
   height: 80px;
   border-radius: 50%;
   background: var(--error-subtle);
-  color: var(--error);
+  color: var(--error-text);
   margin-bottom: 1.5rem;
 }
 

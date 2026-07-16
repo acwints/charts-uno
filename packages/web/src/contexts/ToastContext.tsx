@@ -73,7 +73,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     <ToastContext.Provider value={{ showToast, success, error, warning, info }}>
       {children}
       <div className="toast-container" role="region" aria-label="Notifications">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence initial={false} mode="popLayout">
           {toasts.map((toast) => {
             const Icon = ICONS[toast.type];
             return (

@@ -161,7 +161,7 @@
 }
 
 .chart-feed__error {
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .chart-feed__error p {

@@ -15,7 +15,7 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   background: var(--bg-tertiary);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -83,12 +83,12 @@
 }
 
 .chart-list-checkbox:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .chart-list-item--selected .chart-list-checkbox {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   opacity: 1;
 }
 
@@ -113,7 +113,7 @@
 }
 
 .chart-list-visibility--public {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .chart-list-visibility--private {

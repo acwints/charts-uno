@@ -83,7 +83,7 @@ export function DashboardToolbar({ onBatchAction }: DashboardToolbarProps) {
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isSelecting && count > 0 && (
         <motion.div
           className="dashboard-toolbar"

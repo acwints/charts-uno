@@ -11,7 +11,7 @@
 
 .sql-editor .cm-editor.cm-focused {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .sql-editor .cm-gutters {

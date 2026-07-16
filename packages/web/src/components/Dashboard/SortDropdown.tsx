@@ -66,7 +66,7 @@ export function SortDropdown({ sort, order, onSort }: SortDropdownProps) {
         <ChevronDown size={14} className={`sort-dropdown-chevron ${isOpen ? 'sort-dropdown-chevron--open' : ''}`} />
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             className="sort-dropdown-menu"

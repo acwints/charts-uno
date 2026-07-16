@@ -1,7 +1,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: oklch(0 0 0 / 0.6);
   backdrop-filter: blur(4px);
   z-index: 1000;
 }
@@ -16,7 +16,7 @@
   background: var(--bg-secondary);
   border: var(--border-default);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 60px oklch(0 0 0 / 0.4);
   z-index: 1001;
   overflow: hidden;
 }
@@ -42,8 +42,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -102,7 +102,7 @@
 
 .invite-modal__input:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
@@ -119,16 +119,16 @@
   border-width: 2px;
   border-radius: 8px;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .invite-modal__role:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .invite-modal__role--active {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent-subtle);
 }
 
@@ -155,12 +155,12 @@
   border: 1px solid color-mix(in srgb, var(--error) 20%, transparent);
   border-radius: 8px;
   font-size: 13px;
-  color: var(--error);
+  color: var(--error-text);
   margin-bottom: 16px;
 }
 
 .invite-modal__warning a {
-  color: var(--error);
+  color: var(--error-text);
   text-decoration: underline;
 }
 
@@ -230,7 +230,7 @@
 
 .invite-modal__copy:hover {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: white;
 }
 

@@ -28,22 +28,22 @@
 
 .activity-item-icon--success {
   background: var(--success-subtle);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .activity-item-icon--accent {
   background: var(--accent-subtle);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .activity-item-icon--warning {
   background: var(--warning-subtle);
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .activity-item-icon--danger {
   background: var(--error-subtle);
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .activity-item-content {
@@ -63,7 +63,7 @@
 }
 
 .activity-item-target {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 

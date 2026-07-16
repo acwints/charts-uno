@@ -113,7 +113,7 @@ export function Header({
                 />
               </button>
 
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {isUserMenuOpen && (
                   <motion.div
                     className="user-menu-dropdown"
