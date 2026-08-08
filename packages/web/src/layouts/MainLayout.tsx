@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Header } from '../components/Header';
+import { MobileTabBar } from '../components/MobileTabBar';
 import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
 import { AuthModal } from '../components/AuthModal';
 import { ChatPanel } from '../components/ChatPanel';
@@ -33,7 +34,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [isAuthenticated, closeAuthModal]);
 
   return (
-    <div className="app">
+    <div className="app app--has-tabbar">
       <Header onAuthOpen={openAuthModal} />
 
       <div className="app-body">
@@ -87,6 +88,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </nav>
         </div>
       </footer>
+
+      <MobileTabBar onAuthOpen={openAuthModal} />
 
       <AuthModal isOpen={!isAuthenticated && isAuthModalOpen} onClose={closeAuthModal} />
     </div>

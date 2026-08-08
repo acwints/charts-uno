@@ -8,6 +8,7 @@ This file is the fast orientation layer for humans and coding agents.
 - `packages/api`: FastAPI backend (auth, persistence, team management, AI/data services).
 - `packages/shared`: Shared TypeScript types and color/theme logic consumed by web + bot.
 - `packages/bot`: TypeScript bot pipeline for rendering, analysis, posting, and API integration.
+- `packages/mobile`: Capacitor iOS shell wrapping the production web app for the App Store (see its `APP_STORE_SUBMISSION.md`).
 
 ## Source-of-Truth Files
 
