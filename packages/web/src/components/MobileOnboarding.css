@@ -1,0 +1,218 @@
+.onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+
+.onboard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+}
+
+.onboard__brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.onboard__skip {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-ui);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.onboard__skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.onboard__track {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.onboard__track::-webkit-scrollbar {
+  display: none;
+}
+
+.onboard__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.onboard__visual {
+  position: relative;
+  width: min(220px, 55vw);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.onboard__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+}
+
+.onboard__bar {
+  flex: 1;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--accent);
+}
+
+.onboard__bar:nth-child(even) {
+  background: var(--accent-subtle);
+}
+
+.onboard__bar:last-child {
+  background: oklch(0.78 0.16 60);
+}
+
+.onboard__visual-icon {
+  position: absolute;
+  top: calc(-1 * var(--space-3));
+  right: calc(-1 * var(--space-3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: var(--shadow-glow);
+}
+
+.onboard__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  color: var(--text-primary);
+  max-width: 20ch;
+}
+
+.onboard__body {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+.onboard__dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.onboard__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  cursor: pointer;
+  transition: background-color 150ms, transform 150ms;
+}
+
+.onboard__dot--active {
+  background: var(--accent);
+  transform: scale(1.25);
+}
+
+.onboard__dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.onboard__cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-6);
+}
+
+.onboard__btn {
+  width: 100%;
+  min-height: 48px;
+  font-size: var(--text-body);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+
+.onboard__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.onboard__btn--primary {
+  color: var(--accent-foreground);
+  background: var(--accent);
+  border: none;
+}
+
+.onboard__btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.onboard__btn--ghost {
+  color: var(--text-secondary);
+  background: transparent;
+  border: var(--border-subtle);
+}
+
+.onboard__btn--ghost:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard__skip,
+  .onboard__dot,
+  .onboard__btn {
+    transition: none;
+  }
+
+  .onboard__track {
+    scroll-behavior: auto;
+  }
+}

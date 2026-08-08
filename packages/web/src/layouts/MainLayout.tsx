@@ -1,7 +1,10 @@
-import { useEffect, type ReactNode } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Header } from '../components/Header';
+import { MobileTabBar } from '../components/MobileTabBar';
+import { MobileOnboarding } from '../components/MobileOnboarding';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
 import { AuthModal } from '../components/AuthModal';
 import { ChatPanel } from '../components/ChatPanel';
@@ -13,11 +16,18 @@ interface MainLayoutProps {
   children?: ReactNode;
 }
 
+const ONBOARDED_STORAGE_KEY = 'chartsuno_onboarded_v1';
+
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
-  const { isAuthenticated } = useAuth();
+  const isPhoneViewport = useMediaQuery('(max-width: 768px)');
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
+  const [hasOnboarded, setHasOnboarded] = useState(
+    () => localStorage.getItem(ONBOARDED_STORAGE_KEY) === 'true'
+  );
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
   const routeContent = children || <Outlet context={{ openAuthModal }} />;
 
@@ -32,8 +42,37 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [isAuthenticated, closeAuthModal]);
 
+  // Persist the flag for signed-in users so onboarding never reappears on
+  // this device (e.g. after a later sign-out and remount).
+  useEffect(() => {
+    if (isAuthenticated) {
+      localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
+    }
+  }, [isAuthenticated]);
+
+  const completeOnboarding = (thenSignIn: boolean) => {
+    localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
+    setHasOnboarded(true);
+    navigate('/feed');
+    if (thenSignIn) {
+      openAuthModal();
+    }
+  };
+
+  const showOnboarding =
+    isPhoneViewport && !isAuthLoading && !isAuthenticated && !hasOnboarded;
+
+  if (showOnboarding) {
+    return (
+      <MobileOnboarding
+        onSignIn={() => completeOnboarding(true)}
+        onExplore={() => completeOnboarding(false)}
+      />
+    );
+  }
+
   return (
-    <div className="app">
+    <div className="app app--has-tabbar">
       <Header onAuthOpen={openAuthModal} />
 
       <div className="app-body">
@@ -87,6 +126,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </nav>
         </div>
       </footer>
+
+      <MobileTabBar onAuthOpen={openAuthModal} />
 
       <AuthModal isOpen={!isAuthenticated && isAuthModalOpen} onClose={closeAuthModal} />
     </div>

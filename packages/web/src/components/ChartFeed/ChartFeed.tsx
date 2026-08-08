@@ -7,9 +7,12 @@ import Heart from 'lucide-react/dist/esm/icons/heart';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { ChartCard } from './ChartCard';
+import { InstaChartCard } from './InstaChartCard';
+import { FeedSkeleton } from './FeedSkeleton';
 import type { ChartResponse } from '../../services/api';
 import { getPublicCharts, getSavedCharts, getLikedCharts } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import './ChartFeed.css';
 
 type FeedTab = 'explore' | 'saved' | 'liked';
@@ -17,16 +20,19 @@ type FeedTab = 'explore' | 'saved' | 'liked';
 interface ChartFeedProps {
   onChartSelect?: (chart: ChartResponse) => void;
   onBack?: () => void;
+  onAuthRequired?: () => void;
 }
 
-export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
+export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedProps) {
   const { user } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 640px)');
   const [activeTab, setActiveTab] = useState<FeedTab>('explore');
   const [charts, setCharts] = useState<ChartResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const offsetRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const LIMIT = 20;
 
@@ -91,6 +97,23 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
     }
   };
 
+  // Mobile: replace the Load More button with scroll-triggered pagination.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!isMobile || !sentinel || activeTab !== 'explore') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting) && !isLoading && hasMore) {
+          fetchCharts('explore', false);
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isMobile, activeTab, isLoading, hasMore, fetchCharts]);
+
   const handleRefresh = () => {
     fetchCharts(activeTab, true);
   };
@@ -146,7 +169,7 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
         </nav>
       </header>
 
-      <main className="chart-feed__content">
+      <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
         {error && (
           <div className="chart-feed__error">
             <p>{error}</p>
@@ -157,10 +180,14 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
         )}
 
         {!error && isLoading && charts.length === 0 && (
-          <div className="chart-feed__loading">
-            <Loader2 size={32} className="spinning" />
-            <span>Loading charts...</span>
-          </div>
+          isMobile ? (
+            <FeedSkeleton />
+          ) : (
+            <div className="chart-feed__loading">
+              <Loader2 size={32} className="spinning" />
+              <span>Loading charts...</span>
+            </div>
+          )
         )}
 
         {!error && !isLoading && charts.length === 0 && (
@@ -192,8 +219,8 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
         <AnimatePresence mode="wait">
           {charts.length > 0 && (
             <motion.div
-              key={activeTab}
-              className="chart-feed__grid"
+              key={`${activeTab}-${isMobile ? 'mobile' : 'desktop'}`}
+              className={isMobile ? 'chart-feed__stream' : 'chart-feed__grid'}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -204,20 +231,32 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
                   key={chart.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.3 }}
+                  transition={{ delay: Math.min(index, 8) * 0.05, duration: 0.3 }}
                 >
-                  <ChartCard
-                    chart={chart}
-                    onChartClick={onChartSelect}
-                    onUpdate={handleChartUpdate}
-                  />
+                  {isMobile ? (
+                    <InstaChartCard
+                      chart={chart}
+                      onChartClick={onChartSelect}
+                      onUpdate={handleChartUpdate}
+                      onAuthRequired={onAuthRequired}
+                    />
+                  ) : (
+                    <ChartCard
+                      chart={chart}
+                      onChartClick={onChartSelect}
+                      onUpdate={handleChartUpdate}
+                      onAuthRequired={onAuthRequired}
+                    />
+                  )}
                 </motion.div>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {hasMore && charts.length > 0 && activeTab === 'explore' && (
+        {isMobile && <div ref={sentinelRef} className="chart-feed__sentinel" aria-hidden="true" />}
+
+        {!isMobile && hasMore && charts.length > 0 && activeTab === 'explore' && (
           <div className="chart-feed__load-more">
             <button
               className="chart-feed__load-more-btn"

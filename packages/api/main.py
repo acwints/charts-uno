@@ -877,14 +877,20 @@ async def save_chart(
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # Check if already saved
+    # Idempotent: repeat saves return the existing record so clients with
+    # stale state (double taps, multiple devices) never see an error.
     existing = db.query(SavedChart).filter(
         SavedChart.user_id == current_user.id,
         SavedChart.chart_id == chart_id,
     ).first()
 
     if existing:
-        raise HTTPException(status_code=409, detail="Chart already saved")
+        return SavedChartResponse(
+            id=existing.id,
+            chart_id=existing.chart_id,
+            created_at=existing.created_at,
+            chart=_chart_to_response(chart, current_user, db),
+        )
 
     saved = SavedChart(user_id=current_user.id, chart_id=chart_id)
     db.add(saved)
@@ -911,11 +917,10 @@ async def unsave_chart(
         SavedChart.chart_id == chart_id,
     ).first()
 
-    if not saved:
-        raise HTTPException(status_code=404, detail="Saved chart not found")
-
-    db.delete(saved)
-    db.commit()
+    # Idempotent: removing a save that doesn't exist is a no-op success.
+    if saved:
+        db.delete(saved)
+        db.commit()
 
     return {"status": "ok"}
 
@@ -963,14 +968,19 @@ async def like_chart(
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # Check if already liked
+    # Idempotent: a repeat like (double tap, stale client state) returns the
+    # existing like without touching the count.
     existing = db.query(Like).filter(
         Like.user_id == current_user.id,
         Like.chart_id == chart_id,
     ).first()
 
     if existing:
-        raise HTTPException(status_code=409, detail="Chart already liked")
+        return LikeResponse(
+            id=existing.id,
+            chart_id=existing.chart_id,
+            created_at=existing.created_at,
+        )
 
     like = Like(user_id=current_user.id, chart_id=chart_id)
     db.add(like)
@@ -1000,16 +1010,15 @@ async def unlike_chart(
         Like.chart_id == chart_id,
     ).first()
 
-    if not like:
-        raise HTTPException(status_code=404, detail="Like not found")
+    # Idempotent: removing a like that doesn't exist is a no-op success, and
+    # the count only moves when a like row is actually deleted.
+    if like:
+        chart = db.query(Chart).filter(Chart.id == chart_id).first()
+        if chart and chart.like_count > 0:
+            chart.like_count -= 1
 
-    # Update like count
-    chart = db.query(Chart).filter(Chart.id == chart_id).first()
-    if chart and chart.like_count > 0:
-        chart.like_count -= 1
-
-    db.delete(like)
-    db.commit()
+        db.delete(like)
+        db.commit()
 
     return {"status": "ok"}
 
