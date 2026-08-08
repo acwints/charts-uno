@@ -15,9 +15,9 @@ plugin bridge).
   origin, so the existing cookie-based auth works unchanged inside the
   webview.
 - The mobile experience itself lives in `packages/web`: the Instagram-style
-  feed (stories rail, double-tap like, save/share) and the bottom tab bar
-  activate on phone-width viewports, with `env(safe-area-inset-*)` padding
-  for the notch and home indicator.
+  posts feed (double-tap like, save/share), first-launch onboarding, and the
+  bottom tab bar activate on phone-width viewports, with
+  `env(safe-area-inset-*)` padding for the notch and home indicator.
 - `shell/index.html` is only an offline fallback page.
 
 ## Generating the native project (on a Mac)
@@ -78,7 +78,7 @@ In Xcode:
 | App Privacy (data collection) | Contact info (email, name via Google sign-in), user content (charts, datasets), linked to identity, not used for tracking or advertising |
 | Age rating | Answer the questionnaire honestly (no objectionable content) — expect 4+ |
 | Export compliance | Set `ITSAppUsesNonExemptEncryption=false` in Info.plist |
-| Screenshots | 6.9" (iPhone 16 Pro Max) and 6.5" (iPhone 11 Pro Max); capture the feed, stories rail, chart view, and chart builder |
+| Screenshots | 6.9" (iPhone 16 Pro Max) and 6.5" (iPhone 11 Pro Max); capture onboarding, the feed, chart view, and chart builder |
 
 ## Review risk: Guideline 4.2 (Minimum Functionality)
 
@@ -87,9 +87,9 @@ planned:
 
 - Native share sheet via the web Share API (bridged by WKWebView) and the
   `@capacitor/share` plugin.
-- App-style navigation: bottom tab bar, safe-area-aware layout, stories
-  rail, double-tap gestures — the mobile experience is designed as an app,
-  not a shrunk website.
+- App-style navigation: bottom tab bar, safe-area-aware layout, first-launch
+  onboarding, double-tap gestures — the mobile experience is designed as an
+  app, not a shrunk website.
 - Splash screen, dark status-bar integration, offline fallback page.
 - Strong next additions if a reviewer still flags 4.2: push notifications
   for likes/follows on published charts, a home-screen widget showing a

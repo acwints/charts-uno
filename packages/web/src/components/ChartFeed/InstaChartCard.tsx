@@ -8,6 +8,7 @@ import User from 'lucide-react/dist/esm/icons/user';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import { MiniChartPreview } from '../MiniChartPreview';
 import './InstaChartCard.css';
 
@@ -15,6 +16,7 @@ interface InstaChartCardProps {
   chart: ChartResponse;
   onChartClick?: (chart: ChartResponse) => void;
   onUpdate?: (chart: ChartResponse) => void;
+  onAuthRequired?: () => void;
 }
 
 const DOUBLE_TAP_MS = 300;
@@ -36,7 +38,8 @@ function formatRelativeDate(dateString: string): string {
 
 // Full-bleed feed card: tap opens the chart, double-tap likes it,
 // actions row mirrors the like/save/share affordances of a social feed.
-export function InstaChartCard({ chart, onChartClick, onUpdate }: InstaChartCardProps) {
+export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: InstaChartCardProps) {
+  const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
   const [isSaved, setIsSaved] = useState(chart.is_saved);
@@ -47,6 +50,10 @@ export function InstaChartCard({ chart, onChartClick, onUpdate }: InstaChartCard
   const tapTimerRef = useRef<number | null>(null);
 
   const toggleLike = async (forceOn = false) => {
+    if (!user) {
+      onAuthRequired?.();
+      return;
+    }
     if (isLikeLoading || (forceOn && isLiked)) return;
 
     setIsLikeLoading(true);
@@ -70,6 +77,10 @@ export function InstaChartCard({ chart, onChartClick, onUpdate }: InstaChartCard
   };
 
   const toggleSave = async () => {
+    if (!user) {
+      onAuthRequired?.();
+      return;
+    }
     if (isSaveLoading) return;
 
     setIsSaveLoading(true);

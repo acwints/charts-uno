@@ -8,7 +8,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { ChartCard } from './ChartCard';
 import { InstaChartCard } from './InstaChartCard';
-import { FeedStoriesRail } from './FeedStoriesRail';
+import { FeedSkeleton } from './FeedSkeleton';
 import type { ChartResponse } from '../../services/api';
 import { getPublicCharts, getSavedCharts, getLikedCharts } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,9 +20,10 @@ type FeedTab = 'explore' | 'saved' | 'liked';
 interface ChartFeedProps {
   onChartSelect?: (chart: ChartResponse) => void;
   onBack?: () => void;
+  onAuthRequired?: () => void;
 }
 
-export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
+export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedProps) {
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [activeTab, setActiveTab] = useState<FeedTab>('explore');
@@ -169,10 +170,6 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
       </header>
 
       <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
-        {isMobile && activeTab === 'explore' && charts.length > 0 && (
-          <FeedStoriesRail charts={charts} onChartSelect={onChartSelect} />
-        )}
-
         {error && (
           <div className="chart-feed__error">
             <p>{error}</p>
@@ -183,10 +180,14 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
         )}
 
         {!error && isLoading && charts.length === 0 && (
-          <div className="chart-feed__loading">
-            <Loader2 size={32} className="spinning" />
-            <span>Loading charts...</span>
-          </div>
+          isMobile ? (
+            <FeedSkeleton />
+          ) : (
+            <div className="chart-feed__loading">
+              <Loader2 size={32} className="spinning" />
+              <span>Loading charts...</span>
+            </div>
+          )
         )}
 
         {!error && !isLoading && charts.length === 0 && (
@@ -237,12 +238,14 @@ export function ChartFeed({ onChartSelect, onBack }: ChartFeedProps) {
                       chart={chart}
                       onChartClick={onChartSelect}
                       onUpdate={handleChartUpdate}
+                      onAuthRequired={onAuthRequired}
                     />
                   ) : (
                     <ChartCard
                       chart={chart}
                       onChartClick={onChartSelect}
                       onUpdate={handleChartUpdate}
+                      onAuthRequired={onAuthRequired}
                     />
                   )}
                 </motion.div>

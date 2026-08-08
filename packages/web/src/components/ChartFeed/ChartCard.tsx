@@ -5,6 +5,7 @@ import Eye from 'lucide-react/dist/esm/icons/eye';
 import User from 'lucide-react/dist/esm/icons/user';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import { MiniChartPreview } from '../MiniChartPreview';
 import './ChartCard.css';
 
@@ -12,15 +13,21 @@ interface ChartCardProps {
   chart: ChartResponse;
   onChartClick?: (chart: ChartResponse) => void;
   onUpdate?: (chart: ChartResponse) => void;
+  onAuthRequired?: () => void;
 }
 
-export function ChartCard({ chart, onChartClick, onUpdate }: ChartCardProps) {
+export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: ChartCardProps) {
+  const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!user) {
+      onAuthRequired?.();
+      return;
+    }
     if (isLikeLoading) return;
 
     setIsLikeLoading(true);
