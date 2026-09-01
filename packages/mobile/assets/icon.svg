@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!-- App icon source. Export a 1024x1024 icon.png beside this file, then run
-       `pnpm --filter @chartsuno/mobile ios:assets` to generate iOS icon sets. -->
+       the mobile ios:assets script to generate iOS icon sets. -->
   <rect width="1024" height="1024" fill="#101014"/>
   <g stroke-linecap="round">
     <line x1="272" y1="736" x2="272" y2="512" stroke="#5c7cfa" stroke-width="96"/>

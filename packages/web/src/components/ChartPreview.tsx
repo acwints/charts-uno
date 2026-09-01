@@ -909,7 +909,7 @@ export function ChartPreview({
         stroke={theme.textMuted}
         tick={hideAxisLabels ? false :
           <AdaptiveYAxisCategoryTick
-            fill={theme.textMuted}
+            fill={theme.text}
             fontSize={horizontalCategoryAxis.fontSize}
             maxTickLength={horizontalCategoryAxis.maxTickLength}
           />
