@@ -1,137 +1,120 @@
-.share-menu {
+.share-actions {
   position: relative;
-}
-
-.share-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 200px;
-  background: var(--bg-elevated);
-  border: var(--border-default);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  z-index: 1000;
-}
-
-.share-option {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.08);
+}
+
+.share-action.button {
+  min-height: 40px;
+  padding: 6px 10px;
   background: transparent;
   border: none;
-  cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-  text-align: start;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast), scale var(--transition-fast);
 }
 
-.share-option:hover:not(:disabled),
-.share-option:active:not(:disabled) {
-  background: var(--bg-hover);
+.share-action.button:hover:not(:disabled),
+.share-action.button:active:not(:disabled) {
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
-.share-option:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.share-option svg {
+.share-action--x svg,
+.share-action--linkedin svg {
   flex-shrink: 0;
-  color: var(--text-muted);
 }
 
-.share-option:hover:not(:disabled) svg,
-.share-option:active:not(:disabled) svg {
-  color: var(--text-secondary);
+.share-action--linkedin svg {
+  color: var(--accent-text);
 }
 
-.copied-icon {
-  color: var(--success-text) !important;
+.share-action--copy.button {
+  width: 40px;
+  padding: 0;
 }
 
-.share-divider {
-  height: 1px;
-  background: var(--border-subtle);
-  margin: var(--space-1) 0;
+.share-action-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
 }
 
-.share-loading {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  animation: pulse 1s ease-in-out infinite;
+.share-action-icon > span {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+.share-action-icon--success {
+  color: var(--success-text);
 }
 
 .share-paste-hint {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 260px;
+  z-index: 1000;
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 310px;
   padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
   background: var(--bg-elevated);
   border: 1px solid var(--success);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 1000;
   font-family: var(--font-body);
   font-size: 0.8rem;
-  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .paste-hint-icon {
-  color: var(--success-text);
   flex-shrink: 0;
+  color: var(--success-text);
+}
+
+@media (max-width: 640px) {
+  .share-action-prefix {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
-  .share-dropdown {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    min-width: 100%;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    max-height: 50vh;
-    overflow-y: auto;
+  .share-actions {
+    width: 100%;
   }
 
-  .share-option {
-    min-height: 44px;
+  .share-action--x.button,
+  .share-action--linkedin.button {
+    flex: 1;
+  }
+
+  .share-paste-hint {
+    position: fixed;
+    top: auto;
+    right: var(--space-3);
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    left: var(--space-3);
+    min-width: 0;
+    white-space: normal;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .share-option {
-    transition: none;
-  }
-
-  .share-loading {
-    animation: none;
-  }
-
-  .share-paste-hint {
+  .share-action.button {
     transition: none;
   }
 }

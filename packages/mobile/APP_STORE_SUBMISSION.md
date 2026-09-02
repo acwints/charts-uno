@@ -30,7 +30,7 @@ pnpm install
 cd packages/mobile
 pnpm ios:add        # generates ios/ from the Capacitor template (one time)
 pnpm ios:sync       # sync plugins + config into ios/
-pnpm ios:open       # opens ios/App/App.xcworkspace in Xcode
+pnpm ios:open       # opens the generated iOS project in Xcode
 ```
 
 For the app icon: export `assets/icon.svg` to a 1024x1024 `assets/icon.png`
@@ -59,11 +59,15 @@ For the app icon: export `assets/icon.svg` to a 1024x1024 `assets/icon.png`
 
 ## Archive and upload
 
+Latest beta: Chartsuno 1.0 build `2026.9.1` was uploaded successfully to App
+Store Connect for TestFlight processing on September 1, 2026.
+
 In Xcode:
 
 1. Select the `App` target > Signing & Capabilities > choose your team.
    Automatic signing; bundle ID `com.chartsuno.app`.
-2. Set Version (e.g. `1.0.0`) and Build (`1`) on the General tab.
+2. Set Version (e.g. `1.0`) and a new, monotonically increasing Build number
+   on the General tab. A date-based value such as `2026.9.1` avoids collisions.
 3. Product > Archive, then Distribute App > App Store Connect > Upload.
 4. In App Store Connect, attach the build to the 1.0 version, fill in the
    listing, and submit for review. Use TestFlight first to smoke-test on a

@@ -170,6 +170,8 @@ export function ChartWorkbench({
               />
               <ShareMenu
                 chartRef={chartRef}
+                chartId={chartId}
+                isPublic={isPublishedToFeed}
                 title={config.title}
                 watermark={watermark}
                 isAuthenticated={isAuthenticated}
