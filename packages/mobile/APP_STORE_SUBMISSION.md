@@ -12,8 +12,8 @@ plugin bridge).
   `https://chartsuno.com`. The SPA is served remotely, so shipping web
   updates does **not** require an App Store release.
 - Vercel rewrites proxy `/api` and `/auth` to the Railway backend on the same
-  origin, so the existing cookie-based auth works unchanged inside the
-  webview.
+  origin, so the app session cookie remains first-party inside the webview.
+  Google login requires the separate native authentication handoff below.
 - The mobile experience itself lives in `packages/web`: the Instagram-style
   posts feed (double-tap like, save/share), first-launch onboarding, and the
   bottom tab bar activate on phone-width viewports, with
@@ -46,21 +46,37 @@ For the app icon: export `assets/icon.svg` to a 1024x1024 `assets/icon.png`
      Identifiers & Profiles first)
    - Name: Chartsuno (reserve early; names are unique per storefront)
    - Suggested category: Productivity. Secondary: Graphics & Design.
-3. **Google OAuth in the shell** — Google blocks OAuth inside webviews, so
-   the in-webview redirect flow used on desktop will fail with
-   `disallowed_useragent`. Before submission, bridge sign-in through the
-   `@capacitor/browser` plugin (SFSafariViewController) and return via a
-   `com.chartsuno.app://auth-callback` deep link registered in
-   `ios/App/App/Info.plist`. Until that lands, TestFlight builds can be
-   smoke-tested with an already-authenticated session or Sign in with Apple.
-4. **Sign in with Apple** — because the app offers Google sign-in, App
-   Review requires Sign in with Apple (guideline 4.8) as an equivalent
-   option. Plan this on the API before submission.
+3. **Google OAuth in the shell** — build `2026.9.7` and the deployed native audit changes add a custom
+   `NativeAuth` bridge using `ASWebAuthenticationSession`. The system sheet
+   returns a short-lived PKCE-bound code via `com.chartsuno.app://auth-callback`;
+   the existing WKWebView exchanges it for its own HttpOnly session cookie.
+   This requires the updated API, web app, and a new iOS binary. Build
+   `2026.9.6` does **not** include the fix. Real Google sign-in is still pending
+   device verification; compilation and mocked-provider API tests are not a
+   substitute for that check.
+4. **Equivalent private login** — only Google login exists. Implement Sign in
+   with Apple or another qualifying equivalent before public submission, unless
+   an applicable exception in guideline 4.8 is established.
+5. **Account and community controls** — self-service account deletion and
+   public-feed report/block flows are missing. Billing still redirects to web
+   checkout. See the [native audit](../../docs/native-mobile-audit-2026-09-06.md)
+   for the release gates and device test matrix.
 
 ## Archive and upload
 
-Latest beta: Chartsuno 1.0 build `2026.9.1` was uploaded successfully to App
-Store Connect for TestFlight processing on September 1, 2026.
+Latest beta: Chartsuno 1.0 build `2026.9.7` is available to the **Internal
+Testers** group in TestFlight as of September 6, 2026. Apple reports the build
+as `VALID` and `IN_BETA_TESTING`; the account holder has been invited.
+
+- App Store Connect app ID: `6807256509`
+- Apple team: `VRTT45LLND`
+- CLI profile on this Mac: `Personal` (existing App Manager team key in Keychain)
+- Build ID: `6c5a214d-a36f-4c53-b244-be3fa55cac54`
+- Internal group ID: `488b4d86-cdb9-4a18-a649-a5b3dcb5b213`
+
+Use `asc --profile Personal` explicitly for this app. The profile also covers
+SixAM and SuppStack AI. External/public TestFlight distribution has not been
+submitted for beta review.
 
 In Xcode:
 
@@ -79,35 +95,25 @@ In Xcode:
 | --- | --- |
 | Privacy policy URL | `https://chartsuno.com/privacy` (page ships in this repo) |
 | Support URL | `https://chartsuno.com` |
-| App Privacy (data collection) | Contact info (email, name via Google sign-in), user content (charts, datasets), linked to identity, not used for tracking or advertising |
-| Age rating | Answer the questionnaire honestly (no objectionable content) — expect 4+ |
+| App Privacy (data collection) | Verify against actual AI, analytics, billing, and hosting providers before submission; account info and user content are collected |
+| Age rating | Complete the questionnaire based on the public feed and moderation controls; do not assume a rating |
 | Export compliance | Set `ITSAppUsesNonExemptEncryption=false` in Info.plist |
 | Screenshots | 6.9" (iPhone 16 Pro Max) and 6.5" (iPhone 11 Pro Max); capture onboarding, the feed, chart view, and chart builder |
 
-## Review risk: Guideline 4.2 (Minimum Functionality)
+## Native experience and review readiness
 
-Apple rejects apps that are plain website wrappers. Mitigations in place or
-planned:
+The app remains a Capacitor hybrid. The audit adds native authentication,
+link/file share sheets, haptics, and app-specific navigation, and these changes
+are deployed for internal TestFlight build `2026.9.7`. Live Google completion
+and share destination checks remain pending. An app-like layout alone does
+not demonstrate compliance with Apple's minimum-functionality requirement.
 
-- Native share sheet via the web Share API (bridged by WKWebView) and the
-  `@capacitor/share` plugin.
-- App-style navigation: bottom tab bar, safe-area-aware layout, first-launch
-  onboarding, double-tap gestures — the mobile experience is designed as an
-  app, not a shrunk website.
-- Splash screen, dark status-bar integration, offline fallback page.
-- Strong next additions if a reviewer still flags 4.2: push notifications
-  for likes/follows on published charts, a home-screen widget showing a
-  pinned chart, and haptics on like (plugin already included).
-
-Other guidelines worth knowing:
-
-- **5.1.1 Account deletion** — apps with account creation must offer
-  in-app account deletion. Verify a self-service delete path exists in
-  Settings before submitting.
-- **2.5.2 Remote content** — loading your own web content in WKWebView is
-  allowed; no hidden features or code injection.
-- **4.8 Sign in with Apple** — required when third-party (Google) login is
-  offered.
+The [September 6 audit](../../docs/native-mobile-audit-2026-09-06.md) records the
+implemented changes, unresolved release blockers, checks, and unverified device
+flows. Complete that checklist before submitting a public release. Review
+[Apple's current guidelines](https://developer.apple.com/app-store/review/guidelines/)
+for login services, account deletion, community moderation, and the selected
+billing model/storefronts.
 
 ## Updating the app after release
 

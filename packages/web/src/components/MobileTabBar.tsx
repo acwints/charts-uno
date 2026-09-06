@@ -1,3 +1,5 @@
+import UserRound from 'lucide-react/dist/esm/icons/user-round';
+import { selectionHaptic } from '../services/native';
 import { NavLink } from 'react-router-dom';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import PlusSquare from 'lucide-react/dist/esm/icons/plus-square';
@@ -16,7 +18,7 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
   const { isAuthenticated } = useAuth();
 
   return (
-    <nav className="mtabbar" aria-label="Primary">
+    <nav className="mtabbar" aria-label="Primary" onClick={selectionHaptic}>
       <NavLink
         to="/feed"
         className={({ isActive }) => `mtabbar__tab ${isActive ? 'mtabbar__tab--active' : ''}`}
@@ -50,6 +52,9 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
           <span className="mtabbar__label">Sign In</span>
         </button>
       )}
+      {isAuthenticated && <NavLink to="/settings/account" className={({ isActive }) => `mtabbar__tab ${isActive ? 'mtabbar__tab--active' : ''}`} aria-label="Account">
+        <UserRound size={24} /><span className="mtabbar__label">Account</span>
+      </NavLink>}
     </nav>
   );
 }

@@ -21,6 +21,7 @@ import { TeamProvider } from './contexts/TeamContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
+import { isNativeApp } from './services/native';
 
 function AppWithTeam() {
   const { isAuthenticated } = useAuth();
@@ -90,6 +91,8 @@ function HomeRoute() {
       </div>
     );
   }
+
+  if (isNativeApp()) return <Navigate to="/feed" replace />;
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;

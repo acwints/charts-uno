@@ -193,6 +193,15 @@ importers:
 
   packages/web:
     dependencies:
+      '@capacitor/core':
+        specifier: 8.5.0
+        version: 8.5.0
+      '@capacitor/haptics':
+        specifier: 8.0.2
+        version: 8.0.2(@capacitor/core@8.5.0)
+      '@capacitor/share':
+        specifier: 8.0.1
+        version: 8.0.1(@capacitor/core@8.5.0)
       '@chartsuno/shared':
         specifier: workspace:*
         version: link:../shared

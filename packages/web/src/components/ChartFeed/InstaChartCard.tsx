@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
@@ -8,6 +9,7 @@ import User from 'lucide-react/dist/esm/icons/user';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
 import { MiniChartPreview } from '../MiniChartPreview';
 import './InstaChartCard.css';
@@ -40,6 +42,7 @@ function formatRelativeDate(dateString: string): string {
 // actions row mirrors the like/save/share affordances of a social feed.
 export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: InstaChartCardProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
   const [isSaved, setIsSaved] = useState(chart.is_saved);
@@ -48,6 +51,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
   const [showBurst, setShowBurst] = useState(false);
   const [justShared, setJustShared] = useState(false);
   const tapTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (tapTimerRef.current !== null) window.clearTimeout(tapTimerRef.current);
+  }, []);
 
   const toggleLike = async (forceOn = false) => {
     if (!user) {
@@ -71,6 +77,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
+      toast.error('Could not update your like. Please try again.');
     } finally {
       setIsLikeLoading(false);
     }
@@ -96,6 +103,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
       }
     } catch (error) {
       console.error('Failed to toggle save:', error);
+      toast.error('Could not update your saved chart. Please try again.');
     } finally {
       setIsSaveLoading(false);
     }
@@ -105,6 +113,14 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
     const title = chart.title || chart.config.title || 'Chart on Chartsuno';
     const url = `${window.location.origin}/chart/${chart.id}`;
 
+    if (isNativeApp()) {
+      try {
+        await shareNative(title, url);
+      } catch (error) {
+        if (!(error instanceof Error && error.message === 'Share canceled')) toast.error('Could not open sharing. Please try again.');
+      }
+      return;
+    }
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
@@ -129,6 +145,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
     if (tapTimerRef.current !== null) {
       window.clearTimeout(tapTimerRef.current);
       tapTimerRef.current = null;
+      selectionHaptic();
       setShowBurst(true);
       window.setTimeout(() => setShowBurst(false), 900);
       toggleLike(true);

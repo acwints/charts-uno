@@ -19,7 +19,7 @@ const config: CapacitorConfig = {
     url: 'https://chartsuno.com',
     // Keep first-party navigation inside the webview. Google OAuth must NOT
     // be allowed here — Google blocks OAuth inside webviews, so sign-in is
-    // opened via the Browser plugin (SFSafariViewController) and returns
+    // opened via NativeAuth (ASWebAuthenticationSession) and returns
     // through the com.chartsuno.app://auth-callback deep link.
     allowNavigation: ['chartsuno.com', 'www.chartsuno.com'],
     // Local page shown when the remote app cannot be loaded (offline).

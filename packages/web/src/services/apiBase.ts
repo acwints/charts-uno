@@ -26,6 +26,15 @@ interface FetchApiOptions {
   credentials?: RequestCredentials;
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function fetchApiJson<T>(
   endpoint: string,
   { method = 'GET', body, credentials = 'include' }: FetchApiOptions = {},
@@ -39,7 +48,7 @@ export async function fetchApiJson<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: `Request failed` }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    throw new ApiError(error.detail || `HTTP ${response.status}`, response.status);
   }
 
   return response.json();

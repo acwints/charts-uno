@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { isNativeApp } from '../services/native';
 import { ChartFeed } from '../components/ChartFeed';
 import type { ChartResponse } from '../services/api';
 
@@ -36,7 +37,7 @@ export function ChartFeedPage() {
     >
       <ChartFeed
         onChartSelect={handleChartSelect}
-        onBack={handleBack}
+        onBack={isNativeApp() ? undefined : handleBack}
         onAuthRequired={openAuthModal}
       />
     </motion.div>

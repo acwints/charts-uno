@@ -1,0 +1,89 @@
+.native-app .app {
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+.native-app .header {
+  padding-top: env(safe-area-inset-top);
+  flex-shrink: 0;
+}
+
+.native-app .header-content {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+.native-app .footer,
+.native-app .header-hamburger,
+.native-app .header-links {
+  display: none;
+}
+
+.native-app .mtabbar {
+  display: flex;
+}
+
+.native-app .mtabbar__tab {
+  min-height: 60px;
+}
+
+.native-app .auth-modal {
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  max-height: 90dvh;
+}
+
+.native-app input,
+.native-app textarea,
+.native-app select {
+  font-size: max(16px, 1rem);
+}
+
+.native-app button,
+.native-app a {
+  touch-action: manipulation;
+}
+
+.native-keyboard-open .mtabbar {
+  display: none;
+}
+
+.native-keyboard-open .app {
+  padding-bottom: 0;
+}
+
+.native-offline {
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.native-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.native-create-heading h1 { margin-bottom: 8px; }
+.native-create-heading p { color: var(--text-secondary); }
+
+.native-app .share-action,
+.native-app .export-option,
+.native-app .export-trigger,
+.native-app .user-menu-trigger,
+.native-app .onboard__skip,
+.native-app .auth-modal__close {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.native-app .header .logo-icon {
+  display: none;
+}

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { isNativeApp } from '../services/native';
 import { Hero } from '../components/Hero';
 import { DataInput } from '../components/DataInput';
 import { ValueOfCharts } from '../components/ValueOfCharts';
@@ -104,9 +105,9 @@ export function ChartBuilder() {
       transition={{ duration: 0.3 }}
       className="input-view"
     >
-      <Hero showAuthCta={!isAuthenticated} onAuthOpen={context?.openAuthModal} />
+      {isNativeApp() ? <div className="native-create-heading"><h1>Create a chart</h1><p>Start with a prompt, image, or your own data.</p></div> : <Hero showAuthCta={!isAuthenticated} onAuthOpen={context?.openAuthModal} />}
       <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
-      {!isAuthenticated && (
+      {!isAuthenticated && !isNativeApp() && (
         <>
           <Features />
           <ValueOfCharts />

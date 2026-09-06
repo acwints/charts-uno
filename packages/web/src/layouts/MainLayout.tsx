@@ -1,6 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { NativeAppStatus } from '../components/NativeAppStatus';
+import { NativeLibraryNav } from '../components/NativeLibraryNav';
+import { isNativeApp } from '../services/native';
 import { Header } from '../components/Header';
 import { MobileTabBar } from '../components/MobileTabBar';
 import { MobileOnboarding } from '../components/MobileOnboarding';
@@ -34,7 +37,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
   const isNewRoute = location.pathname === '/new';
   const hideSidebar = isChartPage || (!isAuthenticated && isNewRoute);
-  const shouldAnimateRoute = !prefersReducedMotion && !isNewRoute;
+  const shouldAnimateRoute = !isNativeApp() && !prefersReducedMotion && !isNewRoute;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -74,9 +77,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="app app--has-tabbar">
       <Header onAuthOpen={openAuthModal} />
+      <NativeAppStatus />
+      {isAuthenticated && <NativeLibraryNav />}
 
       <div className="app-body">
-        {isAuthenticated && !hideSidebar && <DashboardSidebar />}
+        {isAuthenticated && !hideSidebar && !isNativeApp() && <DashboardSidebar />}
 
         <main className="main">
           {!shouldAnimateRoute ? (

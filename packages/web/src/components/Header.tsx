@@ -1,5 +1,7 @@
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import { isNativeApp } from '../services/native';
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Settings from 'lucide-react/dist/esm/icons/settings';
@@ -9,6 +11,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
+import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../hooks/useAuth';
 import { useMobileNav } from '../hooks/useMobileNav';
 import './Header.css';
@@ -21,6 +24,9 @@ export function Header({
   onAuthOpen,
 }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const showBack = isNativeApp() && /^\/(chart|settings|terms|privacy|invite|dashboards|team)(\/|$)/.test(location.pathname);
+  const toast = useToast();
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -38,8 +44,12 @@ export function Header({
 
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not sign out. Please try again.');
+    }
   };
 
   const initials = user?.name
@@ -54,6 +64,7 @@ export function Header({
   return (
     <header className="header">
       <div className="header-content">
+        {showBack && <button className="native-back" aria-label="Back" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/feed', { replace: true })}><ChevronLeft size={24} /></button>}
         <button
           className="header-hamburger"
           onClick={toggleMobileNav}
@@ -68,7 +79,7 @@ export function Header({
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/" className="logo-link">
+          <Link to={isNativeApp() ? '/feed' : '/'} className="logo-link">
             <div className="logo-icon">
               <Sparkles size={20} />
             </div>
@@ -101,6 +112,7 @@ export function Header({
                 className="user-menu-trigger"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 aria-expanded={isUserMenuOpen}
+                aria-label="Account menu"
               >
                 {user.picture ? (
                   <img src={user.picture} alt="" className="user-menu-avatar" />

@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import html2canvas from 'html2canvas';
 import type { ChartData } from '../types';
+import { isNativeApp, shareNativeFile } from './native';
 
 export interface WatermarkSettings {
   enabled: boolean;
@@ -52,6 +53,7 @@ export async function exportToCSV(data: ChartData, filename: string = 'chart-dat
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  if (isNativeApp()) return shareNativeFile(blob, filename, 'csv');
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -259,7 +261,14 @@ export async function exportToPNG(
 ): Promise<void> {
   const canvas = await renderElementToCanvas(element, 'clean-export');
   await applyWatermarkOverlay(canvas, element, watermark);
+  if (isNativeApp()) return shareNativeFile(await canvasToPngBlob(canvas), filename, 'png');
   downloadCanvasAsPng(canvas, filename);
+}
+
+export async function shareChartImage(element: HTMLElement, filename: string, watermark?: WatermarkSettings): Promise<void> {
+  const canvas = await renderElementToCanvas(element, 'wysiwyg-share');
+  await applyWatermarkOverlay(canvas, element, watermark);
+  await shareNativeFile(await canvasToPngBlob(canvas), filename, 'png');
 }
 
 export async function copyImageToClipboard(

@@ -18,7 +18,7 @@
         text-align: center;
       }
       main {
-        padding: 24px;
+        padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
       }
       h1 {
         font-size: 20px;
@@ -37,7 +37,8 @@
         color: #101014;
         border: 0;
         border-radius: 6px;
-        padding: 10px 20px;
+        padding: 12px 20px;
+        min-height: 44px;
         font-size: 14px;
         font-weight: 600;
       }
@@ -47,7 +48,7 @@
     <main>
       <h1>Chartsuno</h1>
       <p>You appear to be offline. Reconnect to load your charts and feed.</p>
-      <button onclick="window.location.reload()">Retry</button>
+      <button onclick="window.location.replace('https://chartsuno.com/feed')">Retry</button>
     </main>
   </body>
 </html>

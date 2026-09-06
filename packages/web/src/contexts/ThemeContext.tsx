@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { updateNativeStatusBar } from '../services/native';
 import type { ThemeMode } from '@chartsuno/shared';
 
 const THEME_STORAGE_KEY = 'chartsuno-theme';
@@ -42,6 +43,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setThemeAttribute(theme);
+    const applyStatusBar = () => updateNativeStatusBar(theme);
+    applyStatusBar();
+    window.addEventListener('chartsunoViewDidAppear', applyStatusBar);
+    document.addEventListener('visibilitychange', applyStatusBar);
+    return () => {
+      window.removeEventListener('chartsunoViewDidAppear', applyStatusBar);
+      document.removeEventListener('visibilitychange', applyStatusBar);
+    };
   }, [theme]);
 
   useEffect(() => {
