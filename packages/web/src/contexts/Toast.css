@@ -86,11 +86,17 @@
   color: var(--text-primary);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .toast-container {
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
+    left: max(1rem, env(safe-area-inset-left));
+    right: max(1rem, env(safe-area-inset-right));
+    /* Clear the fixed tab bar. */
+    bottom: calc(var(--tabbar-clearance) + 0.75rem);
+  }
+
+  .toast-close {
+    width: 36px;
+    height: 36px;
   }
 
   .toast {

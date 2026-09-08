@@ -30,6 +30,7 @@ import {
   type TeamBranding,
 } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import { isNativeApp } from '../../services/native';
 
 // Color role definitions for brand palette
 const COLOR_ROLES = [
@@ -408,12 +409,14 @@ export function TeamSettings() {
             <p className="settings-warning-text">
               You've reached your seat limit. Upgrade your plan to invite more members.
             </p>
-            <a
-              href="/settings/billing"
-              className="button button--primary button--md settings-warning-link"
-            >
-              Upgrade Plan
-            </a>
+            {!isNativeApp() && (
+              <a
+                href="/settings/billing"
+                className="button button--primary button--md settings-warning-link"
+              >
+                Upgrade Plan
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -439,12 +442,14 @@ export function TeamSettings() {
                   Free accounts include an "Chartsuno" watermark on exports.
                   Upgrade to remove it or add your own logo and brand colors.
                 </p>
-                <Link to="/settings/billing">
-                  <Button variant="primary">
-                    <Sparkles size={16} />
-                    Upgrade Now
-                  </Button>
-                </Link>
+                {!isNativeApp() && (
+                  <Link to="/settings/billing">
+                    <Button variant="primary">
+                      <Sparkles size={16} />
+                      Upgrade Now
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

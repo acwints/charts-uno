@@ -48,6 +48,18 @@ public class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthenticationP
 }
 
 class ChartsunoViewController: CAPBridgeViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Capacitor paints a single hex behind the webview; use the launch
+        // colour instead so the frame between launch screen and splash view
+        // matches the current appearance (white in light, #101014 in dark).
+        let ground = UIColor(named: "LaunchBackground") ?? UIColor(red: 0.063, green: 0.063, blue: 0.078, alpha: 1)
+        view.backgroundColor = ground
+        webView?.isOpaque = false
+        webView?.backgroundColor = ground
+        webView?.scrollView.backgroundColor = ground
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // StatusBar resets to launch config in super; restore the web theme.
@@ -57,6 +69,7 @@ class ChartsunoViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(NativeAuthPlugin())
         bridge?.registerPluginInstance(NativeExportPlugin())
+        bridge?.registerPluginInstance(SecureStorePlugin())
         webView?.allowsBackForwardNavigationGestures = true
     }
 }

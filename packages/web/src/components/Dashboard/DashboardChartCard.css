@@ -167,3 +167,15 @@
     animation: none;
   }
 }
+
+/* Touch devices cannot hover: keep the card menu reachable. */
+@media (hover: none) {
+  .dashboard-chart-card:hover {
+    border-color: var(--border-subtle);
+    box-shadow: none;
+  }
+
+  .dashboard-chart-card__menu-trigger {
+    opacity: 1;
+  }
+}

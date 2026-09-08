@@ -1,5 +1,6 @@
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -126,6 +127,25 @@
 }
 
 @media (max-width: 768px) {
+  /* Phones: the document is the scroller (so the browser chrome collapses,
+     pull-to-refresh and tap-status-bar-to-top work) instead of a nested
+     overflow container. */
+  .main {
+    overflow: visible;
+  }
+
+  .app-route-shell {
+    min-height: 0;
+  }
+
+  .input-view {
+    padding-inline: max(var(--space-4), env(safe-area-inset-left)) max(var(--space-4), env(safe-area-inset-right));
+  }
+
+  .chart-view {
+    padding-inline: max(var(--space-2), env(safe-area-inset-left)) max(var(--space-2), env(safe-area-inset-right));
+  }
+
   .footer {
     padding: var(--space-3) var(--space-4);
   }
@@ -133,6 +153,15 @@
   .footer-content {
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .footer-link {
+    padding: var(--space-2);
+  }
+
+  /* The tab bar owns primary navigation on phones; the footer only repeats it. */
+  .app--has-tabbar .footer {
+    display: none;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NativeAppStatus } from '../components/NativeAppStatus';
 import { NativeLibraryNav } from '../components/NativeLibraryNav';
@@ -23,6 +23,7 @@ const ONBOARDED_STORAGE_KEY = 'chartsuno_onboarded_v1';
 
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
+  const navigationType = useNavigationType();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
   const isPhoneViewport = useMediaQuery('(max-width: 768px)');
@@ -37,7 +38,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
   const isNewRoute = location.pathname === '/new';
   const hideSidebar = isChartPage || (!isAuthenticated && isNewRoute);
+  const showSidebar = isAuthenticated && !hideSidebar && !isNativeApp();
   const shouldAnimateRoute = !isNativeApp() && !prefersReducedMotion && !isNewRoute;
+
+  // New route = start at the top. Back/forward keeps the browser's own
+  // restored position. Needed because the SPA never reloads the document.
+  useEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo(0, 0);
+  }, [location.pathname, navigationType]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -76,12 +84,12 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="app app--has-tabbar">
-      <Header onAuthOpen={openAuthModal} />
+      <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />
       <NativeAppStatus />
       {isAuthenticated && <NativeLibraryNav />}
 
       <div className="app-body">
-        {isAuthenticated && !hideSidebar && !isNativeApp() && <DashboardSidebar />}
+        {showSidebar && <DashboardSidebar />}
 
         <main className="main">
           {!shouldAnimateRoute ? (

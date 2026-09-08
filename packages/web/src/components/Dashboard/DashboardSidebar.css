@@ -6,6 +6,7 @@
   background: var(--bg-secondary);
   border-right: var(--border-subtle);
   height: calc(100vh - 57px);
+  height: calc(100dvh - 57px);
   position: sticky;
   top: 57px;
 }
@@ -199,6 +200,9 @@
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
     width: var(--sidebar-width-mobile);
     min-width: var(--sidebar-width-mobile);
     z-index: 91;
@@ -212,6 +216,11 @@
 
   .sidebar-toggle-area {
     display: none;
+  }
+
+  .sidebar-nav-item,
+  .sidebar-create-btn {
+    min-height: 44px;
   }
 
   .dashboard-sidebar--collapsed {

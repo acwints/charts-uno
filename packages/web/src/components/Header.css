@@ -33,6 +33,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-height: 44px;
   text-decoration: none;
 }
 
@@ -273,7 +274,17 @@
   }
 
   .header-content {
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-2) max(var(--space-3), env(safe-area-inset-right)) var(--space-2) max(var(--space-3), env(safe-area-inset-left));
+    min-height: 56px;
+  }
+
+  /* The tab bar already offers Sign In on phones; keep the header to brand + theme. */
+  .header-nav .header-signin {
+    display: none;
+  }
+
+  .user-menu-dropdown {
+    min-width: 240px;
   }
 }
 
@@ -300,4 +311,9 @@
     transition: none;
     animation: none;
   }
+}
+
+/* Standalone PWA / notch: keep the header below the status bar. */
+.header {
+  padding-top: env(safe-area-inset-top);
 }

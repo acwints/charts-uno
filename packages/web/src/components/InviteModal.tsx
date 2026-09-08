@@ -7,6 +7,7 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import { motion, AnimatePresence } from 'motion/react';
 import { createInvitation, type TeamInvitation } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { isNativeApp } from '../services/native';
 import './InviteModal.css';
 
 interface InviteModalProps {
@@ -153,7 +154,7 @@ export function InviteModal({
               {!canInvite && (
                 <div className="invite-modal__warning">
                   <span>Seat limit reached.</span>
-                  <a href="/settings/billing">Upgrade plan</a>
+                  {!isNativeApp() && <a href="/settings/billing">Upgrade plan</a>}
                 </div>
               )}
 

@@ -290,6 +290,12 @@
     max-height: 250px;
   }
 
+  .spreadsheet-action {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
   .corner-cell,
   .label-cell {
     min-width: 100px;
@@ -322,5 +328,15 @@
   .spreadsheet-action {
     transition: none;
     animation: none;
+  }
+}
+
+/* Touch: hover cannot reveal the delete controls, so keep them visible and tappable. */
+@media (hover: none) {
+  .delete-btn {
+    opacity: 1;
+    width: 32px;
+    height: 32px;
+    margin: -6px;
   }
 }

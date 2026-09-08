@@ -1,11 +1,49 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { fetchApiJson } from './apiBase';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { fetchApiJson, setSessionToken } from './apiBase';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 const NativeAuth = registerPlugin<{ authenticate(options: { url: string }): Promise<{ url: string }> }>('NativeAuth');
 const NativeExport = registerPlugin<{ shareFile(options: { base64: string; filename: string }): Promise<{ completed: boolean }> }>('NativeExport');
+// Keychain-backed key/value store; see SecureStorePlugin.swift.
+const SecureStore = registerPlugin<{
+  get(options: { key: string }): Promise<{ value: string | null }>;
+  set(options: { key: string; value: string }): Promise<void>;
+  remove(options: { key: string }): Promise<void>;
+}>('SecureStore');
+
+const SESSION_KEY = 'chartsuno.session';
+
+/** Bundled app: the session lives in the Keychain, not a cookie. */
+const usesTokenSession = () => isNativeApp() && Capacitor.isPluginAvailable('SecureStore');
+
+export async function restoreNativeSession(): Promise<void> {
+  if (!usesTokenSession()) return;
+  try {
+    const { value } = await SecureStore.get({ key: SESSION_KEY });
+    setSessionToken(value);
+  } catch {
+    setSessionToken(null);
+  }
+}
+
+export async function clearNativeSession(): Promise<void> {
+  setSessionToken(null);
+  if (!usesTokenSession()) return;
+  await SecureStore.remove({ key: SESSION_KEY }).catch(() => {});
+}
+
+/**
+ * Hide the launch splash once the first screen has painted. The native side
+ * keeps the splash up until this call so users never see a blank frame; a
+ * watchdog in main.tsx guarantees it still goes away if rendering fails.
+ */
+export function hideNativeSplash(): void {
+  if (!isNativeApp()) return;
+  void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {});
+}
 
 function base64url(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -31,7 +69,17 @@ export async function signInNative(): Promise<void> {
   if (callback.searchParams.has('error')) throw new Error('Sign-in could not finish. Please try again.');
   const code = callback.searchParams.get('code');
   if (!code) throw new Error('Sign-in did not complete. Please try again.');
-  // Sets the httpOnly session cookie on this webview's first-party origin.
+  if (usesTokenSession()) {
+    // Bundled app: keep the JWT in the Keychain and send it as a bearer header.
+    const { token } = await fetchApiJson<{ token: string }>('/api/auth/native/exchange', {
+      method: 'POST',
+      body: { code, verifier, deliver: 'token' },
+    });
+    setSessionToken(token);
+    await SecureStore.set({ key: SESSION_KEY, value: token });
+    return;
+  }
+  // Legacy remote-URL shell: sets the httpOnly session cookie on this webview's first-party origin.
   await fetchApiJson('/api/auth/native/exchange', { method: 'POST', body: { code, verifier } });
 }
 

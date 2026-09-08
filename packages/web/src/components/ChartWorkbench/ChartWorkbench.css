@@ -35,11 +35,10 @@
 }
 
 .workbench-status-pill {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   min-height: 24px;
   max-width: 160px;
-  padding: 3px 8px;
+  padding: 5px 8px;
   overflow: hidden;
   color: var(--text-muted);
   background: var(--bg-secondary);
@@ -121,6 +120,7 @@
   align-items: stretch;
   gap: var(--space-4);
   min-height: clamp(520px, calc(100vh - 210px), 820px);
+  min-height: clamp(520px, calc(100dvh - 210px), 820px);
 }
 
 .workbench-preview-column {
@@ -145,6 +145,7 @@
   display: flex;
   min-width: 0;
   height: min(760px, calc(100vh - 156px));
+  height: min(760px, calc(100dvh - 156px));
   min-height: 420px;
   position: sticky;
   top: 84px;
@@ -217,6 +218,7 @@
   flex-direction: column;
   gap: var(--space-3);
   min-height: clamp(440px, calc(100vh - 210px), 760px);
+  min-height: clamp(440px, calc(100dvh - 210px), 760px);
 }
 
 .workbench-data-editor .editable-spreadsheet {
@@ -419,16 +421,62 @@
 }
 
 @media (max-width: 640px) {
-  .workbench-toolbar-left {
-    flex-direction: column;
+  .workbench-toolbar {
+    gap: var(--space-2);
   }
 
-  .workbench-toolbar-right {
-    gap: var(--space-1);
+  /* Phone toolbar: three compact rows instead of five stacked ones. */
+  .workbench-toolbar-left {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .workbench-toolbar-left > .button {
+    flex-shrink: 0;
+  }
+
+  .workbench-status {
+    flex: 1;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+  }
+
+  .workbench-status::-webkit-scrollbar {
+    display: none;
   }
 
   .workbench-status-pill {
-    max-width: 120px;
+    flex-shrink: 0;
+    max-width: none;
+  }
+
+  .workbench-toolbar-right {
+    gap: var(--space-2);
+  }
+
+  .workbench-toolbar-right > .button,
+  .workbench-toolbar-right .publish-menu {
+    flex: 1 1 auto;
+  }
+
+  .workbench-toolbar-right .publish-trigger {
+    width: 100%;
+  }
+
+  /* Download sits beside the share group instead of on its own row. */
+  .workbench-toolbar-right .export-menu {
+    flex: 0 0 auto;
+  }
+
+  .workbench-toolbar-right .share-actions {
+    flex: 1 1 200px;
+    width: auto;
+    min-width: 0;
   }
 
   .workbench-view-toggle {
@@ -438,6 +486,7 @@
   .workbench-view-toggle-btn {
     flex: 1;
     min-width: 0;
+    min-height: 44px;
   }
 
   .workbench-layout {

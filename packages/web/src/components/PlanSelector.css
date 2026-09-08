@@ -212,3 +212,14 @@
     animation: none;
   }
 }
+
+.plan-selector__native-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  text-transform: none;
+}

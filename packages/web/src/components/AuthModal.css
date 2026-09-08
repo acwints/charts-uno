@@ -94,8 +94,9 @@
   .auth-modal {
     max-width: 100%;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    max-height: 90vh;
+    max-height: 90dvh;
     overflow-y: auto;
+    padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
   }
 
   .auth-modal__close {

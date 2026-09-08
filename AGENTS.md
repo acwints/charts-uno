@@ -67,6 +67,15 @@ function MyControl({ config, onChange }: Props) {
 - `font-variant-numeric: tabular-nums` on numeric/hex displays
 - `text-overflow: ellipsis` with `overflow: hidden` for truncation
 
+## Mobile Rules (phones ≤768px and the Capacitor shell)
+
+- Tap targets ≥44px on phones; hover-only affordances need a `@media (hover: none)` fallback
+- `100vh` always gets a `100dvh` fallback on the next line (enforced by `pnpm check:harness`)
+- Fixed bottom UI (FABs, toasts, toolbars) clears the tab bar via `var(--tabbar-clearance)`
+- Fixed/sticky chrome pads with `env(safe-area-inset-*)`; bottom sheets over dropdowns at ≤480px
+- Phones scroll the document, not a nested `overflow: auto` container (see `App.css`)
+- Verify at 390px wide in the Browser pane before shipping web UI changes
+
 ## Accessibility Rules
 
 - Icon-only buttons: always add `aria-label`

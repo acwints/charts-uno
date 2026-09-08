@@ -9,7 +9,7 @@ import base64
 import secrets
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Literal, Optional, List
 import re
 from urllib.parse import urlsplit, urlencode
 from pydantic import BaseModel, Field
@@ -179,6 +179,13 @@ PROD_ORIGINS = [
     "https://chartsuno.com",
 ]
 for origin in PROD_ORIGINS:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+# The iOS app serves the bundled web app from its own origin and authenticates
+# with a bearer token (see /api/auth/native/exchange), so it needs CORS access.
+NATIVE_ORIGINS = ["capacitor://localhost", "ionic://localhost"]
+for origin in NATIVE_ORIGINS:
     if origin not in allowed_origins:
         allowed_origins.append(origin)
 
@@ -462,6 +469,10 @@ async def set_auth_cookie(
 class NativeCodeExchange(BaseModel):
     code: str = Field(min_length=43, max_length=43)
     verifier: str = Field(min_length=43, max_length=128)
+    # "cookie": legacy remote-URL shell that shares the site's cookie jar.
+    # "token": bundled app on its own origin; it keeps the JWT in the Keychain
+    # and sends it as a bearer header.
+    deliver: Literal["cookie", "token"] = "cookie"
 
 
 @app.post("/api/auth/native/exchange")
@@ -469,7 +480,10 @@ class NativeCodeExchange(BaseModel):
 async def exchange_native_auth(request: Request, response: Response, body: NativeCodeExchange, db: Session = Depends(get_db)):
     user_id = redeem_native_code(db, body.code, body.verifier)
     response.headers["Cache-Control"] = "no-store"
-    return await set_auth_cookie(request, response, create_access_token(user_id), db)
+    token = create_access_token(user_id)
+    if body.deliver == "token":
+        return {"status": "ok", "token": token}
+    return await set_auth_cookie(request, response, token, db)
 
 
 @app.post("/api/auth/logout")

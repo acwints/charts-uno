@@ -23,8 +23,14 @@ function getStoredTheme(): ThemeMode | null {
   return null;
 }
 
+// Keep the browser UI (iOS Safari tab bar, Android status bar, PWA title bar)
+// in step with the app theme. Values mirror --bg-primary in index.css.
+const THEME_COLORS: Record<ThemeMode, string> = { dark: '#101014', light: '#ffffff' };
+
 function setThemeAttribute(theme: ThemeMode) {
   document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = THEME_COLORS[theme];
 }
 
 interface ThemeContextValue {

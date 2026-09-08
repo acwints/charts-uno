@@ -51,6 +51,17 @@ for (const cssFile of cssFiles) {
     errors.push(`Use :focus-visible in ${relativePath}:${line}`)
   }
 
+  // Mobile: a bare 100vh overshoots the visible viewport on phones (browser
+  // chrome). Every 100vh must be immediately followed by a 100dvh fallback.
+  const lines = content.split('\n')
+  lines.forEach((line, index) => {
+    if (!/\b100vh\b/.test(line)) return
+    const next = lines[index + 1] ?? ''
+    if (!/\b100dvh\b/.test(next)) {
+      errors.push(`100vh without a 100dvh fallback on the next line in ${relativePath}:${index + 1}`)
+    }
+  })
+
   const hasTransition = /transition\s*:/.test(content)
   const hasReducedMotionQuery = /prefers-reduced-motion\s*:\s*reduce/.test(content)
   if (hasTransition && !hasReducedMotionQuery) {

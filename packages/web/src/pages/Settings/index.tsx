@@ -6,6 +6,7 @@ import Database from 'lucide-react/dist/esm/icons/database';
 import { AccountSettings } from './AccountSettings';
 import { TeamSettings } from './TeamSettings';
 import { BillingSettings } from './BillingSettings';
+import { isNativeApp } from '../../services/native';
 import { ConnectionsSettings } from './ConnectionsSettings';
 import { useAuth } from '../../hooks/useAuth';
 import './Settings.css';
@@ -20,8 +21,11 @@ const TABS = [
   { id: 'billing' as const, label: 'Billing', icon: CreditCard },
 ];
 
+// Plans are managed on the website; the App Store build shows no purchase surfaces.
+const VISIBLE_TABS = TABS.filter((tabItem) => !(isNativeApp() && tabItem.id === 'billing'));
+
 function isValidTab(tab: string | undefined): tab is SettingsTab {
-  return tab === 'account' || tab === 'team' || tab === 'connections' || tab === 'billing';
+  return VISIBLE_TABS.some((tabItem) => tabItem.id === tab);
 }
 
 export function SettingsPage() {
@@ -48,7 +52,7 @@ export function SettingsPage() {
       <div className="settings-page__sidebar">
         <h2 className="settings-page__title">Settings</h2>
         <nav className="settings-page__nav">
-          {TABS.map((tabItem) => {
+          {VISIBLE_TABS.map((tabItem) => {
             const Icon = tabItem.icon;
             return (
               <button

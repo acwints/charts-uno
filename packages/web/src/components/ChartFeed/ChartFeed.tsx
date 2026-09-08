@@ -17,6 +17,28 @@ import './ChartFeed.css';
 
 type FeedTab = 'explore' | 'saved' | 'liked';
 
+// Last explore page, so a returning user sees real charts on the first frame
+// (and something useful offline) while the network request is in flight.
+const FEED_CACHE_KEY = 'chartsuno_feed_explore_v1';
+
+function readFeedCache(): ChartResponse[] {
+  try {
+    const raw = localStorage.getItem(FEED_CACHE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? (parsed as ChartResponse[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFeedCache(charts: ChartResponse[]): void {
+  try {
+    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(charts.slice(0, 20)));
+  } catch {
+    // Storage full or unavailable: the cache is a convenience only.
+  }
+}
+
 interface ChartFeedProps {
   onChartSelect?: (chart: ChartResponse) => void;
   onBack?: () => void;
@@ -27,7 +49,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [activeTab, setActiveTab] = useState<FeedTab>('explore');
-  const [charts, setCharts] = useState<ChartResponse[]>([]);
+  const [charts, setCharts] = useState<ChartResponse[]>(readFeedCache);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -67,6 +89,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
 
       if (resetOffset) {
         setCharts(fetchedCharts);
+        if (tab === 'explore') writeFeedCache(fetchedCharts);
         offsetRef.current = LIMIT;
       } else {
         setCharts((prev) => [...prev, ...fetchedCharts]);
@@ -170,13 +193,17 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
       </header>
 
       <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
-        {error && (
+        {error && charts.length === 0 && (
           <div className="chart-feed__error">
             <p>{error}</p>
             <button onClick={handleRefresh} className="chart-feed__retry-btn">
               Try Again
             </button>
           </div>
+        )}
+
+        {error && charts.length > 0 && (
+          <p className="chart-feed__stale" role="status">Showing saved charts. <button type="button" className="chart-feed__retry-link" onClick={handleRefresh}>Try again</button></p>
         )}
 
         {!error && isLoading && charts.length === 0 && (

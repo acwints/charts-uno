@@ -8,17 +8,23 @@ plugin bridge).
 
 ## How the app is built
 
-- `capacitor.config.ts` points the native WKWebView at
-  `https://chartsuno.com`. The SPA is served remotely, so shipping web
-  updates does **not** require an App Store release.
-- Vercel rewrites proxy `/api` and `/auth` to the Railway backend on the same
-  origin, so the app session cookie remains first-party inside the webview.
-  Google login requires the separate native authentication handoff below.
+- Since 2026-09-07 the web app is **bundled** into the binary
+  (`webDir: ../web/dist`). The app opens from local files, so cold start no
+  longer waits on the network and the splash hides only after the first paint.
+  Shipping web changes to installed apps now requires a new build
+  (`pnpm mobile:ios:sync` then archive) until an OTA update service is added.
+- API calls go to `https://chartsuno.com` (Vercel proxies `/api` and `/auth`
+  to Railway). The bundled origin is `capacitor://localhost`, which the API
+  allows in CORS; the session is a bearer JWT returned by
+  `POST /api/auth/native/exchange` with `deliver: "token"` and stored in the
+  Keychain by `SecureStorePlugin.swift`. Google login uses the native
+  authentication handoff below.
 - The mobile experience itself lives in `packages/web`: the Instagram-style
   posts feed (double-tap like, save/share), first-launch onboarding, and the
   bottom tab bar activate on phone-width viewports, with
   `env(safe-area-inset-*)` padding for the notch and home indicator.
-- `shell/index.html` is only an offline fallback page.
+- There is no separate offline page any more; the bundled app renders and
+  shows its own connection banner when requests fail.
 
 ## Generating the native project (on a Mac)
 
@@ -63,6 +69,10 @@ For the app icon: export `assets/icon.svg` to a 1024x1024 `assets/icon.png`
    for the release gates and device test matrix.
 
 ## Archive and upload
+
+Always run `pnpm mobile:ios:sync` (from the repo root) before archiving. It
+rebuilds `packages/web/dist` and copies it into `ios/App/App/public`, which is
+gitignored, so a checkout without that step archives an empty web bundle.
 
 Latest beta: Chartsuno 1.0 build `2026.9.7` is available to the **Internal
 Testers** group in TestFlight as of September 6, 2026. Apple reports the build

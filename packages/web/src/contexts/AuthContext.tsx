@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getCurrentUser, setAuthCookie, logout as apiLogout, getAuthUrl } from '../services/api';
-import { isNativeApp, signInNative } from '../services/native';
+import { isNativeApp, signInNative, restoreNativeSession, clearNativeSession } from '../services/native';
 import { ApiError } from '../services/apiBase';
 import type { User } from '../services/api';
 
@@ -86,7 +86,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    checkAuth();
+    // Native: load the Keychain token before the first account check.
+    void restoreNativeSession().then(checkAuth);
   }, [checkAuth]);
 
   useEffect(() => {
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authGeneration.current++;
     try {
       await apiLogout();
+      await clearNativeSession();
       authGeneration.current++;
       setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
     } catch (error) {

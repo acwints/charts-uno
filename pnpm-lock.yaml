@@ -193,6 +193,9 @@ importers:
 
   packages/web:
     dependencies:
+      '@capacitor/app':
+        specifier: 8.1.1
+        version: 8.1.1(@capacitor/core@8.5.0)
       '@capacitor/core':
         specifier: 8.5.0
         version: 8.5.0
@@ -202,6 +205,9 @@ importers:
       '@capacitor/share':
         specifier: 8.0.1
         version: 8.0.1(@capacitor/core@8.5.0)
+      '@capacitor/splash-screen':
+        specifier: 8.0.2
+        version: 8.0.2(@capacitor/core@8.5.0)
       '@chartsuno/shared':
         specifier: workspace:*
         version: link:../shared

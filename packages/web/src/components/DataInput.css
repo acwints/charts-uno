@@ -853,23 +853,36 @@
     gap: var(--space-3);
   }
 
+  /* Both columns pin themselves to grid row 1 on desktop; in a single-column
+     grid that forces an implicit second column (a 36px rail beside the
+     editor). Let them flow into rows instead. */
+  .input-mode-tabs,
+  .input-content-shell {
+    grid-row: auto;
+  }
+
   .input-mode-tabs {
     flex-direction: row;
     overflow-x: auto;
     max-width: 100%;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
   }
 
+  .input-mode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Icon + label chips: an icon alone does not explain seven data sources. */
   .mode-tab {
     flex: 0 0 auto;
-    min-width: 44px;
     min-height: 44px;
     justify-content: center;
     padding: var(--space-2) var(--space-3);
-  }
-
-  .mode-tab span {
-    display: none;
+    font-size: 0.8rem;
+    scroll-snap-align: start;
   }
 
   .input-content {
@@ -885,8 +898,8 @@
   }
 
   .paste-textarea {
-    min-height: 240px;
-    font-size: 0.8rem;
+    min-height: 200px;
+    font-size: 1rem;
   }
 
   .ai-instructions-dock {

@@ -1,5 +1,5 @@
 import type { ChartData, ChartType } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { API_BASE_URL, apiHeaders } from './apiBase';
 
 export interface ChartRecommendation {
   type: ChartType;
@@ -13,9 +13,7 @@ export async function recommendChartType(
 ): Promise<ChartRecommendation> {
   const response = await fetch(`${API_BASE_URL}/api/ai/recommend`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     credentials: 'include',
     body: JSON.stringify({
       data: {

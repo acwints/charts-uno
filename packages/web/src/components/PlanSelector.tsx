@@ -6,6 +6,7 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { motion } from 'motion/react';
 import { createCheckout } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { isNativeApp } from '../services/native';
 import './PlanSelector.css';
 
 interface Plan {
@@ -76,6 +77,17 @@ interface PlanSelectorProps {
 }
 
 export function PlanSelector({ teamId, currentPlan }: PlanSelectorProps) {
+  if (isNativeApp()) {
+    return (
+      <p className="plan-selector__native-note">
+        Your team is on the {currentPlan} plan. Plans are managed on chartsuno.com.
+      </p>
+    );
+  }
+  return <PlanSelectorWeb teamId={teamId} currentPlan={currentPlan} />;
+}
+
+function PlanSelectorWeb({ teamId, currentPlan }: PlanSelectorProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const toast = useToast();
 

@@ -18,10 +18,13 @@ import './Header.css';
 
 interface HeaderProps {
   onAuthOpen?: () => void;
+  /** Render the phone-only menu button. Only meaningful when a sidebar exists to open. */
+  showMenuButton?: boolean;
 }
 
 export function Header({
   onAuthOpen,
+  showMenuButton = false,
 }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,13 +36,13 @@ export function Header({
   const { isOpen: isMobileNavOpen, toggle: toggleMobileNav } = useMobileNav();
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: PointerEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -65,14 +68,16 @@ export function Header({
     <header className="header">
       <div className="header-content">
         {showBack && <button className="native-back" aria-label="Back" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/feed', { replace: true })}><ChevronLeft size={24} /></button>}
-        <button
-          className="header-hamburger"
-          onClick={toggleMobileNav}
-          aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={isMobileNavOpen}
-        >
-          <Menu size={20} />
-        </button>
+        {showMenuButton && (
+          <button
+            className="header-hamburger"
+            onClick={toggleMobileNav}
+            aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={isMobileNavOpen}
+          >
+            <Menu size={20} />
+          </button>
+        )}
         <motion.div
           className="logo-container"
           initial={{ opacity: 0, x: -20 }}
@@ -101,7 +106,7 @@ export function Header({
           <ThemeToggle />
 
           {!isAuthenticated && onAuthOpen && (
-            <Button variant="primary" onClick={onAuthOpen}>
+            <Button variant="primary" onClick={onAuthOpen} className="header-signin">
               Sign in
             </Button>
           )}
@@ -150,14 +155,16 @@ export function Header({
                       <span>Settings</span>
                     </Link>
 
-                    <Link
-                      to="/settings/billing"
-                      className="user-menu-item"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <CreditCard size={16} />
-                      <span>Billing</span>
-                    </Link>
+                    {!isNativeApp() && (
+                      <Link
+                        to="/settings/billing"
+                        className="user-menu-item"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <CreditCard size={16} />
+                        <span>Billing</span>
+                      </Link>
+                    )}
 
                     <div className="user-menu-divider" />
 

@@ -85,6 +85,22 @@ class NativeAuthTests(unittest.TestCase):
         self.client.post("/api/auth/logout")
         self.assertEqual(self.client.get("/api/user/me").status_code, 401)
 
+    def test_token_delivery_returns_bearer_without_cookie(self):
+        # The bundled iOS app keeps the JWT in the Keychain and sends a bearer header.
+        code = self.callback()
+        response = self.client.post("/api/auth/native/exchange", json={"code": code, "verifier": self.verifier, "deliver": "token"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertNotIn("set-cookie", response.headers)
+        token = response.json()["token"]
+        self.assertEqual(decode_token(token)["sub"], self.client.get("/api/user/me", headers={"Authorization": f"Bearer {token}"}).json()["id"])
+        self.assertEqual(self.client.get("/api/user/me").status_code, 401)
+        self.assertEqual(self.exchange(code).status_code, 401)
+
+    def test_native_origin_is_allowed_by_cors(self):
+        response = self.client.options("/api/user/me", headers={"Origin": "capacitor://localhost", "Access-Control-Request-Method": "GET", "Access-Control-Request-Headers": "authorization"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.headers.get("access-control-allow-origin"), "capacitor://localhost")
+
     def test_replay_is_rejected(self):
         code = self.callback()
         self.assertEqual(self.exchange(code).status_code, 200)

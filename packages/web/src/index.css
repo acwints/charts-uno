@@ -198,6 +198,10 @@
   /* Sidebar sizing */
   --sidebar-width: 216px;
   --sidebar-width-mobile: 256px;
+
+  /* Phone tab bar: fixed elements that must clear it add the safe-area inset. */
+  --tabbar-height: 52px;
+  --tabbar-clearance: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
 }
 
 [data-theme="light"] {
@@ -219,6 +223,8 @@ html {
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -226,14 +232,31 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
+  /* dvh tracks the visible viewport as mobile browser chrome collapses. */
   min-height: 100vh;
+  min-height: 100dvh;
   transition: background var(--transition-base), color var(--transition-base);
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* Touch ergonomics: no 300ms double-tap delay, no grey flash on tap. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role="button"],
+[role="tab"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ============================================
@@ -342,6 +365,19 @@ button {
   cursor: pointer;
   overflow: hidden;
   transition: background-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base), scale var(--transition-fast);
+}
+
+/* Hover lifts only where a hover-capable pointer exists; on touch they stick. */
+@media (hover: none) {
+  .epic-button:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .epic-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+  }
 }
 
 .epic-button::before {
