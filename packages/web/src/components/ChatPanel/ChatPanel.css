@@ -455,10 +455,11 @@
 }
 
 @media (max-width: 768px) {
+  /* Float above the tab bar and the home indicator. */
   .assistant-sidebar {
     position: fixed;
-    bottom: 24px;
-    right: 16px;
+    bottom: calc(var(--tabbar-clearance) + 16px);
+    right: max(16px, env(safe-area-inset-right));
     width: 56px;
     min-width: 56px;
     height: 56px;
@@ -487,13 +488,26 @@
 
   .assistant-panel {
     position: fixed;
-    top: 0;
-    right: 0;
+    inset: 0;
     width: 100%;
     max-width: 100%;
     min-width: 100%;
     height: 100%;
-    z-index: 99;
+    height: 100dvh;
+    /* Above the sticky header (100) and tab bar (40), below modals (1000). */
+    z-index: 300;
     border-left: none;
+  }
+
+  .assistant-header {
+    padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+  }
+
+  .assistant-input-area {
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+
+  .assistant-input-hint {
+    display: none;
   }
 }

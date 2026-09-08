@@ -371,6 +371,14 @@ class DashboardItem(Base):
     )
 
 
+class NativeAuthCode(Base):
+    __tablename__ = "native_auth_codes"
+    code_hash = Column(String(64), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    challenge = Column(String(43), nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+
 def init_db():
     """Initialize database tables via Alembic migrations.
 

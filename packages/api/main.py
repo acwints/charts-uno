@@ -9,8 +9,10 @@ import base64
 import secrets
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Literal, Optional, List
 import re
+from urllib.parse import urlsplit, urlencode
+from pydantic import BaseModel, Field
 
 import httpx
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
@@ -120,6 +122,8 @@ from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 from services.research_service import get_research_provider_status, probe_research_providers
 from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset
 
+from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, CALLBACK)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -175,6 +179,13 @@ PROD_ORIGINS = [
     "https://chartsuno.com",
 ]
 for origin in PROD_ORIGINS:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+# The iOS app serves the bundled web app from its own origin and authenticates
+# with a bearer token (see /api/auth/native/exchange), so it needs CORS access.
+NATIVE_ORIGINS = ["capacitor://localhost", "ionic://localhost"]
+for origin in NATIVE_ORIGINS:
     if origin not in allowed_origins:
         allowed_origins.append(origin)
 
@@ -243,21 +254,24 @@ def _safe_frontend_target(target: Optional[str]) -> str:
         + PROD_ORIGINS
     )
 
-    # Allow localhost in development
-    if not IS_PRODUCTION:
-        if target.startswith("http://localhost:") or target.startswith("http://127.0.0.1:"):
+    try:
+        parsed = urlsplit(target)
+        origin = (parsed.scheme, parsed.netloc)
+        if parsed.username or parsed.password:
+            return FRONTEND_URL
+        if not IS_PRODUCTION and parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}:
             return target
-
-    for domain in allowed:
-        if target.startswith(domain):
+        if origin in {(urlsplit(domain).scheme, urlsplit(domain).netloc) for domain in allowed}:
             return target
+    except ValueError:
+        pass
 
     logger.warning(f"Blocked redirect to untrusted domain: {target}")
     return FRONTEND_URL
 
 
 @app.get("/auth/google")
-async def google_auth(target: Optional[str] = None):
+async def google_auth(target: Optional[str] = None, native_challenge: Optional[str] = None, native_nonce: Optional[str] = None):
     """Initiate Google OAuth flow"""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
@@ -269,6 +283,9 @@ async def google_auth(target: Optional[str] = None):
         state_data["frontend"] = target
 
     state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    if native_challenge is not None or native_nonce is not None:
+        state = create_native_state(native_challenge or "", native_nonce or "")
 
     # Build authorization URL
     auth_url = (
@@ -284,15 +301,31 @@ async def google_auth(target: Optional[str] = None):
     return {"auth_url": auth_url}
 
 
+def _native_auth_error(state: dict, reason: str = "failed") -> Response:
+    return Response(status_code=302, headers={
+        "Location": CALLBACK + "?" + urlencode({"error": reason, "state": state["nonce"]}),
+        "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+    })
+
+
 @app.get("/auth/callback")
 async def google_callback(
-    code: str,
     state: str,
+    code: Optional[str] = None,
+    error: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """Handle Google OAuth callback"""
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
+
+    native_state = read_native_state(state) if state.startswith("native.") else None
+    if native_state and native_state.get("expired"):
+        return _native_auth_error(native_state, "expired")
+    if error or not code:
+        if native_state:
+            return _native_auth_error(native_state, "cancelled" if error == "access_denied" else "failed")
+        raise HTTPException(400, "Sign-in cancelled. Please try again.")
 
     # Decode state
     try:
@@ -301,42 +334,58 @@ async def google_callback(
     except Exception:
         frontend_target = FRONTEND_URL
 
-    # Exchange code for tokens
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": GOOGLE_REDIRECT_URI,
-            },
-        )
+    try:
+        # Exchange code for tokens
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": GOOGLE_REDIRECT_URI,
+                },
+            )
 
-        if token_response.status_code != 200:
-            logger.error(f"Token exchange failed: {token_response.text}")
-            raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+            if token_response.status_code != 200:
+                logger.error("Google token exchange failed: HTTP %s", token_response.status_code)
+                if native_state:
+                    return _native_auth_error(native_state)
+                raise HTTPException(status_code=400, detail="Failed to exchange code for token")
 
-        tokens = token_response.json()
-        access_token = tokens.get("access_token")
+            tokens = token_response.json()
+            access_token = tokens.get("access_token")
 
-        # Get user info
-        user_response = await client.get(
-            f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={access_token}"
-        )
+            # Get user info
+            user_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
 
-        if user_response.status_code != 200:
-            logger.error(f"Failed to get user info: {user_response.text}")
-            raise HTTPException(status_code=400, detail="Failed to get user info")
+            if user_response.status_code != 200:
+                logger.error("Google user info failed: HTTP %s", user_response.status_code)
+                if native_state:
+                    return _native_auth_error(native_state)
+                raise HTTPException(status_code=400, detail="Failed to get user info")
 
-        user_info = user_response.json()
+            user_info = user_response.json()
+
+    except (httpx.RequestError, ValueError):
+        if native_state:
+            return _native_auth_error(native_state)
+        raise HTTPException(502, "Sign-in provider is unavailable. Please try again.") from None
 
     # Find or create user
     google_id = user_info.get("id")
     email = user_info.get("email")
     name = user_info.get("name")
     picture = user_info.get("picture")
+
+    if not google_id or not email:
+        if native_state:
+            return _native_auth_error(native_state)
+        raise HTTPException(400, "Sign-in provider did not return an account")
 
     user = db.query(User).filter(User.google_id == google_id).first()
     is_new_user = False
@@ -364,6 +413,9 @@ async def google_callback(
     # Create personal team for new users
     if is_new_user:
         _create_personal_team(db, user)
+
+    if native_state:
+        return Response(status_code=302, headers={"Location": finish_native_auth(db, user.id, native_state), "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
 
     # Generate JWT token
     jwt_token = create_access_token(user.id)
@@ -412,6 +464,26 @@ async def set_auth_cookie(
     )
 
     return {"status": "ok"}
+
+
+class NativeCodeExchange(BaseModel):
+    code: str = Field(min_length=43, max_length=43)
+    verifier: str = Field(min_length=43, max_length=128)
+    # "cookie": legacy remote-URL shell that shares the site's cookie jar.
+    # "token": bundled app on its own origin; it keeps the JWT in the Keychain
+    # and sends it as a bearer header.
+    deliver: Literal["cookie", "token"] = "cookie"
+
+
+@app.post("/api/auth/native/exchange")
+@limiter.limit("20/minute")
+async def exchange_native_auth(request: Request, response: Response, body: NativeCodeExchange, db: Session = Depends(get_db)):
+    user_id = redeem_native_code(db, body.code, body.verifier)
+    response.headers["Cache-Control"] = "no-store"
+    token = create_access_token(user_id)
+    if body.deliver == "token":
+        return {"status": "ok", "token": token}
+    return await set_auth_cookie(request, response, token, db)
 
 
 @app.post("/api/auth/logout")

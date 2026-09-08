@@ -11,6 +11,7 @@ import {
   generateEmbedCode,
   type WatermarkSettings,
 } from '../../services/exportService';
+import { isNativeApp } from '../../services/native';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../Button';
 import type { ChartData } from '../../types';
@@ -56,7 +57,7 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
       await exportToCSV(data, filename);
     } catch (error) {
       console.error('Failed to export CSV:', error);
-      toast.error('Unable to download CSV. Please try again.');
+      toast.error(isNativeApp() && error instanceof Error ? error.message : 'Unable to export CSV. Please try again.');
     } finally {
       setExporting(null);
       setIsOpen(false);
@@ -70,7 +71,7 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
       await exportToPNG(chartRef.current, filename, watermark);
     } catch (error) {
       console.error('Failed to export PNG:', error);
-      toast.error('Unable to download PNG. Please try Copy Image instead.');
+      toast.error(isNativeApp() && error instanceof Error ? error.message : 'Unable to export PNG. Please try again.');
     } finally {
       setExporting(null);
       setIsOpen(false);
@@ -97,7 +98,7 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
         disabled={!isAuthenticated}
       >
         <Download size={16} />
-        <span>Download</span>
+        <span>{isNativeApp() ? 'Export' : 'Download'}</span>
       </Button>
 
       <AnimatePresence initial={false}>
@@ -115,7 +116,7 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
               disabled={exporting !== null || !isAuthenticated}
             >
               <FileSpreadsheet size={16} />
-              <span>Download CSV</span>
+              <span>{isNativeApp() ? 'Save or share CSV' : 'Download CSV'}</span>
               {exporting === 'csv' && <span className="export-loading">...</span>}
             </button>
 
@@ -125,11 +126,11 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
               disabled={exporting !== null || !isAuthenticated}
             >
               <Image size={16} />
-              <span>Download PNG</span>
+              <span>{isNativeApp() ? 'Save or share PNG' : 'Download PNG'}</span>
               {exporting === 'png' && <span className="export-loading">...</span>}
             </button>
 
-            {chartId && (
+            {chartId && !isNativeApp() && (
               <>
                 <div className="export-divider" />
                 <button

@@ -94,3 +94,9 @@
     animation: none;
   }
 }
+
+@media (hover: none) {
+  .button--primary:hover:not(:disabled) {
+    transform: none;
+  }
+}

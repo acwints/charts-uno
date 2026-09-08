@@ -106,7 +106,7 @@
     position: fixed;
     top: auto;
     right: var(--space-3);
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    bottom: calc(var(--tabbar-clearance) + var(--space-3));
     left: var(--space-3);
     min-width: 0;
     white-space: normal;

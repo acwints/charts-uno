@@ -1,16 +1,24 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
-import { ChartBuilder } from './pages/ChartBuilder';
-import { ChartView } from './pages/ChartView';
-import { EmbedView } from './pages/EmbedView';
 import { ChartFeedPage } from './pages/ChartFeedPage';
-import { SettingsPage } from './pages/Settings';
-import { InviteAccept } from './pages/InviteAccept';
 import { NotFound } from './pages/NotFound';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
-import { UserDashboardPage, TeamDashboardPage, TeamActivityPage } from './pages/Dashboard';
-import { DashboardsListPage, DashboardViewPage, DashboardEditPage } from './pages/Dashboards';
+
+// The feed is the first screen; everything that drags in Recharts, CodeMirror,
+// html2canvas or the map data loads on demand so the first paint stays small.
+const ChartBuilder = lazy(() => import('./pages/ChartBuilder').then((m) => ({ default: m.ChartBuilder })));
+const ChartView = lazy(() => import('./pages/ChartView').then((m) => ({ default: m.ChartView })));
+const EmbedView = lazy(() => import('./pages/EmbedView').then((m) => ({ default: m.EmbedView })));
+const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
+const InviteAccept = lazy(() => import('./pages/InviteAccept').then((m) => ({ default: m.InviteAccept })));
+const UserDashboardPage = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.UserDashboardPage })));
+const TeamDashboardPage = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.TeamDashboardPage })));
+const TeamActivityPage = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.TeamActivityPage })));
+const DashboardsListPage = lazy(() => import('./pages/Dashboards').then((m) => ({ default: m.DashboardsListPage })));
+const DashboardViewPage = lazy(() => import('./pages/Dashboards').then((m) => ({ default: m.DashboardViewPage })));
+const DashboardEditPage = lazy(() => import('./pages/Dashboards').then((m) => ({ default: m.DashboardEditPage })));
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -21,12 +29,14 @@ import { TeamProvider } from './contexts/TeamContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
+import { isNativeApp } from './services/native';
 
 function AppWithTeam() {
   const { isAuthenticated } = useAuth();
 
   return (
     <TeamProvider isAuthenticated={isAuthenticated}>
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         {/* Embed route (no layout chrome) */}
         <Route path="/embed/:id" element={<EmbedView />} />
@@ -75,7 +85,16 @@ function AppWithTeam() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </TeamProvider>
+  );
+}
+
+function RouteFallback() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+      <LoadingSpinner size="lg" />
+    </div>
   );
 }
 
@@ -90,6 +109,8 @@ function HomeRoute() {
       </div>
     );
   }
+
+  if (isNativeApp()) return <Navigate to="/feed" replace />;
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;

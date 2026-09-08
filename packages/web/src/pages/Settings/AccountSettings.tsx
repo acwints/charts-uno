@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { User } from '../../services/api';
 
 interface AccountSettingsProps {
@@ -74,9 +75,10 @@ export function AccountSettings({ user }: AccountSettingsProps) {
         </div>
         <div className="settings-card__content">
           <p className="settings-privacy-text">
-            Your data is stored securely and never shared with third parties without your consent.
+            View our privacy policy for details about how Chartsuno uses your data.
             Charts you create are private by default unless you choose to make them public.
           </p>
+          <Link to="/privacy">Privacy policy</Link> · <Link to="/terms">Terms of use</Link>
         </div>
       </div>
     </div>

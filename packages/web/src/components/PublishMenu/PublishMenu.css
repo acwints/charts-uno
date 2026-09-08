@@ -157,8 +157,27 @@
     left: 0;
     min-width: 100%;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    max-height: 50vh;
+    max-height: 60dvh;
     overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -8px 32px oklch(0 0 0 / 0.35);
+  }
+
+  .publish-option {
+    min-height: 48px;
+  }
+
+  .publish-team-item {
+    min-height: 44px;
+  }
+
+  .publish-team-item input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+  }
+
+  .publish-save-button {
+    min-height: 44px;
   }
 }
 

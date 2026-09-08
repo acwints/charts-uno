@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { updateNativeStatusBar } from '../services/native';
 import type { ThemeMode } from '@chartsuno/shared';
 
 const THEME_STORAGE_KEY = 'chartsuno-theme';
@@ -22,8 +23,14 @@ function getStoredTheme(): ThemeMode | null {
   return null;
 }
 
+// Keep the browser UI (iOS Safari tab bar, Android status bar, PWA title bar)
+// in step with the app theme. Values mirror --bg-primary in index.css.
+const THEME_COLORS: Record<ThemeMode, string> = { dark: '#101014', light: '#ffffff' };
+
 function setThemeAttribute(theme: ThemeMode) {
   document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = THEME_COLORS[theme];
 }
 
 interface ThemeContextValue {
@@ -42,6 +49,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setThemeAttribute(theme);
+    const applyStatusBar = () => updateNativeStatusBar(theme);
+    applyStatusBar();
+    window.addEventListener('chartsunoViewDidAppear', applyStatusBar);
+    document.addEventListener('visibilitychange', applyStatusBar);
+    return () => {
+      window.removeEventListener('chartsunoViewDidAppear', applyStatusBar);
+      document.removeEventListener('visibilitychange', applyStatusBar);
+    };
   }, [theme]);
 
   useEffect(() => {

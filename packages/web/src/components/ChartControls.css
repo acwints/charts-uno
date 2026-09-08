@@ -940,6 +940,34 @@
 @media (max-width: 720px) {
   .chart-controls {
     max-height: none;
+    overflow: visible;
+  }
+
+  .controls-segment {
+    min-height: 44px;
+  }
+
+  .toggle-item {
+    min-height: 44px;
+  }
+
+  .toggle-switch {
+    width: 36px;
+    height: 20px;
+  }
+
+  .controls-branding-select,
+  .control-input-title,
+  .control-source-link,
+  .baseline-mode-select,
+  .swap-axes-btn {
+    min-height: 44px;
+  }
+
+  .combo-type-btn,
+  .combo-axis-btn {
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .controls-top-layout {

@@ -1,5 +1,7 @@
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import { isNativeApp } from '../services/native';
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Settings from 'lucide-react/dist/esm/icons/settings';
@@ -9,37 +11,48 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
+import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../hooks/useAuth';
 import { useMobileNav } from '../hooks/useMobileNav';
 import './Header.css';
 
 interface HeaderProps {
   onAuthOpen?: () => void;
+  /** Render the phone-only menu button. Only meaningful when a sidebar exists to open. */
+  showMenuButton?: boolean;
 }
 
 export function Header({
   onAuthOpen,
+  showMenuButton = false,
 }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const showBack = isNativeApp() && /^\/(chart|settings|terms|privacy|invite|dashboards|team)(\/|$)/.test(location.pathname);
+  const toast = useToast();
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { isOpen: isMobileNavOpen, toggle: toggleMobileNav } = useMobileNav();
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: PointerEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not sign out. Please try again.');
+    }
   };
 
   const initials = user?.name
@@ -54,21 +67,24 @@ export function Header({
   return (
     <header className="header">
       <div className="header-content">
-        <button
-          className="header-hamburger"
-          onClick={toggleMobileNav}
-          aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={isMobileNavOpen}
-        >
-          <Menu size={20} />
-        </button>
+        {showBack && <button className="native-back" aria-label="Back" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/feed', { replace: true })}><ChevronLeft size={24} /></button>}
+        {showMenuButton && (
+          <button
+            className="header-hamburger"
+            onClick={toggleMobileNav}
+            aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={isMobileNavOpen}
+          >
+            <Menu size={20} />
+          </button>
+        )}
         <motion.div
           className="logo-container"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/" className="logo-link">
+          <Link to={isNativeApp() ? '/feed' : '/'} className="logo-link">
             <div className="logo-icon">
               <Sparkles size={20} />
             </div>
@@ -90,7 +106,7 @@ export function Header({
           <ThemeToggle />
 
           {!isAuthenticated && onAuthOpen && (
-            <Button variant="primary" onClick={onAuthOpen}>
+            <Button variant="primary" onClick={onAuthOpen} className="header-signin">
               Sign in
             </Button>
           )}
@@ -101,6 +117,7 @@ export function Header({
                 className="user-menu-trigger"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 aria-expanded={isUserMenuOpen}
+                aria-label="Account menu"
               >
                 {user.picture ? (
                   <img src={user.picture} alt="" className="user-menu-avatar" />
@@ -138,14 +155,16 @@ export function Header({
                       <span>Settings</span>
                     </Link>
 
-                    <Link
-                      to="/settings/billing"
-                      className="user-menu-item"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <CreditCard size={16} />
-                      <span>Billing</span>
-                    </Link>
+                    {!isNativeApp() && (
+                      <Link
+                        to="/settings/billing"
+                        className="user-menu-item"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <CreditCard size={16} />
+                        <span>Billing</span>
+                      </Link>
+                    )}
 
                     <div className="user-menu-divider" />
 

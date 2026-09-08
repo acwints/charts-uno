@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
+import { ensureChartFonts } from '../services/chartFonts';
 import {
   BarChart,
   Bar,
@@ -24,6 +25,8 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
+
+ensureChartFonts();
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';

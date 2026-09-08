@@ -239,10 +239,42 @@
 
 @media (max-width: 768px) {
   .chart-feed__header {
-    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-2);
   }
 
+  /* Tab bar handles navigation; a Back button next to it is noise. */
+  .chart-feed__back-btn {
+    display: none;
+  }
+
+  .chart-feed__title {
+    font-size: 1.25rem;
+  }
+
+  .chart-feed__refresh-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chart-feed__tab {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .chart-feed__tabs {
+    gap: var(--space-1);
+    scrollbar-width: none;
+  }
+
+  .chart-feed__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Let the page scroll instead of a nested container. */
   .chart-feed__content {
+    overflow: visible;
     padding: var(--space-4);
   }
 
@@ -295,4 +327,23 @@
     transition: none;
     animation: none;
   }
+}
+
+.chart-feed__stale {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.chart-feed__retry-link {
+  padding: var(--space-1) var(--space-2);
+  min-height: 32px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }

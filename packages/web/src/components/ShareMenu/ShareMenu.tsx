@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isNativeApp } from '../../services/native';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
-import { copyImageToClipboard, type WatermarkSettings } from '../../services/exportService';
+import { copyImageToClipboard, shareChartImage, type WatermarkSettings } from '../../services/exportService';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../Button';
 import './ShareMenu.css';
 
 type SharePlatform = 'x' | 'linkedin';
-type ShareActivity = SharePlatform | 'copy';
+type ShareActivity = SharePlatform | 'copy' | 'native';
 
 interface ShareMenuProps {
   chartRef: React.RefObject<HTMLElement | null>;
@@ -111,6 +113,24 @@ export function ShareMenu({
       setShareActivity(null);
     }
   };
+
+  if (isNativeApp()) return (
+    <div className="share-actions" role="group" aria-label="Share chart">
+      <Button variant="default" size="sm" disabled={isShareDisabled} aria-busy={shareActivity === 'native'} onClick={async () => {
+        if (!chartRef.current) return;
+        setShareActivity('native');
+        try {
+          await shareChartImage(chartRef.current, title || 'chart', watermark);
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Could not share chart. Please try again.');
+        } finally {
+          setShareActivity(null);
+        }
+      }}>
+        <Share2 size={16} /><span>{shareActivity === 'native' ? 'Preparing…' : 'Share image'}</span>
+      </Button>
+    </div>
+  );
 
   return (
     <div className="share-actions" role="group" aria-label="Share chart">

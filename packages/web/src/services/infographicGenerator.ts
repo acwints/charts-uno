@@ -1,5 +1,5 @@
 import type { ChartData, ColorScheme, ThemeMode, AiMode } from '../types';
-import { API_BASE_URL } from './apiBase';
+import { API_BASE_URL, apiHeaders } from './apiBase';
 import { normalizeInfographicSvg } from './svgSanitizer';
 
 const MAX_SOURCE_IMAGE_BYTES = 1_500_000; // ~1.5MB raw image payload
@@ -27,9 +27,8 @@ async function fetchInfographic(
     return await Promise.race([
       fetch(`${API_BASE_URL}/api/ai/infographic`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
         body: JSON.stringify(body),
         signal: controller.signal,
       }),

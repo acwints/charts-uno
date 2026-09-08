@@ -2,10 +2,11 @@
   "name": "@chartsuno/mobile",
   "private": true,
   "version": "1.0.0",
-  "description": "Capacitor iOS shell for the Chartsuno app (wraps https://chartsuno.com)",
+  "description": "Capacitor iOS shell for the Chartsuno app (bundles packages/web)",
   "scripts": {
     "ios:add": "cap add ios",
-    "ios:sync": "cap sync ios",
+    "ios:sync": "pnpm --filter @chartsuno/shared build && pnpm --filter @chartsuno/web build && cap sync ios",
+    "ios:sync:fast": "cap sync ios",
     "ios:open": "cap open ios",
     "ios:assets": "capacitor-assets generate --ios --assetPath assets"
   },
