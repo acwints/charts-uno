@@ -1,4 +1,5 @@
 import type { ChartData } from '../types';
+import { parseOrdinalValue } from '../types';
 import { transposeChartData } from './transposeData';
 
 /**
@@ -32,30 +33,6 @@ const MIN_CONTENDERS = 6;
 /* One reshuffle can be noise; a race should be genuinely unstable. */
 const MIN_ORDER_CHANGES = 2;
 
-/** Labels commonly used for an ordered axis: "Season 3", "Ep 12", "Q2", "Week 4". */
-const ORDINAL_LABEL = /^(?:s|season|e|ep|episode|w|week|d|day|q|quarter|r|round|game|match|year|yr|month|m|stage|lap|period|p)\s*[-_]?\s*(\d+(?:\.\d+)?)$/i;
-
-const parseOrdinal = (value: string): number | null => {
-  const text = value.trim();
-  if (!text) return null;
-
-  const ordinal = ORDINAL_LABEL.exec(text);
-  if (ordinal) return Number(ordinal[1]);
-
-  // A bare number, including a year.
-  const numeric = Number(text.replace(/,/g, ''));
-  if (Number.isFinite(numeric)) return numeric;
-
-  // "2019-Q3" / "2019 Q3" style.
-  const yearQuarter = /^(\d{4})[\s-]*q(\d)$/i.exec(text);
-  if (yearQuarter) return Number(yearQuarter[1]) * 4 + Number(yearQuarter[2]);
-
-  const timestamp = Date.parse(text);
-  if (Number.isFinite(timestamp)) return timestamp;
-
-  return null;
-};
-
 /**
  * True when the values read as an ordered sequence. Strictly increasing is
  * required rather than merely sortable, because an unordered set of numbers
@@ -64,7 +41,7 @@ const parseOrdinal = (value: string): number | null => {
 export function looksSequential(values: string[]): boolean {
   if (values.length < MIN_FRAMES) return false;
 
-  const parsed = values.map(parseOrdinal);
+  const parsed = values.map(parseOrdinalValue);
   if (parsed.some((value) => value === null)) return false;
 
   const numbers = parsed as number[];

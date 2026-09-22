@@ -11,6 +11,7 @@
     "build:bot": "pnpm --filter @chartsuno/bot build",
     "check:harness": "node scripts/check-harness.mjs",
     "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
     "mobile:ios:sync": "pnpm --filter @chartsuno/mobile ios:sync",
     "mobile:ios:open": "pnpm --filter @chartsuno/mobile ios:open",
     "eval:charts": "python3 scripts/eval-chart-generation.py",

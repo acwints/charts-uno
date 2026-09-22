@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "tsx --test src/*.test.ts"
   },
   "peerDependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -25,14 +26,23 @@
     "sharp": "^0.33.0"
   },
   "peerDependenciesMeta": {
-    "@google/generative-ai": { "optional": true },
-    "chart.js": { "optional": true },
-    "puppeteer": { "optional": true },
-    "sharp": { "optional": true }
+    "@google/generative-ai": {
+      "optional": true
+    },
+    "chart.js": {
+      "optional": true
+    },
+    "puppeteer": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.5",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3"
   }
 }
