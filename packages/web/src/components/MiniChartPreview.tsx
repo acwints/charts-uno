@@ -68,6 +68,22 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
     });
   }, [data.labels, data.series]);
 
+  const raceFinishData = useMemo(() => {
+    const lastIndexWithValue = (values: Array<number | null>) => {
+      for (let index = values.length - 1; index >= 0; index -= 1) {
+        const value = values[index];
+        if (typeof value === 'number' && Number.isFinite(value)) return value;
+      }
+      return null;
+    };
+
+    return data.series
+      .map((series) => ({ name: series.name, value: lastIndexWithValue(series.data) }))
+      .filter((row): row is { name: string; value: number } => row.value !== null)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [data.series]);
+
   const pieData = useMemo(
     () =>
       data.series[0]?.data
@@ -91,6 +107,23 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
     const isHorizontalBar = chartType === 'bar' && config.barLayout === 'horizontal';
 
     switch (chartType) {
+      case 'race':
+        return (
+          <BarChart
+            data={raceFinishData}
+            layout="vertical"
+            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+          >
+            <XAxis type="number" hide domain={['dataMin', 'dataMax']} />
+            <YAxis dataKey="name" type="category" hide width={0} />
+            <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+              {raceFinishData.map((row, idx) => (
+                <Cell key={row.name} fill={colors[idx % colors.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        );
+
       case 'bar':
         return (
           <BarChart

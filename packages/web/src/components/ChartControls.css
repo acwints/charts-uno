@@ -365,6 +365,118 @@
 }
 
 /* Map Options */
+.controls-race-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-bottom: var(--border-subtle);
+  background: linear-gradient(135deg, oklch(0.723 0.192 149.579 / 0.03), oklch(0.623 0.188 259.815 / 0.03));
+}
+
+.race-options-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.race-option-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.race-option-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.race-option-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.race-option-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.race-option-range {
+  width: 100%;
+  cursor: pointer;
+}
+
+.race-option-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.race-mark-grid {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.race-mark-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.race-mark-button:hover,
+.race-mark-button:active {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.race-mark-button.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.race-mark-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.race-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.race-toggle input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .race-mark-button {
+    transition: none;
+  }
+}
+
 .controls-map-options {
   padding: var(--space-3);
   border-bottom: var(--border-subtle);

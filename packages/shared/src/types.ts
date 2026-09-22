@@ -60,7 +60,7 @@ export interface ChartData {
   sqlSeriesColumns?: string[];
 }
 
-export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'histogram' | 'table' | 'infographic' | 'map';
+export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'radar' | 'scatter' | 'histogram' | 'table' | 'infographic' | 'map' | 'race';
 
 // Combo chart (dual-axis, mixed series types)
 export type SeriesChartType = 'bar' | 'line' | 'area';
@@ -70,6 +70,26 @@ export interface SeriesOverride {
   chartType?: SeriesChartType;
   axis?: AxisSide;
 }
+
+// Race-specific types.
+//
+// A race reads the existing ChartData shape with no new fields: `labels` are
+// the frames (episodes, seasons, years, quarters) and each `series` is a
+// contender, so series[i].data[t] is that contender's value at frame t. This
+// is the transpose of a "years down the rows" CSV, which is exactly what the
+// CSV importer already produces.
+export type RaceMark = 'auto' | 'bar' | 'dot';
+
+// Race defaults live here rather than in DEFAULT_CHART_CONFIG so the two
+// hand-synced copies of the default config (shared + the web store) do not
+// need to change. The renderer falls back to these.
+export const RACE_DEFAULTS = {
+  topN: 12,
+  frameMs: 900,
+  holdLast: true,
+  loop: true,
+  mark: 'auto' as RaceMark,
+};
 
 // Map-specific types
 export type MapVariant = 'bubble' | 'choropleth';
@@ -137,6 +157,23 @@ export interface ChartConfig {
   // Map options
   mapVariant?: MapVariant;
   mapScope?: MapScope;
+  // Race options
+  /** How many contenders are on the board at once. */
+  raceTopN?: number;
+  /** Milliseconds spent on each frame. */
+  raceFrameMs?: number;
+  /**
+   * Carry a contender's last known value forward instead of dropping it when
+   * its data runs out, so a finished contender keeps its final position and
+   * can still be overtaken.
+   */
+  raceHoldLast?: boolean;
+  raceLoop?: boolean;
+  /**
+   * 'auto' picks a bar when the value axis starts at zero and a dot otherwise,
+   * because a bar drawn from a truncated baseline overstates small gaps.
+   */
+  raceMark?: RaceMark;
   // Combo chart (dual-axis, mixed series types)
   seriesConfig?: Record<string, SeriesOverride>;
   rightYAxisLabel?: string;

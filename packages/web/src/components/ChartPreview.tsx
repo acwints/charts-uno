@@ -49,6 +49,7 @@ import { AdaptiveYAxisCategoryTick } from './AdaptiveYAxisCategoryTick';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { Button } from './Button';
 import { MapChart } from './MapChart';
+import { BarChartRace } from './BarChartRace';
 import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 import './ChartPreview.css';
 
@@ -1155,6 +1156,8 @@ export function ChartPreview({
     switch (config.type) {
       case 'infographic':
       case 'map':
+      case 'race':
+        // Rendered outside Recharts.
         return null;
 
       case 'bar':
@@ -1491,6 +1494,8 @@ export function ChartPreview({
           renderInfographic()
         ) : config.type === 'map' ? (
           <MapChart data={data} config={config} theme={theme} colors={colors} />
+        ) : config.type === 'race' ? (
+          <BarChartRace data={data} config={config} theme={theme} colors={colors} />
         ) : isTableView ? (
           <div className="table-container">
             <table className="data-table">
@@ -1581,7 +1586,7 @@ export function ChartPreview({
         </div>
       )}
 
-      {config.type !== 'infographic' && config.type !== 'table' && config.type !== 'map' && (
+      {config.type !== 'infographic' && config.type !== 'table' && config.type !== 'map' && config.type !== 'race' && (
         <div className="chart-color-bar">
           {colors.slice(0, data.series.length).map((color, idx) => (
             <div

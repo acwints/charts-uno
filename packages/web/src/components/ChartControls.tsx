@@ -13,6 +13,7 @@ import Hash from 'lucide-react/dist/esm/icons/hash';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Globe from 'lucide-react/dist/esm/icons/globe';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import Smile from 'lucide-react/dist/esm/icons/smile';
@@ -25,9 +26,9 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
 import ArrowLeftRight from 'lucide-react/dist/esm/icons/arrow-left-right';
-import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride, RaceMark } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
-import { STYLE_VARIANTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
+import { STYLE_VARIANTS, RACE_DEFAULTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
 import { transposeChartData } from '../utils/transposeData';
 import type { ChartLogoOption } from './ChartPreview';
@@ -60,7 +61,14 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'scatter', icon: Circle, label: 'Scatter' },
   { id: 'table', icon: Table2, label: 'Table' },
   { id: 'map', icon: Globe, label: 'Map' },
+  { id: 'race', icon: Trophy, label: 'Race' },
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
+];
+
+const RACE_MARK_OPTIONS: { id: RaceMark; label: string; description: string }[] = [
+  { id: 'auto', label: 'Auto', description: 'Bar when the axis starts at zero, dot when it does not' },
+  { id: 'bar', label: 'Bar', description: 'Always draw bars' },
+  { id: 'dot', label: 'Dot', description: 'Dot on a track — honest on a truncated axis' },
 ];
 
 const MAP_SCOPE_OPTIONS: { id: MapScope; icon: typeof Globe; label: string; description: string }[] = [
@@ -180,6 +188,11 @@ export function ChartControls({
       aiReadyToGenerate: type === 'infographic' ? false : undefined,
       mapVariant: type === 'map' ? (config.mapVariant || 'choropleth') : undefined,
       mapScope: type === 'map' ? (config.mapScope || data.mapScope || 'us-states') : undefined,
+      raceTopN: type === 'race' ? (config.raceTopN ?? RACE_DEFAULTS.topN) : undefined,
+      raceFrameMs: type === 'race' ? (config.raceFrameMs ?? RACE_DEFAULTS.frameMs) : undefined,
+      raceHoldLast: type === 'race' ? (config.raceHoldLast ?? RACE_DEFAULTS.holdLast) : undefined,
+      raceLoop: type === 'race' ? (config.raceLoop ?? RACE_DEFAULTS.loop) : undefined,
+      raceMark: type === 'race' ? (config.raceMark ?? RACE_DEFAULTS.mark) : undefined,
       // Choosing a standard chart type should leave dual-axis mode.
       seriesConfig: undefined,
       rightYAxisLabel: undefined,
@@ -359,6 +372,80 @@ export function ChartControls({
                 <Play size={16} />
                 <span>Generate</span>
               </button>
+            </div>
+          )}
+
+          {config.type === 'race' && (
+            <div className="controls-race-options">
+              <div className="race-options-row">
+                <label className="race-option-group" htmlFor="race-top-n">
+                  <span className="race-option-label">Rows on screen</span>
+                  <input
+                    id="race-top-n"
+                    className="race-option-input"
+                    type="number"
+                    min={3}
+                    max={Math.max(3, data.series.length)}
+                    value={config.raceTopN ?? RACE_DEFAULTS.topN}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      if (Number.isFinite(next)) updateConfig({ raceTopN: Math.max(3, next) });
+                    }}
+                  />
+                </label>
+
+                <label className="race-option-group" htmlFor="race-speed">
+                  <span className="race-option-label">
+                    Frame speed: {((config.raceFrameMs ?? RACE_DEFAULTS.frameMs) / 1000).toFixed(2)}s
+                  </span>
+                  <input
+                    id="race-speed"
+                    className="race-option-range"
+                    type="range"
+                    min={120}
+                    max={2500}
+                    step={20}
+                    value={config.raceFrameMs ?? RACE_DEFAULTS.frameMs}
+                    onChange={(event) => updateConfig({ raceFrameMs: Number(event.target.value) })}
+                  />
+                </label>
+              </div>
+
+              <div className="race-options-row">
+                <div className="race-option-group">
+                  <span className="race-option-label">Mark</span>
+                  <div className="race-mark-grid">
+                    {RACE_MARK_OPTIONS.map((markOpt) => (
+                      <button
+                        key={markOpt.id}
+                        className={`race-mark-button ${(config.raceMark ?? RACE_DEFAULTS.mark) === markOpt.id ? 'active' : ''}`}
+                        onClick={() => updateConfig({ raceMark: markOpt.id })}
+                        title={markOpt.description}
+                      >
+                        <span>{markOpt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <label className="race-toggle">
+                <input
+                  type="checkbox"
+                  checked={config.raceHoldLast ?? RACE_DEFAULTS.holdLast}
+                  onChange={(event) => updateConfig({ raceHoldLast: event.target.checked })}
+                />
+                <span>Keep finished series on the board at their last value</span>
+              </label>
+
+              <label className="race-toggle">
+                <input
+                  type="checkbox"
+                  checked={config.raceLoop ?? RACE_DEFAULTS.loop}
+                  onChange={(event) => updateConfig({ raceLoop: event.target.checked })}
+                />
+                <span>Loop</span>
+              </label>
             </div>
           )}
 
