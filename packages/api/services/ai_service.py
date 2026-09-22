@@ -614,7 +614,8 @@ CURRENT CONFIG:
 - Show Grid: {current_config.get('showGrid')}, Legend: {current_config.get('showLegend')}, Values: {current_config.get('showValues')}, Stacked: {current_config.get('stacked', False)}
 - Bar Layout: {current_config.get('barLayout', 'vertical')}
 
-Available chart types: bar, line, area, pie, radar, scatter, table
+Available chart types: bar, line, area, pie, radar, scatter, table, race
+Use 'race' only for an animated bar chart race: the x-axis must be an ordered sequence (years, seasons, episodes, quarters) AND there must be 3+ series whose ranking changes over that sequence. If the ranking never changes, use bar instead.
 Available color schemes: default, cool, warm, editorial, monochrome, muted
 Available styles: professional, playful, editorial, minimalist, bold
 {history_text}
@@ -818,7 +819,8 @@ async def recommend_chart_type(
 - What story the data is trying to tell
 - Readability and clarity for the end user
 
-Available chart types: bar, line, area, pie, radar, scatter, table
+Available chart types: bar, line, area, pie, radar, scatter, table, race
+Use 'race' only for an animated bar chart race: the x-axis must be an ordered sequence (years, seasons, episodes, quarters) AND there must be 3+ series whose ranking changes over that sequence. If the ranking never changes, use bar instead.
 {preferred_type_line}{user_prompt_line}
 
 Respond with JSON only (no markdown):
@@ -847,7 +849,7 @@ Analyze this data and recommend the best chart type:
 
         resolved_type = preferred_type or parsed.get("type", "table")
 
-        valid_types = ["bar", "line", "area", "pie", "radar", "scatter", "table"]
+        valid_types = ["bar", "line", "area", "pie", "radar", "scatter", "table", "race"]
         if resolved_type not in valid_types:
             resolved_type = "table"
 

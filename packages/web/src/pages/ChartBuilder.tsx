@@ -10,6 +10,7 @@ import { BottomCTA } from '../components/BottomCTA';
 import { useAuth } from '../hooks/useAuth';
 import { useChartStore } from '../stores/chartStore';
 import { recommendChartType } from '../services/chartTypeRecommender';
+import { detectRaceShape, orientForRace } from '../utils/raceDetection';
 import type { ChartData } from '../types';
 import { suggestComboConfig } from '../types';
 
@@ -30,6 +31,25 @@ export function ChartBuilder() {
   const { setChartData, setChartConfig } = useChartStore();
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
+    // Race-shaped data is recognised from the data itself — an ordered axis,
+    // several contenders and a ranking that actually moves — so it does not
+    // need an AI round-trip, and the orientation is corrected here because the
+    // CSV importer cannot know which axis is the timeline.
+    const race = detectRaceShape(data);
+    if (race.isRace && !data.suggestedType) {
+      const oriented = orientForRace(data, race);
+      setChartData({ ...oriented, suggestedType: 'race', aiReasoning: race.reason });
+      setChartConfig((prev) => ({
+        ...prev,
+        title: data.suggestedTitle || prev.title,
+        type: 'race',
+        raceTopN: Math.min(12, race.contenderCount),
+        ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
+      }));
+      navigate('/chart');
+      return;
+    }
+
     // For structured data sources (stocks, sheets), skip AI recommendation
     // These sources already have a known chart type and don't need analysis
     const skipAI = data.sourceType === 'stocks' || data.sourceType === 'sheets' || data.sourceType === 'sql';

@@ -44,7 +44,7 @@ export async function recommendChartType(
   const result = await response.json();
 
   // Validate the chart type
-  const validTypes: ChartType[] = ['bar', 'line', 'area', 'pie', 'radar', 'scatter', 'table'];
+  const validTypes: ChartType[] = ['bar', 'line', 'area', 'pie', 'radar', 'scatter', 'table', 'race'];
   const resolvedType = options.preferredType ?? result.type;
 
   if (!validTypes.includes(resolvedType)) {
