@@ -135,7 +135,7 @@ Return ONLY valid JSON:
 
 from services.blocking import generate_content, query_rows
 from services.race_builder import build_race, infer_race_columns
-from services.public_dataset_service import _IMDB_EPISODE_RACE_SQL, RACE_MAX_ROWS
+from services.public_dataset_service import _IMDB_EPISODE_RACE_SQL, RACE_MAX_CONTENDERS, RACE_MAX_ROWS
 
 
 _RACE_INTENT = re.compile(
@@ -416,7 +416,10 @@ def _default_bigquery_sql(prompt: str) -> Optional[str]:
     # A TV race has a known-good query: the same one the Public Datasets
     # entry uses, so both paths produce the identical chart.
     if _is_race_intent(prompt) and any(term in lower for term in ["show", "series", "tv", "episode", "season", "imdb"]):
-        return _IMDB_EPISODE_RACE_SQL.format(limit=50)
+        # The full eligible field, matching the Public Datasets default. A
+        # 50-show field chosen by votes hands the same race to a different
+        # winner than the full field does, so the two routes must agree.
+        return _IMDB_EPISODE_RACE_SQL.format(limit=RACE_MAX_CONTENDERS)
 
     # IMDb-focused fallback with known-good column names.
     if any(term in lower for term in ["imdb", "movie", "film", "rating", "genre"]):
@@ -580,7 +583,7 @@ _IMDB_RACE_COLUMNS = {"entity": "show", "period": "episode", "value": "running_a
 
 
 def _is_deterministic_race_sql(sql: str) -> bool:
-    return sql.strip() == _IMDB_EPISODE_RACE_SQL.format(limit=50).strip()
+    return sql.strip() == _IMDB_EPISODE_RACE_SQL.format(limit=RACE_MAX_CONTENDERS).strip()
 
 
 def _race_from_rows(row_dicts, columns=None):

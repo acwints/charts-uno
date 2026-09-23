@@ -144,7 +144,9 @@ class ResearchRacePathTests(unittest.TestCase):
         self.assertIsNotNone(sql)
         self.assertIn("title_episode", sql)
         self.assertTrue(rs._is_safe_bigquery_sql(sql))
-        self.assertEqual(sql, pds._IMDB_EPISODE_RACE_SQL.format(limit=50))
+        # Same field as the Public Datasets default, so both routes crown the same winner.
+        self.assertEqual(sql, pds._IMDB_EPISODE_RACE_SQL.format(limit=pds.RACE_MAX_CONTENDERS))
+        self.assertIn(f"LIMIT {pds.RACE_MAX_CONTENDERS}", sql)
         # Non-race IMDb prompts keep the original by-year fallback.
         self.assertIn("GROUP BY year", rs._default_bigquery_sql("average imdb rating by year"))
 
@@ -158,7 +160,7 @@ class ResearchRacePathTests(unittest.TestCase):
         self.assertEqual(chart["labels"][0], "episode 1")
 
     def test_deterministic_race_sql_is_recognised_and_uses_known_columns(self) -> None:
-        sql = pds._IMDB_EPISODE_RACE_SQL.format(limit=50)
+        sql = pds._IMDB_EPISODE_RACE_SQL.format(limit=pds.RACE_MAX_CONTENDERS)
         self.assertTrue(rs._is_deterministic_race_sql(sql))
         self.assertTrue(rs._is_deterministic_race_sql("  " + sql + "\n"))
         self.assertFalse(rs._is_deterministic_race_sql("SELECT 1"))
