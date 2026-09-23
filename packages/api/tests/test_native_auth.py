@@ -7,17 +7,27 @@ from datetime import datetime, timedelta
 from urllib.parse import urlsplit, parse_qs
 from unittest.mock import patch
 
+TEST_SECRET = "native-auth-test-secret-not-production-0123456789"
+
+# These env vars only take effect if this module is the first to import the
+# app: main, dependencies and models.database read their configuration at
+# import time, and Python caches the modules. So the env is set here for a
+# standalone run (a temp database, sane defaults) but the app config the tests
+# actually depend on is pinned in setUp — see _pin — which works whichever
+# test module imported main first.
 _fd, _path = tempfile.mkstemp(suffix=".db")
 os.close(_fd)
-os.environ["DATABASE_URL"] = "sqlite:///" + _path
-os.environ["JWT_SECRET_KEY"] = "native-auth-test-secret-not-production-0123456789"
-os.environ["GOOGLE_CLIENT_ID"] = "test-client"
-os.environ["GOOGLE_CLIENT_SECRET"] = "test-secret"
-os.environ["ENVIRONMENT"] = "development"
+os.environ.setdefault("DATABASE_URL", "sqlite:///" + _path)
+os.environ.setdefault("JWT_SECRET_KEY", TEST_SECRET)
+os.environ.setdefault("GOOGLE_CLIENT_ID", "test-client")
+os.environ.setdefault("GOOGLE_CLIENT_SECRET", "test-secret")
+os.environ.setdefault("ENVIRONMENT", "development")
 
 import httpx
 from fastapi.testclient import TestClient
 import main
+import dependencies
+import services.native_auth as native_auth_service
 from dependencies import decode_token
 from models.database import Base, engine, SessionLocal
 from services.native_auth import NativeAuthCode, pkce_challenge
@@ -40,7 +50,26 @@ def cleanup_database():
 
 
 class NativeAuthTests(unittest.TestCase):
+    def _pin(self, module, name, value):
+        """Override an import-time config binding for this test only."""
+        patcher = patch.object(module, name, value)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def setUp(self):
+        # The app freezes its config when first imported. If another test
+        # module imported it without Google credentials, /auth/google answers
+        # 500 "Google OAuth not configured" here — so pin every binding site.
+        # JWT_SECRET_KEY and IS_PRODUCTION are copied by value into main and
+        # services.native_auth (`from dependencies import ...`), so patching
+        # dependencies alone would leave those copies stale.
+        self._pin(main, "GOOGLE_CLIENT_ID", "test-client")
+        self._pin(main, "GOOGLE_CLIENT_SECRET", "test-secret")
+        self._pin(dependencies, "JWT_SECRET_KEY", TEST_SECRET)
+        self._pin(native_auth_service, "JWT_SECRET_KEY", TEST_SECRET)
+        self._pin(dependencies, "IS_PRODUCTION", False)
+        self._pin(main, "IS_PRODUCTION", False)
+
         Base.metadata.drop_all(engine)
         Base.metadata.create_all(engine)
         self.client = TestClient(main.app)

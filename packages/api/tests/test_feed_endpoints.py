@@ -5,21 +5,37 @@ paths the web/mobile feed makes (public feed, like, save, view counts)
 are exercised against the live FastAPI app.
 """
 
+import atexit
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
+
+TEST_SECRET = "feed-test-secret-not-production-0123456789abcdef"
 
 # The database engine binds to DATABASE_URL at import time, so this must be
-# set before importing the app.
+# set before importing the app. It only wins if this module is the first to
+# import the app — Python caches modules — which is fine: the tests drop and
+# recreate the schema on whatever engine got bound. The JWT config the tests
+# depend on is pinned per test in setUp instead, so it holds regardless of
+# import order and of any local .env that main's load_dotenv() may read.
 _db_fd, _DB_PATH = tempfile.mkstemp(prefix="feed_test_", suffix=".db")
 os.close(_db_fd)
-os.environ["DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
+os.environ.setdefault("DATABASE_URL", f"sqlite:///{_DB_PATH}")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
 import main  # noqa: E402
+import dependencies  # noqa: E402
 from dependencies import create_access_token  # noqa: E402
 from models.database import Base, engine, SessionLocal, User, Chart  # noqa: E402
+
+
+@atexit.register
+def _cleanup_database():
+    engine.dispose()
+    if os.path.exists(_DB_PATH):
+        os.unlink(_DB_PATH)
 
 
 def _make_user(db, email: str, name: str) -> User:
@@ -50,7 +66,19 @@ class FeedEndpointTests(unittest.TestCase):
         Base.metadata.create_all(bind=engine)
         cls.client = TestClient(main.app)
 
+    def _pin(self, module, name, value):
+        """Override an import-time config binding for this test only."""
+        patcher = patch.object(module, name, value)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def setUp(self):
+        # Real JWT auth needs a known secret whichever module imported the app
+        # first; IS_PRODUCTION is copied by value into main, so pin both.
+        self._pin(dependencies, "JWT_SECRET_KEY", TEST_SECRET)
+        self._pin(dependencies, "IS_PRODUCTION", False)
+        self._pin(main, "IS_PRODUCTION", False)
+
         # Fresh tables per test so counts and totals are deterministic.
         Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
