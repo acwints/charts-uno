@@ -615,13 +615,31 @@ export function inferRaceColumns(records: ReadonlyArray<Record<string, unknown>>
   const headers = Object.keys(records[0] ?? {});
   if (headers.length < 3) return null;
 
-  const sample = records.slice(0, 500);
+  // Sample evenly across the table rather than taking the head. Tidy rows
+  // arrive grouped by entity, so the head is a handful of entities' full runs.
+  const step = Math.max(1, Math.floor(records.length / 500));
+  const sample = records.filter((_, index) => index % step === 0).slice(0, 500);
   const stats = headers.map((header) => {
     const values = sample.map((record) => record[header]);
-    const distinct = new Set(values.map((value) => String(value ?? ''))).size;
+    const distinctValues = new Set(values.map((value) => String(value ?? '')));
+    const distinct = distinctValues.size;
     const numeric = values.filter((value) => toRaceNumber(value) !== null).length;
     const ordered = values.filter((value) => parseOrdinalValue(String(value ?? '')) !== null).length;
-    return { header, distinct, numericRatio: numeric / values.length, orderedRatio: ordered / values.length };
+    // Judged over distinct values, not rows: an entity column is a column of
+    // names, and one show called "24" is one name however many episodes it
+    // has. Row-level ratios let a single long-running numeric-named show
+    // outvote every other name in the sample (seen in production).
+    const distinctList = Array.from(distinctValues);
+    const numericDistinctRatio = distinctList.filter((value) => toRaceNumber(value) !== null).length / Math.max(1, distinct);
+    const orderedDistinctRatio = distinctList.filter((value) => parseOrdinalValue(value) !== null).length / Math.max(1, distinct);
+    return {
+      header,
+      distinct,
+      numericRatio: numeric / values.length,
+      orderedRatio: ordered / values.length,
+      numericDistinctRatio,
+      orderedDistinctRatio,
+    };
   });
 
   const reasons: string[] = [];
@@ -630,11 +648,13 @@ export function inferRaceColumns(records: ReadonlyArray<Record<string, unknown>>
   // Entities are nominal, so an ordered column ("Season 3", "S7", "2019-Q4")
   // is never one — without this, a textual period label with more distinct
   // values than the contenders gets picked as the entity.
+  // Mostly names: fewer than half the distinct values look numeric or
+  // ordered. "24", "1883" and "9-1-1" are names, not numbers.
   const entityCandidates = stats
     .filter(
       (stat) =>
-        stat.numericRatio < 0.05 &&
-        stat.orderedRatio < 0.5 &&
+        stat.numericDistinctRatio < 0.5 &&
+        stat.orderedDistinctRatio < 0.5 &&
         stat.distinct >= 3 &&
         stat.distinct <= sample.length / 2
     )

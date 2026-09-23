@@ -335,6 +335,23 @@ test('inferRaceColumns is not fooled by per-entity attributes that are numeric a
   assert.ok(inferred.confidence >= 0.6, `confidence ${inferred.confidence}`);
 });
 
+test('inferRaceColumns is not broken by an entity whose name parses as a number', () => {
+  // Production regression: tidy race rows arrive ordered by show, and the
+  // first show alphabetically is "24". Its 100 rows led the sample, the show
+  // column read as 20% numeric, and it was rejected as the entity.
+  const records: Array<Record<string, unknown>> = [];
+  for (let ep = 1; ep <= 100; ep += 1) records.push({ show: '24', episode: ep, running_average: 8.4 + ep * 0.001 });
+  ['Breaking Bad', 'Dark', 'Mr. Robot', 'Daredevil', 'Sherlock', 'Succession'].forEach((show, i) => {
+    for (let ep = 1; ep <= 100; ep += 1) records.push({ show, episode: ep, running_average: 8 + i * 0.05 + ep * 0.002 });
+  });
+  const inferred = inferRaceColumns(records);
+  assert.ok(inferred);
+  assert.equal(inferred.columns.entity, 'show');
+  assert.equal(inferred.columns.period, 'episode');
+  assert.equal(inferred.columns.value, 'running_average');
+  assert.ok(inferred.confidence >= 0.6);
+});
+
 test('inferRaceColumns returns null for a table that is not tidy', () => {
   const wide = Array.from({ length: 10 }, (_, index) => ({
     Show: `Show ${index}`,

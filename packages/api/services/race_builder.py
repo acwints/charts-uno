@@ -369,19 +369,42 @@ def infer_race_columns(rows: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, 
     headers = list(rows[0].keys())
     if len(headers) < 3:
         return None
-    sample = list(rows[:500])
+    # Sample evenly across the table rather than taking the head. Tidy rows
+    # arrive grouped by entity, so the head is a handful of entities' full
+    # runs — and if one of them has a numeric-looking name it dominates the
+    # column statistics. In production the first show alphabetically was
+    # "24": its 100 rows made the show column read as 20% numeric and it was
+    # rejected as the entity, so the race fell through to a bar chart.
+    step = max(1, len(rows) // 500)
+    sample = list(rows[::step])[:500]
     n = len(sample)
 
     stats = []
     for header in headers:
         values = [row.get(header) for row in sample]
-        distinct = len({str(v if v is not None else "") for v in values})
+        distinct_values = {str(v if v is not None else "") for v in values}
+        distinct = len(distinct_values)
         numeric = sum(1 for v in values if to_number(v) is not None)
         ordered = sum(1 for v in values if parse_ordinal(v) is not None)
-        stats.append({"header": header, "distinct": distinct, "numeric": numeric / n, "ordered": ordered / n})
+        # Judged over distinct values, not rows: an entity column is a column
+        # of names, and one show called "24" is one name in the set however
+        # many episodes it has. Row-level ratios made a single long-running
+        # numeric-named show outvote every other name in the sample.
+        numeric_distinct = sum(1 for v in distinct_values if to_number(v) is not None) / max(1, distinct)
+        ordered_distinct = sum(1 for v in distinct_values if parse_ordinal(v) is not None) / max(1, distinct)
+        stats.append({
+            "header": header,
+            "distinct": distinct,
+            "numeric": numeric / n,
+            "ordered": ordered / n,
+            "numeric_distinct": numeric_distinct,
+            "ordered_distinct": ordered_distinct,
+        })
 
     entity_candidates = sorted(
-        (s for s in stats if s["numeric"] < 0.05 and s["ordered"] < 0.5 and 3 <= s["distinct"] <= n / 2),
+        # Mostly names: fewer than half the distinct values look numeric or
+        # ordered. "24", "1883" and "9-1-1" are names, not numbers.
+        (s for s in stats if s["numeric_distinct"] < 0.5 and s["ordered_distinct"] < 0.5 and 3 <= s["distinct"] <= n / 2),
         key=lambda s: (1 if _ID_HEADER.search(s["header"]) else 0, -s["distinct"]),
     )
     if not entity_candidates:

@@ -235,6 +235,24 @@ class InferColumnsTests(unittest.TestCase):
         self.assertEqual(inferred["value"], "running_average")
         self.assertGreaterEqual(inferred["confidence"], 0.6)
 
+    def test_an_entity_named_like_a_number_does_not_break_inference(self) -> None:
+        # Production regression: the BigQuery race rows are ordered by show,
+        # and the first show alphabetically is "24". Its 100 rows led the
+        # sample, the show column read as 20% numeric, and inference rejected
+        # it as the entity — so the race fell through to a bar chart.
+        rows = []
+        for ep in range(1, 101):
+            rows.append({"show": "24", "episode": ep, "running_average": 8.4 + ep * 0.001})
+        for i, show in enumerate(["Breaking Bad", "Dark", "Mr. Robot", "Daredevil", "Sherlock", "Succession"]):
+            for ep in range(1, 101):
+                rows.append({"show": show, "episode": ep, "running_average": 8 + i * 0.05 + ep * 0.002})
+        inferred = infer_race_columns(rows)
+        self.assertIsNotNone(inferred)
+        self.assertEqual(inferred["entity"], "show")
+        self.assertEqual(inferred["period"], "episode")
+        self.assertEqual(inferred["value"], "running_average")
+        self.assertGreaterEqual(inferred["confidence"], 0.6)
+
     def test_returns_none_for_a_table_that_is_not_tidy(self) -> None:
         wide = [{"Show": f"Show {i}", "Season 1": i, "Season 2": i + 1} for i in range(10)]
         self.assertIsNone(infer_race_columns(wide))
