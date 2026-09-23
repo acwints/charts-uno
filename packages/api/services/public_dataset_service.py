@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from services.bigquery_auth import has_bigquery_credentials, load_bigquery_service_account_credentials
 from services.model_config import MODEL_SQL
 from services.race_builder import build_race
+from services.blocking import MODEL_CALL_TIMEOUT_SECONDS, query_rows, run_blocking
 
 try:
     from google import genai  # type: ignore
@@ -440,7 +441,14 @@ async def generate_chart_from_public_dataset(
     # The deterministic SQL is the primary path for race datasets. A model
     # rewriting it would have to reproduce the prefix and eligibility rules
     # exactly, and a wrong race is worse than no race.
-    llm_sql = None if race_shaped else _generate_sql_with_llm(dataset, prompt, normalized_top_n, chart_type_hint)
+    llm_sql = (
+        None
+        if race_shaped
+        else await run_blocking(
+            _generate_sql_with_llm, dataset, prompt, normalized_top_n, chart_type_hint,
+            timeout=MODEL_CALL_TIMEOUT_SECONDS,
+        )
+    )
     fallback_sql = dataset["defaultSql"].format(limit=normalized_top_n)
     sql = llm_sql or fallback_sql
     if not _is_safe_sql(sql, dataset["tables"]):
@@ -448,7 +456,7 @@ async def generate_chart_from_public_dataset(
 
     client, bigquery = _get_bigquery_client()
     job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
-    rows = list(client.query(sql, job_config=job_config).result(max_results=max_rows))
+    rows = await query_rows(client, sql, job_config=job_config, max_results=max_rows)
     row_dicts = [dict(r) for r in rows]
 
     if race_shaped:

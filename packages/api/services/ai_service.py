@@ -15,6 +15,7 @@ from services.chart_semantics import normalize_chart_semantics
 from services.infographic_service import build_fallback_infographic, extract_svg
 from services.model_config import MODEL_CHART
 from services.research_service import research_chart_from_prompt
+from services.blocking import generate_content
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +171,7 @@ Rules:
 - Prefer table/bar for entity comparisons and line for time trends.
 - If facts are sparse, set outputShape to synthetic.
 """
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=MODEL_NAME,
         contents=planning_prompt,
     )
@@ -272,7 +273,7 @@ Rules:
 {year_window_rules}
 {full_coverage_rules}
 """
-    response = client.models.generate_content(model=MODEL_NAME, contents=generation_prompt)
+    response = await generate_content(client, model=MODEL_NAME, contents=generation_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
     parsed = json.loads(content)
     if not parsed.get("labels") or not parsed.get("series"):
@@ -322,7 +323,7 @@ Checks:
 - For relative-time prompts (e.g. past decade/last N years), year labels must match the expected recent window.
 - When full coverage is required, do not leave null/missing values across the returned labels.
 """
-    response = client.models.generate_content(model=MODEL_NAME, contents=critique_prompt)
+    response = await generate_content(client, model=MODEL_NAME, contents=critique_prompt)
     content = (response.text or "").replace("```json\n", "").replace("\n```", "").replace("```", "").strip()
     parsed = json.loads(content)
     if parsed.get("verdict") == "repair" and isinstance(parsed.get("repaired"), dict):
@@ -445,7 +446,7 @@ Rules:
     # Decode base64 to bytes for the new API
     image_bytes = base64.b64decode(image_base64)
 
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=MODEL_NAME,
         contents=[
             prompt,
@@ -655,7 +656,7 @@ Guidelines:
 - Be conversational, specific, and reference actual values from the data
 - If the request is unclear, ask for clarification"""
 
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=MODEL_NAME,
         contents=prompt,
     )
@@ -834,7 +835,7 @@ Analyze this data and recommend the best chart type:
 
 {json.dumps(data_description, indent=2)}"""
 
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=MODEL_NAME,
         contents=prompt,
     )
@@ -1200,7 +1201,7 @@ Example for "notboring.co":
 
     if favicon_base64 and favicon_mime:
         image_bytes = base64.b64decode(favicon_base64)
-        response = client.models.generate_content(
+        response = await generate_content(client, 
             model=MODEL_NAME,
             contents=[
                 prompt,
@@ -1208,7 +1209,7 @@ Example for "notboring.co":
             ],
         )
     else:
-        response = client.models.generate_content(
+        response = await generate_content(client, 
             model=MODEL_NAME,
             contents=prompt,
         )

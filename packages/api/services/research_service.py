@@ -94,7 +94,7 @@ Return ONLY valid JSON:
   "keywords": ["keyword1", "keyword2"]
 }}
 """
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=_MODEL_NAME,
         contents=intent_prompt,
     )
@@ -133,6 +133,7 @@ Return ONLY valid JSON:
     }
 
 
+from services.blocking import generate_content, query_rows
 from services.race_builder import build_race, infer_race_columns
 from services.public_dataset_service import _IMDB_EPISODE_RACE_SQL, RACE_MAX_ROWS
 
@@ -254,7 +255,7 @@ Requirements:
 - Keep labels, categorical column data, and numeric series data aligned.
 - Include up to five direct source URLs used to verify the dataset.
 """
-    response = client.models.generate_content(
+    response = await generate_content(client, 
         model=_MODEL_NAME,
         contents=research_prompt,
         config=types.GenerateContentConfig(
@@ -442,6 +443,16 @@ async def _generate_bigquery_sql(prompt: str) -> Optional[str]:
     if not GOOGLE_API_KEY:
         return _default_bigquery_sql(prompt)
 
+    # A TV race has a known-good query that reproduces the pipeline exactly, so
+    # it is used directly rather than asking the model to rewrite it. Observed
+    # in production: given the race shape rules, the model still returned a
+    # wide 40-row x 2-column result that could not race and fell through to a
+    # bar chart. Prompts outside that case still go to the model below.
+    if _is_race_intent(prompt):
+        deterministic = _default_bigquery_sql(prompt)
+        if deterministic and "title_episode" in deterministic:
+            return deterministic
+
     client = _get_client()
     if _is_race_intent(prompt):
         shape_rules = (
@@ -478,7 +489,7 @@ Constraints:
 Return ONLY SQL, no markdown.
 """
     try:
-        resp = client.models.generate_content(model=_MODEL_NAME, contents=schema_prompt)
+        resp = await generate_content(client, model=_MODEL_NAME, contents=schema_prompt)
         sql = (resp.text or "").replace("```sql", "").replace("```", "").strip()
         return sql or _default_bigquery_sql(prompt)
     except Exception:
@@ -542,7 +553,7 @@ async def probe_research_providers() -> Dict[str, Any]:
     try:
         credentials = load_bigquery_service_account_credentials()
         client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
-        rows = list(client.query("SELECT 1 AS ok").result(max_results=1))
+        rows = await query_rows(client, "SELECT 1 AS ok", job_config=None, max_results=1)
         elapsed_ms = int((time.monotonic() - started) * 1000)
         result["probes"]["bigquery"] = {
             "ok": bool(rows and rows[0]["ok"] == 1),
@@ -622,7 +633,7 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
         race = _is_race_intent(prompt)
-        rows = list(client.query(sql, job_config=job_config).result(max_results=RACE_MAX_ROWS if race else 50))
+        rows = await query_rows(client, sql, job_config=job_config, max_results=RACE_MAX_ROWS if race else 50)
         if not rows:
             return None
 
