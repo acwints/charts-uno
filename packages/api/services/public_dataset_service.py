@@ -3,6 +3,7 @@ import re
 from typing import Any, Dict, List, Optional
 from services.bigquery_auth import has_bigquery_credentials, load_bigquery_service_account_credentials
 from services.model_config import MODEL_SQL
+from services.race_builder import build_race
 
 try:
     from google import genai  # type: ignore
@@ -15,6 +16,80 @@ BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID", "")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 MODEL_NAME = MODEL_SQL
 
+
+
+_IMDB_RACE_BASE = """
+WITH series AS (
+  SELECT b.tconst, b.primary_title AS show, r.num_votes AS series_votes
+  FROM `bigquery-public-data.imdb.title_basics` AS b
+  JOIN `bigquery-public-data.imdb.title_ratings` AS r ON r.tconst = b.tconst
+  WHERE b.title_type IN ('tvSeries', 'tvMiniSeries')
+    AND r.num_votes >= 100000
+),
+episodes AS (
+  SELECT
+    s.show,
+    s.series_votes,
+    e.season_number,
+    e.episode_number,
+    r.average_rating,
+    r.num_votes,
+    ROW_NUMBER() OVER (PARTITION BY s.tconst ORDER BY e.season_number, e.episode_number) AS ep_index,
+    -- 1 once an episode fails the vote gate. The running MAX below turns that
+    -- into "everything after the first gap", which is then excluded. (Keep
+    -- semicolons out of these comments: the safety guard treats one as a
+    -- second statement and rejects the whole query.)
+    CASE WHEN r.average_rating IS NULL OR r.num_votes < 200 THEN 1 ELSE 0 END AS gap
+  FROM `bigquery-public-data.imdb.title_episode` AS e
+  JOIN series AS s ON s.tconst = e.parent_tconst
+  LEFT JOIN `bigquery-public-data.imdb.title_ratings` AS r ON r.tconst = e.tconst
+  WHERE e.season_number >= 1 AND e.episode_number >= 1
+),
+prefix AS (
+  SELECT *,
+    MAX(gap) OVER (PARTITION BY show ORDER BY ep_index ROWS UNBOUNDED PRECEDING) AS broken
+  FROM episodes
+),
+rated AS (
+  SELECT show, series_votes, season_number, episode_number, ep_index, average_rating,
+    COUNT(1) OVER (PARTITION BY show) AS rated_episodes
+  FROM prefix
+  WHERE broken = 0
+),
+eligible AS (
+  SELECT DISTINCT show, series_votes
+  FROM rated
+  WHERE rated_episodes >= 40
+  ORDER BY series_votes DESC
+  LIMIT {limit}
+)
+"""
+
+_IMDB_EPISODE_RACE_SQL = (_IMDB_RACE_BASE + """
+SELECT
+  r.show AS show,
+  r.ep_index AS episode,
+  AVG(r.average_rating) OVER (PARTITION BY r.show ORDER BY r.ep_index ROWS UNBOUNDED PRECEDING) AS running_average
+FROM rated AS r
+JOIN eligible AS g ON g.show = r.show
+WHERE r.ep_index <= 100
+ORDER BY r.show, r.ep_index
+""").strip()
+
+_IMDB_SEASON_RACE_SQL = (_IMDB_RACE_BASE + """
+, seasons AS (
+  SELECT r.show, r.season_number, AVG(r.average_rating) AS season_rating
+  FROM rated AS r
+  JOIN eligible AS g ON g.show = r.show
+  GROUP BY r.show, r.season_number
+)
+SELECT
+  show,
+  season_number AS season,
+  AVG(season_rating) OVER (PARTITION BY show ORDER BY season_number ROWS UNBOUNDED PRECEDING) AS running_average
+FROM seasons
+ORDER BY show, season_number
+""").strip()
 
 PUBLIC_DATASETS: Dict[str, Dict[str, Any]] = {
     "imdb_titles": {
@@ -44,6 +119,40 @@ GROUP BY year
 ORDER BY year
 LIMIT {limit}
 """.strip(),
+    },
+    "imdb_episode_race": {
+        "id": "imdb_episode_race",
+        "name": "IMDb — Best Shows, Episode by Episode",
+        "description": "Leaderboard race of the running average episode rating after each episode aired.",
+        "tables": [
+            "bigquery-public-data.imdb.title_basics",
+            "bigquery-public-data.imdb.title_ratings",
+            "bigquery-public-data.imdb.title_episode",
+        ],
+        "examplePrompts": [
+            "best shows of all time by average rating after each episode",
+            "which show holds the best running average the deepest into its run",
+        ],
+        "raceShaped": True,
+        "race": {"entity": "show", "period": "episode", "value": "running_average", "unit": "episode"},
+        "defaultSql": _IMDB_EPISODE_RACE_SQL,
+    },
+    "imdb_season_race": {
+        "id": "imdb_season_race",
+        "name": "IMDb — Best Shows, Season by Season",
+        "description": "Leaderboard race of the running average season rating after each season.",
+        "tables": [
+            "bigquery-public-data.imdb.title_basics",
+            "bigquery-public-data.imdb.title_ratings",
+            "bigquery-public-data.imdb.title_episode",
+        ],
+        "examplePrompts": [
+            "best shows of all time one season at a time",
+            "which shows fell apart in their final season",
+        ],
+        "raceShaped": True,
+        "race": {"entity": "show", "period": "season", "value": "running_average", "unit": "season"},
+        "defaultSql": _IMDB_SEASON_RACE_SQL,
     },
     "hacker_news": {
         "id": "hacker_news",
@@ -116,6 +225,12 @@ def _is_bigquery_ready() -> bool:
     )
 
 
+def _starts_read_only(sql_lower: str) -> bool:
+    """SELECT, or a CTE (WITH ... SELECT). Read-only is enforced by the DML/DDL token check."""
+    head = sql_lower.strip()
+    return head.startswith("select") or head.startswith("with ")
+
+
 def _is_safe_sql(sql: str, allowed_tables: List[str]) -> bool:
     sql_l = sql.lower()
     blocked = ["insert ", "update ", "delete ", "merge ", "drop ", "alter ", "create "]
@@ -123,7 +238,7 @@ def _is_safe_sql(sql: str, allowed_tables: List[str]) -> bool:
         return False
     if ";" in sql.strip().rstrip(";"):
         return False
-    if not sql_l.strip().startswith("select"):
+    if not _starts_read_only(sql_l):
         return False
 
     matched_tables = re.findall(r"`([^`]+)`", sql)
@@ -265,6 +380,32 @@ def _to_chart(rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     }
 
 
+# Enough for 100 episodes x 50 shows with headroom; well under BigQuery's
+# maximum_bytes_billed guard since these are narrow rows.
+RACE_MAX_ROWS = 20000
+
+
+def build_race_chart(rows: List[Dict[str, Any]], spec: Dict[str, str]):
+    """Pivot tidy BigQuery rows into race chart data using the dataset's column spec."""
+    if not rows:
+        return None, None
+    period = spec["period"]
+    unit = spec.get("unit", period)
+    chart, report = build_race(
+        rows,
+        entity=spec["entity"],
+        period=period,
+        value=spec["value"],
+        aggregate="last",
+        fill="hold",
+        # BigQuery returns integers for the period; label them on the race clock.
+        format_period=lambda p: f"{unit} {p}" if str(p).isdigit() else str(p),
+    )
+    if len(chart["series"]) < 2 or len(chart["labels"]) < 2:
+        return None, report
+    return chart, report
+
+
 async def generate_chart_from_public_dataset(
     dataset_id: str,
     prompt: str,
@@ -278,8 +419,16 @@ async def generate_chart_from_public_dataset(
     if not dataset:
         raise ValueError("Invalid dataset selection.")
 
+    race_shaped = bool(dataset.get("raceShaped"))
+    # For a race, top_n is how many contenders to include, and the row cap is a
+    # separate, much larger number: a race is periods x contenders of tidy rows.
     normalized_top_n = max(5, min(50, int(top_n)))
-    llm_sql = _generate_sql_with_llm(dataset, prompt, normalized_top_n, chart_type_hint)
+    max_rows = RACE_MAX_ROWS if race_shaped else normalized_top_n
+
+    # The deterministic SQL is the primary path for race datasets. A model
+    # rewriting it would have to reproduce the prefix and eligibility rules
+    # exactly, and a wrong race is worse than no race.
+    llm_sql = None if race_shaped else _generate_sql_with_llm(dataset, prompt, normalized_top_n, chart_type_hint)
     fallback_sql = dataset["defaultSql"].format(limit=normalized_top_n)
     sql = llm_sql or fallback_sql
     if not _is_safe_sql(sql, dataset["tables"]):
@@ -287,8 +436,30 @@ async def generate_chart_from_public_dataset(
 
     client, bigquery = _get_bigquery_client()
     job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
-    rows = list(client.query(sql, job_config=job_config).result(max_results=normalized_top_n))
+    rows = list(client.query(sql, job_config=job_config).result(max_results=max_rows))
     row_dicts = [dict(r) for r in rows]
+
+    if race_shaped:
+        chart, report = build_race_chart(row_dicts, dataset["race"])
+        if not chart:
+            raise ValueError("Could not produce a race from this dataset query.")
+        return {
+            **chart,
+            "verifiedData": True,
+            "suggestedTitle": dataset["name"],
+            "suggestedType": "race",
+            "xAxisLabel": dataset["race"]["period"],
+            "yAxisLabel": dataset["race"]["value"],
+            "sourceLink": "https://console.cloud.google.com/marketplace/product/bigquery-public-data",
+            "aiReasoning": (
+                f"{report.entities_kept} shows over {report.periods} {dataset['race']['unit']}s from IMDb public data. "
+                "Running mean of episode ratings — not IMDb's series score. "
+                "Specials (season 0 / episode 0) excluded; a show races as far as its unbroken run of "
+                "episodes with 200+ votes; 40+ rated episodes to qualify; finished shows hold their final average."
+            ),
+            "sourceProvider": "bigquery",
+        }
+
     chart = _to_chart(row_dicts)
     if not chart:
         raise ValueError("Could not produce chartable data from this dataset query.")

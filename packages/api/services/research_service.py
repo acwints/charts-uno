@@ -133,6 +133,22 @@ Return ONLY valid JSON:
     }
 
 
+from services.race_builder import build_race, infer_race_columns
+from services.public_dataset_service import _IMDB_EPISODE_RACE_SQL, RACE_MAX_ROWS
+
+
+_RACE_INTENT = re.compile(
+    r"\b(race|leaderboard|bar chart race|racing|after each|episode by episode|season by season|"
+    r"running average|running total|cumulative|over time ranking|ranking over time)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_race_intent(prompt: str) -> bool:
+    """A prompt wants a race when it asks for a ranking that changes across an ordered axis."""
+    return bool(_RACE_INTENT.search(prompt))
+
+
 def _is_fred_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
     lower = prompt.lower()
     economic_terms = [
@@ -146,10 +162,15 @@ def _is_fred_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
 
 def _is_bigquery_candidate(prompt: str, intent: Dict[str, Any]) -> bool:
     lower = prompt.lower()
-    trigger_terms = ["imdb", "movie", "film", "census", "bigquery", "public dataset"]
+    trigger_terms = ["imdb", "movie", "film", "census", "bigquery", "public dataset",
+                     "tv show", "tv series", "television", "episode", "anime"]
     if "bigquery" in intent.get("preferred_sources", []):
         return True
-    return any(term in lower for term in trigger_terms)
+    if any(term in lower for term in trigger_terms):
+        return True
+    # "show", "series" and "season" are common in other contexts ("show me
+    # sales by season"), so they only count alongside a rating.
+    return "rating" in lower and any(term in lower for term in ["show", "series", "season"])
 
 
 def _is_open_web_candidate(prompt: str) -> bool:
@@ -382,12 +403,19 @@ def _is_safe_bigquery_sql(sql: str) -> bool:
         return False
     if "bigquery-public-data." not in sql_l:
         return False
-    return sql_l.strip().startswith("select")
+    head = sql_l.strip()
+    # SELECT, or a CTE (WITH ... SELECT); read-only is enforced by the token check above.
+    return head.startswith("select") or head.startswith("with ")
 
 
 def _default_bigquery_sql(prompt: str) -> Optional[str]:
     """Fallback deterministic SQL when LLM SQL generation is unavailable."""
     lower = prompt.lower()
+
+    # A TV race has a known-good query: the same one the Public Datasets
+    # entry uses, so both paths produce the identical chart.
+    if _is_race_intent(prompt) and any(term in lower for term in ["show", "series", "tv", "episode", "season", "imdb"]):
+        return _IMDB_EPISODE_RACE_SQL.format(limit=50)
 
     # IMDb-focused fallback with known-good column names.
     if any(term in lower for term in ["imdb", "movie", "film", "rating", "genre"]):
@@ -415,6 +443,22 @@ async def _generate_bigquery_sql(prompt: str) -> Optional[str]:
         return _default_bigquery_sql(prompt)
 
     client = _get_client()
+    if _is_race_intent(prompt):
+        shape_rules = (
+            "- This is a RACE (a ranking that changes over an ordered axis). Output exactly THREE columns, tidy:\n"
+            "  - first: the contender (e.g. show title)\n"
+            "  - second: the ordered period (e.g. episode index or season number, an integer)\n"
+            "  - third: the standing at that period (use a window function, e.g. "
+            "AVG(x) OVER (PARTITION BY contender ORDER BY period ROWS UNBOUNDED PRECEDING) for a running average)\n"
+            f"- Return up to {RACE_MAX_ROWS} rows, one per (contender, period). Order by contender, then period."
+        )
+    else:
+        shape_rules = (
+            "- Return at most 50 rows.\n"
+            "- Output exactly two to four columns where:\n"
+            "  - first column is a label/date/category\n"
+            "  - remaining columns are numeric metrics"
+        )
     schema_prompt = f"""Write ONE BigQuery SQL query for a chart from this prompt:
 "{prompt}"
 
@@ -424,13 +468,12 @@ Constraints:
   - `bigquery-public-data.imdb.title_basics`
   - `bigquery-public-data.imdb.title_ratings`
   - `bigquery-public-data.imdb.name_basics`
+  - `bigquery-public-data.imdb.title_episode` (one row per episode: `tconst`, `parent_tconst` = the series, `season_number`, `episode_number`; join `title_ratings` on the episode `tconst` for per-episode ratings)
   - NOTE: valid title_basics columns include: `primary_title`, `start_year`, `genres`, `title_type`, `runtime_minutes`, `is_adult`.
   - NOTE: valid title_ratings columns include: `tconst`, `average_rating`, `num_votes`.
+  - NOTE: season_number 0 and episode_number 0 are specials/recaps — exclude them.
 - Use SELECT only (no DDL/DML), no semicolons.
-- Return at most 50 rows.
-- Output exactly two to four columns where:
-  - first column is a label/date/category
-  - remaining columns are numeric metrics
+{shape_rules}
 
 Return ONLY SQL, no markdown.
 """
@@ -520,6 +563,39 @@ async def probe_research_providers() -> Dict[str, Any]:
     return result
 
 
+def _race_from_rows(row_dicts):
+    """
+    Pivot tidy (contender, period, standing) rows into race chart data. Column
+    roles are inferred from the data itself, so this works whether the SQL
+    came from the model or the deterministic fallback.
+    """
+    inferred = infer_race_columns(row_dicts)
+    if not inferred or inferred["confidence"] < 0.6:
+        return None
+    period = inferred["period"]
+    chart, report = build_race(
+        row_dicts,
+        entity=inferred["entity"],
+        period=period,
+        value=inferred["value"],
+        aggregate="last",
+        fill="hold",
+        format_period=lambda p: f"{period} {p}" if str(p).isdigit() else str(p),
+    )
+    if len(chart["series"]) < 2 or len(chart["labels"]) < 2:
+        return None
+    return {
+        **chart,
+        "xAxisLabel": period,
+        "yAxisLabel": inferred["value"],
+        "aiReasoning": (
+            f"{report.entities_kept} contenders over {report.periods} periods from BigQuery public data; "
+            f"columns read as {inferred['entity']} / {period} / {inferred['value']}. "
+            "Finished contenders hold their final standing."
+        ),
+    }
+
+
 async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     if not ENABLE_BIGQUERY_PUBLIC_DATA:
         return None
@@ -545,7 +621,8 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         credentials = load_bigquery_service_account_credentials()
         client = bigquery.Client(project=BIGQUERY_PROJECT_ID, credentials=credentials)
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=1_000_000_000, use_query_cache=True)
-        rows = list(client.query(sql, job_config=job_config).result(max_results=50))
+        race = _is_race_intent(prompt)
+        rows = list(client.query(sql, job_config=job_config).result(max_results=RACE_MAX_ROWS if race else 50))
         if not rows:
             return None
 
@@ -554,6 +631,21 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.info(f"BigQuery provider failed: {e}")
         return None
+
+    source_link = "https://console.cloud.google.com/marketplace/product/bigquery-public-data"
+
+    if race:
+        race_chart = _race_from_rows(row_dicts)
+        if race_chart:
+            return {
+                **race_chart,
+                "verifiedData": True,
+                "suggestedTitle": "Leaderboard race from public data",
+                "sourceLink": source_link,
+                "sources": [{"title": "Google Cloud public datasets", "url": source_link}],
+                "sourceProvider": "bigquery",
+            }
+        # Fall through: the model returned a wide shape after all.
 
     # Infer label + numeric fields from result schema.
     numeric_cols = []
@@ -595,7 +687,6 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
         "data": [round(v, 3) if isinstance(v, (int, float)) else None for v in vals[:min_len]],
     } for name, vals in series_data.items()]
 
-    source_link = "https://console.cloud.google.com/marketplace/product/bigquery-public-data"
     return {
         "labels": labels,
         "series": series,

@@ -45,3 +45,6 @@ tmp/
 
 # TikTok marketing (contains API keys)
 tiktok-marketing/
+
+# Python virtualenvs (packages/api)
+.venv
