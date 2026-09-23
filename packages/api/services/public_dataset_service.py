@@ -88,6 +88,7 @@ SELECT
   season_number AS season,
   AVG(season_rating) OVER (PARTITION BY show ORDER BY season_number ROWS UNBOUNDED PRECEDING) AS running_average
 FROM seasons
+WHERE season_number <= 12
 ORDER BY show, season_number
 """).strip()
 
@@ -380,9 +381,18 @@ def _to_chart(rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     }
 
 
-# Enough for 100 episodes x 50 shows with headroom; well under BigQuery's
+# Largest field a race may ask for. 250 covers every show that clears the
+# 100k-vote / 40-episode eligibility gate today (176) with headroom.
+RACE_MAX_CONTENDERS = 250
+# Enough for 100 episodes x RACE_MAX_CONTENDERS shows; well under BigQuery's
 # maximum_bytes_billed guard since these are narrow rows.
-RACE_MAX_ROWS = 20000
+RACE_MAX_ROWS = 25000
+
+
+def normalize_top_n(top_n: Any, race_shaped: bool) -> int:
+    """Clamp a requested top_n: 5..50 rows for a chart, 5..RACE_MAX_CONTENDERS contenders for a race."""
+    ceiling = RACE_MAX_CONTENDERS if race_shaped else 50
+    return max(5, min(ceiling, int(top_n)))
 
 
 def build_race_chart(rows: List[Dict[str, Any]], spec: Dict[str, str]):
@@ -420,9 +430,10 @@ async def generate_chart_from_public_dataset(
         raise ValueError("Invalid dataset selection.")
 
     race_shaped = bool(dataset.get("raceShaped"))
-    # For a race, top_n is how many contenders to include, and the row cap is a
-    # separate, much larger number: a race is periods x contenders of tidy rows.
-    normalized_top_n = max(5, min(50, int(top_n)))
+    # For a race, top_n is how many contenders to include (the field, chosen by
+    # series votes), and the row cap is a separate, much larger number: a race
+    # is periods x contenders of tidy rows.
+    normalized_top_n = normalize_top_n(top_n, race_shaped)
     max_rows = RACE_MAX_ROWS if race_shaped else normalized_top_n
 
     # The deterministic SQL is the primary path for race datasets. A model

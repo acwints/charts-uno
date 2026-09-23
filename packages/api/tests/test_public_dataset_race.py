@@ -53,6 +53,27 @@ class RaceDatasetRegistryTests(unittest.TestCase):
         self.assertIn("AVG(r.average_rating) AS season_rating", sql)
         self.assertIn("AVG(season_rating) OVER (PARTITION BY show ORDER BY season_number ROWS UNBOUNDED PRECEDING)", sql)
 
+    def test_both_races_cap_their_axis(self) -> None:
+        # Without a cap a long-runner in the field (South Park, 28 seasons)
+        # stretches the season race through ~17 frames in which nothing moves.
+        # The episode race already caps at 100; the season race caps at 12,
+        # where the board has long since settled.
+        self.assertIn("WHERE r.ep_index <= 100", pds._IMDB_EPISODE_RACE_SQL)
+        self.assertIn("WHERE season_number <= 12", pds._IMDB_SEASON_RACE_SQL)
+
+    def test_top_n_is_the_field_for_a_race_and_rows_for_a_chart(self) -> None:
+        # Bleach is #158 of 176 eligible shows by votes; a 50 ceiling drops it.
+        self.assertGreaterEqual(pds.RACE_MAX_CONTENDERS, 176)
+        self.assertEqual(pds.normalize_top_n(176, race_shaped=True), 176)
+        self.assertEqual(pds.normalize_top_n(10_000, race_shaped=True), pds.RACE_MAX_CONTENDERS)
+        self.assertEqual(pds.normalize_top_n(1, race_shaped=True), 5)
+        # Ordinary charts keep their existing 5..50 clamp unchanged.
+        self.assertEqual(pds.normalize_top_n(176, race_shaped=False), 50)
+        self.assertEqual(pds.normalize_top_n(20, race_shaped=False), 20)
+        self.assertEqual(pds.normalize_top_n(1, race_shaped=False), 5)
+        # The row cap must hold the largest race the field ceiling allows.
+        self.assertGreaterEqual(pds.RACE_MAX_ROWS, 100 * pds.RACE_MAX_CONTENDERS)
+
     def test_build_race_chart_pivots_tidy_rows_and_labels_periods(self) -> None:
         spec = pds.PUBLIC_DATASETS["imdb_episode_race"]["race"]
         chart, report = pds.build_race_chart(tidy_rows(), spec)
