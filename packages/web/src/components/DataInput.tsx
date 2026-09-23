@@ -18,6 +18,7 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import X from 'lucide-react/dist/esm/icons/x';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import type { ChartData } from '../types';
+import { buildRaceFromTable, inferRaceColumns } from '../types';
 import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
 import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
@@ -325,6 +326,39 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         setError('Unable to detect numeric values in the pasted data.');
       }
       return null;
+    }
+
+    // A tidy file — one row per (entity, period, value) — is the shape SQL
+    // exports and most public datasets arrive in, and the wide conversion
+    // below would mangle it: the entity column would become repeating labels
+    // and the period column a series of zeros. Detect it first and build the
+    // race from the rows directly. Inference below a confident threshold falls
+    // through to the ordinary path rather than guessing.
+    const records = rows.slice(1).map((row) =>
+      Object.fromEntries(headers.map((header, index) => [header, row[index]])),
+    );
+    const tidy = inferRaceColumns(records);
+    if (tidy && tidy.confidence >= 0.6) {
+      const { data, report } = buildRaceFromTable(records, tidy.columns, {
+        sourceType,
+        // A period column holding bare numbers ("1", "2", …) reads better on
+        // the race clock with its own name in front: "season 9", not "9".
+        formatPeriod: (period) =>
+          /^\d+$/.test(period) ? `${tidy.columns.period} ${period}` : period,
+      });
+      if (data.series.length >= 2 && data.labels.length >= 2) {
+        return {
+          ...data,
+          xAxisLabel: tidy.columns.period,
+          yAxisLabel: tidy.columns.value,
+          aiReasoning:
+            `Read as a tidy table: ${tidy.reasons.join('; ')}. ` +
+            `${report.rowsUsed} of ${report.rowsRead} rows used` +
+            (report.cellsFilled ? `, ${report.cellsFilled} gaps held at the last value` : '') +
+            '.',
+          userPrompt: userPrompt.trim() || undefined,
+        };
+      }
     }
 
     const labels = rows.slice(1).map(row => String(row[0]));

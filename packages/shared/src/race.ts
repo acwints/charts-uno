@@ -194,7 +194,7 @@ export function toRaceNumber(value: unknown): number | null {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   if (typeof value === 'bigint') return Number(value);
   if (typeof value !== 'string') return null;
-  const cleaned = value.trim().replace(/^[^\d\-+.]+/, '').replace(/[,%\s]/g, '');
+  const cleaned = value.trim().replace(/^[$€£¥]/, '').replace(/[,%\s]/g, '');
   if (!cleaned) return null;
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : null;
@@ -541,12 +541,72 @@ export interface RaceColumnInference {
   reasons: string[];
 }
 
+/** Headers that name an identifier rather than a thing: "show_id", "user key", "slug". */
+const looksLikeIdHeader = (header: string) => /(^|[_\s-])(id|key|code|uuid|slug)$/i.test(header.trim());
+
+function groupByEntity(
+  records: ReadonlyArray<Record<string, unknown>>,
+  entityHeader: string,
+  header: string
+): Map<string, string[]> {
+  const perEntity = new Map<string, string[]>();
+  for (const record of records) {
+    const entity = String(record[entityHeader] ?? '');
+    const values = perEntity.get(entity);
+    const value = String(record[header] ?? '');
+    if (values) values.push(value);
+    else perEntity.set(entity, [value]);
+  }
+  return perEntity;
+}
+
+/**
+ * How completely a column's values run through every entity, 0–1. A period
+ * scores near 1: every show has all twelve seasons. A per-entity attribute or
+ * a per-row value scores low, because each entity only ever sees its own.
+ */
+function coverageWithinEntity(
+  records: ReadonlyArray<Record<string, unknown>>,
+  entityHeader: string,
+  header: string
+): number {
+  const overall = new Set(records.map((record) => String(record[header] ?? ''))).size;
+  if (overall <= 1) return 0;
+  const perEntity = groupByEntity(records, entityHeader, header);
+  let total = 0;
+  for (const values of perEntity.values()) total += new Set(values).size;
+  return total / perEntity.size / overall;
+}
+
+/**
+ * Whether a column changes *inside* an entity at all, 0–1. An attribute such
+ * as a show's vote count is constant within the show and scores 0; a standing
+ * that moves period to period scores above it, even when it plateaus late.
+ */
+function movementWithinEntity(
+  records: ReadonlyArray<Record<string, unknown>>,
+  entityHeader: string,
+  header: string
+): number {
+  const perEntity = groupByEntity(records, entityHeader, header);
+  let total = 0;
+  let counted = 0;
+  for (const values of perEntity.values()) {
+    if (values.length < 2) continue;
+    total += (new Set(values).size - 1) / (values.length - 1);
+    counted += 1;
+  }
+  return counted === 0 ? 0 : total / counted;
+}
+
 /**
  * Guess which columns of a tidy table hold the entity, period and value.
  *
- * The period column is the strongest signal: its values are few, repeat across
- * rows, and parse as ordered. The value column must be numeric and varied. The
- * entity column is the remaining text column with the most distinct values.
+ * Entity first: the most distinct text column, preferring a readable name to
+ * an identifier. Then period: an ordered column that varies within each
+ * entity, favouring the fewest distinct values among those. Then value: the
+ * most varied numeric column that also varies within each entity, so a
+ * per-entity attribute like a vote count is never mistaken for the standing.
  * Returns null when the table does not look tidy, so callers can fall back
  * rather than build something wrong.
  */
@@ -561,46 +621,73 @@ export function inferRaceColumns(records: ReadonlyArray<Record<string, unknown>>
     const distinct = new Set(values.map((value) => String(value ?? ''))).size;
     const numeric = values.filter((value) => toRaceNumber(value) !== null).length;
     const ordered = values.filter((value) => parseOrdinalValue(String(value ?? '')) !== null).length;
-    return {
-      header,
-      distinct,
-      numericRatio: numeric / values.length,
-      orderedRatio: ordered / values.length,
-    };
+    return { header, distinct, numericRatio: numeric / values.length, orderedRatio: ordered / values.length };
   });
 
   const reasons: string[] = [];
 
-  // Period: ordered, repeating, and not unique per row.
+  // Entity: text, names at least three things, readable over identifier.
+  // Entities are nominal, so an ordered column ("Season 3", "S7", "2019-Q4")
+  // is never one — without this, a textual period label with more distinct
+  // values than the contenders gets picked as the entity.
+  const entityCandidates = stats
+    .filter(
+      (stat) =>
+        stat.numericRatio < 0.05 &&
+        stat.orderedRatio < 0.5 &&
+        stat.distinct >= 3 &&
+        stat.distinct <= sample.length / 2
+    )
+    .sort(
+      (a, b) =>
+        Number(looksLikeIdHeader(a.header)) - Number(looksLikeIdHeader(b.header)) || b.distinct - a.distinct
+    );
+  const entity = entityCandidates[0];
+  if (!entity) return null;
+  reasons.push(`"${entity.header}" names ${entity.distinct} distinct contenders`);
+
+  const coverage = new Map(
+    stats.map((stat) => [stat.header, coverageWithinEntity(sample, entity.header, stat.header)] as const)
+  );
+  const movement = new Map(
+    stats.map((stat) => [stat.header, movementWithinEntity(sample, entity.header, stat.header)] as const)
+  );
+
+  // Period: ordered, repeats across rows, and varies inside each entity.
   const periodCandidates = stats
-    .filter((stat) => stat.orderedRatio > 0.95 && stat.distinct > 1 && stat.distinct <= sample.length / 2)
+    .filter(
+      (stat) =>
+        stat.header !== entity.header &&
+        stat.orderedRatio > 0.95 &&
+        stat.distinct > 1 &&
+        stat.distinct <= sample.length / 2 &&
+        (coverage.get(stat.header) ?? 0) >= 0.8
+    )
     .sort((a, b) => a.distinct - b.distinct);
   const period = periodCandidates[0];
   if (!period) return null;
-  reasons.push(`"${period.header}" repeats across rows and every value carries an order`);
+  reasons.push(`"${period.header}" is ordered and runs through every contender`);
 
-  // Value: numeric and more varied than the period column.
+  // Value: numeric, varies inside each entity, and the most varied of those.
   const valueCandidates = stats
-    .filter((stat) => stat.header !== period.header && stat.numericRatio > 0.95 && stat.distinct > period.distinct)
+    .filter(
+      (stat) =>
+        stat.header !== entity.header &&
+        stat.header !== period.header &&
+        stat.numericRatio > 0.95 &&
+        (movement.get(stat.header) ?? 0) > 0.05
+    )
     .sort((a, b) => b.distinct - a.distinct);
   const value = valueCandidates[0];
   if (!value) return null;
-  reasons.push(`"${value.header}" is numeric with ${value.distinct} distinct values`);
+  reasons.push(`"${value.header}" is numeric and changes period to period`);
 
-  // Entity: whatever is left, preferring the most distinct non-numeric column.
-  const entityCandidates = stats
-    .filter((stat) => stat.header !== period.header && stat.header !== value.header)
-    .sort((a, b) => a.numericRatio - b.numericRatio || b.distinct - a.distinct);
-  const entity = entityCandidates[0];
-  if (!entity || entity.distinct < 3) return null;
-  reasons.push(`"${entity.header}" names ${entity.distinct} distinct contenders`);
-
-  // Confidence: strong when the entity column is text and the period column is
-  // small relative to the row count; weaker when both are numeric-looking.
-  let confidence = 0.6;
-  if (entity.numericRatio < 0.05) confidence += 0.2;
-  if (period.distinct * entity.distinct <= sample.length * 1.5) confidence += 0.15;
-  if (valueCandidates.length > 1) confidence -= 0.15;
+  // Confidence: high when there is one clear value column and the table is a
+  // near-complete grid; lower when several numeric columns could be the value.
+  let confidence = 0.65;
+  if (valueCandidates.length === 1) confidence += 0.2;
+  else confidence -= 0.1 * Math.min(2, valueCandidates.length - 1);
+  if (period.distinct * entity.distinct <= sample.length * 1.5) confidence += 0.1;
   confidence = Math.max(0, Math.min(1, confidence));
 
   return { columns: { entity: entity.header, period: period.header, value: value.header }, confidence, reasons };

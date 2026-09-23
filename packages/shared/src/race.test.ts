@@ -52,6 +52,10 @@ test('toRaceNumber tolerates currency, thousands separators and percent', () => 
   assert.equal(toRaceNumber('42%'), 42);
   assert.equal(toRaceNumber(' -7 '), -7);
   assert.equal(toRaceNumber('n/a'), null);
+  // Labels and identifiers must not pass as numbers just because they end in digits.
+  assert.equal(toRaceNumber('S1'), null);
+  assert.equal(toRaceNumber('tt1000'), null);
+  assert.equal(toRaceNumber('Season 3'), null);
   assert.equal(toRaceNumber(Number.NaN), null);
   assert.equal(toRaceNumber(undefined), null);
 });
@@ -292,9 +296,43 @@ test('inferRaceColumns finds entity/period/value in a tidy table', () => {
   assert.ok(inferred);
   assert.equal(inferred.columns.period, 'season');
   assert.equal(inferred.columns.value, 'running_average');
-  assert.ok(['show', 'show_id'].includes(inferred.columns.entity));
+  // Both "show" and "show_id" are text with the same cardinality; the
+  // readable one must win so contenders are named, not numbered.
+  assert.equal(inferred.columns.entity, 'show');
   assert.ok(inferred.confidence >= 0.6);
   assert.ok(inferred.reasons.length === 3);
+});
+
+test('inferRaceColumns is not fooled by per-entity attributes that are numeric and sorted', () => {
+  // The real IMDb export: eleven columns, several of them numeric and ordered.
+  // "seasons" (a per-show count), "start_year", "series_votes" and
+  // "imdb_series_rating" are constant within a show and must never be chosen
+  // as the period or the value. "show_id" must lose to "show".
+  const records: Array<Record<string, unknown>> = [];
+  const shows = ['Bleach', 'Attack on Titan', 'Dark', 'Breaking Bad', 'Mr. Robot', 'Daredevil', 'Aspirants'];
+  shows.forEach((show, showIndex) => {
+    for (let season = 1; season <= 12; season += 1) {
+      records.push({
+        show_id: `tt${1000 + showIndex}`,
+        show,
+        start_year: 2008 + showIndex,
+        seasons: 3 + (showIndex % 4),
+        episodes: 40 + showIndex * 7,
+        series_votes: 100000 + showIndex * 50000,
+        imdb_series_rating: 8 + showIndex * 0.1,
+        season,
+        marker: `S${season}`,
+        running_average: 8 + showIndex * 0.05 + Math.min(season, 3 + (showIndex % 4)) * 0.01,
+        locked: season > 3 + (showIndex % 4),
+      });
+    }
+  });
+  const inferred = inferRaceColumns(records);
+  assert.ok(inferred);
+  assert.equal(inferred.columns.entity, 'show');
+  assert.ok(['season', 'marker'].includes(inferred.columns.period), `period was ${inferred.columns.period}`);
+  assert.equal(inferred.columns.value, 'running_average');
+  assert.ok(inferred.confidence >= 0.6, `confidence ${inferred.confidence}`);
 });
 
 test('inferRaceColumns returns null for a table that is not tidy', () => {
