@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef, useId } from 'react';
 import { motion } from 'motion/react';
 import { ensureChartFonts } from '../services/chartFonts';
 import {
@@ -31,7 +31,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Check from 'lucide-react/dist/esm/icons/check';
-import type { ChartData, ChartConfig, ColorTheme } from '../types';
+import type { ChartData, ChartConfig, ColorTheme, FillStyle, BackgroundPattern } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, isComboChart, resolveSeriesConfig, getSeriesForAxis } from '../types';
 import { generateInfographic } from '../services/infographicGenerator';
@@ -139,6 +139,15 @@ export function ChartPreview({
   const colors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
   const gradients = COLOR_GRADIENTS[config.colorScheme];
   const styleConfig = STYLE_VARIANTS[config.styleVariant];
+
+  // Fill treatment. Unset keeps the style variant's historical behaviour, so
+  // existing charts render exactly as before; the palette gradients are only
+  // used when no custom series colours are set, as they always were.
+  const fillId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const paletteGradients = styleConfig.decorations.useGradients && !config.customColors?.seriesColors;
+  const fillStyle: FillStyle = config.fillStyle ?? (paletteGradients ? 'gradient' : 'solid');
+  const glowFilter = config.glow ? `url(#${fillId}-glow)` : undefined;
+  const backgroundPattern: BackgroundPattern = config.backgroundPattern ?? 'none';
 
   const { infographicSvg, setInfographicSvg } = useChartStore();
   const [infographicLoading, setInfographicLoading] = useState(false);
@@ -765,18 +774,152 @@ export function ChartPreview({
     return null;
   };
 
-  const renderGradientDefs = () => {
-    if (!styleConfig.decorations.useGradients) return null;
+  /**
+   * SVG paint definitions for the active fill treatment, one per series, plus
+   * a shared glow filter. Ids are scoped by `fillId` so several charts on one
+   * page (feed, dashboards) never fight over `#gradient-0`.
+   *
+   * The hatched / duotone / stripped / glow techniques are borrowed from Evil
+   * Charts (github.com/legions-developer/evilcharts, MIT) and re-implemented
+   * against Chartsuno's colour system.
+   */
+  const paintFor = (idx: number): string => {
+    if (fillStyle === 'solid') return colors[idx % colors.length];
+    return `url(#${fillId}-${fillStyle}-${idx})`;
+  };
+
+  /** Area fills are translucent; a textured fill needs to be nearly opaque to read. */
+  const areaFillOpacity =
+    fillStyle === 'solid' ? 0.3 : fillStyle === 'gradient' ? 0.6 : 0.85;
+
+  const renderFillDefs = () => {
+    const count = data.series.length;
+    const seriesColor = (idx: number) => colors[idx % colors.length];
+    const gradientPair = (idx: number): [string, string] =>
+      paletteGradients && gradients[idx % gradients.length]
+        ? gradients[idx % gradients.length]
+        : [seriesColor(idx), seriesColor(idx)];
 
     return (
       <defs>
-        {gradients.slice(0, data.series.length).map(([start, end], idx) => (
-          <linearGradient key={idx} id={`gradient-${idx}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={start} stopOpacity={1} />
-            <stop offset="100%" stopColor={end} stopOpacity={0.8} />
-          </linearGradient>
-        ))}
+        {config.glow && (
+          <filter id={`${fillId}-glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.6 0"
+              result="glow"
+            />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        )}
+
+        {fillStyle === 'gradient' &&
+          Array.from({ length: count }, (_, idx) => {
+            const [start, end] = gradientPair(idx);
+            const derived = start === end;
+            return (
+              <linearGradient key={idx} id={`${fillId}-gradient-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={start} stopOpacity={1} />
+                <stop offset="100%" stopColor={end} stopOpacity={derived ? 0.35 : 0.8} />
+              </linearGradient>
+            );
+          })}
+
+        {fillStyle === 'hatched' && (
+          <>
+            {/* One diagonal mask shared by every series; each pattern paints its own colour through it. */}
+            <pattern
+              id={`${fillId}-hatch-mask-pattern`}
+              width="5"
+              height="5"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(-45)"
+            >
+              <rect width="5" height="5" fill="white" fillOpacity={0.3} />
+              <rect width="1.5" height="5" fill="white" />
+            </pattern>
+            <mask id={`${fillId}-hatch-mask`}>
+              <rect width="100%" height="100%" fill={`url(#${fillId}-hatch-mask-pattern)`} />
+            </mask>
+            {Array.from({ length: count }, (_, idx) => (
+              <pattern key={idx} id={`${fillId}-hatched-${idx}`} width="100%" height="100%" patternUnits="userSpaceOnUse">
+                <rect width="100%" height="100%" fill={seriesColor(idx)} mask={`url(#${fillId}-hatch-mask)`} />
+              </pattern>
+            ))}
+          </>
+        )}
+
+        {fillStyle === 'duotone' &&
+          Array.from({ length: count }, (_, idx) => (
+            // objectBoundingBox units make the split scale to each bar or slice.
+            <pattern
+              key={idx}
+              id={`${fillId}-duotone-${idx}`}
+              width="1"
+              height="1"
+              patternUnits="objectBoundingBox"
+              patternContentUnits="objectBoundingBox"
+            >
+              <rect x="0" y="0" width="0.5" height="1" fill={seriesColor(idx)} fillOpacity={0.4} />
+              <rect x="0.5" y="0" width="0.5" height="1" fill={seriesColor(idx)} />
+            </pattern>
+          ))}
+
+        {fillStyle === 'stripped' &&
+          Array.from({ length: count }, (_, idx) => (
+            <pattern key={idx} id={`${fillId}-stripped-${idx}`} width="4" height="4" patternUnits="userSpaceOnUse">
+              <rect width="4" height="4" fill={seriesColor(idx)} fillOpacity={0.18} />
+              <rect width="4" height="1.6" fill={seriesColor(idx)} />
+            </pattern>
+          ))}
       </defs>
+    );
+  };
+
+  /** Soft-edged pattern behind the plot. Recessive: it uses the grid colour at low alpha. */
+  const renderBackgroundPattern = () => {
+    if (backgroundPattern === 'none') return null;
+    if (config.type === 'table' || config.type === 'infographic' || config.type === 'map' || config.type === 'race') return null;
+    const id = `${fillId}-bg`;
+    const stroke = theme.grid;
+    const tile =
+      backgroundPattern === 'dots' ? (
+        <pattern id={`${id}-tile`} width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill={stroke} />
+        </pattern>
+      ) : backgroundPattern === 'grid' ? (
+        <pattern id={`${id}-tile`} width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M20 0H0V20" fill="none" stroke={stroke} strokeWidth="1" />
+        </pattern>
+      ) : backgroundPattern === 'diagonal' ? (
+        <pattern id={`${id}-tile`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <path d="M0 0V6" stroke={stroke} strokeWidth="1" />
+        </pattern>
+      ) : (
+        <pattern id={`${id}-tile`} width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M0 0L20 20M20 0L0 20" fill="none" stroke={stroke} strokeWidth="1" />
+        </pattern>
+      );
+
+    return (
+      <svg className="chart-pattern-layer" aria-hidden="true" width="100%" height="100%">
+        <defs>
+          {tile}
+          <radialGradient id={`${id}-fade`} cx="50%" cy="50%" r="65%">
+            <stop offset="55%" stopColor="white" stopOpacity="1" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+          <mask id={`${id}-mask`}>
+            <rect width="100%" height="100%" fill={`url(#${id}-fade)`} />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${id}-tile)`} mask={`url(#${id}-mask)`} opacity={theme.gridOpacity * 0.9} />
+      </svg>
     );
   };
 
@@ -962,12 +1105,7 @@ export function ChartPreview({
       />
     ) : null;
 
-    const getBarFill = (idx: number) => {
-      if (styleConfig.decorations.useGradients && !config.customColors?.seriesColors) {
-        return `url(#gradient-${idx})`;
-      }
-      return colors[idx % colors.length];
-    };
+    const getBarFill = (idx: number) => paintFor(idx);
 
     // --- Combo chart (dual-axis, mixed series types) ---
     if (combo) {
@@ -1010,7 +1148,7 @@ export function ChartPreview({
 
       return (
         <ComposedChart {...commonProps}>
-          {renderGradientDefs()}
+          {renderFillDefs()}
           {gridElement}
           {xAxisElement}
           <YAxis
@@ -1055,6 +1193,7 @@ export function ChartPreview({
                     yAxisId={yAxisId}
                     dataKey={series.name}
                     fill={getBarFill(idx)}
+                    filter={glowFilter}
                     radius={styleConfig.chart.barRadius}
                     animationDuration={config.animate ? 800 : 0}
                     animationBegin={idx * 100}
@@ -1084,6 +1223,7 @@ export function ChartPreview({
                     dataKey={series.name}
                     stroke={color}
                     strokeWidth={styleConfig.chart.strokeWidth}
+                filter={glowFilter}
                     dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
                       fill: color,
                       strokeWidth: 0,
@@ -1117,8 +1257,9 @@ export function ChartPreview({
                     type="monotone"
                     dataKey={series.name}
                     stroke={color}
-                    fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : color}
-                    fillOpacity={styleConfig.decorations.useGradients ? 0.6 : 0.3}
+                    fill={paintFor(idx)}
+                    fillOpacity={areaFillOpacity}
+                    filter={glowFilter}
                     strokeWidth={styleConfig.chart.strokeWidth}
                     dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
                       fill: color,
@@ -1163,7 +1304,7 @@ export function ChartPreview({
       case 'bar':
         return (
           <BarChart {...commonProps} {...(isHorizontal ? { layout: 'vertical' as const } : {})}>
-            {renderGradientDefs()}
+            {renderFillDefs()}
             {gridElement}
             {isHorizontal ? horizontalXAxis : xAxisElement}
             {isHorizontal ? horizontalYAxis : yAxisElement}
@@ -1174,6 +1315,7 @@ export function ChartPreview({
                 key={series.name}
                 dataKey={series.name}
                 fill={getBarFill(idx)}
+                    filter={glowFilter}
                 radius={styleConfig.chart.barRadius}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
@@ -1205,7 +1347,7 @@ export function ChartPreview({
       case 'histogram':
         return (
           <BarChart {...commonProps} barGap={0} barCategoryGap={0}>
-            {renderGradientDefs()}
+            {renderFillDefs()}
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -1216,6 +1358,7 @@ export function ChartPreview({
                 key={series.name}
                 dataKey={series.name}
                 fill={getBarFill(idx)}
+                    filter={glowFilter}
                 radius={0}
                 animationDuration={config.animate ? 800 : 0}
                 animationBegin={idx * 100}
@@ -1238,7 +1381,7 @@ export function ChartPreview({
       case 'line':
         return (
           <LineChart {...commonProps}>
-            {renderGradientDefs()}
+            {renderFillDefs()}
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -1251,6 +1394,7 @@ export function ChartPreview({
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
                 strokeWidth={styleConfig.chart.strokeWidth}
+                filter={glowFilter}
                 dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
                   fill: colors[idx % colors.length],
                   strokeWidth: 0,
@@ -1283,7 +1427,7 @@ export function ChartPreview({
       case 'area':
         return (
           <AreaChart {...commonProps}>
-            {renderGradientDefs()}
+            {renderFillDefs()}
             {gridElement}
             {xAxisElement}
             {yAxisElement}
@@ -1295,8 +1439,9 @@ export function ChartPreview({
                 type="monotone"
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
-                fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : colors[idx % colors.length]}
-                fillOpacity={styleConfig.decorations.useGradients ? 0.6 : 0.3}
+                fill={paintFor(idx)}
+                fillOpacity={areaFillOpacity}
+                filter={glowFilter}
                 strokeWidth={styleConfig.chart.strokeWidth}
                 dot={config.showPoints && styleConfig.chart.dotRadius > 0 ? {
                   fill: colors[idx % colors.length],
@@ -1330,7 +1475,7 @@ export function ChartPreview({
       case 'pie':
         return (
           <PieChart>
-            {renderGradientDefs()}
+            {renderFillDefs()}
             {tooltipElement}
             {legendElement}
             <Pie
@@ -1348,7 +1493,7 @@ export function ChartPreview({
               {pieData.map((_, idx) => (
                 <Cell
                   key={`cell-${idx}`}
-                  fill={styleConfig.decorations.useGradients && !config.customColors?.seriesColors ? `url(#gradient-${idx})` : colors[idx % colors.length]}
+                  fill={paintFor(idx)}
                 />
               ))}
             </Pie>
@@ -1374,6 +1519,7 @@ export function ChartPreview({
                 fill={colors[idx % colors.length]}
                 fillOpacity={0.3}
                 strokeWidth={styleConfig.chart.strokeWidth}
+                filter={glowFilter}
                 animationDuration={config.animate ? 800 : 0}
               />
             ))}
@@ -1490,6 +1636,7 @@ export function ChartPreview({
         className={`chart-container ${isTableView ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
         style={{ background: theme.background }}
       >
+        {renderBackgroundPattern()}
         {config.type === 'infographic' ? (
           renderInfographic()
         ) : config.type === 'map' ? (

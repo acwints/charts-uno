@@ -91,6 +91,13 @@ export const RACE_DEFAULTS = {
   mark: 'auto' as RaceMark,
 };
 
+// Fill treatment for bars, areas and slices. Unset falls back to the style
+// variant's historical behaviour (palette gradients or solid), so existing
+// charts render exactly as before. Techniques after Evil Charts (MIT).
+export type FillStyle = 'solid' | 'gradient' | 'hatched' | 'duotone' | 'stripped';
+/** Recessive pattern drawn behind the plot, in the grid colour. */
+export type BackgroundPattern = 'none' | 'dots' | 'grid' | 'diagonal' | 'cross-hatch';
+
 // Map-specific types
 export type MapVariant = 'bubble' | 'choropleth';
 export type MapScope = 'us-states' | 'world';
@@ -157,6 +164,11 @@ export interface ChartConfig {
   // Map options
   mapVariant?: MapVariant;
   mapScope?: MapScope;
+  // Fill & effects (Styling tab)
+  fillStyle?: FillStyle;
+  /** Soft outer glow on bars, areas and lines. */
+  glow?: boolean;
+  backgroundPattern?: BackgroundPattern;
   // Race options
   /** How many contenders are on the board at once. */
   raceTopN?: number;

@@ -245,12 +245,24 @@
 }
 
 .chart-container {
+  /* `isolation` gives the background pattern its own stacking context, so its
+     negative z-index sits above this element's background but below the
+     chart, without wrapping the chart in another element. */
+  position: relative;
+  isolation: isolate;
   flex: 1;
   min-height: 200px;
   min-width: 0;
   padding: var(--space-2) var(--space-2) 0 0;
   overflow: hidden;
   background: var(--chart-bg, var(--bg-secondary));
+}
+
+.chart-pattern-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .chart-container--scroll {

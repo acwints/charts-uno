@@ -26,7 +26,7 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Play from 'lucide-react/dist/esm/icons/play';
 import Columns2 from 'lucide-react/dist/esm/icons/columns-2';
 import ArrowLeftRight from 'lucide-react/dist/esm/icons/arrow-left-right';
-import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride, RaceMark } from '../types';
+import type { ChartConfig, ChartType, StyleVariant, ChartData, AiMode, MapVariant, MapScope, YAxisBaselineMode, SeriesChartType, AxisSide, SeriesOverride, RaceMark, FillStyle, BackgroundPattern } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { STYLE_VARIANTS, RACE_DEFAULTS, getEffectiveColors, isComboChart, resolveSeriesConfig, suggestComboConfig } from '../types';
 import { createFixedNumberFormatter, getAdaptiveDecimalPlaces } from '../utils/numberFormat';
@@ -63,6 +63,23 @@ const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; speci
   { id: 'map', icon: Globe, label: 'Map' },
   { id: 'race', icon: Trophy, label: 'Race' },
   { id: 'infographic', icon: Sparkles, label: 'AI Magic', special: true },
+];
+
+const FILL_STYLE_OPTIONS: { id: FillStyle | 'auto'; label: string; description: string }[] = [
+  { id: 'auto', label: 'Auto', description: 'Follow the style variant' },
+  { id: 'solid', label: 'Solid', description: 'Flat series colour' },
+  { id: 'gradient', label: 'Gradient', description: 'Fades toward the baseline' },
+  { id: 'hatched', label: 'Hatched', description: 'Diagonal stripes in the series colour' },
+  { id: 'duotone', label: 'Duotone', description: 'Half-faded, half-solid split' },
+  { id: 'stripped', label: 'Stripped', description: 'Fine horizontal stripes' },
+];
+
+const BACKGROUND_PATTERN_OPTIONS: { id: BackgroundPattern; label: string }[] = [
+  { id: 'none', label: 'None' },
+  { id: 'dots', label: 'Dots' },
+  { id: 'grid', label: 'Grid' },
+  { id: 'diagonal', label: 'Diagonal' },
+  { id: 'cross-hatch', label: 'Cross-hatch' },
 ];
 
 const RACE_MARK_OPTIONS: { id: RaceMark; label: string; description: string }[] = [
@@ -682,6 +699,52 @@ export function ChartControls({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="control-section">
+              <SectionHeader icon={Paintbrush} label="Fill & Effects" />
+              <div className="style-option-group">
+                <span className="style-option-label">Fill</span>
+                <div className="style-option-grid">
+                  {FILL_STYLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`style-option-button ${(config.fillStyle ?? 'auto') === opt.id ? 'active' : ''}`}
+                      onClick={() => updateConfig({ fillStyle: opt.id === 'auto' ? undefined : opt.id })}
+                      title={opt.description}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="style-option-group">
+                <span className="style-option-label">Background</span>
+                <div className="style-option-grid">
+                  {BACKGROUND_PATTERN_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`style-option-button ${(config.backgroundPattern ?? 'none') === opt.id ? 'active' : ''}`}
+                      onClick={() => updateConfig({ backgroundPattern: opt.id === 'none' ? undefined : opt.id })}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="toggle-list">
+                <label className="toggle-item">
+                  <input
+                    type="checkbox"
+                    checked={config.glow ?? false}
+                    onChange={(e) => updateConfig({ glow: e.target.checked || undefined })}
+                  />
+                  <span className="toggle-switch" />
+                  <span className="toggle-label">Glow</span>
+                </label>
               </div>
             </div>
 
