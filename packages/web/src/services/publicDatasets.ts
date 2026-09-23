@@ -7,6 +7,11 @@ export interface PublicDatasetOption {
   description: string;
   tables: string[];
   examplePrompts: string[];
+  /**
+   * A leaderboard race. `topN` is then the size of the field (contenders,
+   * chosen by popularity) rather than a row count, and may be much larger.
+   */
+  raceShaped?: boolean;
 }
 
 export async function getPublicDatasets(): Promise<PublicDatasetOption[]> {

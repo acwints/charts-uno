@@ -21,6 +21,10 @@ class RaceDatasetRegistryTests(unittest.TestCase):
             self.assertIn("bigquery-public-data.imdb.title_episode", listed[dataset_id]["tables"])
             self.assertNotIn("defaultSql", listed[dataset_id])
             self.assertTrue(listed[dataset_id]["examplePrompts"])
+            # The client uses this to relabel top_n as a field size and lift its cap.
+            self.assertIs(listed[dataset_id]["raceShaped"], True)
+        for dataset_id in ("imdb_titles", "hacker_news", "usa_names"):
+            self.assertIs(listed[dataset_id]["raceShaped"], False)
 
     def test_race_sql_is_safe_against_its_own_allow_list(self) -> None:
         for dataset_id in ("imdb_episode_race", "imdb_season_race"):

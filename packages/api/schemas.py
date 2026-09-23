@@ -262,6 +262,9 @@ class PublicDatasetOption(BaseModel):
     description: str
     tables: List[str]
     examplePrompts: List[str] = []
+    # True for leaderboard races, where top_n is the size of the field rather
+    # than a row count and the client may ask for a much larger number.
+    raceShaped: bool = False
 
 
 class PublicDatasetsResponse(BaseModel):

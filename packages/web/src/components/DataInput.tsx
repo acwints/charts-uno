@@ -23,6 +23,22 @@ import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
 import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
 import { getPublicDatasets, generateChartFromPublicDataset, type PublicDatasetOption } from '../services/publicDatasets';
+
+// For an ordinary chart, top_n is a row count. For a race it is the size of
+// the field — contenders, chosen by popularity — and the whole point is a
+// wide field: the eligible pool today is ~176 shows, and capping at 50 drops
+// contenders like Bleach (#158 by votes) that would otherwise win. So a race
+// defaults to the full field and may ask for up to what the API accepts.
+const CHART_ROWS_DEFAULT = 20;
+const CHART_ROWS_MAX = 50;
+const RACE_FIELD_MAX = 250;
+const RACE_FIELD_DEFAULT = RACE_FIELD_MAX;
+
+function topNBoundsFor(dataset: PublicDatasetOption | null | undefined) {
+  return dataset?.raceShaped
+    ? { label: 'Contenders', max: RACE_FIELD_MAX, initial: RACE_FIELD_DEFAULT }
+    : { label: 'Rows', max: CHART_ROWS_MAX, initial: CHART_ROWS_DEFAULT };
+}
 import { useAuth } from '../hooks/useAuth';
 import { AIProcessingIndicator } from './AIProcessingIndicator';
 import { SqlDataInput } from './SqlDataInput';
@@ -118,7 +134,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [publicDatasets, setPublicDatasets] = useState<PublicDatasetOption[]>([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState('');
   const [datasetPrompt, setDatasetPrompt] = useState('');
-  const [datasetTopN, setDatasetTopN] = useState(20);
+  const [datasetTopN, setDatasetTopN] = useState(CHART_ROWS_DEFAULT);
   const [datasetChartTypeHint, setDatasetChartTypeHint] = useState<'auto' | 'line' | 'bar' | 'area' | 'table'>('auto');
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(false);
   const [isGeneratingDatasetChart, setIsGeneratingDatasetChart] = useState(false);
@@ -547,6 +563,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         setPublicDatasets(datasets);
         if (datasets.length > 0) {
           setSelectedDatasetId(datasets[0].id);
+          setDatasetTopN(topNBoundsFor(datasets[0]).initial);
           if (!datasetPrompt.trim() && datasets[0].examplePrompts?.[0]) {
             setDatasetPrompt(datasets[0].examplePrompts[0]);
           }
@@ -927,6 +944,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                       const nextId = e.target.value;
                       setSelectedDatasetId(nextId);
                       const next = publicDatasets.find((d) => d.id === nextId);
+                      setDatasetTopN(topNBoundsFor(next).initial);
                       if (next && !datasetPrompt.trim() && next.examplePrompts?.[0]) {
                         setDatasetPrompt(next.examplePrompts[0]);
                       }
@@ -969,14 +987,17 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 />
                 <div className="datasets-controls-row">
                   <label className="datasets-control">
-                    <span className="datasets-control-label">Rows</span>
+                    <span className="datasets-control-label">{topNBoundsFor(selectedDataset).label}</span>
                     <input
                       type="number"
                       min={5}
-                      max={50}
+                      max={topNBoundsFor(selectedDataset).max}
                       step={1}
                       value={datasetTopN}
-                      onChange={(e) => setDatasetTopN(Math.max(5, Math.min(50, Number(e.target.value) || 20)))}
+                      onChange={(e) => {
+                        const { max, initial } = topNBoundsFor(selectedDataset);
+                        setDatasetTopN(Math.max(5, Math.min(max, Number(e.target.value) || initial)));
+                      }}
                       className="datasets-number-input"
                     />
                   </label>

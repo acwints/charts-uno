@@ -213,6 +213,7 @@ def get_public_datasets() -> List[Dict[str, Any]]:
             "description": dataset["description"],
             "tables": dataset["tables"],
             "examplePrompts": dataset["examplePrompts"],
+            "raceShaped": bool(dataset.get("raceShaped")),
         }
         for dataset in PUBLIC_DATASETS.values()
     ]
