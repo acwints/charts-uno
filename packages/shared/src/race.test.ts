@@ -31,6 +31,19 @@ test('parseOrdinalValue reads seasons, episodes, years, quarters, dates and bare
   assert.equal(parseOrdinalValue(''), null);
 });
 
+test('parseOrdinalValue is not fooled by names that V8 Date.parse would accept', () => {
+  // V8 reads "Show 000" and "Team 7" as dates. These are names, and letting
+  // them through made an entity column look like an ordered axis.
+  for (const junk of ['Show 000', 'Team 7', 'Group A 2019', '13 Reasons Why', 'Player One', 'Route 66']) {
+    assert.equal(parseOrdinalValue(junk), null, junk);
+  }
+  // Real dates in the supported shapes still parse and order correctly.
+  assert.ok((parseOrdinalValue('Mar 2020') as number) > (parseOrdinalValue('Feb 2020') as number));
+  assert.ok((parseOrdinalValue('1 Mar 2020') as number) > (parseOrdinalValue('28 Feb 2020') as number));
+  assert.ok((parseOrdinalValue('2020-03-01T00:00:00Z') as number) > (parseOrdinalValue('2020-02-01') as number));
+  assert.ok((parseOrdinalValue('3/1/2020') as number) > (parseOrdinalValue('2/1/2020') as number));
+});
+
 test('orderPeriods sorts by meaning, so Season 10 follows Season 9', () => {
   const { ordered, how } = orderPeriods(['Season 10', 'Season 2', 'Season 9', 'Season 1']);
   assert.deepEqual(ordered, ['Season 1', 'Season 2', 'Season 9', 'Season 10']);
@@ -344,6 +357,27 @@ test('inferRaceColumns is not broken by an entity whose name parses as a number'
   ['Breaking Bad', 'Dark', 'Mr. Robot', 'Daredevil', 'Sherlock', 'Succession'].forEach((show, i) => {
     for (let ep = 1; ep <= 100; ep += 1) records.push({ show, episode: ep, running_average: 8 + i * 0.05 + ep * 0.002 });
   });
+  const inferred = inferRaceColumns(records);
+  assert.ok(inferred);
+  assert.equal(inferred.columns.entity, 'show');
+  assert.equal(inferred.columns.period, 'episode');
+  assert.equal(inferred.columns.value, 'running_average');
+  assert.ok(inferred.confidence >= 0.6);
+});
+
+test('inferRaceColumns handles a production-scale table', () => {
+  // ~180 shows x up to 100 episodes, ordered by show, numeric-looking names in
+  // the lead. An even sampling stride passed the small tests but failed here,
+  // because coverage needs each entity's whole run in the sample.
+  const records: Array<Record<string, unknown>> = [];
+  const names = ['13 Reasons Why', '24', '30 Rock', '9-1-1', ...Array.from({ length: 180 }, (_, i) => `Show ${String(i).padStart(3, '0')}`)];
+  names.forEach((show, i) => {
+    const runLength = i % 5 ? 100 : 45;
+    for (let ep = 1; ep <= runLength; ep += 1) {
+      records.push({ show, episode: ep, running_average: 7.5 + (i % 17) * 0.05 + ep * 0.001 });
+    }
+  });
+  assert.ok(records.length > 15000);
   const inferred = inferRaceColumns(records);
   assert.ok(inferred);
   assert.equal(inferred.columns.entity, 'show');

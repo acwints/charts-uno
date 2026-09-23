@@ -574,13 +574,24 @@ async def probe_research_providers() -> Dict[str, Any]:
     return result
 
 
-def _race_from_rows(row_dicts):
+# Column roles of the deterministic IMDb race SQL. Known up front, so that
+# path never depends on inference — which is for SQL the model wrote.
+_IMDB_RACE_COLUMNS = {"entity": "show", "period": "episode", "value": "running_average", "confidence": 1.0}
+
+
+def _is_deterministic_race_sql(sql: str) -> bool:
+    return sql.strip() == _IMDB_EPISODE_RACE_SQL.format(limit=50).strip()
+
+
+def _race_from_rows(row_dicts, columns=None):
     """
-    Pivot tidy (contender, period, standing) rows into race chart data. Column
-    roles are inferred from the data itself, so this works whether the SQL
-    came from the model or the deterministic fallback.
+    Pivot tidy (contender, period, standing) rows into race chart data.
+
+    ``columns`` names the roles when the caller knows them (the deterministic
+    query does); otherwise they are inferred from the data, for SQL the model
+    wrote. Returns None when the rows cannot be read as a race.
     """
-    inferred = infer_race_columns(row_dicts)
+    inferred = columns or infer_race_columns(row_dicts)
     if not inferred or inferred["confidence"] < 0.6:
         return None
     period = inferred["period"]
@@ -646,7 +657,8 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
     source_link = "https://console.cloud.google.com/marketplace/product/bigquery-public-data"
 
     if race:
-        race_chart = _race_from_rows(row_dicts)
+        known = _IMDB_RACE_COLUMNS if _is_deterministic_race_sql(sql) else None
+        race_chart = _race_from_rows(row_dicts, columns=known)
         if race_chart:
             return {
                 **race_chart,
@@ -656,7 +668,12 @@ async def _bigquery_search_and_fetch(prompt: str) -> Optional[Dict[str, Any]]:
                 "sources": [{"title": "Google Cloud public datasets", "url": source_link}],
                 "sourceProvider": "bigquery",
             }
-        # Fall through: the model returned a wide shape after all.
+        # The prompt asked for a race and these rows cannot be read as one.
+        # Falling through to the wide reader produced a nonsense chart in
+        # production — one show's name repeated forty times as the labels —
+        # so decline here and let the next research provider try instead.
+        logger.info("BigQuery rows for a race prompt could not be pivoted; declining rather than charting them wide")
+        return None
 
     # Infer label + numeric fields from result schema.
     numeric_cols = []

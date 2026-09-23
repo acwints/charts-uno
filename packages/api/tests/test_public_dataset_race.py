@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from services import public_dataset_service as pds
 from services import research_service as rs
@@ -155,6 +156,21 @@ class ResearchRacePathTests(unittest.TestCase):
         self.assertEqual(chart["yAxisLabel"], "running_average")
         self.assertEqual(len(chart["series"]), 6)
         self.assertEqual(chart["labels"][0], "episode 1")
+
+    def test_deterministic_race_sql_is_recognised_and_uses_known_columns(self) -> None:
+        sql = pds._IMDB_EPISODE_RACE_SQL.format(limit=50)
+        self.assertTrue(rs._is_deterministic_race_sql(sql))
+        self.assertTrue(rs._is_deterministic_race_sql("  " + sql + "\n"))
+        self.assertFalse(rs._is_deterministic_race_sql("SELECT 1"))
+        # With known columns, inference is bypassed entirely — even rows that
+        # would confuse it (a single contender) pivot on the named columns.
+        rows = [{"show": "24", "episode": ep, "running_average": 8 + ep * 0.01} for ep in range(1, 50)]
+        rows += [{"show": "Dark", "episode": ep, "running_average": 8.5 + ep * 0.01} for ep in range(1, 50)]
+        with patch.object(rs, "infer_race_columns", side_effect=AssertionError("must not infer")):
+            chart = rs._race_from_rows(rows, columns=rs._IMDB_RACE_COLUMNS)
+        self.assertIsNotNone(chart)
+        self.assertEqual(chart["suggestedType"], "race")
+        self.assertEqual(sorted(s["name"] for s in chart["series"]), ["24", "Dark"])
 
     def test_race_from_rows_declines_wide_results(self) -> None:
         wide = [{"year": str(1980 + i), "title_count": i, "average_rating": 7 + i * 0.01} for i in range(20)]

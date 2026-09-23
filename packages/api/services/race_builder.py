@@ -369,14 +369,16 @@ def infer_race_columns(rows: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, 
     headers = list(rows[0].keys())
     if len(headers) < 3:
         return None
-    # Sample evenly across the table rather than taking the head. Tidy rows
-    # arrive grouped by entity, so the head is a handful of entities' full
-    # runs — and if one of them has a numeric-looking name it dominates the
-    # column statistics. In production the first show alphabetically was
-    # "24": its 100 rows made the show column read as 20% numeric and it was
-    # rejected as the entity, so the race fell through to a bar chart.
-    step = max(1, len(rows) // 500)
-    sample = list(rows[::step])[:500]
+    # Sample the HEAD of the table, deliberately. Tidy rows arrive grouped by
+    # entity, so the head holds a few entities' complete runs — and the period
+    # test (coverage) and value test (movement) both need complete runs to
+    # score. An even stride across the table was tried and broke this in
+    # production: at ~18,000 rows the stride was 36, every show contributed
+    # about three rows, coverage scored ~0.1 and the period column was
+    # rejected. The one hazard of head sampling — a single numeric-named show
+    # such as "24" dominating the entity column's row count — is handled
+    # below by judging that column over distinct values instead.
+    sample = list(rows[:1000])
     n = len(sample)
 
     stats = []

@@ -161,11 +161,27 @@ export function parseOrdinalValue(value: string): number | null {
   const yearQuarter = /^(\d{4})[\s-]*q([1-4])$/i.exec(text);
   if (yearQuarter) return Number(yearQuarter[1]) * 4 + Number(yearQuarter[2]);
 
-  const timestamp = Date.parse(text);
-  if (Number.isFinite(timestamp)) return timestamp;
+  // Only date-shaped text reaches Date.parse. V8's parser is lenient enough
+  // to read "Show 000" or "Team 7" as dates, which made entity names look
+  // like an ordered axis and diverged from the Python builder's strict
+  // strptime formats. These shapes mirror that format list.
+  if (DATE_SHAPES.some((shape) => shape.test(text))) {
+    const timestamp = Date.parse(text);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
 
   return null;
 }
+
+const MONTH = '(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*';
+const DATE_SHAPES: readonly RegExp[] = [
+  /^\d{4}-\d{2}(?:-\d{2})?(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?Z?)?$/i, // 2020-03, 2020-03-01, ISO datetime
+  /^\d{4}\/\d{1,2}\/\d{1,2}$/, // 2020/3/1
+  /^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/, // 3/1/2020, 01-03-20
+  new RegExp(`^\\d{1,2}\\s+${MONTH}\\s+\\d{4}$`, 'i'), // 1 Mar 2020
+  new RegExp(`^${MONTH}\\s+\\d{1,2},?\\s+\\d{4}$`, 'i'), // Mar 1, 2020
+  new RegExp(`^${MONTH}\\s+\\d{4}$`, 'i'), // Mar 2020 / March 2020
+];
 
 /**
  * Order periods by what they mean when every one of them parses, otherwise by
@@ -615,10 +631,15 @@ export function inferRaceColumns(records: ReadonlyArray<Record<string, unknown>>
   const headers = Object.keys(records[0] ?? {});
   if (headers.length < 3) return null;
 
-  // Sample evenly across the table rather than taking the head. Tidy rows
-  // arrive grouped by entity, so the head is a handful of entities' full runs.
-  const step = Math.max(1, Math.floor(records.length / 500));
-  const sample = records.filter((_, index) => index % step === 0).slice(0, 500);
+  // Sample the HEAD of the table, deliberately. Tidy rows arrive grouped by
+  // entity, so the head holds a few entities' complete runs — and the period
+  // test (coverage) and value test (movement) both need complete runs to
+  // score. An even stride was tried and broke this in production: at ~18,000
+  // rows every show contributed about three rows, coverage scored ~0.1 and the
+  // period column was rejected. The one hazard of head sampling — a single
+  // numeric-named show such as "24" dominating the entity column's row count —
+  // is handled below by judging that column over distinct values instead.
+  const sample = records.slice(0, 1000);
   const stats = headers.map((header) => {
     const values = sample.map((record) => record[header]);
     const distinctValues = new Set(values.map((value) => String(value ?? '')));

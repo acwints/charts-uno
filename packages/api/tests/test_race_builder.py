@@ -29,7 +29,17 @@ class ParsingTests(unittest.TestCase):
         self.assertIsNone(parse_ordinal(""))
         self.assertIsNone(parse_ordinal(None))
 
-    def test_order_periods_sorts_by_meaning_so_season_10_follows_season_9(self) -> None:
+    def test_parse_ordinal_rejects_names_that_a_lenient_date_parser_would_accept(self) -> None:
+        # Parity with the TypeScript builder, which had to be made strict:
+        # V8's Date.parse read "Show 000" and "Team 7" as dates. Python's
+        # strptime is already strict; this pins it so the two never diverge.
+        for junk in ("Show 000", "Team 7", "Group A 2019", "13 Reasons Why", "Player One", "Route 66"):
+            self.assertIsNone(parse_ordinal(junk), junk)
+        self.assertGreater(parse_ordinal("Mar 2020"), parse_ordinal("Feb 2020"))
+        self.assertGreater(parse_ordinal("1 Mar 2020"), parse_ordinal("28 Feb 2020"))
+        self.assertGreater(parse_ordinal("2020-03-01T00:00:00"), parse_ordinal("2020-02-01"))
+
+
         ordered, how = order_periods(["Season 10", "Season 2", "Season 9", "Season 1"])
         self.assertEqual(ordered, ["Season 1", "Season 2", "Season 9", "Season 10"])
         self.assertEqual(how, "inferred-ordinal")
@@ -246,6 +256,25 @@ class InferColumnsTests(unittest.TestCase):
         for i, show in enumerate(["Breaking Bad", "Dark", "Mr. Robot", "Daredevil", "Sherlock", "Succession"]):
             for ep in range(1, 101):
                 rows.append({"show": show, "episode": ep, "running_average": 8 + i * 0.05 + ep * 0.002})
+        inferred = infer_race_columns(rows)
+        self.assertIsNotNone(inferred)
+        self.assertEqual(inferred["entity"], "show")
+        self.assertEqual(inferred["period"], "episode")
+        self.assertEqual(inferred["value"], "running_average")
+        self.assertGreaterEqual(inferred["confidence"], 0.6)
+
+    def test_production_scale_table_infers_correctly(self) -> None:
+        # The real BigQuery race result: ~180 shows x up to 100 episodes,
+        # ordered by show, with numeric-looking names in the lead. An even
+        # sampling stride passed the small tests but failed here, because
+        # coverage needs each entity's whole run in the sample.
+        rows = []
+        names = ["13 Reasons Why", "24", "30 Rock", "9-1-1"] + [f"Show {i:03d}" for i in range(180)]
+        for i, show in enumerate(names):
+            run_len = 100 if i % 5 else 45
+            for ep in range(1, run_len + 1):
+                rows.append({"show": show, "episode": ep, "running_average": 7.5 + (i % 17) * 0.05 + ep * 0.001})
+        self.assertGreater(len(rows), 15000)
         inferred = infer_race_columns(rows)
         self.assertIsNotNone(inferred)
         self.assertEqual(inferred["entity"], "show")
