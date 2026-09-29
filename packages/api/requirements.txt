@@ -1,6 +1,6 @@
 fastapi>=0.109.0
 uvicorn>=0.27.0
-sqlalchemy>=2.0.25
+sqlalchemy>=2.0.25,<2.1  # 2.1 defaults postgresql:// to psycopg 3, which is not installed
 psycopg2-binary>=2.9.9
 pyjwt>=2.8.0
 httpx>=0.28.1
