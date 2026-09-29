@@ -223,6 +223,11 @@ class BotAnalyzeAndCreateResponse(BaseModel):
     chart_url: str
     labels: List[str]
     series: List[ChartDataSeries]
+    # The stored config, including the designer's per-series bar/line and axis choices.
+    config: Optional[Dict[str, Any]] = None
+    yAxisFormat: Optional[str] = None
+    yAxisPrefix: Optional[str] = None
+    yAxisSuffix: Optional[str] = None
     categoricalColumns: Optional[List[ChartCategoricalColumn]] = None
     verifiedData: Optional[bool] = None
     suggestedTitle: Optional[str] = None
@@ -313,6 +318,8 @@ class ChartRecommendResponse(BaseModel):
     type: str
     reasoning: str
     summary: str
+    # Full design decision (per-series chart type/axis, axis titles, formats).
+    design: Optional[Dict[str, Any]] = None
 
 
 class InfographicRequest(BaseModel):

@@ -1,4 +1,4 @@
-import type { ChartData } from '@chartsuno/shared';
+import type { ChartConfig, ChartData } from '@chartsuno/shared';
 import { detectMimeType } from '@chartsuno/shared/node';
 import { config, logger } from '../config.js';
 
@@ -49,12 +49,18 @@ interface AnalyzeAndCreateResponse {
   barLayout?: 'horizontal' | 'vertical';
   xAxisLabel?: string;
   yAxisLabel?: string;
+  yAxisFormat?: ChartData['yAxisFormat'];
+  yAxisPrefix?: string;
+  yAxisSuffix?: string;
   aiReasoning?: string;
+  /** The config the API stored for this chart, including the designer's per-series decisions. */
+  config?: Partial<ChartConfig>;
 }
 
 export interface AnalyzeAndCreateResult {
   chartData: ChartData;
   chartUrl: string;
+  config?: Partial<ChartConfig>;
 }
 
 interface PromptAndCreateRequest {
@@ -80,6 +86,9 @@ function toChartData(parsed: AnalyzeAndCreateResponse, sourceType: ChartData['so
     aiReasoning: parsed.aiReasoning,
     xAxisLabel: parsed.xAxisLabel,
     yAxisLabel: parsed.yAxisLabel,
+    yAxisFormat: parsed.yAxisFormat,
+    yAxisPrefix: parsed.yAxisPrefix,
+    yAxisSuffix: parsed.yAxisSuffix,
   };
 }
 
@@ -108,6 +117,7 @@ export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: stri
   return {
     chartUrl: parsed.chart_url,
     chartData: toChartData(parsed, 'image'),
+    config: parsed.config,
   };
 }
 
@@ -137,6 +147,7 @@ export async function promptAndCreateChart(prompt: string, sourceUrl?: string): 
   return {
     chartUrl: parsed.chart_url,
     chartData: toChartData(parsed, 'prompt'),
+    config: parsed.config,
   };
 }
 

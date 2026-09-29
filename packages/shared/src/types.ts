@@ -189,6 +189,8 @@ export interface ChartConfig {
   // Combo chart (dual-axis, mixed series types)
   seriesConfig?: Record<string, SeriesOverride>;
   rightYAxisLabel?: string;
+  rightYAxisPrefix?: string;
+  rightYAxisSuffix?: string;
 }
 
 // Default chart config

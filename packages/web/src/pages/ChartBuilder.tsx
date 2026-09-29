@@ -76,21 +76,33 @@ export function ChartBuilder() {
     try {
       const recommendation = await recommendChartType(data, { preferredType: data.suggestedType });
       const chosenType = data.suggestedType ?? recommendation.type;
+      const design = recommendation.design;
       const enrichedData: ChartData = {
         ...data,
         suggestedType: chosenType,
         aiReasoning: data.aiReasoning || recommendation.reasoning,
         aiSummary: recommendation.summary,
+        ...(design?.xAxisLabel ? { xAxisLabel: design.xAxisLabel } : {}),
+        ...(design?.yAxisLabel ? { yAxisLabel: design.yAxisLabel } : {}),
+        ...(design?.yAxisFormat ? { yAxisFormat: design.yAxisFormat } : {}),
+        ...(design?.yAxisPrefix ? { yAxisPrefix: design.yAxisPrefix } : {}),
+        ...(design?.yAxisSuffix ? { yAxisSuffix: design.yAxisSuffix } : {}),
       };
-      const comboHint = suggestComboConfig(enrichedData, chosenType);
+      // The designer's per-series decision wins; the local scale heuristic covers an API outage.
+      const comboHint = design?.seriesConfig
+        ? { seriesConfig: design.seriesConfig, rightYAxisLabel: design.rightYAxisLabel ?? '' }
+        : suggestComboConfig(enrichedData, chosenType);
       setChartData(enrichedData);
       setChartConfig((prev) => ({
         ...prev,
         title: data.suggestedTitle || prev.title,
         type: chosenType,
         ...(data.suggestedStacked != null ? { stacked: data.suggestedStacked } : {}),
+        ...(design?.stacked != null ? { stacked: design.stacked } : {}),
         ...(data.suggestedBarLayout ? { barLayout: data.suggestedBarLayout } : {}),
+        ...(design?.barLayout ? { barLayout: design.barLayout } : {}),
         ...(hasTemporalPointLabels(data) ? { showValues: true } : {}),
+        ...(design?.showValues != null ? { showValues: design.showValues } : {}),
         ...(data.sourceLink ? { sourceLink: data.sourceLink } : {}),
         ...(comboHint ? { seriesConfig: comboHint.seriesConfig, rightYAxisLabel: comboHint.rightYAxisLabel } : {}),
       }));

@@ -32,3 +32,15 @@ GOOGLE_API_KEY=... pnpm eval:charts:live
 ```
 
 Runs the same fixtures through live prompt-based chart generation and validates the returned chart shape.
+
+## Chart design step
+
+Every extracted dataset (image, prompt, CSV via `/api/ai/recommend`) passes
+through `services/chart_design.py` before it is stored or rendered. One model
+call (`CHARTSUNO_MODEL_CHART`) receives the whole dataset and returns the chart
+decision: type, per-series bar/line/area and left/right axis, stacking,
+orientation, axis titles and number formats. `_clean` guarantees the answer is
+renderable; `heuristic_design` (unit and scale based) is the fallback when the
+model is unavailable. The bot renders the stored config, so the posted PNG and
+the chart page agree. Tests: `packages/api/tests/test_chart_design.py`,
+`packages/shared/src/seriesConfig.test.ts`.

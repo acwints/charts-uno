@@ -8,6 +8,7 @@ import {
   replyWithError,
   ParentTweetUnavailableError,
 } from '../twitter/media.js';
+import { isComboChart, type ChartConfig } from '@chartsuno/shared';
 import { renderChartToPng, getDefaultConfig, addWatermark } from '@chartsuno/shared/node';
 import { analyzeAndCreateChart, promptAndCreateChart } from '../services/chartsunoApi.js';
 import { loadState, updateState } from '../storage.js';
@@ -113,15 +114,19 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
       await markProcessed(mentionActionKey);
       return 'completed';
     }
-    const { chartData, chartUrl } = result;
+    const { chartData, chartUrl, config: designedConfig } = result;
 
     logger.info(
       { labels: chartData.labels.length, series: chartData.series.length },
       'Chart data extracted'
     );
 
-    // Step 3: Render the chart with Recharts + Puppeteer
-    const config = getDefaultConfig(chartData);
+    // Step 3: Render the chart with Chart.js + Puppeteer.
+    // The API already ran the design step (chart type, per-series bar/line,
+    // left/right axis, stacking, layout); keep those decisions and only
+    // randomise the look.
+    const config: ChartConfig = { ...getDefaultConfig(chartData), ...(designedConfig ?? {}) };
+    config.animate = false;
     config.colorScheme = pickRandomItem(X_REPLY_COLOR_SCHEMES);
     config.styleVariant = pickRandomItem(X_REPLY_STYLE_VARIANTS);
     config.themeMode = pickRandomItem(X_REPLY_THEME_MODES);
@@ -135,6 +140,9 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
       if (!CHARTABLE_TYPES.has(config.type)) {
         config.type = chartData.series.length > 1 ? 'bar' : 'line';
       }
+      if (isComboChart(config) && !['bar', 'line', 'area'].includes(config.type)) {
+        config.type = 'bar';
+      }
       config.showGrid = true;
       config.showLegend = chartData.series.length > 1;
     }
@@ -143,6 +151,7 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
       {
         action,
         chartType: config.type,
+        combo: isComboChart(config),
         colorScheme: config.colorScheme,
         styleVariant: config.styleVariant,
         themeMode: config.themeMode,

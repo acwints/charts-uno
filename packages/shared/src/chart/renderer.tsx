@@ -6,6 +6,7 @@ import type { ChartData, ChartConfig, ChartType } from '../types.js';
 import { getNumericDomainFromValues } from '../axisDomain.js';
 import { applyCustomColors, COLOR_PALETTES, getTheme } from '../colors.js';
 import { getStyleVariantConfig } from '../styleVariants.js';
+import { isComboChart, resolveSeriesConfig } from '../seriesConfig.js';
 import type { ChartLogger } from './analyzer.js';
 
 const defaultLogger: ChartLogger = {
@@ -359,16 +360,37 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
       return numeric === undefined ? null : numeric;
     }),
   }));
+  // Combo charts: each series can be a bar/line/area on the left or right axis.
+  const combo = isComboChart(config) && (config.type === 'bar' || config.type === 'line' || config.type === 'area');
+  const seriesOverrides = data.series.map((entry) => {
+    const resolved = resolveSeriesConfig(entry.name || 'Series', config);
+    return combo ? resolved : { chartType: resolved.chartType, axis: 'left' as const };
+  });
+  const leftValues = series.flatMap((entry, idx) => (seriesOverrides[idx].axis === 'left' ? entry.data : []));
+  const rightValues = series.flatMap((entry, idx) => (seriesOverrides[idx].axis === 'right' ? entry.data : []));
   const valueDomain = getNumericDomainFromValues(
-    series.flatMap((entry) => entry.data),
+    leftValues.length > 0 ? leftValues : series.flatMap((entry) => entry.data),
     { mode: config.yAxisBaselineMode ?? 'auto' }
   );
+  const rightValueDomain = rightValues.length > 0
+    ? getNumericDomainFromValues(rightValues, { mode: config.yAxisBaselineMode ?? 'auto' })
+    : undefined;
   const canStack = series.length > 1;
 
   return {
     type: config.type,
     labels,
     series,
+    combo,
+    seriesOverrides,
+    axisTitles: {
+      x: config.showAxisTitles === false ? '' : data.xAxisLabel ?? '',
+      y: config.showAxisTitles === false ? '' : data.yAxisLabel ?? '',
+      y1: config.showAxisTitles === false ? '' : config.rightYAxisLabel ?? '',
+    },
+    leftFormat: { prefix: data.yAxisPrefix ?? '', suffix: data.yAxisSuffix ?? (data.yAxisFormat === 'percentage' ? '%' : '') },
+    rightFormat: { prefix: config.rightYAxisPrefix ?? '', suffix: config.rightYAxisSuffix ?? '' },
+    rightValueDomain,
     colors: palette,
     theme,
     style: {
@@ -382,7 +404,7 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
     showLegend: config.showLegend,
     showPoints: config.showPoints,
     stacked: config.stacked && canStack,
-    barLayout: config.barLayout ?? 'vertical',
+    barLayout: combo ? 'vertical' : (config.barLayout ?? 'vertical'),
     yAxisBaselineMode: config.yAxisBaselineMode ?? 'auto',
     valueDomain,
   };
@@ -522,49 +544,87 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
             },
           };
         } else {
+          const overrides = payload.seriesOverrides as Array<{ chartType: 'bar' | 'line' | 'area'; axis: 'left' | 'right' }>;
+          const combo = Boolean(payload.combo);
           datasets = payload.series.map((series: { name: string; data: Array<number | null> }, idx: number) => {
             const color = getDatasetColor(idx);
+            // In a combo every dataset carries its own type and axis; otherwise they follow the chart.
+            const seriesType = combo ? overrides[idx].chartType : (payload.type as string);
+            const drawsLine = seriesType === 'line' || seriesType === 'area';
+            const isArea = seriesType === 'area';
             return {
               label: series.name,
               data: series.data.map((value) => (typeof value === 'number' ? value : null)),
+              ...(combo ? { type: drawsLine ? 'line' : 'bar', yAxisID: overrides[idx].axis === 'right' ? 'y1' : 'y', order: drawsLine ? 0 : 1 } : {}),
               borderColor: color,
-              backgroundColor:
-                chartType === 'line' && payload.type !== 'area'
-                  ? color
-                  : `${color}${payload.type === 'area' ? '66' : ''}`,
-              fill: payload.type === 'area',
-              tension: chartType === 'line' ? 0.35 : 0,
+              backgroundColor: drawsLine && !isArea ? color : `${color}${isArea ? '66' : ''}`,
+              fill: isArea,
+              tension: drawsLine ? 0.35 : 0,
               ...commonDatasetOptions,
+              ...(drawsLine && combo ? { borderWidth: Math.max(style.strokeWidth, 3) } : {}),
             };
           });
           chartData = { labels, datasets };
           const isHorizontalBar = chartType === 'bar' && payload.barLayout === 'horizontal';
           const valueAxisKey = isHorizontalBar ? 'x' : 'y';
-          const valueAxisDomain = Array.isArray(payload.valueDomain) &&
-            payload.valueDomain.length === 2 &&
-            typeof payload.valueDomain[0] === 'number' &&
-            typeof payload.valueDomain[1] === 'number'
-            ? payload.valueDomain as [number, number]
-            : undefined;
+          const toDomain = (domain: unknown): [number, number] | undefined =>
+            Array.isArray(domain) && domain.length === 2 && typeof domain[0] === 'number' && typeof domain[1] === 'number'
+              ? (domain as [number, number])
+              : undefined;
+          const valueAxisDomain = toDomain(payload.valueDomain);
+          const rightAxisDomain = toDomain(payload.rightValueDomain);
           const valueScaleOptions = chartType === 'bar'
             ? {
                 beginAtZero: payload.yAxisBaselineMode === 'zero',
-                ...(valueAxisDomain ? { min: valueAxisDomain[0], max: valueAxisDomain[1] } : {}),
+                // suggested* lets Chart.js land on round tick values instead of the raw data max.
+                ...(valueAxisDomain ? { suggestedMin: valueAxisDomain[0], suggestedMax: valueAxisDomain[1] } : {}),
               }
             : {};
+          const titles = payload.axisTitles as { x: string; y: string; y1: string };
+          const axisTitle = (text: string) => ({ display: Boolean(text), text, color: theme.textMuted, font: { size: 12 } });
+          const formatTick = (value: number | string, fmt: { prefix: string; suffix: string }) => {
+            const num = typeof value === 'number' ? value : Number(value);
+            if (!Number.isFinite(num)) return String(value);
+            const abs = Math.abs(num);
+            const compact = abs >= 1e9 ? `${(num / 1e9).toFixed(abs >= 1e10 ? 0 : 1)}B`
+              : abs >= 1e6 ? `${(num / 1e6).toFixed(abs >= 1e7 ? 0 : 1)}M`
+              : abs >= 1e4 ? `${(num / 1e3).toFixed(0)}K`
+              : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
+            return `${fmt.prefix}${compact}${fmt.suffix}`;
+          };
+          const leftFormat = payload.leftFormat as { prefix: string; suffix: string };
+          const rightFormat = payload.rightFormat as { prefix: string; suffix: string };
           scales = {
             x: {
               stacked: chartType === 'bar' ? payload.stacked : false,
               ...(valueAxisKey === 'x' ? valueScaleOptions : {}),
               grid: gridOptions,
-              ticks: { color: theme.textMuted, maxRotation: 45, minRotation: 45 },
+              title: axisTitle(isHorizontalBar ? titles.y : titles.x),
+              ticks: valueAxisKey === 'x'
+                ? { color: theme.textMuted, callback: (value: number | string) => formatTick(value, leftFormat) }
+                : { color: theme.textMuted, maxRotation: 45, minRotation: labels.length > 8 ? 45 : 0 },
             },
             y: {
               stacked: chartType === 'bar' ? payload.stacked : false,
               ...(valueAxisKey === 'y' ? valueScaleOptions : {}),
               grid: gridOptions,
-              ticks: { color: theme.textMuted },
+              title: axisTitle(isHorizontalBar ? titles.x : titles.y),
+              ticks: valueAxisKey === 'y'
+                ? { color: theme.textMuted, callback: (value: number | string) => formatTick(value, leftFormat) }
+                : { color: theme.textMuted },
             },
+            ...(combo && overrides.some((o) => o.axis === 'right')
+              ? {
+                  y1: {
+                    position: 'right',
+                    beginAtZero: payload.yAxisBaselineMode === 'zero',
+                    ...(rightAxisDomain ? { suggestedMin: rightAxisDomain[0], suggestedMax: rightAxisDomain[1] } : {}),
+                    grid: { ...gridOptions, drawOnChartArea: false },
+                    title: axisTitle(titles.y1),
+                    ticks: { color: theme.textMuted, callback: (value: number | string) => formatTick(value, rightFormat) },
+                  },
+                }
+              : {}),
           };
         }
 

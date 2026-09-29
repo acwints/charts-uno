@@ -1,10 +1,28 @@
 import type { ChartData, ChartType } from '../types';
 import { API_BASE_URL, apiHeaders } from './apiBase';
 
+import type { SeriesOverride } from '../types';
+
+/** The designer's full decision; applied on top of the extracted data. */
+export interface ChartDesign {
+  seriesConfig?: Record<string, SeriesOverride>;
+  rightYAxisLabel?: string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  yAxisFormat?: 'currency' | 'percentage' | 'number';
+  yAxisPrefix?: string;
+  yAxisSuffix?: string;
+  stacked?: boolean;
+  barLayout?: 'vertical' | 'horizontal';
+  showValues?: boolean;
+  title?: string;
+}
+
 export interface ChartRecommendation {
   type: ChartType;
   reasoning: string;
   summary: string;
+  design?: ChartDesign;
 }
 
 export async function recommendChartType(
@@ -59,5 +77,6 @@ export async function recommendChartType(
     type: resolvedType as ChartType,
     reasoning: result.reasoning || 'AI recommendation based on data analysis.',
     summary: result.summary || 'Summary unavailable for this dataset.',
+    design: result.design && typeof result.design === 'object' ? (result.design as ChartDesign) : undefined,
   };
 }

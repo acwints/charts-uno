@@ -49,8 +49,12 @@ export function getSeriesForAxis(
 
 const COMBO_ELIGIBLE: Set<ChartType> = new Set(['bar', 'line', 'area']);
 
+// A literal "%", an "A / B" ratio, or a percentage-ish word in the series name.
 const PERCENTAGE_NAME_RE =
-  /\b(savings?|percent(age)?|rates?|ratio|share|proportion|margin|efficiency|utilization|growth|change|returns?|yield|decline|drop|loss|reduction|decrease|churn|attrition)\b/i;
+  /%|\S\s*\/\s*\S|\b(savings?|percent(age)?|pct|rates?|ratio|share|proportion|margin|efficiency|utili[sz]ation|growth|change|returns?|yield|decline|drop|loss|reduction|decrease|churn|attrition|penetration|conversion|mix)\b/i;
+
+// A series this many times smaller than the largest one is unreadable on the same axis.
+const SCALE_GAP_FOR_RIGHT_AXIS = 50;
 
 /**
  * Heuristic: detect series that look like percentages or small-scale metrics
@@ -71,20 +75,26 @@ export function suggestComboConfig(
     const max = nums.length > 0 ? Math.max(...nums) : 0;
     const absMax = Math.max(Math.abs(min), Math.abs(max));
     const nameHintsPct = PERCENTAGE_NAME_RE.test(s.name);
-    // Accept percentage-like ranges: 0..100 or -100..0 (e.g. decline %)
-    const rangeIsPctLike = nums.length > 0 && absMax <= 100;
+    // Percentages and ratios: -100..100 usually, up to 1000 for growth multiples
+    const rangeIsPctLike = nums.length > 0 && absMax <= 1000;
     return { name: s.name, min, max, absMax, nameHintsPct, rangeIsPctLike, count: nums.length };
   });
 
-  // Find candidate percentage / small-scale series: name hints + values in -100..100
-  const pctCandidates = stats.filter((s) => s.nameHintsPct && s.rangeIsPctLike && s.count > 0);
+  const largestAbsMax = Math.max(...stats.map((s) => s.absMax));
+  const hasNonPctSeries = stats.some((s) => !s.nameHintsPct);
+
+  // Candidates for the right axis: a percentage/ratio beside a quantity is a
+  // different unit whatever the magnitudes, and any series dwarfed by the
+  // largest one is unreadable on a shared axis.
+  const pctCandidates = stats.filter((s) => {
+    if (s.count === 0 || s.absMax === 0) return false;
+    const dwarfed = largestAbsMax / s.absMax >= SCALE_GAP_FOR_RIGHT_AXIS;
+    const pctLike = s.nameHintsPct && hasNonPctSeries && s.rangeIsPctLike;
+    return dwarfed || pctLike;
+  });
   const otherSeries = stats.filter((s) => !pctCandidates.includes(s));
 
   if (pctCandidates.length === 0 || otherSeries.length === 0) return null;
-
-  // Only suggest if the non-pct series have a meaningfully larger scale
-  const otherAbsMax = Math.max(...otherSeries.map((s) => s.absMax));
-  if (otherAbsMax <= 100) return null; // Scales are similar, no need
 
   const seriesConfig: Record<string, SeriesOverride> = {};
   for (const s of pctCandidates) {

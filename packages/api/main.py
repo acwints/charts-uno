@@ -1,4 +1,5 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 
 # Load environment variables BEFORE other imports
@@ -123,6 +124,7 @@ from services.research_service import get_research_provider_status, probe_resear
 from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset
 
 from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, CALLBACK)
+from services.chart_design import design_chart, apply_design, heuristic_design
 
 # Configure logging
 logging.basicConfig(
@@ -1218,11 +1220,13 @@ async def bot_analyze_and_create_chart(
     }
 
     chart_config = build_bot_chart_config(result)
+    # Think step: look at the whole dataset and decide how it should be drawn.
+    apply_design(chart_data, chart_config, await design_chart(chart_data, payload.user_prompt))
 
     chart = Chart(
         user_id=owner.id,
         team_id=team.id,
-        title=result.get("suggestedTitle") or "AI Chart",
+        title=chart_config.get("title") or "AI Chart",
         description="Generated from X reply by Chartsuno bot",
         data=chart_data,
         config=chart_config,
@@ -1240,12 +1244,16 @@ async def bot_analyze_and_create_chart(
         chart_url=chart_url,
         labels=chart_data["labels"],
         series=chart_data["series"],
-        suggestedTitle=result.get("suggestedTitle"),
-        suggestedType=result.get("suggestedType"),
-        stacked=result.get("stacked"),
-        xAxisLabel=result.get("xAxisLabel"),
-        yAxisLabel=result.get("yAxisLabel"),
-        barLayout=result.get("barLayout"),
+        config=chart_config,
+        suggestedTitle=chart_data.get("suggestedTitle"),
+        suggestedType=chart_data.get("suggestedType"),
+        stacked=chart_config.get("stacked"),
+        xAxisLabel=chart_data.get("xAxisLabel"),
+        yAxisLabel=chart_data.get("yAxisLabel"),
+        yAxisFormat=chart_data.get("yAxisFormat"),
+        yAxisPrefix=chart_data.get("yAxisPrefix"),
+        yAxisSuffix=chart_data.get("yAxisSuffix"),
+        barLayout=chart_config.get("barLayout"),
         aiReasoning=result.get("aiReasoning"),
     )
 
@@ -1292,11 +1300,12 @@ async def bot_prompt_and_create_chart(
     }
 
     chart_config = build_bot_chart_config(result)
+    apply_design(chart_data, chart_config, await design_chart(chart_data, payload.prompt))
 
     chart = Chart(
         user_id=owner.id,
         team_id=team.id,
-        title=result.get("suggestedTitle") or "AI Chart",
+        title=chart_config.get("title") or "AI Chart",
         description="Generated from X text reply by Chartsuno bot",
         data=chart_data,
         config=chart_config,
@@ -1314,14 +1323,18 @@ async def bot_prompt_and_create_chart(
         chart_url=chart_url,
         labels=chart_data["labels"],
         series=chart_data["series"],
+        config=chart_config,
         categoricalColumns=result.get("categoricalColumns"),
         verifiedData=result.get("verifiedData"),
-        suggestedTitle=result.get("suggestedTitle"),
-        suggestedType=result.get("suggestedType"),
-        stacked=result.get("stacked"),
-        xAxisLabel=result.get("xAxisLabel"),
-        yAxisLabel=result.get("yAxisLabel"),
-        barLayout=result.get("barLayout"),
+        suggestedTitle=chart_data.get("suggestedTitle"),
+        suggestedType=chart_data.get("suggestedType"),
+        stacked=chart_config.get("stacked"),
+        xAxisLabel=chart_data.get("xAxisLabel"),
+        yAxisLabel=chart_data.get("yAxisLabel"),
+        yAxisFormat=chart_data.get("yAxisFormat"),
+        yAxisPrefix=chart_data.get("yAxisPrefix"),
+        yAxisSuffix=chart_data.get("yAxisSuffix"),
+        barLayout=chart_config.get("barLayout"),
         aiReasoning=result.get("aiReasoning"),
         sourceLink=result.get("sourceLink"),
         sources=result.get("sources"),
@@ -1358,15 +1371,36 @@ async def recommend_chart_endpoint(
     data: ChartRecommendRequest,
 ):
     """Get AI recommendation for the best chart type."""
-    result = await recommend_chart_type(
-        data=data.data.model_dump(),
-        preferred_type=data.preferred_type,
-        user_prompt=data.user_prompt,
+    chart_dict = data.data.model_dump()
+    result, design = await asyncio.gather(
+        recommend_chart_type(data=chart_dict, preferred_type=data.preferred_type, user_prompt=data.user_prompt),
+        design_chart({**chart_dict, "suggestedType": data.preferred_type or chart_dict.get("suggestedType")}, data.user_prompt),
     )
+    # Materialise the design into config-shaped fields the web builder can spread in.
+    scratch_data, scratch_config = dict(chart_dict), {}
+    apply_design(scratch_data, scratch_config, design)
+    design_payload = {
+        key: value
+        for key, value in {
+            "seriesConfig": scratch_config.get("seriesConfig"),
+            "rightYAxisLabel": scratch_config.get("rightYAxisLabel"),
+            "stacked": scratch_config.get("stacked"),
+            "barLayout": scratch_config.get("barLayout"),
+            "showValues": scratch_config.get("showValues"),
+            "title": scratch_config.get("title"),
+            "xAxisLabel": scratch_data.get("xAxisLabel"),
+            "yAxisLabel": scratch_data.get("yAxisLabel"),
+            "yAxisFormat": scratch_data.get("yAxisFormat"),
+            "yAxisPrefix": scratch_data.get("yAxisPrefix"),
+            "yAxisSuffix": scratch_data.get("yAxisSuffix"),
+        }.items()
+        if value is not None
+    }
     return ChartRecommendResponse(
-        type=result["type"],
-        reasoning=result["reasoning"],
+        type=data.preferred_type or design["type"],
+        reasoning=design.get("reasoning") or result["reasoning"],
         summary=result["summary"],
+        design=design_payload,
     )
 
 
