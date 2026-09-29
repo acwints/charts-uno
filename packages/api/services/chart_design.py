@@ -50,7 +50,7 @@ def _numbers(values: Any) -> List[float]:
 
 
 def _series_names(chart: Dict[str, Any]) -> List[str]:
-    return [str(s.get("name") or "") for s in chart.get("series", []) if isinstance(s, dict)]
+    return [str(s.get("name") or "") for s in (chart.get("series") or []) if isinstance(s, dict)]
 
 
 def heuristic_design(chart: Dict[str, Any]) -> Dict[str, Any]:
@@ -61,7 +61,7 @@ def heuristic_design(chart: Dict[str, Any]) -> Dict[str, Any]:
     or ratio and it sits inside -100..100 while another series does not.
     """
     base = chart.get("suggestedType") if chart.get("suggestedType") in COMBO_BASE_TYPES else "bar"
-    series = [s for s in chart.get("series", []) if isinstance(s, dict)]
+    series = [s for s in (chart.get("series") or []) if isinstance(s, dict)]
     stats = []
     for entry in series:
         nums = _numbers(entry.get("data"))
@@ -132,7 +132,7 @@ def _clean(design: Any, chart: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def _describe(chart: Dict[str, Any], intent: Optional[str]) -> str:
     payload = {
         "intent": intent or None,
-        "labels": chart.get("labels", []),
+        "labels": chart.get("labels") or [],
         "xAxisType": chart.get("xAxisType"),
         "xAxisLabel": chart.get("xAxisLabel"),
         "yAxisLabel": chart.get("yAxisLabel"),
@@ -146,7 +146,7 @@ def _describe(chart: Dict[str, Any], intent: Optional[str]) -> str:
         ],
         "series": [
             {"name": s.get("name"), "data": (s.get("data") or [])[:200]}
-            for s in chart.get("series", []) if isinstance(s, dict)
+            for s in (chart.get("series") or []) if isinstance(s, dict)
         ],
     }
     return json.dumps(payload, ensure_ascii=False)

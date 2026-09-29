@@ -769,9 +769,10 @@ async def recommend_chart_type(
     """Recommend the best chart type for the given data."""
     client = get_client()
 
-    labels = data.get("labels", [])
-    series = data.get("series", [])
-    categorical_columns = data.get("categoricalColumns", [])
+    labels = data.get("labels") or []
+    series = data.get("series") or []
+    # The request model serialises an omitted column list as None, not [].
+    categorical_columns = data.get("categoricalColumns") or []
 
     data_description = {
         "labels": labels,
