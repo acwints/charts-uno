@@ -1,11 +1,27 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import type { User } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
+import { isNativeApp } from '../../services/native';
+import { Button } from '../../components/Button';
 
 interface AccountSettingsProps {
   user: User;
 }
 
+function signInLabel(user: User): string {
+  const labels: Record<string, string> = { google: 'Google', apple: 'Apple' };
+  const providers = user.providers ?? [];
+  if (providers.length === 0) return 'Google';
+  return providers.map((provider) => labels[provider] ?? provider).join(' and ');
+}
+
 export function AccountSettings({ user }: AccountSettingsProps) {
+  const { deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const initials = user.name
     ? user.name
         .split(' ')
@@ -64,7 +80,7 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           </div>
           <div className="settings-field">
             <span className="settings-field__label">Sign-in Method</span>
-            <span className="settings-field__value">Google</span>
+            <span className="settings-field__value">{signInLabel(user)}</span>
           </div>
         </div>
       </div>
@@ -79,6 +95,47 @@ export function AccountSettings({ user }: AccountSettingsProps) {
             Charts you create are private by default unless you choose to make them public.
           </p>
           <Link to="/privacy">Privacy policy</Link> · <Link to="/terms">Terms of use</Link>
+        </div>
+      </div>
+
+      <div className="settings-card settings-card--danger">
+        <div className="settings-card__header">
+          <h3 className="settings-card__title">Delete account</h3>
+        </div>
+        <div className="settings-card__content">
+          <p className="settings-privacy-text">
+            Deletes your profile, charts, likes, and personal team from Chartsuno.
+            A shared team you own is transferred to another member. This does not
+            cancel a plan purchased on chartsuno.com. Payment records may be kept
+            as described in the privacy policy.
+          </p>
+          {deleteError && <p className="settings-delete__error" role="alert">{deleteError}</p>}
+          {confirming ? (
+            <div className="settings-delete__confirm">
+              <p className="settings-privacy-text">Delete {user.email}? This cannot be undone.</p>
+              <div className="settings-delete__actions">
+                <Button variant="danger" disabled={deleting} aria-busy={deleting} onClick={() => {
+                  setDeleting(true);
+                  setDeleteError(null);
+                  void deleteAccount()
+                    .then(() => navigate(isNativeApp() ? '/feed' : '/'))
+                    .catch((error: unknown) => {
+                      setDeleteError(error instanceof Error ? error.message : 'Could not delete your account. Please try again.');
+                      setDeleting(false);
+                    });
+                }}>
+                  {deleting ? 'Deleting…' : 'Delete account'}
+                </Button>
+                <Button variant="ghost" disabled={deleting} onClick={() => setConfirming(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="danger" onClick={() => { setConfirming(true); setDeleteError(null); }}>
+              Delete account
+            </Button>
+          )}
         </div>
       </div>
     </div>

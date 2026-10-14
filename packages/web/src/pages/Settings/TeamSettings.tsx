@@ -407,7 +407,9 @@ export function TeamSettings() {
         <div className="settings-card settings-card--warning">
           <div className="settings-card__content">
             <p className="settings-warning-text">
-              You've reached your seat limit. Upgrade your plan to invite more members.
+              {isNativeApp()
+                ? "You've reached your seat limit."
+                : "You've reached your seat limit. Upgrade your plan to invite more members."}
             </p>
             {!isNativeApp() && (
               <a
@@ -437,10 +439,13 @@ export function TeamSettings() {
                 <Lock size={24} />
               </div>
               <div className="branding-upgrade__content">
-                <h4 className="branding-upgrade__title">Upgrade to customize branding</h4>
+                <h4 className="branding-upgrade__title">
+                  {isNativeApp() ? 'Chartsuno watermark' : 'Upgrade to customize branding'}
+                </h4>
                 <p className="branding-upgrade__text">
-                  Free accounts include an "Chartsuno" watermark on exports.
-                  Upgrade to remove it or add your own logo and brand colors.
+                  {isNativeApp()
+                    ? 'Free accounts include a Chartsuno watermark on exports.'
+                    : 'Free accounts include an "Chartsuno" watermark on exports. Upgrade to remove it or add your own logo and brand colors.'}
                 </p>
                 {!isNativeApp() && (
                   <Link to="/settings/billing">

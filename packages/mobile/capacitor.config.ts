@@ -15,6 +15,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * For local debugging against a dev server, set CAP_SERVER_URL=http://<lan-ip>:5173
  * when running `cap sync`; it is never set in committed config or CI.
+ *
+ * appId is the iOS bundle id. `com.chartsuno.app` is a placeholder that is
+ * already used by the existing TestFlight app. To change it, update this
+ * value, the URL scheme in Info.plist, NativeAuthPlugin's callback scheme,
+ * the web callback check in packages/web/src/services/native.ts, and
+ * APPLE_BUNDLE_ID if you set that env var. See docs/ios-release.md.
  */
 const devServerUrl = process.env.CAP_SERVER_URL;
 

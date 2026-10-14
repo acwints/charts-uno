@@ -67,9 +67,21 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=True)
     picture = Column(Text, nullable=True)
-    google_id = Column(String(255), unique=True, nullable=False, index=True)
+    # At least one of google_id / apple_id is set. Apple-only accounts leave
+    # google_id null. Existing databases are altered in ensure_user_auth_schema.
+    google_id = Column(String(255), unique=True, nullable=True, index=True)
+    apple_id = Column(String(255), unique=True, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def providers(self) -> list[str]:
+        found: list[str] = []
+        if self.google_id:
+            found.append("google")
+        if self.apple_id:
+            found.append("apple")
+        return found
 
     # Relationships
     charts = relationship("Chart", back_populates="user", cascade="all, delete-orphan")
@@ -371,6 +383,39 @@ class DashboardItem(Base):
     )
 
 
+class UserBlock(Base):
+    """A viewer hides another member's public charts from their own feed."""
+    __tablename__ = "user_blocks"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    blocker_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    blocked_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("blocker_id", "blocked_id", name="uq_user_block"),
+    )
+
+
+class ContentReport(Base):
+    """A report of a public chart. Reviewed by the operator, not auto-published."""
+    __tablename__ = "content_reports"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    reporter_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    chart_id = Column(String(36), ForeignKey("charts.id", ondelete="CASCADE"), nullable=True, index=True)
+    reported_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    reason = Column(String(50), nullable=False)
+    details = Column(Text, nullable=True)
+    status = Column(String(20), default="open", nullable=False)  # open, hidden
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("reporter_id", "chart_id", name="uq_content_report_chart"),
+        Index("ix_content_reports_status_created", "status", "created_at"),
+    )
+
+
 class NativeAuthCode(Base):
     __tablename__ = "native_auth_codes"
     code_hash = Column(String(64), primary_key=True)
@@ -414,6 +459,41 @@ def init_db():
         logger.error(f"Alembic migration failed: {e}")
         # Don't crash the app — create_all already set up the base schema
         logger.info("Continuing with create_all schema (some features may be limited)")
+
+    # create_all does not add columns to tables that already exist, and the
+    # Alembic chain is not a reliable path on the production database.
+    ensure_user_auth_schema()
+
+
+def ensure_user_auth_schema() -> None:
+    """Add Sign in with Apple columns on databases created before that field existed.
+
+    create_all does not alter an existing users table. Production is PostgreSQL,
+    where google_id must also become nullable so an Apple-only account can be
+    stored. Fresh SQLite databases are created from the model and already match.
+    """
+    import logging
+    from sqlalchemy import inspect, text
+
+    logger = logging.getLogger(__name__)
+    try:
+        inspector = inspect(engine)
+        if "users" not in inspector.get_table_names():
+            return
+        columns = {column["name"]: column for column in inspector.get_columns("users")}
+        with engine.begin() as conn:
+            if "apple_id" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN apple_id VARCHAR(255)"))
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_apple_id ON users (apple_id)"))
+            if engine.dialect.name == "postgresql":
+                conn.execute(text("ALTER TABLE users ALTER COLUMN google_id DROP NOT NULL"))
+            elif columns.get("google_id", {}).get("nullable") is False:
+                logger.warning(
+                    "users.google_id is still NOT NULL. Apple-only accounts need a "
+                    "new local SQLite file, or the PostgreSQL column change above."
+                )
+    except Exception as exc:
+        logger.error("Could not ensure user auth columns: %s", exc)
 
 
 def get_db():

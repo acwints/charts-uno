@@ -3,6 +3,21 @@ import { Capacitor } from '@capacitor/core';
 const PROD_HOST_PATTERN = /(^|\.)chartsuno\.com$/i;
 const NATIVE_API_ORIGIN = 'https://chartsuno.com';
 
+/** Public site origin. Shared chart links from the iOS app must not use capacitor://localhost. */
+export const PUBLIC_WEB_ORIGIN = 'https://chartsuno.com';
+
+export function chartShareUrl(chartId: string): string {
+  if (Capacitor.isNativePlatform() || typeof window === 'undefined') {
+    return `${PUBLIC_WEB_ORIGIN}/chart/${chartId}`;
+  }
+  return `${window.location.origin}/chart/${chartId}`;
+}
+
+function reportReachability(ok: boolean): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('chartsuno:reachability', { detail: { ok } }));
+}
+
 function resolveApiBaseUrl(): string {
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
 
@@ -69,12 +84,19 @@ export async function fetchApiJson<T>(
   endpoint: string,
   { method = 'GET', body, credentials = 'include' }: FetchApiOptions = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers: apiHeaders({ 'Content-Type': 'application/json' }),
-    credentials,
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method,
+      headers: apiHeaders({ 'Content-Type': 'application/json' }),
+      credentials,
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    reportReachability(false);
+    throw error;
+  }
+  reportReachability(true);
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: `Request failed` }));

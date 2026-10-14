@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { getCurrentUser, setAuthCookie, logout as apiLogout, getAuthUrl } from '../services/api';
-import { isNativeApp, signInNative, restoreNativeSession, clearNativeSession } from '../services/native';
+import { getCurrentUser, setAuthCookie, logout as apiLogout, deleteAccount as apiDeleteAccount, getAuthUrl } from '../services/api';
+import { isNativeApp, signInNative, signInWithApple, restoreNativeSession, clearNativeSession } from '../services/native';
 import { ApiError } from '../services/apiBase';
 import type { User } from '../services/api';
 
@@ -14,7 +14,9 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   isSigningIn: boolean;
   login: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refetch: () => Promise<void>;
   clearError: () => void;
 }
@@ -103,21 +105,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [checkAuth]);
 
-  const login = useCallback(async () => {
+  const finishNativeSignIn = useCallback(async (start: () => Promise<void>) => {
     if (signingIn.current) return;
     authGeneration.current++;
     signingIn.current = true;
     setIsSigningIn(true);
     setState((prev) => ({ ...prev, error: null }));
     try {
-      if (isNativeApp()) {
-        await signInNative();
-        const user = await getCurrentUser();
-        setState({ user, isLoading: false, isAuthenticated: true, error: null });
-        return;
-      }
-      const { auth_url } = await getAuthUrl(window.location.href);
-      window.location.href = auth_url;
+      await start();
+      const user = await getCurrentUser();
+      setState({ user, isLoading: false, isAuthenticated: true, error: null });
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'CANCELLED') return;
       setState((prev) => ({
@@ -131,6 +128,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const login = useCallback(async () => {
+    if (isNativeApp()) {
+      await finishNativeSignIn(signInNative);
+      return;
+    }
+    if (signingIn.current) return;
+    authGeneration.current++;
+    signingIn.current = true;
+    setIsSigningIn(true);
+    setState((prev) => ({ ...prev, error: null }));
+    try {
+      const { auth_url } = await getAuthUrl(window.location.href);
+      window.location.href = auth_url;
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to start authentication',
+      }));
+    } finally {
+      signingIn.current = false;
+      setIsSigningIn(false);
+      setState((previous) => ({ ...previous, isLoading: false }));
+    }
+  }, [finishNativeSignIn]);
+
+  const loginWithApple = useCallback(async () => {
+    if (!isNativeApp()) return;
+    await finishNativeSignIn(signInWithApple);
+  }, [finishNativeSignIn]);
+
   const logout = useCallback(async () => {
     authGeneration.current++;
     try {
@@ -143,6 +170,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    authGeneration.current++;
+    await apiDeleteAccount();
+    await clearNativeSession();
+    authGeneration.current++;
+    setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+  }, []);
+
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
@@ -152,11 +187,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ...state,
       isSigningIn,
       login,
+      loginWithApple,
       logout,
+      deleteAccount,
       refetch: checkAuth,
       clearError,
     }),
-    [state, isSigningIn, login, logout, checkAuth, clearError],
+    [state, isSigningIn, login, loginWithApple, logout, deleteAccount, checkAuth, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,6 +7,7 @@ import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { MiniChartPreview } from '../MiniChartPreview';
+import { ChartSafetyMenu } from './ChartSafetyMenu';
 import './ChartCard.css';
 
 interface ChartCardProps {
@@ -14,9 +15,10 @@ interface ChartCardProps {
   onChartClick?: (chart: ChartResponse) => void;
   onUpdate?: (chart: ChartResponse) => void;
   onAuthRequired?: () => void;
+  onDismiss?: (target: { chartId: string; userId?: string }) => void;
 }
 
-export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: ChartCardProps) {
+export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDismiss }: ChartCardProps) {
   const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
@@ -125,6 +127,7 @@ export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: Cha
           <Eye size={14} />
           <span>{chart.view_count}</span>
         </div>
+        <ChartSafetyMenu chart={chart} onAuthRequired={onAuthRequired} onDismiss={onDismiss} />
       </div>
     </motion.article>
   );
