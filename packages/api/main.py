@@ -29,6 +29,7 @@ from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
     Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
     Dashboard, DashboardItem, SqlConnection, generate_uuid,
+    UserBlock, ContentReport,
 )
 from dependencies import (
     get_current_user,
@@ -124,6 +125,8 @@ from services.research_service import get_research_provider_status, probe_resear
 from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset
 
 from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, CALLBACK)
+from services.apple_auth import upsert_apple_user, verify_apple_identity_token
+from services.account_deletion import delete_user_account
 from services.chart_design import design_chart, apply_design, heuristic_design
 
 # Configure logging
@@ -488,6 +491,29 @@ async def exchange_native_auth(request: Request, response: Response, body: Nativ
     return await set_auth_cookie(request, response, token, db)
 
 
+class AppleSignInRequest(BaseModel):
+    identity_token: str = Field(min_length=20, max_length=8192)
+    full_name: Optional[str] = Field(default=None, max_length=255)
+    # The iOS app keeps the JWT in the Keychain. "cookie" exists so a future
+    # first-party web origin can use the same endpoint without a new route.
+    deliver: Literal["cookie", "token"] = "token"
+
+
+@app.post("/api/auth/apple")
+@limiter.limit("20/minute")
+async def apple_sign_in(request: Request, response: Response, body: AppleSignInRequest, db: Session = Depends(get_db)):
+    """Sign in with the identity token from native Sign in with Apple."""
+    claims = verify_apple_identity_token(body.identity_token.strip())
+    user, is_new = upsert_apple_user(db, claims, body.full_name)
+    if is_new:
+        _create_personal_team(db, user)
+    response.headers["Cache-Control"] = "no-store"
+    token = create_access_token(user.id)
+    if body.deliver == "token":
+        return {"status": "ok", "token": token}
+    return await set_auth_cookie(request, response, token, db)
+
+
 @app.post("/api/auth/logout")
 async def logout(request: Request, response: Response):
     """Clear the authentication cookie"""
@@ -514,6 +540,169 @@ async def get_current_user_info(
 ):
     """Get current authenticated user info"""
     return current_user
+
+
+def _clear_auth_cookie(request: Request, response: Response) -> None:
+    response.delete_cookie(
+        key="auth_token",
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        path="/",
+        domain=get_cookie_domain(request),
+    )
+
+
+@app.delete("/api/user/me")
+@limiter.limit("5/minute")
+async def delete_my_account(
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete the signed-in account and the charts, teams, and sessions it owns.
+
+    A paid plan purchased on the website is not cancelled here. Payment-processor
+    records may be retained as described in the privacy policy.
+    """
+    delete_user_account(db, current_user)
+    _clear_auth_cookie(request, response)
+    response.headers["Cache-Control"] = "no-store"
+    return {"status": "deleted"}
+
+
+REPORT_REASONS = {"spam", "harassment", "inappropriate", "other"}
+
+
+class ChartReportRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=50)
+    details: Optional[str] = Field(default=None, max_length=500)
+
+
+def _viewer_hid_chart(db: Session, viewer_id: str, chart: Chart) -> bool:
+    blocked = db.query(UserBlock.id).filter(
+        UserBlock.blocker_id == viewer_id,
+        UserBlock.blocked_id == chart.user_id,
+    ).first()
+    if blocked:
+        return True
+    return db.query(ContentReport.id).filter(
+        ContentReport.reporter_id == viewer_id,
+        ContentReport.chart_id == chart.id,
+    ).first() is not None
+
+
+@app.post("/api/charts/{chart_id}/report")
+@limiter.limit("20/minute")
+async def report_chart(
+    chart_id: str,
+    request: Request,
+    body: ChartReportRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Report a public chart. The chart leaves this viewer's feed immediately."""
+    _ = request
+    reason = body.reason.strip().lower()
+    if reason not in REPORT_REASONS:
+        raise HTTPException(status_code=400, detail="Choose a report reason.")
+    chart = get_chart_or_404(db, chart_id)
+    if not chart.is_public:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    if chart.user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot report your own chart.")
+    existing = db.query(ContentReport).filter(
+        ContentReport.reporter_id == current_user.id,
+        ContentReport.chart_id == chart.id,
+    ).first()
+    if existing:
+        return {"status": "reported"}
+    report = ContentReport(
+        reporter_id=current_user.id,
+        chart_id=chart.id,
+        reported_user_id=chart.user_id,
+        reason=reason,
+        details=(body.details or "").strip() or None,
+    )
+    db.add(report)
+    db.commit()
+    logger.warning("Content report %s chart=%s reason=%s", report.id, chart.id, reason)
+    return {"status": "reported"}
+
+
+@app.post("/api/users/{user_id}/block")
+@limiter.limit("30/minute")
+async def block_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Hide another member's public charts from the signed-in feed."""
+    _ = request
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot block yourself.")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Account not found")
+    existing = db.query(UserBlock).filter(
+        UserBlock.blocker_id == current_user.id,
+        UserBlock.blocked_id == user_id,
+    ).first()
+    if not existing:
+        db.add(UserBlock(blocker_id=current_user.id, blocked_id=user_id))
+        db.commit()
+    return {"status": "blocked"}
+
+
+@app.get("/api/moderation/reports")
+async def list_content_reports(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Operator inbox for public-chart reports. Requires the bot internal token."""
+    verify_bot_token(request, BOT_INTERNAL_API_TOKEN)
+    rows = (
+        db.query(ContentReport)
+        .filter(ContentReport.status == "open")
+        .order_by(ContentReport.created_at.asc())
+        .limit(200)
+        .all()
+    )
+    return {
+        "reports": [
+            {
+                "id": row.id,
+                "chart_id": row.chart_id,
+                "reported_user_id": row.reported_user_id,
+                "reason": row.reason,
+                "details": row.details,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+            for row in rows
+        ]
+    }
+
+
+@app.post("/api/moderation/reports/{report_id}/hide")
+async def hide_reported_chart(
+    report_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Remove a reported chart from the public feed. Requires the bot internal token."""
+    verify_bot_token(request, BOT_INTERNAL_API_TOKEN)
+    report = db.query(ContentReport).filter(ContentReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if report.chart_id:
+        chart = db.query(Chart).filter(Chart.id == report.chart_id).first()
+        if chart:
+            chart.is_public = False
+    report.status = "hidden"
+    db.commit()
+    return {"status": "hidden"}
 
 
 # ============================================================================
@@ -769,6 +958,21 @@ async def list_public_charts(
     if bot_user_id:
         query = query.filter(Chart.user_id != bot_user_id)
 
+    if current_user:
+        blocked_ids = [
+            row[0] for row in db.query(UserBlock.blocked_id).filter(UserBlock.blocker_id == current_user.id)
+        ]
+        if blocked_ids:
+            query = query.filter(~Chart.user_id.in_(blocked_ids))
+        reported_ids = [
+            row[0] for row in db.query(ContentReport.chart_id).filter(
+                ContentReport.reporter_id == current_user.id,
+                ContentReport.chart_id.isnot(None),
+            )
+        ]
+        if reported_ids:
+            query = query.filter(~Chart.id.in_(reported_ids))
+
     total = query.count()
 
     charts = query.order_by(Chart.created_at.desc()).offset(offset).limit(limit).all()
@@ -802,6 +1006,9 @@ async def get_chart(
 
     if not _can_user_access_chart(db, chart, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
+
+    if current_user and chart.is_public and chart.user_id != current_user.id and _viewer_hid_chart(db, current_user.id, chart):
+        raise HTTPException(status_code=404, detail="Chart not found")
 
     # Increment view count
     chart.view_count += 1

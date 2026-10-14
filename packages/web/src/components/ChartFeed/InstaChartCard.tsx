@@ -1,3 +1,4 @@
+import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -12,6 +13,7 @@ import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/a
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
 import { MiniChartPreview } from '../MiniChartPreview';
+import { ChartSafetyMenu } from './ChartSafetyMenu';
 import './InstaChartCard.css';
 
 interface InstaChartCardProps {
@@ -19,6 +21,7 @@ interface InstaChartCardProps {
   onChartClick?: (chart: ChartResponse) => void;
   onUpdate?: (chart: ChartResponse) => void;
   onAuthRequired?: () => void;
+  onDismiss?: (target: { chartId: string; userId?: string }) => void;
 }
 
 const DOUBLE_TAP_MS = 300;
@@ -40,7 +43,7 @@ function formatRelativeDate(dateString: string): string {
 
 // Full-bleed feed card: tap opens the chart, double-tap likes it,
 // actions row mirrors the like/save/share affordances of a social feed.
-export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }: InstaChartCardProps) {
+export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDismiss }: InstaChartCardProps) {
   const { user } = useAuth();
   const toast = useToast();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
@@ -111,7 +114,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
 
   const handleShare = async () => {
     const title = chart.title || chart.config.title || 'Chart on Chartsuno';
-    const url = `${window.location.origin}/chart/${chart.id}`;
+    const url = chartShareUrl(chart.id);
 
     if (isNativeApp()) {
       try {
@@ -176,6 +179,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired }
           <span className="insta-card__date">{formatRelativeDate(chart.created_at)}</span>
         </div>
         <span className="insta-card__type">{chart.config.type}</span>
+        <ChartSafetyMenu chart={chart} onAuthRequired={onAuthRequired} onDismiss={onDismiss} />
       </header>
 
       <button

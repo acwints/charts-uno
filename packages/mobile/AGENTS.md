@@ -12,9 +12,11 @@
   `CAP_SERVER_URL` locally only.
 - The splash is the launch storyboard (solid `LaunchBackground` + `LaunchMark`)
   and stays up until the web app calls `SplashScreen.hide()` after first paint.
-- The `ios/` directory is generated on a Mac via `pnpm ios:add`; the custom
-  Swift plugins (`NativeAuth`, `NativeExport`, `SecureStore`) are registered in
-  `ChartsunoViewController` and referenced in `project.pbxproj`. Never
-  hand-edit generated Capacitor files that `cap sync` overwrites.
-- See `APP_STORE_SUBMISSION.md` for the submission flow and review-risk
-  notes (Sign in with Apple, account deletion, UGC moderation, billing).
+- The `ios/` project is committed. Custom Swift plugins (`NativeAuth`,
+  `NativeExport`, `SecureStore`) are registered in `ChartsunoViewController`
+  and referenced in `project.pbxproj`. `cap sync` may rewrite
+  `Package.swift` and `capacitor.config.json`; re-check that
+  `PrivacyInfo.xcprivacy`, `App.entitlements`, and the plugin file
+  references are still in the Xcode project afterward.
+- Release steps live in `docs/ios-release.md`. Bundle id placeholder:
+  `com.chartsuno.app`.

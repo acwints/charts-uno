@@ -1,0 +1,110 @@
+.safety-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 150ms, background-color 150ms;
+}
+
+.safety-trigger:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.safety-trigger:focus-visible,
+.safety-sheet__action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.safety-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: oklch(0 0 0 / 0.5);
+  padding: 0;
+}
+
+.safety-sheet {
+  width: min(480px, 100%);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 20px 16px max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.safety-sheet__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.safety-sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.safety-sheet__action {
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+
+.safety-sheet__cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.safety-sheet__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (min-width: 481px) {
+  .safety-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .safety-sheet {
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+}
+
+@media (hover: none) {
+  .safety-trigger:hover {
+    background: transparent;
+    color: var(--text-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .safety-trigger,
+  .safety-sheet__action {
+    transition: none;
+  }
+}

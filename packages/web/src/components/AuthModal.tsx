@@ -13,8 +13,20 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
+function AppleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12.55 8.43c-.02-1.9 1.55-2.81 1.62-2.86-.89-1.3-2.27-1.48-2.76-1.5-1.16-.12-2.28.69-2.87.69-.6 0-1.51-.67-2.49-.65-1.27.02-2.46.75-3.12 1.9-1.34 2.33-.34 5.76.95 7.65.64.93 1.39 1.97 2.38 1.93.96-.04 1.32-.61 2.48-.61 1.15 0 1.48.61 2.49.59 1.03-.02 1.68-.94 2.3-1.87.73-1.07 1.03-2.11 1.05-2.16-.02-.01-2-.77-2.03-3.11zM10.84 2.9c.52-.64.88-1.52.78-2.4-.75.03-1.68.51-2.22 1.14-.48.56-.91 1.47-.8 2.33.85.07 1.71-.43 2.24-1.07z"
+      />
+    </svg>
+  );
+}
+
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { login, error, isSigningIn } = useAuth();
+  const { login, loginWithApple, error, isSigningIn } = useAuth();
+  const native = isNativeApp();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,12 +95,26 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 Sign in to save your charts, like discoveries, and pick up where you left off.
               </p>
               {error && <p className="auth-modal__error" role="alert">{error}</p>}
+              {native && (
+                <button
+                  type="button"
+                  className="auth-modal__apple"
+                  onClick={() => { void loginWithApple(); }}
+                  disabled={isSigningIn}
+                  aria-busy={isSigningIn}
+                >
+                  <AppleMark />
+                  {isSigningIn ? 'Signing in…' : 'Sign in with Apple'}
+                </button>
+              )}
               <Button variant="primary" fullWidth onClick={login} disabled={isSigningIn} aria-busy={isSigningIn}>
                 <LogIn size={16} />
                 {isSigningIn ? 'Signing in…' : 'Continue with Google'}
               </Button>
               <p className="auth-modal__footnote">
-                {isNativeApp() ? 'Your charts stay here while you sign in securely with Google.' : 'Sign in securely with your Google account.'}
+                {native
+                  ? 'Your chart stays on this screen. Apple and Google sign-in open in a secure system sheet and return here.'
+                  : 'Sign in securely with your Google account.'}
               </p>
               <p className="auth-modal__footnote"><Link to="/privacy" onClick={onClose}>Privacy policy</Link> · <Link to="/terms" onClick={onClose}>Terms of use</Link></p>
             </div>

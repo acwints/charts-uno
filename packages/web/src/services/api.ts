@@ -26,6 +26,18 @@ export async function logout(): Promise<void> {
   await apiRequest('/api/auth/logout', { method: 'POST' });
 }
 
+export async function deleteAccount(): Promise<void> {
+  await apiRequest('/api/user/me', { method: 'DELETE' });
+}
+
+export async function reportChart(chartId: string, reason: string): Promise<void> {
+  await apiRequest(`/api/charts/${chartId}/report`, { method: 'POST', body: { reason } });
+}
+
+export async function blockUser(userId: string): Promise<void> {
+  await apiRequest(`/api/users/${userId}/block`, { method: 'POST' });
+}
+
 // User
 export interface User {
   id: string;
@@ -33,6 +45,7 @@ export interface User {
   name: string | null;
   picture: string | null;
   created_at: string;
+  providers?: Array<'google' | 'apple' | string>;
 }
 
 export async function getCurrentUser(): Promise<User> {

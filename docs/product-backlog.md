@@ -48,16 +48,11 @@ TestFlight processing on September 1, 2026.
   compliance metadata, a complete App Store icon, and valid Capacitor privacy
   manifests.
 
-### Required before public App Review
+### Still required from the account holder
 
-- Add Sign in with Apple as an equivalent option to Google sign-in.
-- Move Google OAuth into `SFSafariViewController` and return through a verified
-  app deep link; Google blocks OAuth inside embedded webviews.
-- Add an easy-to-find, self-service account-deletion action in Settings.
-- Complete and verify the App Store privacy questionnaire against the published
-  privacy policy and the production service providers.
-- Smoke-test first-time and returning authentication, chart creation, native
-  sharing, offline recovery, and account deletion on a physical iPhone and iPad.
-- Add a small amount of durable native value if App Review flags the remote-web
-  shell under minimum-functionality guideline 4.2 (push notifications and a
-  pinned-chart widget are the strongest candidates).
+Follow `docs/ios-release.md`. Sign in with Apple, account deletion, in-app
+report/block, and the privacy manifest are in the project. The owner still
+has to enable the Sign in with Apple capability in Xcode, archive from a
+Mac, fill in App Privacy and screenshots, watch the moderation inbox, and
+decide whether guideline 3.1 needs StoreKit. Device checks for Google and
+Apple sign-in are not done in CI.

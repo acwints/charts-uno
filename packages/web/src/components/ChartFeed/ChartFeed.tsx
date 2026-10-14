@@ -141,6 +141,10 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
     fetchCharts(activeTab, true);
   };
 
+  const handleDismiss = ({ chartId, userId }: { chartId: string; userId?: string }) => {
+    setCharts((prev) => prev.filter((chart) => (userId ? chart.user_id !== userId : chart.id !== chartId)));
+  };
+
   const handleChartUpdate = (updatedChart: ChartResponse) => {
     setCharts((prev) =>
       prev.map((chart) =>
@@ -266,6 +270,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
                       onChartClick={onChartSelect}
                       onUpdate={handleChartUpdate}
                       onAuthRequired={onAuthRequired}
+                      onDismiss={handleDismiss}
                     />
                   ) : (
                     <ChartCard
@@ -273,6 +278,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
                       onChartClick={onChartSelect}
                       onUpdate={handleChartUpdate}
                       onAuthRequired={onAuthRequired}
+                      onDismiss={handleDismiss}
                     />
                   )}
                 </motion.div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp } from '../../services/native';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
@@ -53,9 +54,7 @@ export function ShareMenu({
   const pasteShortcut = isMac ? '⌘V' : 'Ctrl+V';
   const isShareDisabled = shareActivity !== null || !isAuthenticated;
 
-  const publicChartUrl = chartId && isPublic
-    ? `${window.location.origin}/chart/${chartId}`
-    : null;
+  const publicChartUrl = chartId && isPublic ? chartShareUrl(chartId) : null;
 
   const getComposeUrl = (platform: SharePlatform) => {
     if (platform === 'linkedin') {

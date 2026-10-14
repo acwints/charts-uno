@@ -1,11 +1,15 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { Share } from '@capacitor/share';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { fetchApiJson, setSessionToken } from './apiBase';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
-const NativeAuth = registerPlugin<{ authenticate(options: { url: string }): Promise<{ url: string }> }>('NativeAuth');
+const NativeAuth = registerPlugin<{
+  authenticate(options: { url: string }): Promise<{ url: string }>;
+  signInWithApple(): Promise<{ identityToken: string; user: string; email?: string; fullName?: string }>;
+}>('NativeAuth');
 const NativeExport = registerPlugin<{ shareFile(options: { base64: string; filename: string }): Promise<{ completed: boolean }> }>('NativeExport');
 // Keychain-backed key/value store; see SecureStorePlugin.swift.
 const SecureStore = registerPlugin<{
@@ -45,6 +49,47 @@ export function hideNativeSplash(): void {
   void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {});
 }
 
+/**
+ * http(s) links leave the bundled origin. Open them in the in-app browser
+ * sheet so the chart the user was editing stays mounted underneath.
+ */
+export function installNativeLinkGuard(): void {
+  if (!isNativeApp() || typeof document === 'undefined') return;
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const anchor = target.closest('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('/')) return;
+    let url: URL;
+    try {
+      url = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+    if (url.origin === window.location.origin) return;
+    const sameSite = url.hostname === 'chartsuno.com' || url.hostname === 'www.chartsuno.com';
+    const inAppPath = /^\/(chart|feed|settings|privacy|terms|dashboard|dashboards|team|invite)(\/|$)/.test(url.pathname);
+    if (sameSite && inAppPath) {
+      event.preventDefault();
+      window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      return;
+    }
+    event.preventDefault();
+    void Browser.open({ url: url.toString() }).catch(() => {});
+  });
+}
+
+function cancelled(error: unknown): boolean {
+  if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'CANCELLED') {
+    return true;
+  }
+  return error instanceof Error && error.message.toLowerCase().includes('cancel');
+}
+
 function base64url(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -81,6 +126,34 @@ export async function signInNative(): Promise<void> {
   }
   // Legacy remote-URL shell: sets the httpOnly session cookie on this webview's first-party origin.
   await fetchApiJson('/api/auth/native/exchange', { method: 'POST', body: { code, verifier } });
+}
+
+/** Sign in with Apple through AuthenticationServices. iOS only. */
+export async function signInWithApple(): Promise<void> {
+  if (!Capacitor.isPluginAvailable('NativeAuth') || !usesTokenSession()) {
+    throw new Error('Please update Chartsuno in TestFlight to sign in inside the app.');
+  }
+  let result: { identityToken: string; fullName?: string };
+  try {
+    result = await NativeAuth.signInWithApple();
+  } catch (error) {
+    if (cancelled(error)) throw Object.assign(new Error('Sign-in cancelled'), { code: 'CANCELLED' });
+    const message = error instanceof Error ? error.message : '';
+    if (message.toLowerCase().includes('not implemented')) {
+      throw new Error('Please update Chartsuno in TestFlight to use Sign in with Apple.');
+    }
+    throw error instanceof Error ? error : new Error('Could not finish sign-in. Please try again.');
+  }
+  const { token } = await fetchApiJson<{ token: string }>('/api/auth/apple', {
+    method: 'POST',
+    body: {
+      identity_token: result.identityToken,
+      full_name: result.fullName,
+      deliver: 'token',
+    },
+  });
+  setSessionToken(token);
+  await SecureStore.set({ key: SESSION_KEY, value: token });
 }
 
 export async function shareNative(title: string, url: string): Promise<void> {

@@ -14,6 +14,8 @@ class UserResponse(UserBase):
     id: str
     created_at: datetime
     last_login: Optional[datetime] = None
+    # "google" and/or "apple". Empty only for accounts created before this field.
+    providers: List[str] = []
 
     class Config:
         from_attributes = True

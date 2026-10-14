@@ -4,7 +4,7 @@ export function PrivacyPage() {
   return (
     <article className="legal">
       <h1>Privacy Policy</h1>
-      <span className="legal-updated">Last updated: March 12, 2026</span>
+      <span className="legal-updated">Last updated: October 14, 2026</span>
 
       <p>
         This Privacy Policy explains how WA LLC ("we", "us", "our") collects,
@@ -14,18 +14,28 @@ export function PrivacyPage() {
       <h2>1. Information We Collect</h2>
 
       <p><strong>Account information.</strong> When you sign in with Google we
-        receive your name, email address, and profile picture. We do not receive
-        or store your Google password.</p>
+        receive your name, email address, and profile picture. When you use
+        Sign in with Apple we receive a stable Apple account id, and the name
+        and email Apple shares (the email may be a private relay address). We
+        do not receive or store your Google or Apple password.</p>
 
       <p><strong>User content.</strong> Charts, data, and configurations you
         create within the Service.</p>
 
-      <p><strong>Usage data.</strong> We automatically collect device type,
-        browser, pages visited, and interaction events to improve the Service.
-        This data is not linked to your identity for analytics purposes.</p>
+      <p><strong>Photos you choose to import.</strong> If you take or choose a
+        photo of a chart, that image is sent to our AI provider to extract
+        data. We do not access your photo library except when you pick a photo.</p>
 
-      <p><strong>Cookies.</strong> We use strictly necessary cookies to maintain
-        your session. We do not use advertising or third-party tracking cookies.</p>
+      <p><strong>Server logs.</strong> The app does not include an advertising
+        or analytics SDK. Hosting providers (Railway and Vercel) keep standard
+        request logs, such as IP address and time, to operate and secure the
+        Service. Those logs are not used to track you across other companies'
+        apps or websites.</p>
+
+      <p><strong>Cookies.</strong> The website uses a strictly necessary cookie
+        to maintain your session. The iOS app stores the session token in the
+        iOS Keychain instead. We do not use advertising or third-party tracking
+        cookies.</p>
 
       <h2>2. How We Use Your Information</h2>
       <ul>
@@ -55,16 +65,18 @@ export function PrivacyPage() {
       <ul>
         <li><strong>With your team.</strong> Charts published to a team are visible to team members.</li>
         <li><strong>Public charts.</strong> Charts you choose to make public are visible to anyone with the link.</li>
-        <li><strong>Service providers.</strong> We use trusted third parties for hosting (Railway, Vercel), payments (Stripe), and email. These providers access data only as needed to perform their services.</li>
+        <li><strong>Service providers.</strong> We use trusted third parties for hosting (Railway, Vercel), payments (Polar), sign-in (Google and Apple), and AI processing (for example Anthropic or OpenAI, when you use those features). These providers access data only as needed to perform their services.</li>
         <li><strong>Legal requirements.</strong> We may disclose information if required by law or to protect our rights and safety.</li>
       </ul>
 
       <h2>5. Data Retention</h2>
       <p>
         We retain your account and content data for as long as your account is
-        active. If you delete your account, we will remove your personal
-        information within 30 days, except where retention is required by law or
-        for legitimate business purposes (e.g., billing records).
+        active. You can delete your account in Settings. Deletion removes your
+        profile and charts from the application database immediately. Host
+        backups age out within 30 days. Billing records held by the payment
+        processor may be retained where required. Deleting the account does not
+        by itself cancel a subscription purchased on the website.
       </p>
 
       <h2>6. Data Security</h2>
@@ -84,7 +96,8 @@ export function PrivacyPage() {
         <li>Withdraw consent for optional processing.</li>
       </ul>
       <p>
-        To exercise these rights, email{' '}
+        You can delete your account in the app under Settings → Account.
+        For other requests, email{' '}
         <a href="mailto:support@chartsuno.com">support@chartsuno.com</a>.
       </p>
 
