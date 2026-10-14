@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * The web app is BUNDLED into the binary (`webDir` = the Vite build output),
  * so the app opens instantly and works offline for everything it already has.
- * API calls go to https://chartsuno.com (see packages/web/src/services/apiBase.ts),
+ * API calls go to https://www.chartsuno.com (see packages/web/src/services/apiBase.ts),
  * and the session is a bearer token kept in the Keychain because the bundled
  * origin (capacitor://localhost) cannot share the site's cookie jar.
  *

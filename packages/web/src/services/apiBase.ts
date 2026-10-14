@@ -1,7 +1,9 @@
 import { Capacitor } from '@capacitor/core';
 
 const PROD_HOST_PATTERN = /(^|\.)chartsuno\.com$/i;
-const NATIVE_API_ORIGIN = 'https://chartsuno.com';
+// chartsuno.com 307-redirects to www, and WKWebView rejects a redirected CORS preflight,
+// so the native app must call the canonical host directly.
+const NATIVE_API_ORIGIN = 'https://www.chartsuno.com';
 
 /** Public site origin. Shared chart links from the iOS app must not use capacitor://localhost. */
 export const PUBLIC_WEB_ORIGIN = 'https://chartsuno.com';
