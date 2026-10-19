@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { isNativeApp } from '../services/native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import LogIn from 'lucide-react/dist/esm/icons/log-in';
 import X from 'lucide-react/dist/esm/icons/x';
 import { useAuth } from '../hooks/useAuth';
+import { getReviewLoginStatus } from '../services/api';
 import { Button } from './Button';
 import './AuthModal.css';
 
@@ -24,8 +25,90 @@ function AppleMark() {
   );
 }
 
+function ReviewerSignIn({
+  isSigningIn,
+  onSubmit,
+}: {
+  isSigningIn: boolean;
+  onSubmit: (email: string, password: string) => void;
+}) {
+  const [enabled, setEnabled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    getReviewLoginStatus()
+      .then((status) => {
+        if (!cancelled) setEnabled(status.enabled === true);
+      })
+      .catch(() => {
+        if (!cancelled) setEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!enabled) return null;
+
+  return (
+    <div className="auth-modal__review">
+      <button
+        type="button"
+        className="auth-modal__review-toggle"
+        aria-expanded={open}
+        aria-controls="auth-modal-review-form"
+        onClick={() => setOpen((current) => !current)}
+      >
+        Reviewer sign-in
+      </button>
+      {open && (
+        <form
+          id="auth-modal-review-form"
+          className="auth-modal__review-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit(email, password);
+          }}
+        >
+          <label className="auth-modal__review-label">
+            Email
+            <input
+              type="email"
+              name="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </label>
+          <label className="auth-modal__review-label">
+            Password
+            <input
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              spellCheck={false}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </label>
+          <button type="submit" className="auth-modal__review-submit" disabled={isSigningIn || !email.trim() || !password}>
+            {isSigningIn ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { login, loginWithApple, error, isSigningIn } = useAuth();
+  const { login, loginWithApple, loginWithReview, error, isSigningIn } = useAuth();
   const native = isNativeApp();
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +199,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   ? 'Your chart stays on this screen. Apple and Google sign-in open in a secure system sheet and return here.'
                   : 'Sign in securely with your Google account.'}
               </p>
+              {native && (
+                <ReviewerSignIn
+                  isSigningIn={isSigningIn}
+                  onSubmit={(email, password) => { void loginWithReview(email, password); }}
+                />
+              )}
               <p className="auth-modal__footnote"><Link to="/privacy" onClick={onClose}>Privacy policy</Link> · <Link to="/terms" onClick={onClose}>Terms of use</Link></p>
             </div>
           </motion.div>

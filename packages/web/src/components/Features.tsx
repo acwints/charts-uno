@@ -32,7 +32,7 @@ const FEATURES = [
   {
     icon: Download,
     title: '6 Data Sources',
-    description: 'CSV, paste, Google Sheets, stock tickers, public datasets, or just describe what you want.',
+    description: 'CSV, paste, images, stock tickers, public datasets, or a database.',
   },
   {
     icon: Users,

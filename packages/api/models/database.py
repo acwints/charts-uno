@@ -60,6 +60,11 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
+# Not a Google subject. The App Review demo account uses this stable id so
+# it can be recreated after deletion without colliding with a real sign-in.
+REVIEW_LOGIN_GOOGLE_ID = "review-login"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -77,7 +82,9 @@ class User(Base):
     @property
     def providers(self) -> list[str]:
         found: list[str] = []
-        if self.google_id:
+        if self.google_id == REVIEW_LOGIN_GOOGLE_ID:
+            found.append("review")
+        elif self.google_id:
             found.append("google")
         if self.apple_id:
             found.append("apple")

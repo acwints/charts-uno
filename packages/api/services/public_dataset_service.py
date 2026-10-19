@@ -206,7 +206,19 @@ LIMIT {limit}
 }
 
 
-def get_public_datasets() -> List[Dict[str, Any]]:
+def is_imdb_public_dataset(dataset_id: str) -> bool:
+    """IMDb BigQuery tables are kept for the website and hidden in the iOS app."""
+    dataset = PUBLIC_DATASETS.get(dataset_id)
+    if dataset is None:
+        return dataset_id.startswith("imdb_")
+    tables = dataset.get("tables") or []
+    return dataset_id.startswith("imdb_") or any(".imdb." in table for table in tables)
+
+
+def get_public_datasets(include_imdb: bool = True) -> List[Dict[str, Any]]:
+    datasets = PUBLIC_DATASETS.values()
+    if not include_imdb:
+        datasets = [dataset for dataset in datasets if not is_imdb_public_dataset(dataset["id"])]
     return [
         {
             "id": dataset["id"],
@@ -216,7 +228,7 @@ def get_public_datasets() -> List[Dict[str, Any]]:
             "examplePrompts": dataset["examplePrompts"],
             "raceShaped": bool(dataset.get("raceShaped")),
         }
-        for dataset in PUBLIC_DATASETS.values()
+        for dataset in datasets
     ]
 
 
