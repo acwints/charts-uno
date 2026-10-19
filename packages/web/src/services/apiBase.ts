@@ -64,7 +64,12 @@ export function getSessionToken(): string | null {
 
 /** Headers every API request should carry. Spread into fetch() options. */
 export function apiHeaders(extra: Record<string, string> = {}): Record<string, string> {
-  return sessionToken ? { ...extra, Authorization: `Bearer ${sessionToken}` } : extra;
+  const headers: Record<string, string> = { ...extra };
+  if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
+  // Lets the API hide App Store licensing risks (IMDb public datasets)
+  // without changing the website. The website never sends this header.
+  if (Capacitor.isNativePlatform()) headers['X-Chartsuno-Client'] = 'ios';
+  return headers;
 }
 
 interface FetchApiOptions {

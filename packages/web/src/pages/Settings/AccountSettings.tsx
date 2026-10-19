@@ -10,7 +10,7 @@ interface AccountSettingsProps {
 }
 
 function signInLabel(user: User): string {
-  const labels: Record<string, string> = { google: 'Google', apple: 'Apple' };
+  const labels: Record<string, string> = { google: 'Google', apple: 'Apple', review: 'Reviewer' };
   const providers = user.providers ?? [];
   if (providers.length === 0) return 'Google';
   return providers.map((provider) => labels[provider] ?? provider).join(' and ');

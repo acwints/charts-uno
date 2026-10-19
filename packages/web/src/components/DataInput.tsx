@@ -4,7 +4,6 @@ import Papa from 'papaparse';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Image from 'lucide-react/dist/esm/icons/image';
-import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
@@ -23,6 +22,7 @@ import { analyzeImage } from '../services/imageAnalysis';
 import { generateChartFromPrompt } from '../services/promptGenerate';
 import { searchTickers, fetchStockData, fetchStockInsights, type TickerResult } from '../services/stockService';
 import { getPublicDatasets, generateChartFromPublicDataset, type PublicDatasetOption } from '../services/publicDatasets';
+import { isNativeApp } from '../services/native';
 
 // For an ordinary chart, top_n is a row count. For a race it is the size of
 // the field — contenders, chosen by popularity — and the whole point is a
@@ -45,7 +45,7 @@ import { SqlDataInput } from './SqlDataInput';
 import { Button } from './Button';
 import './DataInput.css';
 
-type InputMode = 'upload' | 'paste' | 'image' | 'sheets' | 'stocks' | 'datasets' | 'sql';
+type InputMode = 'upload' | 'paste' | 'image' | 'stocks' | 'datasets' | 'sql';
 
 const STOCK_RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD'] as const;
 
@@ -58,7 +58,6 @@ const INPUT_MODES = [
   { id: 'upload' as const, icon: FileSpreadsheet, label: 'Upload CSV' },
   { id: 'paste' as const, icon: Clipboard, label: 'Paste/Describe Data' },
   { id: 'image' as const, icon: Image, label: 'Upload Image' },
-  { id: 'sheets' as const, icon: Link2, label: 'Google Sheets' },
   { id: 'stocks' as const, icon: TrendingUp, label: 'Stocks' },
   { id: 'datasets' as const, icon: DatabaseIcon, label: 'Public Datasets' },
   { id: 'sql' as const, icon: ServerIcon, label: 'Database', authRequired: true },
@@ -113,7 +112,6 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const { isAuthenticated } = useAuth();
   const [mode, setMode] = useState<InputMode>('paste');
   const [pasteContent, setPasteContent] = useState('');
-  const [sheetsUrl, setSheetsUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [isPromptPanelOpen, setIsPromptPanelOpen] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
@@ -533,39 +531,20 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     }
   }, [pasteContent, userPrompt, looksLikeTabularData, parseCSVData, onSubmit]);
 
-  const handleSheetsSubmit = useCallback(() => {
-    setError(null);
-    if (!sheetsUrl.trim()) {
-      setError('Please enter a Google Sheets URL.');
-      return;
-    }
-
-    // Simulate sheets fetch
-    setTimeout(() => {
-      const demoData: ChartData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        series: [
-          { name: 'Users', data: [1200, 1900, 3000, 5000, 4200, 6100] },
-          { name: 'Sessions', data: [2400, 3800, 6500, 9800, 8200, 11500] },
-        ],
-        sourceType: 'sheets',
-        userPrompt: userPrompt.trim() || undefined,
-      };
-      onSubmit(demoData);
-    }, 1200);
-  }, [sheetsUrl, onSubmit, userPrompt]);
-
   useEffect(() => {
     if (mode !== 'datasets' || publicDatasets.length > 0 || isLoadingDatasets) return;
     setIsLoadingDatasets(true);
     getPublicDatasets()
       .then((datasets) => {
-        setPublicDatasets(datasets);
-        if (datasets.length > 0) {
-          setSelectedDatasetId(datasets[0].id);
-          setDatasetTopN(topNBoundsFor(datasets[0]).initial);
-          if (!datasetPrompt.trim() && datasets[0].examplePrompts?.[0]) {
-            setDatasetPrompt(datasets[0].examplePrompts[0]);
+        const visible = isNativeApp()
+          ? datasets.filter((dataset) => !dataset.id.startsWith('imdb_') && !dataset.tables.some((table) => table.includes('.imdb.')))
+          : datasets;
+        setPublicDatasets(visible);
+        if (visible.length > 0) {
+          setSelectedDatasetId(visible[0].id);
+          setDatasetTopN(topNBoundsFor(visible[0]).initial);
+          if (!datasetPrompt.trim() && visible[0].examplePrompts?.[0]) {
+            setDatasetPrompt(visible[0].examplePrompts[0]);
           }
         }
       })
@@ -757,46 +736,6 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
                 >
                   <Sparkles size={18} />
                   <span>Generate Chart</span>
-                  <ArrowRight size={18} />
-                </Button>
-              )}
-            </div>
-          )}
-
-          {mode === 'sheets' && (
-            <div className="sheets-input">
-              {isProcessing && (
-                <div className="input-processing-overlay" aria-busy="true" aria-live="polite">
-                  <AIProcessingIndicator
-                    size="sm"
-                    label="Importing & generating..."
-                    statusMessages={['Fetching spreadsheet...', 'Parsing data...', 'Selecting chart type...', 'Almost ready...']}
-                  />
-                </div>
-              )}
-              <div className="sheets-input-top">
-                <div className="sheets-url-wrapper">
-                  <Link2 size={20} className="sheets-url-icon" />
-                  <input
-                    type="url"
-                    className="sheets-url-input"
-                    placeholder="Paste your Google Sheets URL"
-                    value={sheetsUrl}
-                    onChange={(e) => setSheetsUrl(e.target.value)}
-                  />
-                </div>
-                <p className="sheets-hint">
-                  Make sure your sheet is publicly accessible or shared with view permissions.
-                </p>
-              </div>
-              {!isProcessing && (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleSheetsSubmit}
-                  disabled={!sheetsUrl.trim()}
-                >
-                  <span>Import & Generate</span>
                   <ArrowRight size={18} />
                 </Button>
               )}

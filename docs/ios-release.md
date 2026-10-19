@@ -6,7 +6,8 @@ environment cannot sign or upload the binary.
 
 The iOS app is the existing React app bundled into a Capacitor shell
 (`packages/mobile`). It is not a second UI. API calls go to
-`https://chartsuno.com`, which is the same Vercel proxy the website uses.
+`https://www.chartsuno.com`, the canonical host (`chartsuno.com` redirects
+there). That host is the same Vercel proxy the website uses.
 The website, Vercel, and Railway deploys stay as they are.
 
 ## Bundle id
@@ -96,9 +97,8 @@ Swift Package Manager, not CocoaPods.
    - Version (`MARKETING_VERSION`): `1.0` until you ship a user-visible
      version bump.
    - Build (`CURRENT_PROJECT_VERSION`): must increase on every upload.
-     The project is set to `2026.10.14`. If that build was already
-     uploaded, set a new three-part number such as `2026.10.15`. Apple
-     rejects a reused build number.
+     The project is set to `2026.10.19`. Apple rejects a reused build
+     number. `2026.10.15` was already uploaded.
 5. Select a generic **Any iOS Device (arm64)** destination. Not a simulator.
 6. **Product → Archive**. Wait for the Organizer window.
 7. **Distribute App → App Store Connect → Upload**.
@@ -126,7 +126,7 @@ Export compliance is already answered in Info.plist
 | Age rating | Complete the questionnaire. The public feed has user-generated charts and report/block controls. Do not guess a rating. |
 | Price | Free. There is no in-app purchase in this binary. |
 | Encryption | Exempt. Already set in Info.plist. |
-| Sign-in information | See review notes below. There is no shared password. |
+| Sign-in information | See review notes. Set `REVIEW_LOGIN_EMAIL` and `REVIEW_LOGIN_PASSWORD` on Railway, then paste those values into the notes. Unset both after approval. |
 
 ### Screenshots
 
@@ -171,15 +171,22 @@ Paste this into App Review Information and edit the contact line:
 
 ```text
 Chartsuno is a chart builder. The iOS app bundles the same product as
-https://chartsuno.com and adds native sign-in, share sheet export, and
+https://www.chartsuno.com and adds native sign-in, share sheet export, and
 Keychain session storage.
 
-No demo password exists. Please sign in with Sign in with Apple (offered
-next to Google on the sign-in sheet). Google sign-in opens Apple's
-authentication sheet and returns to the same screen. The feed, including
-Report and Block, works without an account. Saving a chart requires sign-in.
+A demo account is enabled for this review. On the sign-in sheet, tap
+Reviewer sign-in and enter:
 
-Account deletion is in Settings → Account → Delete account.
+Email: PASTE REVIEW_LOGIN_EMAIL
+Password: PASTE REVIEW_LOGIN_PASSWORD
+
+That account can create and save charts. Settings → Account → Delete
+account works for it, and also for an Apple or Google account. Sign in
+with Apple and Continue with Google are on the same sheet. Google opens
+Apple's authentication sheet and returns to the same screen.
+
+The feed, including Report and Block, works without an account. Saving
+a chart requires sign-in.
 
 There are no in-app purchases. Plans are managed on the website and this
 build does not link to checkout. A plan already bought on the website is
@@ -189,11 +196,35 @@ Public charts can be reported from the ••• menu on a feed card. Reports
 are hidden for that user immediately. We review the moderation inbox
 within 24 hours (see the operator note in the repo's docs/ios-release.md).
 
+A screen recording from a physical iPhone is attached, showing Reviewer
+sign-in, creating and saving a chart, and Settings → Account → Delete
+account.
+
 Contact: support@chartsuno.com
 ```
 
-Sign in with Apple and a real Google account both need a pass on a
-physical iPhone before you submit. This repo cannot complete that check.
+Do not commit the password. Paste the Railway values over the `PASTE`
+lines in App Store Connect only. The Reviewer sign-in control is absent
+unless both `REVIEW_LOGIN_EMAIL` and `REVIEW_LOGIN_PASSWORD` are set on
+the Railway API. Unset them after approval and the control disappears
+the next time the sign-in sheet opens. No new binary is required to turn
+it off.
+
+Use an email that is not already a Chartsuno account. The first successful
+sign-in creates one demo user and a free personal team (10 charts a
+month), so the reviewer can save charts. Deleting that user is allowed.
+The next successful sign-in, while the variables are still set, creates
+the user and team again.
+
+Guideline 2.1 asked for a recording from a physical device because this
+app has a limited review history. Record it on an iPhone, not the
+simulator, and attach it in the Resolution Center reply. This repo cannot
+record it. Sign in with Apple and a real Google account still need a
+pass on that phone before you submit.
+
+Deploy this API to Railway before reviewers open the build. The sheet
+calls `GET /api/auth/review/status` and shows the form only when the
+response is `{ "enabled": true }`.
 
 ## Operator notes you still have to do
 
@@ -224,9 +255,9 @@ These need your Apple account, Railway access, or a product decision.
    tier only. That choice is yours. Do not add a "subscribe on the web"
    button to get around it.
 4. **Deploy the API before the app.** Sign in with Apple, account
-   deletion, and report/block call new Railway routes. The website deploy
-   can ship on its own schedule. Existing Google sign-in and cookie
-   sessions on chartsuno.com are unchanged. The native origin
+   deletion, report/block, and reviewer sign-in call Railway routes. The
+   website deploy can ship on its own schedule. Existing Google sign-in and
+   cookie sessions on chartsuno.com are unchanged. The native origin
    `capacitor://localhost` is already allowed by CORS, and the app sends
    `Authorization: Bearer` rather than a cookie.
 5. **Startup schema change.** On boot the API adds `users.apple_id` and,
@@ -234,18 +265,26 @@ These need your Apple account, Railway access, or a product decision.
    logs show a healthy startup after that deploy. An old local SQLite file
    with `google_id NOT NULL` will not accept Apple-only accounts; delete
    that file or use Postgres.
-6. **Device pass before public review.** Fresh install, Sign in with
-   Apple, Google sign-in from a half-finished chart, force-quit and
-   reopen while signed in, delete account, report a feed chart, export
-   PNG, deny camera access, airplane mode. The September 2026 audit's
-   device matrix is in `docs/native-mobile-audit-2026-09-06.md`.
+6. **Device pass before public review.** Fresh install, Reviewer sign-in,
+   Sign in with Apple, Google sign-in from a half-finished chart,
+   force-quit and reopen while signed in, delete account, report a feed
+   chart, export PNG, deny camera access, airplane mode. The September
+   2026 audit's device matrix is in
+   `docs/native-mobile-audit-2026-09-06.md`.
+7. **Reviewer sign-in.** On Railway, set both `REVIEW_LOGIN_EMAIL` and
+   `REVIEW_LOGIN_PASSWORD` before you resubmit, then unset both when the
+   review is finished. The password is not stored. Login is rate-limited
+   and the comparison does not return early on a wrong email. Pick a long
+   random password and an email you do not use for Google or Apple
+   sign-in. If that email already belongs to an account, sign-in is
+   refused rather than entering that account.
 
 ## How the native app talks to Railway
 
 | | Website | iOS app |
 | --- | --- | --- |
 | Origin | `https://chartsuno.com` | `capacitor://localhost` |
-| API base | same origin (`/api`, `/auth` rewritten by Vercel) | `https://chartsuno.com` |
+| API base | same origin (`/api`, `/auth` rewritten by Vercel) | `https://www.chartsuno.com` |
 | Session | HttpOnly cookie | Bearer JWT in the Keychain |
 | CORS | first-party, no preflight against itself | API allows `capacitor://localhost` and `ionic://localhost` with credentials and `Authorization` |
 

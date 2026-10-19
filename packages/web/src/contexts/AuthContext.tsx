@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getCurrentUser, setAuthCookie, logout as apiLogout, deleteAccount as apiDeleteAccount, getAuthUrl } from '../services/api';
-import { isNativeApp, signInNative, signInWithApple, restoreNativeSession, clearNativeSession } from '../services/native';
+import { isNativeApp, signInNative, signInWithApple, signInWithReview, restoreNativeSession, clearNativeSession } from '../services/native';
 import { ApiError } from '../services/apiBase';
 import type { User } from '../services/api';
 
@@ -15,6 +15,7 @@ interface AuthContextValue extends AuthState {
   isSigningIn: boolean;
   login: () => Promise<void>;
   loginWithApple: () => Promise<void>;
+  loginWithReview: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   refetch: () => Promise<void>;
@@ -158,6 +159,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await finishNativeSignIn(signInWithApple);
   }, [finishNativeSignIn]);
 
+  const loginWithReview = useCallback(async (email: string, password: string) => {
+    if (!isNativeApp()) return;
+    await finishNativeSignIn(() => signInWithReview(email, password));
+  }, [finishNativeSignIn]);
+
   const logout = useCallback(async () => {
     authGeneration.current++;
     try {
@@ -188,12 +194,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isSigningIn,
       login,
       loginWithApple,
+      loginWithReview,
       logout,
       deleteAccount,
       refetch: checkAuth,
       clearError,
     }),
-    [state, isSigningIn, login, loginWithApple, logout, deleteAccount, checkAuth, clearError],
+    [state, isSigningIn, login, loginWithApple, loginWithReview, logout, deleteAccount, checkAuth, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

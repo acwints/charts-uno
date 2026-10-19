@@ -156,6 +156,19 @@ export async function signInWithApple(): Promise<void> {
   await SecureStore.set({ key: SESSION_KEY, value: token });
 }
 
+/** Email and password for the App Review demo account. iOS only. */
+export async function signInWithReview(email: string, password: string): Promise<void> {
+  if (!usesTokenSession()) {
+    throw new Error('Reviewer sign-in is only available in the iOS app.');
+  }
+  const { token } = await fetchApiJson<{ token: string }>('/api/auth/review/login', {
+    method: 'POST',
+    body: { email, password, deliver: 'token' },
+  });
+  setSessionToken(token);
+  await SecureStore.set({ key: SESSION_KEY, value: token });
+}
+
 export async function shareNative(title: string, url: string): Promise<void> {
   await Share.share({ title, url, dialogTitle: 'Share chart' });
 }

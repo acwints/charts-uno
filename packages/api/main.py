@@ -122,7 +122,8 @@ from services.branding_service import materialize_browser_safe_logo_url
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
 from services.polar_service import polar_service, PolarServiceError, PLAN_CONFIG
 from services.research_service import get_research_provider_status, probe_research_providers
-from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset
+from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset, is_imdb_public_dataset
+from services.review_login import credentials_match, ensure_review_user, review_login_enabled
 
 from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, CALLBACK)
 from services.apple_auth import upsert_apple_user, verify_apple_identity_token
@@ -190,6 +191,16 @@ for origin in PROD_ORIGINS:
 # The iOS app serves the bundled web app from its own origin and authenticates
 # with a bearer token (see /api/auth/native/exchange), so it needs CORS access.
 NATIVE_ORIGINS = ["capacitor://localhost", "ionic://localhost"]
+
+
+def _is_ios_app_request(request: Request) -> bool:
+    """True for the Capacitor shell. The website does not send this header."""
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if origin in NATIVE_ORIGINS:
+        return True
+    return (request.headers.get("x-chartsuno-client") or "").strip().lower() == "ios"
+
+
 for origin in NATIVE_ORIGINS:
     if origin not in allowed_origins:
         allowed_origins.append(origin)
@@ -508,6 +519,54 @@ async def apple_sign_in(request: Request, response: Response, body: AppleSignInR
     if is_new:
         _create_personal_team(db, user)
     response.headers["Cache-Control"] = "no-store"
+    token = create_access_token(user.id)
+    if body.deliver == "token":
+        return {"status": "ok", "token": token}
+    return await set_auth_cookie(request, response, token, db)
+
+
+class ReviewLoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=1, max_length=256)
+    deliver: Literal["cookie", "token"] = "token"
+
+
+@app.get("/api/auth/review/status")
+@limiter.limit("30/minute")
+async def review_login_status(request: Request, response: Response):
+    """Whether the iOS sign-in sheet should offer reviewer sign-in.
+
+    Enabled only when REVIEW_LOGIN_EMAIL and REVIEW_LOGIN_PASSWORD are both
+    set. The response never includes those values.
+    """
+    _ = request
+    response.headers["Cache-Control"] = "no-store"
+    return {"enabled": review_login_enabled()}
+
+
+@app.post("/api/auth/review/login")
+@limiter.limit("5/minute")
+async def review_login(
+    request: Request,
+    response: Response,
+    body: ReviewLoginRequest,
+    db: Session = Depends(get_db),
+):
+    """Sign in to the single App Review demo account.
+
+    404 while the env vars are unset, so the route is not advertised. A
+    wrong email or password is 401. Deleting the demo user is allowed; this
+    route creates the user and a personal team again on the next success.
+    """
+    response.headers["Cache-Control"] = "no-store"
+    matched = credentials_match(body.email, body.password)
+    if not review_login_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    if not matched:
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
+    user, needs_team = ensure_review_user(db)
+    if needs_team:
+        _create_personal_team(db, user)
     token = create_access_token(user.id)
     if body.deliver == "token":
         return {"status": "ok", "token": token}
@@ -1734,7 +1793,10 @@ async def stock_insights_endpoint(
 @app.get("/api/datasets/public", response_model=PublicDatasetsResponse)
 @limiter.limit("30/minute")
 async def public_datasets_endpoint(request: Request):
-    return PublicDatasetsResponse(datasets=get_public_datasets())
+    # IMDb BigQuery sets stay on the website. The iOS app hides them.
+    return PublicDatasetsResponse(
+        datasets=get_public_datasets(include_imdb=not _is_ios_app_request(request))
+    )
 
 
 @app.post("/api/datasets/public/generate", response_model=ImageAnalysisResponse)
@@ -1743,6 +1805,8 @@ async def public_dataset_generate_endpoint(
     request: Request,
     data: PublicDatasetGenerateRequest,
 ):
+    if _is_ios_app_request(request) and is_imdb_public_dataset(data.dataset_id):
+        raise HTTPException(status_code=404, detail="This dataset is not available in the iOS app.")
     try:
         result = await generate_chart_from_public_dataset(
             dataset_id=data.dataset_id,

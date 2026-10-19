@@ -30,6 +30,11 @@ export async function deleteAccount(): Promise<void> {
   await apiRequest('/api/user/me', { method: 'DELETE' });
 }
 
+/** Reviewer sign-in is offered only when the API has the demo env vars set. */
+export async function getReviewLoginStatus(): Promise<{ enabled: boolean }> {
+  return apiRequest('/api/auth/review/status');
+}
+
 export async function reportChart(chartId: string, reason: string): Promise<void> {
   await apiRequest(`/api/charts/${chartId}/report`, { method: 'POST', body: { reason } });
 }
