@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -10,7 +11,6 @@ const NativeAuth = registerPlugin<{
   authenticate(options: { url: string }): Promise<{ url: string }>;
   signInWithApple(): Promise<{ identityToken: string; user: string; email?: string; fullName?: string }>;
 }>('NativeAuth');
-const NativeExport = registerPlugin<{ shareFile(options: { base64: string; filename: string }): Promise<{ completed: boolean }> }>('NativeExport');
 // Keychain-backed key/value store; see SecureStorePlugin.swift.
 const SecureStore = registerPlugin<{
   get(options: { key: string }): Promise<{ value: string | null }>;
@@ -170,20 +170,72 @@ export async function signInWithReview(email: string, password: string): Promise
 }
 
 export async function shareNative(title: string, url: string): Promise<void> {
-  await Share.share({ title, url, dialogTitle: 'Share chart' });
+  try {
+    await Share.share({ title, url, dialogTitle: 'Share chart' });
+  } catch (error) {
+    if (isShareCancelled(error)) return;
+    throw error;
+  }
 }
 
-export async function shareNativeFile(blob: Blob, filename: string, extension: 'png' | 'csv'): Promise<void> {
-  if (!Capacitor.isPluginAvailable('NativeExport')) throw new Error('Please update Chartsuno in TestFlight to export files.');
-  if (blob.size > 25_000_000) throw new Error('This chart is too large to share. Try a smaller chart.');
-  const base64 = await new Promise<string>((resolve, reject) => {
+function isShareCancelled(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : '';
+  return message.toLowerCase().includes('cancel');
+}
+
+function safeShareName(filename: string): string {
+  return filename.replace(/[^A-Za-z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'chart';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Could not prepare chart file.'));
-    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onload = () => {
+      const encoded = String(reader.result ?? '').split(',')[1];
+      if (!encoded) reject(new Error('Could not prepare chart file.'));
+      else resolve(encoded);
+    };
     reader.readAsDataURL(blob);
   });
-  const safeName = filename.replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 90) || 'chart';
-  await NativeExport.shareFile({ base64, filename: `${safeName}.${extension}` });
+}
+
+/**
+ * Write the chart file into the app cache, then open the system share sheet.
+ * iOS uses the Capacitor Filesystem and Share plugins (UIActivityViewController).
+ * Dismissing the sheet is a normal end to the flow and does not throw.
+ */
+export async function shareNativeFile(blob: Blob, filename: string, extension: 'png' | 'csv'): Promise<void> {
+  if (!Capacitor.isPluginAvailable('Filesystem') || !Capacitor.isPluginAvailable('Share')) {
+    throw new Error('Please update Chartsuno in TestFlight to export files.');
+  }
+  if (blob.size > 25_000_000) throw new Error('This chart is too large to share. Try a smaller chart.');
+  const path = `${safeShareName(filename)}-${Date.now()}.${extension}`;
+  let wrote = false;
+  try {
+    const written = await Filesystem.writeFile({
+      path,
+      data: await blobToBase64(blob),
+      directory: Directory.Cache,
+    });
+    wrote = true;
+    const uri = written.uri || (await Filesystem.getUri({ directory: Directory.Cache, path })).uri;
+    await Share.share({
+      title: safeShareName(filename),
+      files: [uri],
+      dialogTitle: 'Share chart',
+    });
+  } catch (error) {
+    if (isShareCancelled(error)) return;
+    const message = error instanceof Error ? error.message : '';
+    if (message.toLowerCase().includes('sharing is in progress')) {
+      throw new Error('Close the current sheet and try again.');
+    }
+    console.error('Native share failed', error);
+    throw new Error('Could not share this chart. Please try again.');
+  } finally {
+    if (wrote) await Filesystem.deleteFile({ directory: Directory.Cache, path }).catch(() => {});
+  }
 }
 
 export function selectionHaptic(): void {

@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import html2canvas from 'html2canvas';
+import { domToCanvas } from 'modern-screenshot';
 import type { ChartData } from '../types';
 import { isNativeApp, shareNativeFile } from './native';
 
@@ -171,20 +171,21 @@ async function renderElementToCanvas(
 
   captureTarget.classList.add('is-exporting');
   try {
-    // Use null to preserve the chart card's rendered background colors.
-    return await html2canvas(captureTarget, {
+    // The browser paints the clone (including oklch theme colors). html2canvas
+    // parses CSS itself and throws on those colors, which surfaced as a red
+    // toast the moment a chart image was saved or shared.
+    return await domToCanvas(captureTarget, {
       backgroundColor: null,
       scale: EXPORT_SCALE,
-      logging: false,
-      useCORS: true,
       width: captureWidth,
       height: captureHeight,
-      onclone: (_clonedDoc, clonedElement) => {
-        // Keep export output clean while preserving original chart styling.
-        const cloneTarget = clonedElement as HTMLElement;
-        applyExportCloneCleanup(cloneTarget, profile);
+      onCloneNode: (cloned) => {
+        if (cloned instanceof HTMLElement) applyExportCloneCleanup(cloned, profile);
       },
     });
+  } catch (error) {
+    console.error('Chart image capture failed', error);
+    throw new Error('Could not create the chart image. Please try again.');
   } finally {
     captureTarget.classList.remove('is-exporting');
   }

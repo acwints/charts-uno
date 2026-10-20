@@ -7,7 +7,7 @@ import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 
 // The feed is the first screen; everything that drags in Recharts, CodeMirror,
-// html2canvas or the map data loads on demand so the first paint stays small.
+// chart capture or the map data loads on demand so the first paint stays small.
 const ChartBuilder = lazy(() => import('./pages/ChartBuilder').then((m) => ({ default: m.ChartBuilder })));
 const ChartView = lazy(() => import('./pages/ChartView').then((m) => ({ default: m.ChartView })));
 const EmbedView = lazy(() => import('./pages/EmbedView').then((m) => ({ default: m.EmbedView })));
