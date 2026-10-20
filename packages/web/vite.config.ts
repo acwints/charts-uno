@@ -11,7 +11,7 @@ export default defineConfig({
         manualChunks: {
           charts: ['recharts'],
           editor: ['@uiw/react-codemirror', '@codemirror/lang-sql'],
-          capture: ['html2canvas'],
+          capture: ['modern-screenshot'],
           maps: ['react-simple-maps', 'topojson-client'],
           ai: ['openai', '@google/generative-ai'],
         },

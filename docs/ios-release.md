@@ -97,8 +97,8 @@ Swift Package Manager, not CocoaPods.
    - Version (`MARKETING_VERSION`): `1.0` until you ship a user-visible
      version bump.
    - Build (`CURRENT_PROJECT_VERSION`): must increase on every upload.
-     The project is set to `2026.10.20`. Apple rejects a reused build
-     number. `2026.10.15` was already uploaded.
+     The project is set to `2026.10.21`. Apple rejects a reused build
+     number. `2026.10.20` was already uploaded.
 5. Select a generic **Any iOS Device (arm64)** destination. Not a simulator.
 6. **Product → Archive**. Wait for the Organizer window.
 7. **Distribute App → App Store Connect → Upload**.

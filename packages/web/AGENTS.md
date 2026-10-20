@@ -14,7 +14,7 @@ pnpm check:harness # Run from repo root to enforce CSS/agent guardrails
 
 ## Stack
 
-Recharts, Zustand (chartStore), motion/react, lucide-react, html2canvas, papaparse.
+Recharts, Zustand (chartStore), motion/react, lucide-react, modern-screenshot, papaparse.
 
 ## Color System
 
