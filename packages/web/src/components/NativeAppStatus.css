@@ -1,7 +1,13 @@
+.native-app {
+  /* The native tab is taller than the phone web bar. Clearance is this
+     height plus the home indicator. */
+  --tabbar-height: 60px;
+}
+
 .native-app .app {
   height: 100dvh;
   min-height: 0;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: var(--tabbar-clearance);
 }
 
 .native-app .header {
@@ -25,11 +31,51 @@
 }
 
 .native-app .mtabbar__tab {
-  min-height: 60px;
+  min-height: var(--tabbar-height);
+}
+
+/* The shell is a fixed 100dvh. Settings scrolls inside that box, so the
+   app's padding never comes after the account buttons. Keep the scroll
+   inside the area above the tab bar, and pad the end of each long page
+   by the tab bar plus the home indicator. */
+.native-app .main {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.native-app .settings-page {
+  min-height: 0;
+  flex: 1;
+}
+
+.native-app .settings-page__content {
+  overflow: visible;
+  padding-bottom: calc(32px + var(--tabbar-clearance));
+}
+
+.native-app .legal,
+.native-app .chart-feed__content,
+.native-app .dashboard-page,
+.native-app .dblist-page,
+.native-app .dbview-page,
+.native-app .dbedit-page,
+.native-app .input-view,
+.native-app .chart-view,
+.native-app .invite-accept,
+.native-app .not-found {
+  padding-bottom: calc(var(--space-6) + var(--tabbar-clearance));
+}
+
+.native-app .export-dropdown,
+.native-app .publish-dropdown,
+.native-app .invite-modal,
+.native-app .safety-sheet,
+.native-app .acm-modal {
+  padding-bottom: var(--tabbar-clearance);
 }
 
 .native-app .auth-modal {
-  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  padding-bottom: var(--tabbar-clearance);
   max-height: 90dvh;
 }
 
