@@ -78,6 +78,7 @@ interface BasePostResult {
   postId: string;
   url?: string;
   postedAt: string;
+  publicationStatus?: 'published' | 'accepted' | 'scheduled' | 'draft' | 'dry-run';
 }
 
 interface CarouselPostResult extends BasePostResult {
@@ -135,7 +136,16 @@ export interface DailyReport {
 
 // ─── State ─────────────────────────────────────────────────────────
 
+export interface PublicationOperation {
+  status: 'in-progress' | 'needs-reconciliation' | 'completed';
+  startedAt: string;
+  result?: PostResult;
+  remoteIds: string[];
+  error?: string;
+}
+
 export interface MarketingState {
+  publications: Record<string, PublicationOperation>;
   decks: CarouselDeck[];
   videos: VideoProject[];
   posts: PostResult[];

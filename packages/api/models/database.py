@@ -434,8 +434,8 @@ class NativeAuthCode(Base):
 def init_db():
     """Initialize database tables via Alembic migrations.
 
-    Falls back to create_all() for fresh databases (e.g. local SQLite dev),
-    then stamps the alembic version so future migrations are tracked.
+    Bootstrap missing tables from metadata, then apply the idempotent legacy
+    migration chain. Any failed migration prevents application readiness.
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -461,11 +461,11 @@ def init_db():
             command.upgrade(alembic_cfg, "head")
             logger.info("Alembic migrations applied successfully")
         else:
-            logger.warning("alembic.ini not found, skipping migrations")
+            raise RuntimeError("alembic.ini not found; cannot verify database schema")
     except Exception as e:
         logger.error(f"Alembic migration failed: {e}")
-        # Don't crash the app — create_all already set up the base schema
-        logger.info("Continuing with create_all schema (some features may be limited)")
+        # A healthy process with a partially migrated schema is not ready.
+        raise
 
     # create_all does not add columns to tables that already exist, and the
     # Alembic chain is not a reliable path on the production database.
@@ -501,6 +501,7 @@ def ensure_user_auth_schema() -> None:
                 )
     except Exception as exc:
         logger.error("Could not ensure user auth columns: %s", exc)
+        raise
 
 
 def get_db():

@@ -45,7 +45,7 @@ export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps)
   const scrollTo = (index: number) => {
     const track = trackRef.current;
     if (!track) return;
-    track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
+    track.scrollTo({ left: index * track.clientWidth, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
   const isLastSlide = activeIndex === SLIDES.length - 1;
@@ -53,7 +53,7 @@ export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps)
   return (
     <div className="onboard" role="dialog" aria-label="Welcome to Chartsuno">
       <header className="onboard__top">
-        <span className="onboard__brand">Chartsuno</span>
+        <span className="onboard__brand"><img src="/favicon.svg" width="32" height="32" alt="" />Chartsuno</span>
         <button type="button" className="onboard__skip" onClick={onExplore}>
           Skip
         </button>

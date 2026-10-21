@@ -84,7 +84,12 @@ export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDis
 
       <div className="chart-card__content">
         <h3 className="chart-card__title">
-          {chart.title || chart.config.title || 'Untitled Chart'}
+          <button type="button" className="chart-card__title-button" onClick={(event) => {
+            event.stopPropagation();
+            onChartClick?.(chart);
+          }}>
+            {chart.title || chart.config.title || 'Untitled Chart'}
+          </button>
         </h3>
 
         {chart.description && (

@@ -1,0 +1,51 @@
+# Revyl Test Definition
+
+_meta:
+    remote_id: 8ea73ada-bbfe-4885-ae73-5952cfc8a822
+    remote_version: 2
+    local_version: 2
+    last_synced_at: "2026-10-20T17:54:00-07:00"
+    checksum: ae696d36a2959371cad177137104fcbf8406f4e0f90555e1bdfc466be92c72f1
+test:
+    metadata:
+        name: chartsuno-native-remediation
+        platform: ios
+    build:
+        name: Chartsuno
+    variables:
+        review_email: ""
+        review_password: ""
+    blocks:
+        - type: instructions
+          step_description: If the welcome onboarding is visible, use Skip to enter the Chart Feed.
+        - type: validation
+          step_description: The Chart Feed is visible and contains the chart titled Quarterly revenue — test fixture. The app header shows the Chartsuno logo and the bottom Feed, Create, and Sign In tabs are reachable.
+        - type: instructions
+          step_description: Open the Quarterly revenue — test fixture chart from the feed.
+        - type: validation
+          step_description: The native app displays the Quarterly revenue chart with Q1, Q2, Q3, Q4 and Revenue data. Chart controls fit on the phone without covering the bottom navigation.
+        - type: instructions
+          step_description: Open Sign In, expand Reviewer sign-in, and sign in using {{review_email}} and {{review_password}}.
+        - type: validation
+          step_description: Sign-in finishes inside Chartsuno and the bottom navigation offers Account rather than Sign In.
+        - type: instructions
+          step_description: |-
+            Open Create from the bottom navigation. Choose Paste/Describe Data and paste the following CSV, then press Generate Chart: Quarter,Revenue
+            Q1,20
+            Q2,35
+            Q3,28
+            Q4,49.
+        - type: validation
+          step_description: The chart workbench shows a four-quarter Revenue chart with Q1, Q2, Q3, and Q4 and values 20, 35, 28, 49. The keyboard does not cover the active chart controls.
+        - type: instructions
+          step_description: Save the new chart using Save Chart. Do not publish it to a feed or team.
+        - type: validation
+          step_description: Saving succeeds without an error, and the workbench offers Update Chart for the saved chart.
+        - type: instructions
+          step_description: Download the chart as a PNG image to open the native iOS share sheet. Do not send it to anyone.
+        - type: validation
+          step_description: A native iOS file share sheet is visible for the generated chart image, with actions such as Copy, Save Image, or Save to Files.
+        - type: instructions
+          step_description: Dismiss the share sheet and open Account from the bottom navigation.
+        - type: validation
+          step_description: The Account settings screen shows the test account and its controls remain above the bottom tab bar.

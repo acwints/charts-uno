@@ -1,4 +1,7 @@
 import math
+import re
+import xml.etree.ElementTree as ET
+from defusedxml.ElementTree import fromstring
 from html import escape
 from typing import Any, Dict, List, Sequence
 
@@ -9,7 +12,44 @@ def extract_svg(content: str) -> str:
     end = content.rfind("</svg>")
     if start < 0 or end < start:
         raise ValueError("Invalid SVG response")
-    return content[start:end + len("</svg>")].strip()
+    return sanitize_svg(content[start:end + len("</svg>")].strip())
+
+
+def sanitize_svg(svg: str) -> str:
+    """Keep self-contained SVG drawing primitives; never HTML, CSS or active content."""
+    if len(svg) > 2_000_000:
+        raise ValueError("SVG response is too large")
+    try:
+        root = fromstring(svg, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+    except Exception as error:
+        raise ValueError("Invalid SVG response") from error
+    namespace = 'http://www.w3.org/2000/svg'
+    allowed = set(('svg g defs title desc rect circle ellipse line polyline polygon path text tspan '
+                   'textPath linearGradient radialGradient stop clipPath mask pattern use symbol '
+                   'filter feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix '
+                   'feDiffuseLighting feDisplacementMap feDistantLight feDropShadow feFlood feFuncA '
+                   'feFuncB feFuncG feFuncR feGaussianBlur feMerge feMergeNode feMorphology feOffset '
+                   'fePointLight feSpecularLighting feSpotLight feTile feTurbulence').split())
+    def name(tag):
+        if tag.startswith('{'):
+            ns, local = tag[1:].split('}', 1)
+            return local if ns == namespace else ''
+        return tag
+    if name(root.tag) != 'svg':
+        raise ValueError("Invalid SVG response")
+    for parent in root.iter():
+        for child in list(parent):
+            if name(child.tag) not in allowed:
+                parent.remove(child)
+        for key, value in list(parent.attrib.items()):
+            local = key.rsplit('}', 1)[-1].lower()
+            if local.startswith('on') or local == 'style' \
+                or (local == 'href' and not re.fullmatch(r'#[\w-]+', value.strip())) \
+                or (re.search(r'url\s*\(', value, re.I)
+                    and not re.fullmatch(r'url\(\s*[\"\']?#[\w-]+[\"\']?\s*\)', value.strip(), re.I)):
+                del parent.attrib[key]
+    ET.register_namespace('', namespace)
+    return ET.tostring(root, encoding='unicode')
 
 
 def _format_value(value: Any) -> str:

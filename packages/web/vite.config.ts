@@ -13,7 +13,6 @@ export default defineConfig({
           editor: ['@uiw/react-codemirror', '@codemirror/lang-sql'],
           capture: ['modern-screenshot'],
           maps: ['react-simple-maps', 'topojson-client'],
-          ai: ['openai', '@google/generative-ai'],
         },
       },
     },

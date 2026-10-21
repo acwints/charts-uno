@@ -1,4 +1,5 @@
 import puppeteer, { Browser } from 'puppeteer';
+import type { Chart as ChartJs } from 'chart.js';
 import { accessSync, constants } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -403,6 +404,8 @@ function getChartPayload({ data, config }: ChartPreviewServerProps) {
     showGrid: config.showGrid,
     showLegend: config.showLegend,
     showPoints: config.showPoints,
+    showValues: config.showValues,
+    showAxisLabels: config.showAxisLabels !== false,
     stacked: config.stacked && canStack,
     barLayout: combo ? 'vertical' : (config.barLayout ?? 'vertical'),
     yAxisBaselineMode: config.yAxisBaselineMode ?? 'auto',
@@ -498,7 +501,7 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
 
         if (chartType === 'pie') {
           const firstSeries = payload.series[0];
-          const pieData = (firstSeries?.data || []).map((value: number | null) => value ?? 0);
+          const pieData = firstSeries?.data || [];
           datasets = [
             {
               label: firstSeries?.name || 'Series',
@@ -540,6 +543,8 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
             },
             y: {
               grid: gridOptions,
+              beginAtZero: payload.yAxisBaselineMode === 'zero',
+              ...(payload.valueDomain ? { suggestedMin: payload.valueDomain[0], suggestedMax: payload.valueDomain[1] } : {}),
               ticks: { color: theme.textMuted },
             },
           };
@@ -573,13 +578,11 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
               : undefined;
           const valueAxisDomain = toDomain(payload.valueDomain);
           const rightAxisDomain = toDomain(payload.rightValueDomain);
-          const valueScaleOptions = chartType === 'bar'
-            ? {
+          const valueScaleOptions = {
                 beginAtZero: payload.yAxisBaselineMode === 'zero',
                 // suggested* lets Chart.js land on round tick values instead of the raw data max.
                 ...(valueAxisDomain ? { suggestedMin: valueAxisDomain[0], suggestedMax: valueAxisDomain[1] } : {}),
-              }
-            : {};
+              };
           const titles = payload.axisTitles as { x: string; y: string; y1: string };
           const axisTitle = (text: string) => ({ display: Boolean(text), text, color: theme.textMuted, font: { size: 12 } });
           const formatTick = (value: number | string, fmt: { prefix: string; suffix: string }) => {
@@ -628,9 +631,52 @@ export async function renderChartToPng(data: ChartData, config: ChartConfig): Pr
           };
         }
 
+        if (chartType === 'radar') {
+          scales = { r: {
+            beginAtZero: payload.yAxisBaselineMode === 'zero',
+            grid: gridOptions,
+            angleLines: { display: payload.showGrid, color: theme.grid },
+            pointLabels: { display: payload.showAxisLabels, color: theme.textMuted },
+            ticks: { color: theme.textMuted },
+          } };
+        }
+        for (const scale of Object.values(scales) as Array<{ ticks?: Record<string, unknown> }>) {
+          scale.ticks = { ...scale.ticks, display: payload.showAxisLabels };
+        }
+        const valueLabels = {
+          id: 'chartsuno-value-labels',
+          afterDatasetsDraw(chart: ChartJs) {
+            const context = chart.ctx;
+            context.save();
+            context.fillStyle = theme.textMuted;
+            context.font = '11px sans-serif';
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+              if (!chart.isDatasetVisible(datasetIndex)) return;
+              const total = dataset.data.reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
+              chart.getDatasetMeta(datasetIndex).data.forEach((point, index) => {
+                const raw = dataset.data[index];
+                const numeric = typeof raw === 'number' ? raw
+                  : raw && typeof raw === 'object' && 'y' in raw ? raw.y : null;
+                if (typeof numeric !== 'number' || !Number.isFinite(numeric)) return;
+                const position = point.tooltipPosition(true);
+                if (typeof position.x !== 'number' || typeof position.y !== 'number' || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return;
+                const format = 'yAxisID' in dataset && dataset.yAxisID === 'y1' ? payload.rightFormat : payload.leftFormat;
+                const text = chartType === 'pie'
+                  ? `${labels[index] ?? ''} (${total ? (numeric / total * 100).toFixed(0) : '0'}%)`
+                  : `${format.prefix}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(numeric)}${format.suffix}`;
+                const horizontal = chartType === 'bar' && payload.barLayout === 'horizontal';
+                context.textAlign = horizontal ? (numeric < 0 ? 'right' : 'left') : 'center';
+                context.textBaseline = horizontal ? 'middle' : 'bottom';
+                context.fillText(text, position.x + (horizontal ? (numeric < 0 ? -6 : 6) : 0), position.y - (horizontal || chartType === 'pie' ? 0 : 6));
+              });
+            });
+            context.restore();
+          },
+        };
         new win.Chart(ctx, {
           type: chartType,
           data: chartData,
+          plugins: payload.showValues ? [valueLabels] : [],
           options: {
             animation: false,
             responsive: false,

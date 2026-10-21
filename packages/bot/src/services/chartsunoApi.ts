@@ -74,8 +74,9 @@ function toChartData(parsed: AnalyzeAndCreateResponse, sourceType: ChartData['so
     series: parsed.series.map((series) => ({
       name: series.name,
       data: series.data.map((value) => {
+        if (value === null) return null;
         const numeric = typeof value === 'number' ? value : Number(value);
-        return Number.isFinite(numeric) ? numeric : 0;
+        return Number.isFinite(numeric) ? numeric : null;
       }),
     })),
     sourceType,

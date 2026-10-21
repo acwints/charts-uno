@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { MotionConfig } from 'motion/react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ChartFeedPage } from './pages/ChartFeedPage';
@@ -32,10 +33,10 @@ import './App.css';
 import { isNativeApp } from './services/native';
 
 function AppWithTeam() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
-    <TeamProvider isAuthenticated={isAuthenticated}>
+    <TeamProvider key={user?.id ?? "anonymous"} isAuthenticated={isAuthenticated}>
       <Suspense fallback={<RouteFallback />}>
       <Routes>
         {/* Embed route (no layout chrome) */}
@@ -123,6 +124,7 @@ function HomeRoute() {
 function App() {
   return (
     <ErrorBoundary>
+      <MotionConfig reducedMotion="user">
       <AuthProvider>
         <ThemeProvider>
           <ToastProvider>
@@ -134,6 +136,7 @@ function App() {
           </ToastProvider>
         </ThemeProvider>
       </AuthProvider>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

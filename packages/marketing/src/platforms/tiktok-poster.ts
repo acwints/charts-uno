@@ -1,3 +1,4 @@
+import { publishOnce } from '../publication.js';
 import { readFile } from 'node:fs/promises';
 import { marketingConfig, logger } from '../config.js';
 import type { CarouselDeck, PostResult } from '../types.js';
@@ -14,7 +15,7 @@ interface UploadPostResponse {
  * Post a carousel deck to TikTok via the Upload-Post API.
  * Sends all slide images as a photo slideshow.
  */
-export async function postToTikTok(
+async function submitToTikTok(
   deck: CarouselDeck,
   caption: string,
   options: { dryRun?: boolean } = {},
@@ -29,6 +30,7 @@ export async function postToTikTok(
     return {
       platform: 'tiktok',
       postId: 'dry-run',
+      publicationStatus: 'dry-run',
       postedAt: new Date().toISOString(),
       contentId: deck.id,
       format: 'carousel',
@@ -77,12 +79,14 @@ export async function postToTikTok(
     throw new Error(`Upload-Post error: ${result.error}`);
   }
 
-  const requestId = result.request_id ?? 'unknown';
+  const requestId = result.request_id;
+  if (!requestId) throw new Error('Upload accepted without request ID; manual reconciliation required');
   logger.info({ requestId }, 'TikTok post submitted successfully');
 
   return {
     platform: 'tiktok',
     postId: requestId,
+    publicationStatus: 'accepted',
     postedAt: new Date().toISOString(),
     contentId: deck.id,
     format: 'carousel',
@@ -96,7 +100,7 @@ export async function postToTikTok(
  * Options:
  * - scheduledDate: ISO-8601 date to schedule the post (e.g. 1 hour from now)
  */
-export async function postVideoToTikTok(
+async function submitVideoToTikTok(
   video: VideoProject,
   caption: string,
   options: { dryRun?: boolean; scheduledDate?: string; draft?: boolean } = {},
@@ -112,6 +116,7 @@ export async function postVideoToTikTok(
     return {
       platform: 'tiktok',
       postId: 'dry-run',
+      publicationStatus: 'dry-run',
       postedAt: new Date().toISOString(),
       contentId: video.id,
       format: 'video',
@@ -172,12 +177,14 @@ export async function postVideoToTikTok(
     throw new Error(`Upload-Post video error: ${result.error}`);
   }
 
-  const requestId = result.request_id ?? 'unknown';
+  const requestId = result.request_id;
+  if (!requestId) throw new Error('Upload accepted without request ID; manual reconciliation required');
   logger.info({ requestId }, 'TikTok video post submitted successfully');
 
   return {
     platform: 'tiktok',
     postId: requestId,
+    publicationStatus: options.draft ? 'draft' : options.scheduledDate ? 'scheduled' : 'accepted',
     postedAt: new Date().toISOString(),
     contentId: video.id,
     format: 'video',
@@ -202,4 +209,14 @@ export async function checkTikTokUploadStatus(requestId: string): Promise<Upload
   }
 
   return (await response.json()) as UploadPostResponse;
+}
+
+export async function postToTikTok(deck: CarouselDeck, caption: string, options: { dryRun?: boolean } = {}): Promise<PostResult> {
+  return publishOnce({ platform: 'tiktok', format: 'carousel', contentId: deck.id }, options,
+    () => submitToTikTok(deck, caption, options));
+}
+
+export async function postVideoToTikTok(video: VideoProject, caption: string, options: { dryRun?: boolean; scheduledDate?: string; draft?: boolean } = {}): Promise<PostResult> {
+  return publishOnce({ platform: 'tiktok', format: 'video', contentId: video.id }, options,
+    () => submitVideoToTikTok(video, caption, options));
 }

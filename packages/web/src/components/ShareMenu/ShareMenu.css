@@ -86,6 +86,13 @@
   color: var(--success-text);
 }
 
+@media (max-width: 768px) {
+  .share-action.button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 @media (max-width: 640px) {
   .share-action-prefix {
     display: none;

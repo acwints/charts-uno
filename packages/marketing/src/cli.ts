@@ -280,16 +280,6 @@ async function cmdPostX(): Promise<void> {
     console.log(`\nPosting video ${video.id} to X...${dryRun ? ' (dry run)' : ''}`);
     const result = await postVideoToX(video, caption, { dryRun });
 
-    await updateMarketingState((s) => ({
-      ...s,
-      posts: [...s.posts, result],
-      videos: s.videos.map((v) =>
-        v.id === video.id
-          ? { ...v, status: v.status === 'posted-tiktok' ? 'posted-both' : 'posted-x' }
-          : v,
-      ),
-    }));
-
     console.log(`Posted video to X: ${result.url}`);
     return;
   }
@@ -304,22 +294,10 @@ async function cmdPostX(): Promise<void> {
   console.log(`\nPosting deck ${deck.id} to X...${dryRun ? ' (dry run)' : ''}`);
   const result = await postToX(deck, caption, { dryRun });
 
-  // Update state
-  await updateMarketingState((s) => ({
-    ...s,
-    posts: [...s.posts, result],
-    decks: s.decks.map((d) =>
-      d.id === deck.id
-        ? { ...d, status: d.status === 'posted-tiktok' ? 'posted-both' : 'posted-x' }
-        : d,
-    ),
-  }));
-
   console.log(`Posted to X: ${result.url}`);
 }
 
 async function cmdPostTikTok(): Promise<void> {
-  validateMarketingConfig({ requireTikTok: true });
   const dryRun = hasFlag('dry-run');
   const draft = hasFlag('draft');
 
@@ -338,17 +316,7 @@ async function cmdPostTikTok(): Promise<void> {
     console.log(`\nPosting video ${video.id} to TikTok...${dryRun ? ' (dry run)' : ''}${draftLabel}${scheduleLabel}`);
     const result = await postVideoToTikTok(video, caption, { dryRun, scheduledDate, draft });
 
-    await updateMarketingState((s) => ({
-      ...s,
-      posts: [...s.posts, result],
-      videos: s.videos.map((v) =>
-        v.id === video.id
-          ? { ...v, status: v.status === 'posted-x' ? 'posted-both' : 'posted-tiktok' }
-          : v,
-      ),
-    }));
-
-    console.log(`Posted video to TikTok (request_id: ${result.postId})`);
+    console.log(`TikTok ${result.publicationStatus ?? 'legacy submission'} (request_id: ${result.postId})`);
     return;
   }
 
@@ -362,17 +330,7 @@ async function cmdPostTikTok(): Promise<void> {
   console.log(`\nPosting deck ${deck.id} to TikTok...${dryRun ? ' (dry run)' : ''}`);
   const result = await postToTikTok(deck, caption, { dryRun });
 
-  await updateMarketingState((s) => ({
-    ...s,
-    posts: [...s.posts, result],
-    decks: s.decks.map((d) =>
-      d.id === deck.id
-        ? { ...d, status: d.status === 'posted-x' ? 'posted-both' : 'posted-tiktok' }
-        : d,
-    ),
-  }));
-
-  console.log(`Posted to TikTok (request_id: ${result.postId})`);
+  console.log(`TikTok ${result.publicationStatus ?? 'legacy submission'} (request_id: ${result.postId})`);
 }
 
 async function cmdPostAll(): Promise<void> {

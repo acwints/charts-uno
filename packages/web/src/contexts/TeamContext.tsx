@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react';
 import {
@@ -47,6 +48,9 @@ interface TeamProviderProps {
 }
 
 export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
+  const teamsGeneration = useRef(0);
+  const usageGeneration = useRef(0);
+  useEffect(() => () => { teamsGeneration.current++; usageGeneration.current++; }, []);
   const [teams, setTeams] = useState<Team[]>([]);
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
@@ -54,7 +58,10 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTeams = useCallback(async () => {
+    const generation = ++teamsGeneration.current;
     if (!isAuthenticated) {
+      usageGeneration.current++;
+      setIsLoading(false);
       setTeams([]);
       setCurrentTeam(null);
       setUsage(null);
@@ -66,6 +73,7 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
 
     try {
       const response = await getTeams();
+      if (generation !== teamsGeneration.current) return;
       setTeams(response.teams);
 
       // Restore last selected team or use personal team
@@ -77,17 +85,19 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
         teamToSelect = response.teams.find((t) => t.is_personal) || response.teams[0];
       }
 
-      if (teamToSelect) {
-        setCurrentTeam(teamToSelect);
-      }
+      usageGeneration.current++;
+      setUsage(null);
+      setCurrentTeam(teamToSelect ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load teams');
+      if (generation === teamsGeneration.current) setError(err instanceof Error ? err.message : 'Failed to load teams');
     } finally {
-      setIsLoading(false);
+      if (generation === teamsGeneration.current) setIsLoading(false);
     }
   }, [isAuthenticated]);
 
   const fetchUsage = useCallback(async () => {
+    const generation = ++usageGeneration.current;
+    setUsage(null);
     if (!currentTeam) {
       setUsage(null);
       return;
@@ -95,7 +105,7 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
 
     try {
       const usageData = await getUsage(currentTeam.id);
-      setUsage(usageData);
+      if (generation === usageGeneration.current) setUsage(usageData);
     } catch (err) {
       console.error('Failed to fetch usage:', err);
     }
@@ -104,6 +114,8 @@ export function TeamProvider({ children, isAuthenticated }: TeamProviderProps) {
   const switchTeam = useCallback((teamId: string) => {
     const team = teams.find((t) => t.id === teamId);
     if (team) {
+      usageGeneration.current++;
+      setUsage(null);
       setCurrentTeam(team);
       localStorage.setItem(CURRENT_TEAM_KEY, teamId);
     }

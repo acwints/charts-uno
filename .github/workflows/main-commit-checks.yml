@@ -1,6 +1,7 @@
 name: Main Commit Checks
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -12,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,8 +45,35 @@ jobs:
       - name: Web Type Check
         run: pnpm --dir packages/web exec tsc --noEmit
 
+      - name: Regression Tests
+        run: pnpm test
+
+      - name: Web Production Build
+        run: pnpm build:web
+
       - name: Bot Build
         run: pnpm --filter @chartsuno/bot build
 
       - name: Shared Node Entry Smoke Test
         run: node -e "import('./packages/shared/dist/node.js').then(() => console.log('shared node entry import ok'))"
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            packages/api/requirements.txt
+            packages/api/requirements.lock
+
+      - name: Install API Dependencies
+        run: python -m pip install -r packages/api/requirements.txt -c packages/api/requirements.lock
+
+      - name: Isolated API Regression Tests and Migration Checks
+        run: python packages/api/scripts/test_api.py

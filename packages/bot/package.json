@@ -10,7 +10,8 @@
     "auth": "tsx src/setup-oauth2.ts",
     "doctor": "tsx src/doctor.ts",
     "tweet": "tsx src/post-tweet.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@chartsuno/shared": "workspace:*",
@@ -18,10 +19,10 @@
     "chart.js": "^4.5.1",
     "pino": "^9.0.0",
     "pino-pretty": "^11.0.0",
-    "puppeteer": "^23.0.0",
+    "puppeteer": "^25.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "sharp": "^0.33.0",
+    "sharp": "^0.35.5",
     "twitter-api-v2": "^1.17.0"
   },
   "devDependencies": {

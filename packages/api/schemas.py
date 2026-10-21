@@ -21,6 +21,14 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+class PublicAuthorResponse(BaseModel):
+    """Attribution safe to include in shared charts and dashboards."""
+    id: str
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
 # Chart schemas
 class ChartDataSeries(BaseModel):
     name: str
@@ -122,7 +130,7 @@ class ChartResponse(BaseModel):
     # Computed fields (populated by API)
     is_liked: bool = False
     is_saved: bool = False
-    user: Optional[UserResponse] = None
+    user: Optional[PublicAuthorResponse] = None
 
     class Config:
         from_attributes = True
@@ -586,7 +594,7 @@ class DashboardResponse(BaseModel):
     updated_at: Optional[datetime] = None
     item_count: int = 0
     items: Optional[List[DashboardItemResponse]] = None
-    user: Optional[UserResponse] = None
+    user: Optional[PublicAuthorResponse] = None
 
     class Config:
         from_attributes = True

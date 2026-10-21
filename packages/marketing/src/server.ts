@@ -1,3 +1,5 @@
+import { pathToFileURL } from 'node:url';
+import { authenticate, readBody, RequestError, serverSecurity } from './http-security.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -13,31 +15,11 @@ import type { VideoProject, CaptureMethod } from './video/types.js';
 
 // ─── Auth ─────────────────────────────────────────────────────────
 
-const API_KEY = process.env.MARKETING_API_KEY || '';
-
-function authenticate(req: IncomingMessage): boolean {
-  if (!API_KEY) return true; // no key configured = open (dev mode)
-  const auth = req.headers.authorization;
-  return auth === `Bearer ${API_KEY}`;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────
 
 function json(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
-}
-
-async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
-  const raw = Buffer.concat(chunks).toString('utf-8');
-  if (!raw.trim()) return {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
 }
 
 async function resolveDeck(deckArg: string): Promise<CarouselDeck> {
@@ -69,6 +51,7 @@ async function resolveVideo(videoArg: string): Promise<VideoProject> {
 async function handleList(): Promise<unknown> {
   const state = await loadMarketingState();
   return {
+    publications: state.publications,
     decks: state.decks.slice(-20).map((d) => ({
       id: d.id, status: d.status, createdAt: d.createdAt,
       hookCategory: d.hookCategory, hookText: d.hookText,
@@ -170,10 +153,6 @@ async function handlePostX(body: Record<string, unknown>): Promise<unknown> {
       'x', marketingConfig.marketing.ctaUrl,
     );
     const result = await postVideoToX(video, caption, { dryRun });
-    await updateMarketingState((s) => ({
-      ...s, posts: [...s.posts, result],
-      videos: s.videos.map((v) => v.id === video.id ? { ...v, status: v.status === 'posted-tiktok' ? 'posted-both' : 'posted-x' } : v),
-    }));
     return result;
   }
 
@@ -183,15 +162,10 @@ async function handlePostX(body: Record<string, unknown>): Promise<unknown> {
     'x', marketingConfig.marketing.ctaUrl,
   );
   const result = await postToX(deck, caption, { dryRun });
-  await updateMarketingState((s) => ({
-    ...s, posts: [...s.posts, result],
-    decks: s.decks.map((d) => d.id === deck.id ? { ...d, status: d.status === 'posted-tiktok' ? 'posted-both' : 'posted-x' } : d),
-  }));
   return result;
 }
 
 async function handlePostTikTok(body: Record<string, unknown>): Promise<unknown> {
-  validateMarketingConfig({ requireTikTok: true });
   const dryRun = body.dryRun === true;
   const draft = body.draft === true;
   const scheduledDate = body.scheduledDate as string | undefined;
@@ -203,10 +177,6 @@ async function handlePostTikTok(body: Record<string, unknown>): Promise<unknown>
       'tiktok', marketingConfig.marketing.ctaUrl,
     );
     const result = await postVideoToTikTok(video, caption, { dryRun, scheduledDate, draft });
-    await updateMarketingState((s) => ({
-      ...s, posts: [...s.posts, result],
-      videos: s.videos.map((v) => v.id === video.id ? { ...v, status: v.status === 'posted-x' ? 'posted-both' : 'posted-tiktok' } : v),
-    }));
     return result;
   }
 
@@ -216,15 +186,12 @@ async function handlePostTikTok(body: Record<string, unknown>): Promise<unknown>
     'tiktok', marketingConfig.marketing.ctaUrl,
   );
   const result = await postToTikTok(deck, caption, { dryRun });
-  await updateMarketingState((s) => ({
-    ...s, posts: [...s.posts, result],
-    decks: s.decks.map((d) => d.id === deck.id ? { ...d, status: d.status === 'posted-x' ? 'posted-both' : 'posted-tiktok' } : d),
-  }));
   return result;
 }
 
 async function handleReport(url: URL): Promise<unknown> {
-  const days = parseInt(url.searchParams.get('days') ?? '3', 10);
+  const days = Number(url.searchParams.get('days') ?? '3');
+  if (!Number.isInteger(days) || days < 1 || days > 365) throw new RequestError(400, 'days must be between 1 and 365');
   return generateDailyReport(days);
 }
 
@@ -232,7 +199,7 @@ async function handleReport(url: URL): Promise<unknown> {
 
 type Handler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 
-async function router(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function router(req: IncomingMessage, res: ServerResponse, apiKey: string): Promise<void> {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const path = url.pathname;
   const method = req.method ?? 'GET';
@@ -244,7 +211,7 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
   }
 
   // All /api routes require auth
-  if (path.startsWith('/api/') && !authenticate(req)) {
+  if (path.startsWith('/api/') && !authenticate(req, apiKey)) {
     json(res, 401, { error: 'Unauthorized' });
     return;
   }
@@ -277,24 +244,32 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error({ error: message, path, method }, 'Request failed');
-    json(res, 500, { error: message });
+    json(res, error instanceof RequestError ? error.status : 500, { error: message });
   }
 }
 
 // ─── Server ───────────────────────────────────────────────────────
 
-const port = Number(process.env.PORT || '8081');
-
-const server = createServer((req, res) => {
-  const start = Date.now();
-  router(req, res).finally(() => {
-    logger.info({ method: req.method, url: req.url, status: res.statusCode, ms: Date.now() - start }, 'request');
+export function createMarketingServer(env: NodeJS.ProcessEnv = process.env) {
+  const security = serverSecurity(env);
+  const server = createServer((req, res) => {
+    const start = Date.now();
+    router(req, res, security.apiKey).catch((error) => {
+      logger.error({ error: String(error) }, 'Unhandled request error');
+      if (!res.headersSent) json(res, 500, { error: 'Internal server error' });
+      else res.end();
+    }).finally(() => {
+      logger.info({ method: req.method, url: req.url, status: res.statusCode, ms: Date.now() - start }, 'request');
+    });
   });
-});
+  return { server, host: security.host };
+}
 
-server.listen(port, '0.0.0.0', () => {
-  logger.info({ port }, 'Marketing API server listening');
-});
-
-process.on('SIGINT', () => { server.close(); process.exit(0); });
-process.on('SIGTERM', () => { server.close(); process.exit(0); });
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const port = Number(process.env.PORT || '8081');
+  const { server, host } = createMarketingServer();
+  server.listen(port, host, () => logger.info({ port, host }, 'Marketing API server listening'));
+  const shutdown = () => server.close(() => process.exit(0));
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}

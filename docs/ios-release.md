@@ -52,9 +52,9 @@ in a different team if you pick one in Xcode.
   reporter immediately.
 - Offline banner with Try again. Source links open in the in-app browser
   sheet instead of sending the webview to Safari.
-- App icon and launch screen generated from `packages/mobile/assets/icon.svg`
-  (same mark as `packages/web/public/favicon.svg`): dark ground `#101014`,
-  four chart bars. Launch storyboard uses `LaunchBackground` (white in
+- App icon and launch screen generated with `pnpm brand:generate` from
+  `packages/web/public/brand-mark.svg`: a chart-shaped C, blue ground on the
+  standard icon and dark ground on dark/tinted icons. Launch storyboard uses `LaunchBackground` (white in
   light mode, `#101014` in dark) and `LaunchMark`.
 - `PrivacyInfo.xcprivacy`, camera / photo-library usage strings, and
   `ITSAppUsesNonExemptEncryption = false`.
@@ -305,3 +305,22 @@ pnpm mobile:ios:sync
 ```
 
 Bump the build number, archive, and upload again.
+
+## Device regression checks
+
+Use a newly bundled build after web edits. The 20 October audit remediation adds
+Revyl tests under `packages/mobile/.revyl/tests`; supply test credentials through
+run variables and run only against a disposable API with synthetic data. The test
+API must have no paid provider credentials or customer database connections.
+
+Check first launch/onboarding and the logo, feed-to-chart navigation, test sign-in
+and persisted Keychain session, paste/import, save/update/reset and new-document
+behavior, keyboard-safe controls, settings navigation, and the native file share
+sheet. Record the exact uploaded build ID and screenshots/report, not just a
+successful upload. A simulator build does not validate real-device Google/Apple
+OAuth, paid billing, or App Store signing.
+
+For simulator builds, keep signing enabled (`CODE_SIGN_IDENTITY=-
+CODE_SIGNING_ALLOWED=YES`). Xcode embeds simulated entitlements for Keychain.
+An unsigned build can launch and render while secure session writes fail, so
+launch-only evidence is insufficient. Keep the release entitlements intact.

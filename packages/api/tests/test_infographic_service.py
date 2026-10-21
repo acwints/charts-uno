@@ -1,16 +1,27 @@
 import unittest
 
 from services.infographic_service import build_fallback_infographic, extract_svg
+import xml.etree.ElementTree as ET
 
 
 class InfographicServiceTests(unittest.TestCase):
     def test_extract_svg_accepts_fenced_model_output(self) -> None:
         content = "Here you go:\n```svg\n<svg viewBox=\"0 0 10 10\"><rect/></svg>\n```"
 
-        self.assertEqual(
-            extract_svg(content),
-            '<svg viewBox="0 0 10 10"><rect/></svg>',
-        )
+        root = ET.fromstring(extract_svg(content))
+        self.assertEqual(root.attrib['viewBox'], '0 0 10 10')
+        self.assertEqual(root[0].tag, 'rect')
+
+    def test_model_active_content_and_remote_resources_are_removed(self):
+        result = extract_svg('<svg xmlns="http://www.w3.org/2000/svg" onload="bad()"><foreignObject><img onerror="bad()"/></foreignObject><script>bad()</script><style>text{fill:red}</style><rect style="fill:red" onclick="bad()" fill="url(https://example.test/image)"/><use href="https://example.test/a#b"/><defs><linearGradient id="paint"/></defs><circle fill="url(#paint)"/></svg>')
+        self.assertNotIn('bad()', result)
+        self.assertNotIn('foreignObject', result)
+        self.assertNotIn('https:', result)
+        self.assertIn('url(#paint)', result)
+
+    def test_model_entity_definitions_are_rejected(self):
+        with self.assertRaises(ValueError):
+            extract_svg('<svg><!DOCTYPE x [<!ENTITY x "bad">]><text>&x;</text></svg>')
 
     def test_extract_svg_rejects_incomplete_output(self) -> None:
         with self.assertRaisesRegex(ValueError, "Invalid SVG response"):

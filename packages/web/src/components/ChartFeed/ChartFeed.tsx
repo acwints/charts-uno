@@ -57,8 +57,21 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const LIMIT = 20;
+  const scope = `${user?.id ?? 'anonymous'}:${activeTab}`;
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const [chartScope, setChartScope] = useState(scope);
+  const generationRef = useRef(0);
+  const inFlightScope = useRef<string | null>(null);
+  const visibleCharts = chartScope === scope ? charts : [];
+  useEffect(() => () => { generationRef.current++; }, []);
 
   const fetchCharts = useCallback(async (tab: FeedTab, resetOffset = true) => {
+    const requestScope = `${user?.id ?? 'anonymous'}:${tab}`;
+    if (!resetOffset && inFlightScope.current === requestScope) return;
+    const generation = ++generationRef.current;
+    const isCurrent = () => generation === generationRef.current && requestScope === scopeRef.current;
+    inFlightScope.current = requestScope;
     setIsLoading(true);
     setError(null);
 
@@ -66,27 +79,31 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
 
     try {
       let fetchedCharts: ChartResponse[] = [];
+      let nextHasMore = false;
 
       switch (tab) {
         case 'explore': {
           const response = await getPublicCharts(LIMIT, currentOffset);
           fetchedCharts = response.charts;
-          setHasMore(response.charts.length === LIMIT);
+          nextHasMore = response.charts.length === LIMIT;
           break;
         }
         case 'saved': {
           const response = await getSavedCharts();
           fetchedCharts = response.map((item) => item.chart);
-          setHasMore(false);
+          nextHasMore = false;
           break;
         }
         case 'liked': {
           fetchedCharts = await getLikedCharts();
-          setHasMore(false);
+          nextHasMore = false;
           break;
         }
       }
 
+      if (!isCurrent()) return;
+      setChartScope(requestScope);
+      setHasMore(nextHasMore);
       if (resetOffset) {
         setCharts(fetchedCharts);
         if (tab === 'explore') writeFeedCache(fetchedCharts);
@@ -96,16 +113,18 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
         offsetRef.current += LIMIT;
       }
     } catch (err) {
+      if (!isCurrent()) return;
       console.error('Failed to fetch charts:', err);
       setError(err instanceof Error ? err.message : 'Failed to load charts');
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) { setIsLoading(false); inFlightScope.current = null; }
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id && activeTab !== 'explore') { setActiveTab('explore'); return; }
     fetchCharts(activeTab, true);
-  }, [activeTab, fetchCharts]);
+  }, [activeTab, fetchCharts, user?.id]);
 
   const handleTabChange = (tab: FeedTab) => {
     if (tab !== 'explore' && !user) {
@@ -197,7 +216,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
       </header>
 
       <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
-        {error && charts.length === 0 && (
+        {error && visibleCharts.length === 0 && (
           <div className="chart-feed__error">
             <p>{error}</p>
             <button onClick={handleRefresh} className="chart-feed__retry-btn">
@@ -206,11 +225,11 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
           </div>
         )}
 
-        {error && charts.length > 0 && (
+        {error && visibleCharts.length > 0 && (
           <p className="chart-feed__stale" role="status">Showing saved charts. <button type="button" className="chart-feed__retry-link" onClick={handleRefresh}>Try again</button></p>
         )}
 
-        {!error && isLoading && charts.length === 0 && (
+        {!error && isLoading && visibleCharts.length === 0 && (
           isMobile ? (
             <FeedSkeleton />
           ) : (
@@ -221,7 +240,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
           )
         )}
 
-        {!error && !isLoading && charts.length === 0 && (
+        {!error && !isLoading && visibleCharts.length === 0 && (
           <div className="chart-feed__empty">
             {activeTab === 'explore' && (
               <>
@@ -248,7 +267,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
         )}
 
         <AnimatePresence mode="wait">
-          {charts.length > 0 && (
+          {visibleCharts.length > 0 && (
             <motion.div
               key={`${activeTab}-${isMobile ? 'mobile' : 'desktop'}`}
               className={isMobile ? 'chart-feed__stream' : 'chart-feed__grid'}
@@ -257,7 +276,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {charts.map((chart, index) => (
+              {visibleCharts.map((chart, index) => (
                 <motion.div
                   key={chart.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -289,7 +308,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
 
         {isMobile && <div ref={sentinelRef} className="chart-feed__sentinel" aria-hidden="true" />}
 
-        {!isMobile && hasMore && charts.length > 0 && activeTab === 'explore' && (
+        {!isMobile && hasMore && visibleCharts.length > 0 && activeTab === 'explore' && (
           <div className="chart-feed__load-more">
             <button
               className="chart-feed__load-more-btn"

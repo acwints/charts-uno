@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NativeAppStatus } from '../components/NativeAppStatus';
@@ -24,6 +24,7 @@ const ONBOARDED_STORAGE_KEY = 'chartsuno_onboarded_v1';
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
   const navigationType = useNavigationType();
+  const mainRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
   const isPhoneViewport = useMediaQuery('(max-width: 768px)');
@@ -44,7 +45,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   // New route = start at the top. Back/forward keeps the browser's own
   // restored position. Needed because the SPA never reloads the document.
   useEffect(() => {
-    if (navigationType !== 'POP') window.scrollTo(0, 0);
+    if (navigationType !== 'POP') {
+      window.scrollTo(0, 0);
+      // The native shell scrolls this element rather than the document.
+      mainRef.current?.scrollTo(0, 0);
+    }
   }, [location.pathname, navigationType]);
 
   useEffect(() => {
@@ -91,7 +96,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="app-body">
         {showSidebar && <DashboardSidebar />}
 
-        <main className="main">
+        <main className="main" ref={mainRef}>
           {!shouldAnimateRoute ? (
             <div className="app-route-shell">{routeContent}</div>
           ) : (

@@ -1,3 +1,10 @@
+@media (max-width: 768px) {
+  .chart-controls .controls-segment,
+  .chart-controls .swap-axes-btn {
+    min-height: 44px;
+  }
+}
+
 .chart-controls {
   display: flex;
   flex-direction: column;

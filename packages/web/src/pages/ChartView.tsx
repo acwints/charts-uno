@@ -27,8 +27,8 @@ export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const chartCaptureRef = useRef<HTMLDivElement>(null);
-  const { chartData, chartConfig, setChartData, setChartConfig, setInfographicSvg } = useChartStore();
-  const { isAuthenticated } = useAuth();
+  const { chartData, chartConfig, documentId, originalData, loadDocument, markSaved, setChartData, setChartConfig } = useChartStore();
+  const { isAuthenticated, user } = useAuth();
   const { teams } = useTeam();
   const toast = useToast();
 
@@ -40,9 +40,15 @@ export function ChartView() {
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
   const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
   const [editorView, setEditorView] = useState<ChartEditorView>('chart');
-  const [originalData, setOriginalData] = useState<ChartData | null>(null);
-  const initTokenRef = useRef<string | null>(null);
   const justSavedIdRef = useRef<string | null>(null);
+  const activeScope = `${user?.id ?? "anonymous"}:${id ?? "new"}`;
+  const activeScopeRef = useRef(activeScope);
+  activeScopeRef.current = activeScope;
+  const [ownership, setOwnership] = useState<{ scope: string; ownerId: string } | null>(null);
+  const canEditSavedChart = !id || (ownership?.scope === activeScope && ownership.ownerId === user?.id);
+  const mountedRef = useRef(true);
+  const savingRef = useRef(false);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   const teamSpaces = useMemo(() => teams.filter((team) => !team.is_personal), [teams]);
   const publishTeamOptions = useMemo(
@@ -118,22 +124,27 @@ export function ChartView() {
   };
 
   const saveChart = async () => {
-    if (!chartData) return null;
-    if (!isAuthenticated) {
+    if (!chartData || documentId !== (id ?? null) || savingRef.current) return null;
+    const scope = activeScope;
+    const isCurrent = () => mountedRef.current && activeScopeRef.current === scope;
+    if (!isAuthenticated || !user) {
       toast.error('Please sign in to save and share charts');
       return null;
     }
 
+    savingRef.current = true;
     setIsSaving(true);
     try {
       const { sourceType: _sourceType, ...storedChartData } = chartData;
       void _sourceType;
-      if (id) {
+      if (id && canEditSavedChart) {
         await updateChart(id, {
           title: chartConfig.title || 'Untitled Chart',
           data: storedChartData,
           config: chartConfig,
         });
+        if (!isCurrent()) return id;
+        markSaved(id, chartData);
         toast.success('Chart updated');
         return id;
       }
@@ -153,6 +164,10 @@ export function ChartView() {
           },
         } : {}),
       });
+      if (!isCurrent()) return result.id;
+      // Bind the new server identity to the exact draft that was saved.
+      useChartStore.setState({ documentId: result.id, originalData: chartData });
+      setOwnership({ scope: `${user.id}:${result.id}`, ownerId: user.id });
       setIsPublishedToFeed(result.is_public);
       setPublishedTeamIds([]);
       toast.success('Chart saved to your profile');
@@ -161,10 +176,11 @@ export function ChartView() {
       return result.id;
     } catch (err) {
       console.error('Failed to save chart:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to save chart');
+      if (isCurrent()) toast.error(err instanceof Error ? err.message : 'Failed to save chart');
       return null;
     } finally {
-      setIsSaving(false);
+      savingRef.current = false;
+      if (mountedRef.current) setIsSaving(false);
     }
   };
 
@@ -176,60 +192,63 @@ export function ChartView() {
     navigate('/new');
   };
 
-  // If we have an ID in the URL, fetch the chart (skip if we just saved it)
+  // Loads and publish settings may commit only to their own route/account scope.
   useEffect(() => {
-    if (id) {
-      if (justSavedIdRef.current === id) {
-        justSavedIdRef.current = null;
+    let cancelled = false;
+    const isCurrent = () => !cancelled && activeScopeRef.current === activeScope;
+    setError(null);
+    setIsPublishedToFeed(false);
+    setPublishedTeamIds([]);
+    if (!id) {
+      setIsLoading(false);
+      const draft = useChartStore.getState();
+      if (draft.chartData && !draft.originalData && draft.documentId === null) {
+        markSaved(null, draft.chartData);
+      }
+      return () => { cancelled = true; };
+    }
+    if (justSavedIdRef.current === id) {
+      justSavedIdRef.current = null;
+      setIsLoading(false);
+      return () => { cancelled = true; };
+    }
+    setIsLoading(true);
+    getChart(id).then(async (chart) => {
+      if (!isCurrent()) return;
+      setOwnership({ scope: activeScope, ownerId: chart.user_id });
+      const data: ChartData = {
+        ...chart.data,
+        sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
+        suggestedTitle: chart.title || chart.config.title || chart.data.suggestedTitle,
+      };
+      const rawConfig = chart.config as Record<string, unknown>;
+      loadDocument(id, data, {
+        ...chart.config as ChartConfig,
+        themeMode: rawConfig.themeMode as ChartConfig['themeMode'] || 'dark',
+        showBorder: rawConfig.showBorder as boolean ?? true,
+        showPoints: rawConfig.showPoints as boolean ?? true,
+      });
+      setIsLoading(false);
+      if (chart.user_id !== user?.id) {
+        setIsPublishedToFeed(chart.is_public);
         return;
       }
-      setInfographicSvg(null);
-      setIsLoading(true);
-      setError(null);
-      getChart(id)
-        .then(async (chart) => {
-          // Populate the store with the loaded chart data
-          const data: ChartData = {
-            ...chart.data,
-            sourceType: (chart.source_type as ChartData['sourceType']) || 'paste',
-            suggestedTitle: chart.title || chart.config.title || chart.data.suggestedTitle,
-          };
-          setChartData(data);
-          // Ensure themeMode has a default value for charts created before it was added
-          const rawConfig = chart.config as Record<string, unknown>;
-          const configWithDefaults = {
-            ...chart.config as ChartConfig,
-            themeMode: rawConfig.themeMode as ChartConfig['themeMode'] || 'dark',
-            showBorder: rawConfig.showBorder as boolean ?? true,
-            showPoints: rawConfig.showPoints as boolean ?? true,
-          };
-          setChartConfig(configWithDefaults);
-
-          try {
-            const targets = await getChartPublishTargets(chart.id);
-            setIsPublishedToFeed(targets.is_public);
-            setPublishedTeamIds(targets.team_ids);
-          } catch {
-            setIsPublishedToFeed(chart.is_public);
-            setPublishedTeamIds([]);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to load chart:', err);
-          setError('Chart not found');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
-  }, [id, setChartData, setChartConfig, setInfographicSvg]);
-
-  useEffect(() => {
-    if (!id) {
-      setIsPublishedToFeed(false);
-      setPublishedTeamIds([]);
-    }
-  }, [id]);
+      try {
+        const targets = await getChartPublishTargets(chart.id);
+        if (!isCurrent()) return;
+        setIsPublishedToFeed(targets.is_public);
+        setPublishedTeamIds(targets.team_ids);
+      } catch {
+        if (isCurrent()) setIsPublishedToFeed(chart.is_public);
+      }
+    }).catch((err) => {
+      if (!isCurrent()) return;
+      console.error('Failed to load chart:', err);
+      setError('Chart not found');
+      setIsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [id, activeScope, user?.id, loadDocument, markSaved]);
 
   // If no ID and no chart data, redirect to home
   useEffect(() => {
@@ -239,20 +258,6 @@ export function ChartView() {
   }, [id, chartData, navigate]);
 
   const isImageSource = chartData?.sourceType === 'image';
-
-  useEffect(() => {
-    if (!chartData) {
-      setOriginalData(null);
-      initTokenRef.current = null;
-      return;
-    }
-
-    const token = id ?? 'new';
-    if (initTokenRef.current !== token) {
-      setOriginalData(chartData);
-      initTokenRef.current = token;
-    }
-  }, [chartData, id]);
 
   const isDataDirty = useMemo(() => {
     if (!chartData || !originalData) return false;
@@ -266,7 +271,7 @@ export function ChartView() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (id && documentId !== id && !error)) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
         <LoadingSpinner size="lg" />
@@ -309,12 +314,14 @@ export function ChartView() {
       className="chart-view"
     >
       <ChartWorkbench
+        key={activeScope}
         data={chartData}
         config={chartConfig}
         chartId={id}
         chartRef={chartCaptureRef}
         editorView={editorView}
         isAuthenticated={isAuthenticated}
+        canEditSavedChart={canEditSavedChart}
         isSaving={isSaving}
         isDataDirty={isDataDirty}
         isPublishedToFeed={isPublishedToFeed}
@@ -328,6 +335,7 @@ export function ChartView() {
         onSave={handleSaveChart}
         onEditorViewChange={setEditorView}
         onPublishTargetsChange={(targets) => {
+          if (activeScopeRef.current !== activeScope) return;
           setIsPublishedToFeed(targets.isPublic);
           setPublishedTeamIds(targets.teamIds);
         }}

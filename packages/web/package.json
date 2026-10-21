@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@capacitor/app": "8.1.1",
@@ -19,18 +20,17 @@
     "@capacitor/splash-screen": "8.0.2",
     "@chartsuno/shared": "workspace:*",
     "@codemirror/lang-sql": "^6.10.0",
-    "@google/generative-ai": "^0.24.1",
     "@tanstack/react-table": "^8.21.3",
     "@uiw/react-codemirror": "^4.25.8",
+    "dompurify": "^3.4.17",
     "lucide-react": "^0.563.0",
     "modern-screenshot": "4.7.0",
     "motion": "^12.29.2",
-    "openai": "^6.17.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.13.0",
+    "react-router-dom": "^7.18.4",
     "react-simple-maps": "^3.0.0",
     "recharts": "^3.7.0",
     "topojson-client": "^3.1.0",
@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/react": "^16.3.3",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.10.1",
     "@types/papaparse": "^5.5.2",
@@ -49,8 +50,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jsdom": "^27.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12"
   }
 }

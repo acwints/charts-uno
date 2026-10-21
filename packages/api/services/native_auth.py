@@ -54,14 +54,18 @@ def read_native_state(state: str) -> dict:
         raise HTTPException(400, "Sign-in expired. Please try again.") from None
 
 
-def finish_native_auth(db: Session, user_id: str, state: dict) -> str:
+def issue_auth_code(db: Session, user_id: str, state: dict) -> str:
     code = secrets.token_urlsafe(32)
     db.query(NativeAuthCode).filter(NativeAuthCode.expires_at < datetime.utcnow()).delete()
     db.add(NativeAuthCode(code_hash=digest(code), user_id=user_id,
                           challenge=state["challenge"],
                           expires_at=datetime.utcnow() + timedelta(minutes=2)))
     db.commit()
-    return CALLBACK + "?" + urlencode({"code": code, "state": state["nonce"]})
+    return code
+
+
+def finish_native_auth(db: Session, user_id: str, state: dict) -> str:
+    return CALLBACK + "?" + urlencode({"code": issue_auth_code(db, user_id, state), "state": state["nonce"]})
 
 
 def redeem_native_code(db: Session, code: str, verifier: str) -> str:

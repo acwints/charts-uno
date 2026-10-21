@@ -33,6 +33,7 @@ interface ChartWorkbenchProps {
   chartRef: RefObject<HTMLDivElement | null>;
   editorView: ChartEditorView;
   isAuthenticated: boolean;
+  canEditSavedChart?: boolean;
   isSaving: boolean;
   isDataDirty: boolean;
   isPublishedToFeed: boolean;
@@ -71,6 +72,7 @@ export function ChartWorkbench({
   chartRef,
   editorView,
   isAuthenticated,
+  canEditSavedChart = true,
   isSaving,
   isDataDirty,
   isPublishedToFeed,
@@ -92,7 +94,8 @@ export function ChartWorkbench({
   const isImageSource = data.sourceType === 'image';
   const isPromptSource = data.sourceType === 'prompt';
   const verificationTone = getVerificationTone(data);
-  const saveLabel = isSaving ? 'Saving...' : chartId ? 'Update Chart' : 'Save Chart';
+  const updatesExisting = Boolean(chartId && canEditSavedChart);
+  const saveLabel = isSaving ? 'Saving...' : updatesExisting ? 'Update Chart' : chartId ? 'Save a Copy' : 'Save Chart';
 
   return (
     <>
@@ -142,13 +145,13 @@ export function ChartWorkbench({
               size="sm"
               onClick={onSave}
               disabled={isSaving}
-              title={chartId ? 'Update chart' : 'Save chart'}
+              title={updatesExisting ? 'Update chart' : chartId ? 'Save a private copy' : 'Save chart'}
             >
-              {chartId ? <Check size={16} /> : <Save size={16} />}
+              {updatesExisting ? <Check size={16} /> : <Save size={16} />}
               {saveLabel}
             </Button>
           )}
-          {chartId && isAuthenticated && (
+          {chartId && isAuthenticated && canEditSavedChart && (
             <PublishMenu
               chartId={chartId}
               isPublic={isPublishedToFeed}

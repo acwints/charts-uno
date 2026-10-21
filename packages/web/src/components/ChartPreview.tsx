@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef, useId } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { ensureChartFonts } from '../services/chartFonts';
 import {
   BarChart,
@@ -129,6 +129,7 @@ export function ChartPreview({
   config,
   watermark,
 }: ChartPreviewProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Get base theme based on scheme and mode
   const baseTheme = getTheme(config.colorScheme, config.themeMode);
 
@@ -1195,7 +1196,7 @@ export function ChartPreview({
                     fill={getBarFill(idx)}
                     filter={glowFilter}
                     radius={styleConfig.chart.barRadius}
-                    animationDuration={config.animate ? 800 : 0}
+                    animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                     animationBegin={idx * 100}
                     stackId={stackId}
                   >
@@ -1235,7 +1236,7 @@ export function ChartPreview({
                       strokeWidth: 2,
                       fill: theme.background,
                     } : false}
-                    animationDuration={config.animate ? 1200 : 0}
+                    animationDuration={config.animate && !prefersReducedMotion ? 1200 : 0}
                     animationBegin={idx * 200}
                   >
                     {config.showValues && (
@@ -1272,7 +1273,7 @@ export function ChartPreview({
                       strokeWidth: 2,
                       fill: theme.background,
                     } : false}
-                    animationDuration={config.animate ? 1000 : 0}
+                    animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
                     animationBegin={idx * 150}
                   >
                     {config.showValues && (
@@ -1317,7 +1318,7 @@ export function ChartPreview({
                 fill={getBarFill(idx)}
                     filter={glowFilter}
                 radius={styleConfig.chart.barRadius}
-                animationDuration={config.animate ? 800 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                 animationBegin={idx * 100}
                 {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
               >
@@ -1360,7 +1361,7 @@ export function ChartPreview({
                 fill={getBarFill(idx)}
                     filter={glowFilter}
                 radius={0}
-                animationDuration={config.animate ? 800 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                 animationBegin={idx * 100}
                 {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
               >
@@ -1406,7 +1407,7 @@ export function ChartPreview({
                   strokeWidth: 2,
                   fill: theme.background
                 } : false}
-                animationDuration={config.animate ? 1200 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 1200 : 0}
                 animationBegin={idx * 200}
               >
                 {config.showValues && (
@@ -1454,7 +1455,7 @@ export function ChartPreview({
                   strokeWidth: 2,
                   fill: theme.background
                 } : false}
-                animationDuration={config.animate ? 1000 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
                 animationBegin={idx * 150}
               >
                 {config.showValues && (
@@ -1486,7 +1487,7 @@ export function ChartPreview({
               outerRadius={120}
               paddingAngle={styleConfig.id === 'playful' ? 4 : 2}
               dataKey="value"
-              animationDuration={config.animate ? 1000 : 0}
+              animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
               label={config.showValues ? ({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} (${((percent ?? 0) * 100).toFixed(0)}%)` : false}
               labelLine={config.showValues}
             >
@@ -1520,7 +1521,7 @@ export function ChartPreview({
                 fillOpacity={0.3}
                 strokeWidth={styleConfig.chart.strokeWidth}
                 filter={glowFilter}
-                animationDuration={config.animate ? 800 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
               />
             ))}
           </RadarChart>
@@ -1542,7 +1543,7 @@ export function ChartPreview({
                   .map((value, i) => ({ x: i + 1, y: value, name: data.labels[i] }))
                   .filter((point): point is { x: number; y: number; name: string } => typeof point.y === 'number')}
                 fill={colors[idx % colors.length]}
-                animationDuration={config.animate ? 800 : 0}
+                animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
               />
             ))}
           </ScatterChart>
@@ -1586,7 +1587,7 @@ export function ChartPreview({
                   <img src={watermark.customLogoUrl} alt="Selected logo" className="chart-brand-logo" />
                 ) : (
                   <>
-                    <Sparkles size={12} />
+                    <img src="/favicon.svg" width="16" height="16" alt="" />
                     <span>Chartsuno</span>
                   </>
                 )}

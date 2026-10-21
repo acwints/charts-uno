@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import json
-import base64
 import secrets
 import logging
 from datetime import datetime, timedelta
@@ -39,6 +38,7 @@ from dependencies import (
 )
 from schemas import (
     UserResponse,
+    PublicAuthorResponse,
     ChartCreate,
     ChartUpdate,
     ChartResponse,
@@ -125,7 +125,8 @@ from services.research_service import get_research_provider_status, probe_resear
 from services.public_dataset_service import get_public_datasets, generate_chart_from_public_dataset, is_imdb_public_dataset
 from services.review_login import credentials_match, ensure_review_user, review_login_enabled
 
-from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, CALLBACK)
+from services.native_auth import (create_native_state, read_native_state, finish_native_auth, redeem_native_code, issue_auth_code, CALLBACK)
+from services.web_auth import create_web_state, read_web_state, callback_url as web_callback_url
 from services.apple_auth import upsert_apple_user, verify_apple_identity_token
 from services.account_deletion import delete_user_account
 from services.chart_design import design_chart, apply_design, heuristic_design
@@ -287,21 +288,16 @@ def _safe_frontend_target(target: Optional[str]) -> str:
 
 
 @app.get("/auth/google")
-async def google_auth(target: Optional[str] = None, native_challenge: Optional[str] = None, native_nonce: Optional[str] = None):
+async def google_auth(target: Optional[str] = None, native_challenge: Optional[str] = None, native_nonce: Optional[str] = None,
+                      web_challenge: Optional[str] = None, web_nonce: Optional[str] = None):
     """Initiate Google OAuth flow"""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
 
-    # Generate state with nonce and optional frontend target
-    nonce = secrets.token_urlsafe(32)
-    state_data = {"nonce": nonce}
-    if target:
-        state_data["frontend"] = target
-
-    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
-
     if native_challenge is not None or native_nonce is not None:
         state = create_native_state(native_challenge or "", native_nonce or "")
+    else:
+        state = create_web_state(web_challenge or "", web_nonce or "", _safe_frontend_target(target))
 
     # Build authorization URL
     auth_url = (
@@ -336,19 +332,13 @@ async def google_callback(
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
 
     native_state = read_native_state(state) if state.startswith("native.") else None
+    web_state = None if native_state else read_web_state(state)
     if native_state and native_state.get("expired"):
         return _native_auth_error(native_state, "expired")
     if error or not code:
         if native_state:
             return _native_auth_error(native_state, "cancelled" if error == "access_denied" else "failed")
         raise HTTPException(400, "Sign-in cancelled. Please try again.")
-
-    # Decode state
-    try:
-        state_data = json.loads(base64.urlsafe_b64decode(state).decode())
-        frontend_target = _safe_frontend_target(state_data.get("frontend"))
-    except Exception:
-        frontend_target = FRONTEND_URL
 
     try:
         # Exchange code for tokens
@@ -433,23 +423,18 @@ async def google_callback(
     if native_state:
         return Response(status_code=302, headers={"Location": finish_native_auth(db, user.id, native_state), "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
 
-    # Generate JWT token
-    jwt_token = create_access_token(user.id)
-
-    # Redirect to frontend with token
-    redirect_url = f"{frontend_target}?auth_token={jwt_token}"
-
     return Response(
         status_code=302,
-        headers={"Location": redirect_url},
+        headers={"Location": web_callback_url(_safe_frontend_target(web_state["frontend"]),
+                                             issue_auth_code(db, user.id, web_state), web_state["nonce"]),
+                 "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
     )
 
 
-@app.post("/api/auth/set-cookie")
 async def set_auth_cookie(
     request: Request,
     response: Response,
-    token: str = Query(..., description="JWT token to set as cookie"),
+    token: str,
     db: Session = Depends(get_db),
 ):
     """Exchange a URL token for an httpOnly cookie"""
@@ -489,6 +474,21 @@ class NativeCodeExchange(BaseModel):
     # "token": bundled app on its own origin; it keeps the JWT in the Keychain
     # and sends it as a bearer header.
     deliver: Literal["cookie", "token"] = "cookie"
+
+
+class WebCodeExchange(BaseModel):
+    code: str = Field(min_length=43, max_length=43)
+    verifier: str = Field(min_length=43, max_length=128)
+
+
+@app.post("/api/auth/web/exchange")
+@limiter.limit("20/minute")
+async def exchange_web_auth(request: Request, response: Response, body: WebCodeExchange, db: Session = Depends(get_db)):
+    user_id = redeem_native_code(db, body.code, body.verifier)
+    response.headers["Cache-Control"] = "no-store"
+    response.set_cookie("auth_token", create_access_token(user_id), httponly=True, secure=IS_PRODUCTION,
+                        samesite="lax", max_age=7 * 24 * 60 * 60, path="/", domain=get_cookie_domain(request))
+    return {"status": "ok"}
 
 
 @app.post("/api/auth/native/exchange")
@@ -845,7 +845,7 @@ def _chart_to_response(
         updated_at=chart.updated_at,
         is_liked=is_liked,
         is_saved=is_saved,
-        user=UserResponse.model_validate(chart.user) if chart.user else None,
+        user=PublicAuthorResponse.model_validate(chart.user) if chart.user else None,
     )
 
 
@@ -925,6 +925,18 @@ async def create_chart(
         # Create personal team if it doesn't exist (shouldn't happen normally)
         personal_team = _create_personal_team(db, current_user)
 
+    # Connection access must be checked before persisting a refresh association.
+    if chart_data.sql_connection_id:
+        connection = get_sql_connection_or_404(db, chart_data.sql_connection_id)
+        _get_team_with_access(db, connection.team_id, current_user)
+        if chart_data.refresh_query and chart_data.refresh_query.get("sql"):
+            if not isinstance(chart_data.refresh_query["sql"], str):
+                raise HTTPException(400, "Invalid refresh SQL")
+            try:
+                validate_sql_query(chart_data.refresh_query["sql"])
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(400, "Invalid refresh SQL") from exc
+
     # Check chart creation limit
     if not _check_can_create_chart(db, personal_team):
         raise HTTPException(
@@ -951,14 +963,19 @@ async def create_chart(
 
     db.add(chart)
 
-    # Increment chart count atomically to avoid race conditions under concurrency
-    if personal_team.subscription:
-        db.query(Subscription).filter(
-            Subscription.id == personal_team.subscription.id
-        ).update(
-            {Subscription.charts_created_this_month: Subscription.charts_created_this_month + 1},
-            synchronize_session="fetch",
-        )
+    # The limit predicate and increment are one database operation. A concurrent
+    # request cannot consume the same last slot after the earlier read check.
+    consumed = db.query(Subscription).filter(
+        Subscription.id == personal_team.subscription.id,
+        or_(Subscription.charts_per_month == -1,
+            Subscription.charts_created_this_month < Subscription.charts_per_month),
+    ).update(
+        {Subscription.charts_created_this_month: Subscription.charts_created_this_month + 1},
+        synchronize_session="fetch",
+    )
+    if consumed != 1:
+        db.rollback()
+        raise HTTPException(403, "Monthly chart limit reached. Upgrade your plan to create more charts.")
 
     db.commit()
     db.refresh(chart)
@@ -1290,6 +1307,7 @@ async def list_saved_charts(
             chart=_chart_to_response(s.chart, current_user, db, liked_ids, saved_ids),
         )
         for s in saved_charts
+        if s.chart and _can_user_access_chart(db, s.chart, current_user)
     ]
 
 
@@ -1383,7 +1401,7 @@ async def list_liked_charts(
     return [
         _chart_to_response(like.chart, current_user, db, liked_ids, saved_ids)
         for like in likes
-        if like.chart
+        if like.chart and _can_user_access_chart(db, like.chart, current_user)
     ]
 
 
@@ -1973,12 +1991,34 @@ def _enforce_subscription_status(db: Session, subscription: Subscription) -> Non
         db.commit()
 
 
+def _rollover_free_quota(db: Session, subscription: Subscription) -> None:
+    """Reset free quotas once per UTC calendar month, including legacy rows."""
+    if subscription.plan != "free":
+        return
+    month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if subscription.billing_cycle_start and subscription.billing_cycle_start >= month_start:
+        return
+    changed = db.query(Subscription).filter(
+        Subscription.id == subscription.id,
+        Subscription.plan == "free",
+        or_(Subscription.billing_cycle_start.is_(None), Subscription.billing_cycle_start < month_start),
+    ).update({Subscription.billing_cycle_start: month_start,
+              Subscription.charts_created_this_month: 0}, synchronize_session=False)
+    if changed:
+        db.commit()
+    # Another request may have rolled this same row over while this session
+    # held an older count. Read that current value even when UPDATE matched 0.
+    db.refresh(subscription)
+
+
 def _check_can_create_chart(db: Session, team: Team) -> bool:
     """Check if a team can create another chart based on their subscription"""
     if not team.subscription:
         return False
 
     _enforce_subscription_status(db, team.subscription)
+
+    _rollover_free_quota(db, team.subscription)
 
     # Unlimited charts
     if team.subscription.charts_per_month == -1:
@@ -2839,6 +2879,7 @@ async def get_usage(
         raise HTTPException(status_code=404, detail="No subscription found")
 
     _enforce_subscription_status(db, team.subscription)
+    _rollover_free_quota(db, team.subscription)
     sub = team.subscription
     seats_used = db.query(TeamMember).filter(TeamMember.team_id == team_id).count()
 
@@ -3356,6 +3397,8 @@ def _dashboard_to_response(
         items = []
         for item in sorted(dashboard.items, key=lambda i: i.position):
             chart_resp = None
+            if not item.chart or not db or not _can_user_access_chart(db, item.chart, current_user):
+                continue
             if item.chart and db:
                 chart_resp = _chart_to_response(item.chart, current_user, db)
             items.append(DashboardItemResponse(
@@ -3368,6 +3411,8 @@ def _dashboard_to_response(
                 chart=chart_resp,
             ))
 
+    if include_items:
+        item_count = len(items or [])
     return DashboardResponse(
         id=dashboard.id,
         user_id=dashboard.user_id,
@@ -3381,7 +3426,7 @@ def _dashboard_to_response(
         updated_at=dashboard.updated_at,
         item_count=item_count,
         items=items,
-        user=UserResponse.model_validate(dashboard.user) if dashboard.user else None,
+        user=PublicAuthorResponse.model_validate(dashboard.user) if dashboard.user else None,
     )
 
 
@@ -3511,6 +3556,9 @@ async def add_dashboard_items(
         chart = db.query(Chart).filter(Chart.id == item_data.chart_id).first()
         if not chart:
             raise HTTPException(status_code=404, detail=f"Chart {item_data.chart_id} not found")
+
+        if not _can_user_access_chart(db, chart, current_user):
+            raise HTTPException(403, "Access denied")
 
         # Check for duplicates
         existing = db.query(DashboardItem).filter(
@@ -3699,7 +3747,7 @@ async def _refresh_stock_chart(params: dict) -> Optional[dict]:
         ticker = params.get("ticker")
         ticker2 = params.get("ticker2")
         range_val = params.get("range", "3M")
-        result = fetch_stock_prices(ticker, range_val, ticker2)
+        result = await fetch_stock_prices(ticker, range_val, ticker2)
         return result
     except Exception as e:
         logger.error(f"Stock refresh failed: {e}")
@@ -3955,6 +4003,15 @@ async def _refresh_sql_chart(chart: Chart, db: Session) -> Optional[dict]:
         conn = db.query(SqlConnection).filter(SqlConnection.id == chart.sql_connection_id).first()
         if not conn:
             logger.warning(f"SQL connection {chart.sql_connection_id} not found for chart {chart.id}")
+            return None
+        # Recheck the chart owner's membership on every run: sharing a chart
+        # or retaining its ID is not permission to use stored DB credentials.
+        member = db.query(TeamMember.id).filter(
+            TeamMember.team_id == conn.team_id,
+            TeamMember.user_id == chart.user_id,
+        ).first()
+        if not member:
+            logger.warning("Skipping SQL chart %s: owner no longer has connection access", chart.id)
             return None
         if conn.status == "error":
             logger.info(f"Skipping chart {chart.id} — connection {conn.id} is in error state")

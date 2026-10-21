@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify';
+
 const NUMERIC_ATTRS = [
   'x',
   'y',
@@ -189,5 +191,23 @@ export function normalizeInfographicSvg(rawSvg: string): string {
     }
   });
 
-  return new XMLSerializer().serializeToString(root);
+  const sanitized = DOMPurify.sanitize(new XMLSerializer().serializeToString(root), {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    FORBID_TAGS: ['script', 'foreignObject', 'style', 'a', 'image', 'animate', 'animateMotion', 'animateTransform', 'set'],
+    FORBID_ATTR: ['style'],
+    RETURN_DOM: true,
+  }) as HTMLElement;
+  // Infographics are self-contained: preserve local gradients/clips, never remote resources.
+  sanitized.querySelectorAll('*').forEach((node) => {
+    [...node.attributes].forEach((attribute) => {
+      const value = attribute.value.trim();
+      if ((['href', 'xlink:href'].includes(attribute.name) && !/^#[\w-]+$/.test(value))
+        || (/url\s*\(/i.test(value) && !/^url\(\s*["']?#[\w-]+["']?\s*\)$/i.test(value))) {
+        node.removeAttribute(attribute.name);
+      }
+    });
+  });
+  const svg = sanitized.querySelector('svg');
+  if (!svg) throw new Error('Infographic renderer returned invalid SVG markup');
+  return new XMLSerializer().serializeToString(svg);
 }

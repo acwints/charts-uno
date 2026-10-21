@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { isNativeApp } from '../services/native';
@@ -28,9 +28,13 @@ export function ChartBuilder() {
   const { isAuthenticated } = useAuth();
   const context = useOutletContext<OutletContextType>();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { setChartData, setChartConfig } = useChartStore();
+  const { setChartData, setChartConfig, reset } = useChartStore();
+  const requestGeneration = useRef(0);
+  useEffect(() => () => { requestGeneration.current += 1; }, []);
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
+    const generation = ++requestGeneration.current;
+    reset();
     // Race-shaped data is recognised from the data itself — an ordered axis,
     // several contenders and a ranking that actually moves — so it does not
     // need an AI round-trip, and the orientation is corrected here because the
@@ -75,6 +79,7 @@ export function ChartBuilder() {
     setIsProcessing(true);
     try {
       const recommendation = await recommendChartType(data, { preferredType: data.suggestedType });
+      if (generation !== requestGeneration.current) return;
       const chosenType = data.suggestedType ?? recommendation.type;
       const design = recommendation.design;
       const enrichedData: ChartData = {
@@ -108,6 +113,7 @@ export function ChartBuilder() {
       }));
       navigate('/chart');
     } catch (error) {
+      if (generation !== requestGeneration.current) return;
       console.error('AI recommendation failed:', error);
       const fallbackType = data.suggestedType ?? 'bar';
       const comboHint = suggestComboConfig(data, fallbackType);
@@ -124,9 +130,9 @@ export function ChartBuilder() {
       }));
       navigate('/chart');
     } finally {
-      setIsProcessing(false);
+      if (generation === requestGeneration.current) setIsProcessing(false);
     }
-  }, [navigate, setChartData, setChartConfig]);
+  }, [navigate, setChartData, setChartConfig, reset]);
 
   return (
     <motion.div

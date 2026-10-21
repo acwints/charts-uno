@@ -1,6 +1,7 @@
 import { getReadOnlyClient, getAuthMode } from './client.js';
 import { config, logger } from '../config.js';
 import { loadState } from '../storage.js';
+import { readTimelinePages } from './timelinePages.js';
 
 export interface MentionData {
   mentionId: string;
@@ -50,7 +51,14 @@ export async function pollMentions(): Promise<MentionPollResult> {
       'Fetching mentions timeline'
     );
 
-    const response = await client.v2.userMentionTimeline(userId, params);
+    const timeline = await readTimelinePages(async (token) => {
+      const response = await client.v2.userMentionTimeline(userId, {
+        ...params,
+        ...(token ? { pagination_token: token } : {}),
+      });
+      return response.data;
+    });
+    const response = { data: { data: timeline.tweets, meta: { newest_id: timeline.newestId } } };
 
     if (!response.data.data) {
       logger.debug('No new mentions found');

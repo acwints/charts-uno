@@ -3,7 +3,6 @@ import { isNativeApp } from '../services/native';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
@@ -85,9 +84,7 @@ export function Header({
           transition={{ duration: 0.5 }}
         >
           <Link to={isNativeApp() ? '/feed' : '/'} className="logo-link">
-            <div className="logo-icon">
-              <Sparkles size={20} />
-            </div>
+            <img className="logo-icon" src="/favicon.svg" width="32" height="32" alt="" />
             <span className="logo-text">Chartsuno</span>
           </Link>
         </motion.div>

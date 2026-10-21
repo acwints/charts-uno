@@ -13,13 +13,9 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 }
 
 // Auth
-export async function getAuthUrl(target?: string): Promise<{ auth_url: string }> {
-  const params = target ? `?target=${encodeURIComponent(target)}` : '';
-  return apiRequest(`/auth/google${params}`);
-}
-
-export async function setAuthCookie(token: string): Promise<void> {
-  await apiRequest(`/api/auth/set-cookie?token=${encodeURIComponent(token)}`, { method: 'POST' });
+export async function getAuthUrl(target: string, challenge: string, nonce: string): Promise<{ auth_url: string }> {
+  const params = new URLSearchParams({ target, web_challenge: challenge, web_nonce: nonce });
+  return apiRequest(`/auth/google?${params}`);
 }
 
 export async function logout(): Promise<void> {
@@ -75,7 +71,7 @@ export interface ChartResponse {
   created_at: string;
   is_liked: boolean;
   is_saved: boolean;
-  user?: User;
+  user?: Pick<User, 'id' | 'name' | 'picture'>;
 }
 
 export interface ChartListResponse {
@@ -486,7 +482,7 @@ export interface DashboardResponse {
   updated_at: string | null;
   item_count: number;
   items: DashboardItemResponse[] | null;
-  user: User | null;
+  user: Pick<User, 'id' | 'name' | 'picture'> | null;
 }
 
 export interface DashboardListResponse {

@@ -55,6 +55,29 @@
   overflow: hidden;
 }
 
+.chart-card__title-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.chart-card__title-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .chart-card__action,
+  .chart-card__title-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .chart-card__description {
   font-size: 0.8rem;
   color: var(--text-secondary);

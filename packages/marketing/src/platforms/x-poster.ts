@@ -1,3 +1,4 @@
+import { publishOnce } from '../publication.js';
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { TwitterApi, type TweetV2PostTweetResult } from 'twitter-api-v2';
@@ -29,17 +30,14 @@ async function loadBotOAuth2(): Promise<BotOAuth2State | null> {
 
 // ─── Twitter Client ───────────────────────────────────────────────
 
-let twitterClient: TwitterApi | null = null;
-let authMode: 'oauth2' | 'oauth1' = 'oauth1';
 
 async function getTwitterClient(): Promise<TwitterApi> {
-  if (twitterClient) return twitterClient;
+  let twitterClient: TwitterApi;
 
   // Try OAuth2 from bot state first (for @chartsuno account)
   const oauth2 = await loadBotOAuth2();
-  if (oauth2?.accessToken) {
+  if (oauth2?.accessToken && oauth2.expiresAt > Date.now() + 60_000) {
     twitterClient = new TwitterApi(oauth2.accessToken);
-    authMode = 'oauth2';
     logger.info('Using OAuth2 bot credentials for X posting');
     return twitterClient;
   }
@@ -53,7 +51,6 @@ async function getTwitterClient(): Promise<TwitterApi> {
       accessToken: twitter.accessToken,
       accessSecret: twitter.accessSecret,
     });
-    authMode = 'oauth1';
     logger.info('Using OAuth1 credentials for X posting');
     return twitterClient;
   }
@@ -64,9 +61,10 @@ async function getTwitterClient(): Promise<TwitterApi> {
 async function uploadMedia(imageBuffer: Buffer): Promise<string> {
   const client = await getTwitterClient();
 
-  if (authMode === 'oauth2') {
+  const tokens = client.getActiveTokens();
+  if (tokens.type === 'oauth2') {
     // Use X v2 media upload endpoint (same as bot)
-    const oauth2 = await loadBotOAuth2();
+    const token = tokens.bearerToken;
     const form = new FormData();
     form.append('media', new Blob([new Uint8Array(imageBuffer)], { type: 'image/png' }), 'slide.png');
     form.append('media_category', 'tweet_image');
@@ -74,7 +72,7 @@ async function uploadMedia(imageBuffer: Buffer): Promise<string> {
 
     const response = await fetch('https://api.x.com/2/media/upload', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${oauth2!.accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       body: form,
     });
 
@@ -99,10 +97,10 @@ async function uploadMedia(imageBuffer: Buffer): Promise<string> {
  * Post a carousel deck to X/Twitter.
  * Uploads up to 4 images per tweet (X limit), threads the rest.
  */
-export async function postToX(
+async function submitToX(
   deck: CarouselDeck,
   caption: string,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; checkpoint?: (id: string) => Promise<void> } = {},
 ): Promise<PostResult> {
   if (options.dryRun) {
     logger.info({
@@ -113,6 +111,7 @@ export async function postToX(
     return {
       platform: 'x',
       postId: 'dry-run',
+      publicationStatus: 'dry-run',
       url: 'https://x.com/dry-run',
       postedAt: new Date().toISOString(),
       contentId: deck.id,
@@ -135,20 +134,22 @@ export async function postToX(
   const secondBatch = mediaIds.slice(4);
 
   // Post main tweet with first 4 images
-  const firstTweet: TweetV2PostTweetResult = await client.v2.tweet({
+  const firstTweet: TweetV2PostTweetResult = await (await getTwitterClient()).v2.tweet({
     text: caption,
     media: { media_ids: firstBatch },
   });
 
+  await options.checkpoint?.(firstTweet.data.id);
   logger.info({ tweetId: firstTweet.data.id }, 'Posted main tweet to X');
 
   // Thread remaining images if any
   if (secondBatch.length > 0) {
-    await client.v2.tweet({
+    const replyTweet = await (await getTwitterClient()).v2.tweet({
       text: '',
       reply: { in_reply_to_tweet_id: firstTweet.data.id },
       media: { media_ids: secondBatch as MediaIds },
     });
+    await options.checkpoint?.(replyTweet.data.id);
     logger.info('Posted thread reply with remaining slides');
   }
 
@@ -163,6 +164,7 @@ export async function postToX(
   return {
     platform: 'x',
     postId: firstTweet.data.id,
+    publicationStatus: 'published',
     url,
     postedAt: new Date().toISOString(),
     contentId: deck.id,
@@ -195,10 +197,10 @@ async function uploadVideoChunked(videoPath: string): Promise<string> {
  * Post a video to X/Twitter.
  * Uploads via chunked media API, then tweets with the video attached.
  */
-export async function postVideoToX(
+async function submitVideoToX(
   video: VideoProject,
   caption: string,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; checkpoint?: (id: string) => Promise<void> } = {},
 ): Promise<PostResult> {
   if (options.dryRun) {
     logger.info({
@@ -209,6 +211,7 @@ export async function postVideoToX(
     return {
       platform: 'x',
       postId: 'dry-run',
+      publicationStatus: 'dry-run',
       url: 'https://x.com/dry-run',
       postedAt: new Date().toISOString(),
       contentId: video.id,
@@ -227,11 +230,12 @@ export async function postVideoToX(
   const mediaId = await uploadVideoChunked(video.finalVideoPath);
 
   // Post tweet with video
-  const tweet: TweetV2PostTweetResult = await client.v2.tweet({
+  const tweet: TweetV2PostTweetResult = await (await getTwitterClient()).v2.tweet({
     text: caption,
     media: { media_ids: [mediaId] as MediaIds },
   });
 
+  await options.checkpoint?.(tweet.data.id);
   logger.info({ tweetId: tweet.data.id }, 'Posted video tweet to X');
 
   let url: string;
@@ -245,9 +249,20 @@ export async function postVideoToX(
   return {
     platform: 'x',
     postId: tweet.data.id,
+    publicationStatus: 'published',
     url,
     postedAt: new Date().toISOString(),
     contentId: video.id,
     format: 'video',
   };
+}
+
+export async function postToX(deck: CarouselDeck, caption: string, options: { dryRun?: boolean } = {}): Promise<PostResult> {
+  return publishOnce({ platform: 'x', format: 'carousel', contentId: deck.id }, options,
+    (checkpoint) => submitToX(deck, caption, { ...options, checkpoint }));
+}
+
+export async function postVideoToX(video: VideoProject, caption: string, options: { dryRun?: boolean } = {}): Promise<PostResult> {
+  return publishOnce({ platform: 'x', format: 'video', contentId: video.id }, options,
+    (checkpoint) => submitVideoToX(video, caption, { ...options, checkpoint }));
 }

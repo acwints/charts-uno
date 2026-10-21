@@ -1,7 +1,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { marketingConfig, logger } from '../config.js';
-import { loadMarketingState, saveMarketingState } from '../state.js';
+import { loadMarketingState, updateMarketingState } from '../state.js';
 import { classifyPerformance, getQuadrantAdvice } from './tracker.js';
 import type { DailyReport, PerformanceQuadrant, MarketingState } from '../types.js';
 
@@ -93,8 +93,7 @@ export async function generateDailyReport(days = 3): Promise<DailyReport> {
   await writeFile(reportPath, formatReportMarkdown(report, analytics), 'utf-8');
 
   // Update state
-  state.lastDailyReport = report.date;
-  await saveMarketingState(state);
+  await updateMarketingState((current) => ({ ...current, lastDailyReport: report.date }));
 
   logger.info({ reportPath, totalPosts: report.totalPosts }, 'Daily report generated');
   return report;

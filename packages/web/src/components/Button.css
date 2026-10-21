@@ -100,3 +100,10 @@
     transform: none;
   }
 }
+
+@media (max-width: 768px) {
+  .button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

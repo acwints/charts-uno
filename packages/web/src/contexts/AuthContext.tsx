@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { getCurrentUser, setAuthCookie, logout as apiLogout, deleteAccount as apiDeleteAccount, getAuthUrl } from '../services/api';
+import { getCurrentUser, logout as apiLogout, deleteAccount as apiDeleteAccount } from '../services/api';
+import { beginBrowserSignIn, finishBrowserSignIn } from '../services/browserAuth';
 import { isNativeApp, signInNative, signInWithApple, signInWithReview, restoreNativeSession, clearNativeSession } from '../services/native';
 import { ApiError } from '../services/apiBase';
 import type { User } from '../services/api';
@@ -57,24 +58,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const authToken = params.get('auth_token');
+    const authCode = params.get('auth_code');
+    const authState = params.get('auth_state') || '';
     const authError = params.get('auth_error');
+    const cleanUrl = new URL(window.location.href);
+    for (const key of ['auth_code', 'auth_state', 'auth_token', 'auth_error']) cleanUrl.searchParams.delete(key);
+    const cleanTarget = `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`;
 
     if (authError) {
       setState({
         user: null,
         isLoading: false,
         isAuthenticated: false,
-        error: decodeURIComponent(authError),
+        error: authError,
       });
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', cleanTarget);
       return;
     }
 
-    if (authToken) {
-      setAuthCookie(authToken)
+    if (authCode) {
+      window.history.replaceState({}, '', cleanTarget);
+      finishBrowserSignIn(authCode, authState)
         .then(() => {
-          window.history.replaceState({}, '', window.location.pathname);
           return checkAuth();
         })
         .catch((err) => {
@@ -84,10 +89,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             isAuthenticated: false,
             error: err instanceof Error ? err.message : 'Authentication failed',
           });
-          window.history.replaceState({}, '', window.location.pathname);
         });
       return;
     }
+
+    if (params.has('auth_token')) window.history.replaceState({}, '', cleanTarget);
 
     // Native: load the Keychain token before the first account check.
     void restoreNativeSession().then(checkAuth);
@@ -140,8 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsSigningIn(true);
     setState((prev) => ({ ...prev, error: null }));
     try {
-      const { auth_url } = await getAuthUrl(window.location.href);
-      window.location.href = auth_url;
+      window.location.href = await beginBrowserSignIn(window.location.href);
     } catch (error) {
       setState((prev) => ({
         ...prev,
