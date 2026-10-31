@@ -159,12 +159,12 @@ class AccessRegressionTests(unittest.TestCase):
             c.execute(text("DROP TABLE IF EXISTS alembic_version"))
         main.init_db()
         with engine.begin() as c:
-            self.assertEqual(c.execute(text("SELECT version_num FROM alembic_version")).scalar(), "006_fix_charts_is_public_boolean")
+            self.assertEqual(c.execute(text("SELECT version_num FROM alembic_version")).scalar(), "007_add_chart_share_token")
             # Recover the exact historical failure: latest columns, old stamp.
             c.execute(text("UPDATE alembic_version SET version_num='002_add_branding'"))
         main.init_db(); main.init_db()
         with engine.connect() as c:
-            self.assertEqual(c.execute(text("SELECT version_num FROM alembic_version")).scalar(), "006_fix_charts_is_public_boolean")
+            self.assertEqual(c.execute(text("SELECT version_num FROM alembic_version")).scalar(), "007_add_chart_share_token")
         self.db.refresh(self.chart)
         self.assertEqual(self.chart.data["series"][0]["data"], [42])
 

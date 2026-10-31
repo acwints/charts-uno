@@ -130,6 +130,15 @@ from services.web_auth import create_web_state, read_web_state, callback_url as 
 from services.apple_auth import upsert_apple_user, verify_apple_identity_token
 from services.account_deletion import delete_user_account
 from services.chart_design import design_chart, apply_design, heuristic_design
+from services.share_page import (
+    TOKEN_RE,
+    display_title,
+    real_signup_count,
+    render_missing_share_html,
+    render_share_html,
+    render_share_png,
+    share_url,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -234,6 +243,25 @@ async def startup_event():
 
 
 # Health check
+@app.get("/api/stats/signups")
+@limiter.limit("30/minute")
+async def signup_count(request: Request, db: Session = Depends(get_db)):
+    """Real signup count.
+
+    Returns only an aggregate. Accounts on reserved example domains, the
+    .test/.invalid/.localhost TLDs, the bot user, and the App Review demo
+    are excluded. Read it with:
+
+        curl -s https://www.chartsuno.com/api/stats/signups
+    """
+    _ = request
+    return Response(
+        content=json.dumps({"count": real_signup_count(db)}),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.get("/health")
 async def health_check():
     return {
@@ -759,6 +787,7 @@ async def hide_reported_chart(
         chart = db.query(Chart).filter(Chart.id == report.chart_id).first()
         if chart:
             chart.is_public = False
+            chart.share_token = None
     report.status = "hidden"
     db.commit()
     return {"status": "hidden"}
@@ -1091,6 +1120,148 @@ async def get_chart(
     db.commit()
 
     return _chart_to_response(chart, current_user, db)
+
+
+def _share_status(chart: Chart) -> dict:
+    token = (chart.share_token or "").strip()
+    if not token:
+        return {"enabled": False, "url": None, "token": None}
+    return {"enabled": True, "url": share_url(token), "token": token}
+
+
+def _chart_for_share_token(db: Session, token: str) -> Optional[Chart]:
+    if not TOKEN_RE.match(token or ""):
+        return None
+    return db.query(Chart).filter(Chart.share_token == token).first()
+
+
+def _share_html_response(body: str, status_code: int) -> Response:
+    return Response(
+        content=body,
+        status_code=status_code,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Cache-Control": "public, max-age=60",
+            "X-Robots-Tag": "noindex",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+            "Content-Security-Policy": "default-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; base-uri 'none'",
+        },
+    )
+
+
+@app.get("/api/charts/{chart_id}/share")
+async def read_chart_share(
+    chart_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Whether the owner has a public read-only link for this chart."""
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
+    return _share_status(chart)
+
+
+@app.post("/api/charts/{chart_id}/share")
+@limiter.limit("30/minute")
+async def enable_chart_share(
+    chart_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create or return the unlisted share link. Does not publish to the feed."""
+    _ = request
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
+    if not (chart.share_token or "").strip():
+        token = None
+        for _attempt in range(3):
+            candidate = secrets.token_urlsafe(24)
+            if db.query(Chart.id).filter(Chart.share_token == candidate).first():
+                continue
+            token = candidate
+            break
+        if not token:
+            raise HTTPException(status_code=500, detail="Could not create a share link")
+        chart.share_token = token
+        db.commit()
+        db.refresh(chart)
+    return _share_status(chart)
+
+
+@app.delete("/api/charts/{chart_id}/share")
+async def disable_chart_share(
+    chart_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Turn the share link off. The chart stays in the owner's library."""
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
+    chart.share_token = None
+    db.commit()
+    return {"enabled": False, "url": None, "token": None}
+
+
+@app.get("/api/share/{token}")
+@limiter.limit("60/minute")
+async def read_public_share(
+    token: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Public chart fields for a share link. No account details."""
+    _ = request
+    chart = _chart_for_share_token(db, token)
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    data = chart.data if isinstance(chart.data, dict) else {}
+    config = chart.config if isinstance(chart.config, dict) else {}
+    series = []
+    for item in (data.get("series") or [])[:8]:
+        if not isinstance(item, dict):
+            continue
+        series.append({
+            "name": str(item.get("name") or "Series")[:120],
+            "data": item.get("data") if isinstance(item.get("data"), list) else [],
+        })
+    author = chart.user.name if chart.user and chart.user.name else None
+    return {
+        "title": display_title(chart),
+        "author_name": author,
+        "chart_type": str(config.get("type") or "bar"),
+        "labels": [str(item)[:80] for item in (data.get("labels") or [])[:40]],
+        "series": series,
+    }
+
+
+@app.get("/s/{token}/og.png")
+@limiter.limit("60/minute")
+async def share_preview_image(token: str, request: Request, db: Session = Depends(get_db)):
+    """Open Graph preview for a share link."""
+    _ = request
+    chart = _chart_for_share_token(db, token)
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    return Response(
+        content=render_share_png(chart),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=120", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@app.get("/s/{token}")
+@limiter.limit("60/minute")
+async def share_page(token: str, request: Request, db: Session = Depends(get_db)):
+    """Read-only public chart page with title and preview meta tags."""
+    _ = request
+    chart = _chart_for_share_token(db, token)
+    if not chart:
+        return _share_html_response(render_missing_share_html(), 404)
+    chart.view_count += 1
+    db.commit()
+    return _share_html_response(render_share_html(chart, token), 200)
 
 
 @app.put("/api/charts/{chart_id}", response_model=ChartResponse)

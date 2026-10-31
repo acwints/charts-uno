@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CSV to Chart: Turn a CSV File into a Chart Online | Chartsuno</title>
+  <meta name="description" content="Turn a CSV into a chart in the browser. Paste the rows, edit any value, then save, export a PNG, or share a link with a free account.">
+  <link rel="canonical" href="https://www.chartsuno.com/csv-to-chart">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="CSV to Chart: Turn a CSV File into a Chart Online | Chartsuno">
+  <meta property="og:description" content="Turn a CSV into a chart in the browser. Paste the rows, edit any value, then save, export a PNG, or share a link with a free account.">
+  <meta property="og:url" content="https://www.chartsuno.com/csv-to-chart">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CSV to Chart: Turn a CSV File into a Chart Online | Chartsuno">
+  <meta name="twitter:description" content="Turn a CSV into a chart in the browser. Paste the rows, edit any value, then save, export a PNG, or share a link with a free account.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is converting CSV to a chart free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Can I change the data after importing?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every value and label can be edited in the data editor, and the chart updates. Save when you want My Charts and the share link to match."}},{"@type":"Question","name":"Can I get my data back out?","acceptedAnswer":{"@type":"Answer","text":"Yes, once you are signed in. The export menu downloads the chart data as a CSV and the chart as a PNG."}},{"@type":"Question","name":"What if my CSV uses semicolons or has extra columns?","acceptedAnswer":{"@type":"Answer","text":"Comma, tab, semicolon, and pipe-separated tables are detected. Paste only the columns you need if the file is wider than the chart should be, and fix anything that still looks wrong in the data editor."}},{"@type":"Question","name":"Where are my charts saved?","acceptedAnswer":{"@type":"Answer","text":"In My Charts, after you sign in and save. You can reopen, edit, and export them later. A free account includes 10 saved charts a month."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-mast {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Turn a CSV into a chart</h1>
+    <p class="seo-lede">Exports from analytics, forms, and databases usually arrive as CSV. The usual next step is a spreadsheet: import, pick a range, insert a chart, then fix the formatting. Paste the CSV into Chartsuno and the chart is the starting point.</p>
+    <figure class="seo-sample"><figcaption>Paste the header row. Chartsuno uses the first column as labels and the rest as series.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Jan</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:61%"></span></span><span class="seo-bar-value">420</span></li><li><span class="seo-bar-label">Feb</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:74%"></span></span><span class="seo-bar-value">510</span></li><li><span class="seo-bar-label">Mar</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">690</span></li></ul></figure>
+    <h2>From CSV to chart</h2>
+<ol><li><strong>Paste the CSV or drop the file.</strong> Include the header row. You can paste into the data box or upload a .csv file up to 10MB.</li><li><strong>Check the data.</strong> The data editor shows what was read. Fix a stray value, rename a column, or add rows on the same page.</li><li><strong>Polish it.</strong> Set the title and the chart type. Bar, line, and area charts are the usual fit for a tidy table.</li><li><strong>Save, export, or share.</strong> Download a PNG or the data back out as CSV, or copy a share link. Those actions need a free account. The chart stays in My Charts after you save it.</li></ol>
+<h2>What kind of CSV works best?</h2>
+<p>Chartsuno works best with a tidy table: a header row, one label column, and one or more number columns. Plain numbers are safest. If currency symbols or thousands separators read wrong, take them out or fix the cells in the data editor.</p>
+<p>If the export has dozens of columns, paste just the ones you want to chart. Two or three series are usually easier to read than twelve.</p>
+<h2>Example</h2>
+<pre>Month,Signups,Churned
+Jan,420,38
+Feb,510,41
+Mar,690,45</pre>
+<p>Paste that and you get a chart of signups against churn by month. Comma, tab, semicolon, and pipe-separated tables are detected. If an export still reads wrong, paste only the columns you need or fix the cells in the data editor.</p>
+<h2>Why not open it in a spreadsheet?</h2>
+<p>You can. If all you want is the chart, a spreadsheet adds importing, delimiter choices, range selection, and then a pass to fix the default style. In Chartsuno you edit the data in place and the chart keeps its design.</p>
+<dl class="seo-faq"><dt>Is converting CSV to a chart free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Can I change the data after importing?</dt><dd>Yes. Every value and label can be edited in the data editor, and the chart updates. Save when you want My Charts and the share link to match.</dd><dt>Can I get my data back out?</dt><dd>Yes, once you are signed in. The export menu downloads the chart data as a CSV and the chart as a PNG.</dd><dt>What if my CSV uses semicolons or has extra columns?</dt><dd>Comma, tab, semicolon, and pipe-separated tables are detected. Paste only the columns you need if the file is wider than the chart should be, and fix anything that still looks wrong in the data editor.</dd><dt>Where are my charts saved?</dt><dd>In My Charts, after you sign in and save. You can reopen, edit, and export them later. A free account includes 10 saved charts a month.</dd></dl>
+    <a class="seo-cta" href="/">Paste a CSV</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a></p>
+  </article>
+</body>
+</html>

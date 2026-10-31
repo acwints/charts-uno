@@ -178,6 +178,7 @@ export function ChartWorkbench({
                 title={config.title}
                 watermark={watermark}
                 isAuthenticated={isAuthenticated}
+                canManageLink={canEditSavedChart}
               />
             </>
           )}
