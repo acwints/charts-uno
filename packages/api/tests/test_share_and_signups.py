@@ -4,6 +4,7 @@ import struct
 import tempfile
 import unittest
 import zlib
+from datetime import datetime, timedelta
 
 _fd, _path = tempfile.mkstemp(prefix="chartsuno_share_test_", suffix=".db")
 os.close(_fd)
@@ -13,7 +14,8 @@ from fastapi.testclient import TestClient
 import main
 from dependencies import create_access_token
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Base, SessionLocal, User, engine
-from services.share_page import CTA_TEXT
+from models.database import Chart
+from services.share_page import CTA_TEXT, SHARE_LINK_WINDOW_UNSUPPORTED
 
 
 def _png_pixels(data: bytes) -> bytes:
@@ -134,3 +136,57 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(counted.json(), {"count": 1})
         self.assertEqual(counted.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", counted.text)
+
+    def test_activity_stats_are_counts_only_and_skip_unsupported_share_window(self):
+        now = datetime.utcnow()
+        real = User(email="maker@gmail.com", google_id="maker", name="Maker")
+        quiet = User(email="quiet@gmail.com", google_id="quiet", name="Quiet")
+        sample = User(email="sample@example.com", google_id="sample", name="Sample")
+        self.db.add_all([real, quiet, sample])
+        self.db.commit()
+        recent = Chart(
+            user_id=real.id,
+            title="Recent",
+            data={"labels": ["A"], "series": [{"name": "S", "data": [1]}]},
+            config={"type": "bar", "title": "Recent"},
+            share_token="recent-share-token-value-ok",
+            created_at=now - timedelta(days=1),
+        )
+        older = Chart(
+            user_id=real.id,
+            title="Older",
+            data={"labels": ["A"], "series": [{"name": "S", "data": [1]}]},
+            config={"type": "bar", "title": "Older"},
+            created_at=now - timedelta(days=8),
+        )
+        also_recent = Chart(
+            user_id=real.id,
+            title="Also recent",
+            data={"labels": ["A"], "series": [{"name": "S", "data": [2]}]},
+            config={"type": "line", "title": "Also recent"},
+            created_at=now - timedelta(days=2),
+        )
+        example_recent = Chart(
+            user_id=sample.id,
+            title="Example recent",
+            data={"labels": ["A"], "series": [{"name": "S", "data": [3]}]},
+            config={"type": "bar", "title": "Example"},
+            share_token="example-share-token-value",
+            created_at=now - timedelta(hours=1),
+        )
+        self.db.add_all([recent, older, also_recent, example_recent])
+        self.db.commit()
+
+        response = self.client.get("/api/stats/activity")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        body = response.json()
+        self.assertEqual(body["signups"], 2)
+        self.assertEqual(body["chart_creators_7d"], 1)
+        self.assertEqual(body["charts_created_7d"], 2)
+        self.assertIsNone(body["share_link_enablers_7d"])
+        self.assertIn("share_token", body["unsupported"]["share_link_enablers_7d"])
+        self.assertEqual(body["unsupported"]["share_link_enablers_7d"], SHARE_LINK_WINDOW_UNSUPPORTED)
+        self.assertNotIn("gmail.com", response.text)
+        self.assertNotIn("example.com", response.text)
+        self.assertNotIn("Maker", response.text)

@@ -13,6 +13,7 @@ import os
 import re
 import struct
 import zlib
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from sqlalchemy import func, or_
@@ -98,8 +99,8 @@ def share_url(token: str) -> str:
     return f"{public_web_origin()}/s/{token}"
 
 
-def real_signup_count(db: Session) -> int:
-    """Accounts a person created. Reserved test domains and the review demo are out.
+def excluded_account_clause():
+    """Accounts that are not real signups.
 
     Excluded:
     - @example.com, @example.org, @example.net (reserved examples)
@@ -107,7 +108,7 @@ def real_signup_count(db: Session) -> int:
     - @chartsuno.local (the bot service user)
     - the App Review demo account
     """
-    excluded = or_(
+    return or_(
         User.email.ilike("%@example.com"),
         User.email.ilike("%@example.org"),
         User.email.ilike("%@example.net"),
@@ -117,8 +118,45 @@ def real_signup_count(db: Session) -> int:
         User.email.ilike("%@chartsuno.local"),
         User.google_id == REVIEW_LOGIN_GOOGLE_ID,
     )
-    count = db.query(func.count(User.id)).filter(~excluded).scalar()
+
+
+def real_signup_count(db: Session) -> int:
+    """Accounts a person created. Reserved test domains and the review demo are out."""
+    count = db.query(func.count(User.id)).filter(~excluded_account_clause()).scalar()
     return int(count or 0)
+
+
+SHARE_LINK_WINDOW_UNSUPPORTED = (
+    "charts.share_token has no timestamp. A link can be on or off, but not dated, "
+    "so users who enabled a share link in the last 7 days cannot be counted."
+)
+
+
+def activity_stats(db: Session, now=None) -> dict:
+    """Aggregate counts only. No emails, names, or chart contents.
+
+    share_link_enablers_7d is null because the schema cannot support it.
+    """
+    moment = now or datetime.utcnow()
+    window_start = moment - timedelta(days=7)
+    real_users = db.query(User.id).filter(~excluded_account_clause())
+    recent_charts = db.query(Chart).filter(
+        Chart.created_at >= window_start,
+        Chart.user_id.in_(real_users),
+    )
+    charts_created = recent_charts.count()
+    creators = (
+        db.query(func.count(func.distinct(Chart.user_id)))
+        .filter(Chart.created_at >= window_start, Chart.user_id.in_(real_users))
+        .scalar()
+    )
+    return {
+        "signups": real_signup_count(db),
+        "chart_creators_7d": int(creators or 0),
+        "charts_created_7d": int(charts_created or 0),
+        "share_link_enablers_7d": None,
+        "unsupported": {"share_link_enablers_7d": SHARE_LINK_WINDOW_UNSUPPORTED},
+    }
 
 
 def display_title(chart: Chart) -> str:

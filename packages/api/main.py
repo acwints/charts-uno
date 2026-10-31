@@ -133,6 +133,7 @@ from services.chart_design import design_chart, apply_design, heuristic_design
 from services.share_page import (
     TOKEN_RE,
     display_title,
+    activity_stats,
     real_signup_count,
     render_missing_share_html,
     render_share_html,
@@ -257,6 +258,21 @@ async def signup_count(request: Request, db: Session = Depends(get_db)):
     _ = request
     return Response(
         content=json.dumps({"count": real_signup_count(db)}),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/api/stats/activity")
+@limiter.limit("30/minute")
+async def activity_count(request: Request, db: Session = Depends(get_db)):
+    """Signup and recent-chart counts. No personal data.
+
+    share_link_enablers_7d is null: share links are not timestamped.
+    """
+    _ = request
+    return Response(
+        content=json.dumps(activity_stats(db)),
         media_type="application/json",
         headers={"Cache-Control": "no-store"},
     )
