@@ -113,6 +113,24 @@ export async function updateChart(chartId: string, data: Partial<CreateChartData
   return apiRequest(`/api/charts/${chartId}`, { method: 'PUT', body: data });
 }
 
+export interface ChartShareStatus {
+  enabled: boolean;
+  url: string | null;
+  token: string | null;
+}
+
+export function getChartShare(chartId: string): Promise<ChartShareStatus> {
+  return apiRequest(`/api/charts/${chartId}/share`);
+}
+
+export function enableChartShare(chartId: string): Promise<ChartShareStatus> {
+  return apiRequest(`/api/charts/${chartId}/share`, { method: 'POST' });
+}
+
+export function disableChartShare(chartId: string): Promise<ChartShareStatus> {
+  return apiRequest(`/api/charts/${chartId}/share`, { method: 'DELETE' });
+}
+
 export async function deleteChart(chartId: string): Promise<void> {
   await apiRequest(`/api/charts/${chartId}`, { method: 'DELETE' });
 }

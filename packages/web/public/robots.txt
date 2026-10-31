@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /settings
+Disallow: /dashboard
+Disallow: /s/
+
+Sitemap: https://www.chartsuno.com/sitemap.xml

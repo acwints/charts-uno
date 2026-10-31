@@ -75,6 +75,19 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   };
 
+  useEffect(() => {
+    if (isNativeApp() || isAuthLoading) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get('auth') !== '1') return;
+    if (!isAuthenticated) openAuthModal();
+    params.delete('auth');
+    const next = params.toString();
+    navigate(
+      { pathname: location.pathname, search: next ? `?${next}` : '', hash: location.hash },
+      { replace: true },
+    );
+  }, [location.hash, location.pathname, location.search, isAuthLoading, isAuthenticated, navigate, openAuthModal]);
+
   const showOnboarding =
     isPhoneViewport && !isAuthLoading && !isAuthenticated && !hasOnboarded;
 
@@ -139,6 +152,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           <nav className="footer-links">
             <Link to="/new" className="footer-link">Create</Link>
             <Link to="/feed" className="footer-link">Explore</Link>
+            <Link to="/bar-chart-maker" className="footer-link">Bar charts</Link>
+            <Link to="/csv-to-chart" className="footer-link">CSV to chart</Link>
+            <Link to="/iphone-chart-maker" className="footer-link">iPhone</Link>
             <Link to="/terms" className="footer-link">Terms</Link>
             <Link to="/privacy" className="footer-link">Privacy</Link>
           </nav>

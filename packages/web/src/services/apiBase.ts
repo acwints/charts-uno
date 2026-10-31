@@ -8,6 +8,17 @@ const NATIVE_API_ORIGIN = 'https://www.chartsuno.com';
 /** Public site origin. Shared chart links from the iOS app must not use capacitor://localhost. */
 export const PUBLIC_WEB_ORIGIN = 'https://chartsuno.com';
 
+/** Read-only public page for a share token. Native builds must not use capacitor://. */
+export function browserShareUrl(token: string): string {
+  if (Capacitor.isNativePlatform() || typeof window === 'undefined') {
+    return `https://www.chartsuno.com/s/${token}`;
+  }
+  if (PROD_HOST_PATTERN.test(window.location.hostname)) {
+    return `https://www.chartsuno.com/s/${token}`;
+  }
+  return `${window.location.origin}/s/${token}`;
+}
+
 export function chartShareUrl(chartId: string): string {
   if (Capacitor.isNativePlatform() || typeof window === 'undefined') {
     return `${PUBLIC_WEB_ORIGIN}/chart/${chartId}`;

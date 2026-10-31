@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { chartShareUrl } from '../../services/apiBase';
+import { browserShareUrl, chartShareUrl } from '../../services/apiBase';
+import { disableChartShare, enableChartShare, getChartShare } from '../../services/api';
 import { isNativeApp } from '../../services/native';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
 import Check from 'lucide-react/dist/esm/icons/check';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import Unlink from 'lucide-react/dist/esm/icons/unlink';
 import { copyImageToClipboard, shareChartImage, type WatermarkSettings } from '../../services/exportService';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../Button';
 import './ShareMenu.css';
 
 type SharePlatform = 'x' | 'linkedin';
-type ShareActivity = SharePlatform | 'copy' | 'native';
+type ShareActivity = SharePlatform | 'copy' | 'native' | 'link' | 'unlink';
 
 interface ShareMenuProps {
   chartRef: React.RefObject<HTMLElement | null>;
@@ -21,6 +24,7 @@ interface ShareMenuProps {
   title?: string;
   watermark?: WatermarkSettings;
   isAuthenticated?: boolean;
+  canManageLink?: boolean;
 }
 
 function XMark({ size = 16 }: { size?: number }) {
@@ -44,11 +48,29 @@ export function ShareMenu({
   title,
   watermark,
   isAuthenticated = false,
+  canManageLink = true,
 }: ShareMenuProps) {
   const [copiedImage, setCopiedImage] = useState(false);
   const [shareActivity, setShareActivity] = useState<ShareActivity | null>(null);
   const [pasteHint, setPasteHint] = useState<SharePlatform | null>(null);
+  const [shareEnabled, setShareEnabled] = useState(false);
   const toast = useToast();
+
+  useEffect(() => {
+    if (!canManageLink || !chartId || !isAuthenticated) {
+      setShareEnabled(false);
+      return undefined;
+    }
+    let cancelled = false;
+    getChartShare(chartId).then((status) => {
+      if (!cancelled) setShareEnabled(status.enabled);
+    }).catch(() => {
+      if (!cancelled) setShareEnabled(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [canManageLink, chartId, isAuthenticated]);
 
   const isMac = navigator.platform.toUpperCase().includes('MAC');
   const pasteShortcut = isMac ? '⌘V' : 'Ctrl+V';
@@ -68,6 +90,78 @@ export function ShareMenu({
     if (publicChartUrl) params.set('url', publicChartUrl);
     return `https://twitter.com/intent/tweet?${params.toString()}`;
   };
+
+  const handleCopyLink = async () => {
+    if (!chartId) {
+      toast.error('Save the chart first, then copy a share link');
+      return;
+    }
+    setShareActivity('link');
+    try {
+      const status = await enableChartShare(chartId);
+      if (!status.token) throw new Error('Could not create a share link');
+      const url = browserShareUrl(status.token);
+      setShareEnabled(true);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success('Share link copied. Anyone with it can view this saved chart.');
+      } catch {
+        toast.success(`Share link ready: ${url}`);
+      }
+    } catch (error) {
+      console.error('Copy share link failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Could not copy a share link');
+    } finally {
+      setShareActivity(null);
+    }
+  };
+
+  const handleDisableLink = async () => {
+    if (!chartId) return;
+    setShareActivity('unlink');
+    try {
+      await disableChartShare(chartId);
+      setShareEnabled(false);
+      toast.success('Share link turned off');
+    } catch (error) {
+      console.error('Disable share link failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Could not turn off the share link');
+    } finally {
+      setShareActivity(null);
+    }
+  };
+
+  const linkButtons = canManageLink ? (
+    <>
+      <Button
+        variant="default"
+        size="sm"
+        className="share-action share-action--link"
+        onClick={handleCopyLink}
+        disabled={isShareDisabled}
+        aria-label="Copy share link"
+        aria-busy={shareActivity === 'link'}
+        title={chartId ? 'Copy a public read-only link' : 'Save the chart to copy a share link'}
+      >
+        <Link2 size={16} />
+        <span><span className="share-action-prefix">Copy </span>link</span>
+      </Button>
+      {shareEnabled && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="share-action share-action--unlink"
+          onClick={handleDisableLink}
+          disabled={shareActivity !== null}
+          aria-label="Turn off share link"
+          aria-busy={shareActivity === 'unlink'}
+          title="Turn off share link"
+        >
+          <Unlink size={16} />
+        </Button>
+      )}
+    </>
+  ) : null;
 
   const copyChartImage = async () => {
     if (!chartRef.current) throw new Error('Chart preview is not available');
@@ -128,6 +222,7 @@ export function ShareMenu({
       }}>
         <Share2 size={16} /><span>{shareActivity === 'native' ? 'Preparing…' : 'Share image'}</span>
       </Button>
+      {linkButtons}
     </div>
   );
 
@@ -158,6 +253,8 @@ export function ShareMenu({
         <Linkedin size={16} />
         <span><span className="share-action-prefix">Share to </span>LinkedIn</span>
       </Button>
+
+      {linkButtons}
 
       <Button
         variant="ghost"

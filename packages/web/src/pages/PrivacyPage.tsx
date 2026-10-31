@@ -4,7 +4,7 @@ export function PrivacyPage() {
   return (
     <article className="legal">
       <h1>Privacy Policy</h1>
-      <span className="legal-updated">Last updated: October 14, 2026</span>
+      <span className="legal-updated">Last updated: October 31, 2026</span>
 
       <p>
         This Privacy Policy explains how WA LLC ("we", "us", "our") collects,
@@ -64,7 +64,8 @@ export function PrivacyPage() {
       <p>We share your information only in the following circumstances:</p>
       <ul>
         <li><strong>With your team.</strong> Charts published to a team are visible to team members.</li>
-        <li><strong>Public charts.</strong> Charts you choose to make public are visible to anyone with the link.</li>
+        <li><strong>Public charts.</strong> Charts you choose to publish are visible on the community feed and to anyone with the chart page.</li>
+        <li><strong>Share links.</strong> If you copy a share link, anyone with that link can view that saved chart, including people who are not signed in. The link does not by itself put the chart on the community feed. You can turn the link off.</li>
         <li><strong>Service providers.</strong> We use trusted third parties for hosting (Railway, Vercel), payments (Polar), sign-in (Google and Apple), and AI processing (for example Anthropic or OpenAI, when you use those features). These providers access data only as needed to perform their services.</li>
         <li><strong>Legal requirements.</strong> We may disclose information if required by law or to protect our rights and safety.</li>
       </ul>

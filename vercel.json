@@ -9,6 +9,8 @@
     { "source": "/health", "destination": "https://api-production-af19.up.railway.app/health" },
     { "source": "/health/(.*)", "destination": "https://api-production-af19.up.railway.app/health/$1" },
     { "source": "/api/(.*)", "destination": "https://api-production-af19.up.railway.app/api/$1" },
+    { "source": "/s/:token/og.png", "destination": "https://api-production-af19.up.railway.app/s/:token/og.png" },
+    { "source": "/s/:token", "destination": "https://api-production-af19.up.railway.app/s/:token" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

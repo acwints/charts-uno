@@ -105,7 +105,8 @@
   }
 
   .share-action--x.button,
-  .share-action--linkedin.button {
+  .share-action--linkedin.button,
+  .share-action--link.button {
     flex: 1;
   }
 

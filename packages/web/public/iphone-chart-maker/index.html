@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chart Maker for iPhone: Make Charts from Your Data | Chartsuno</title>
+  <meta name="description" content="Make charts on your iPhone in the browser. Paste data, edit with your thumb, then export or share. The iOS app is not on the App Store yet.">
+  <link rel="canonical" href="https://www.chartsuno.com/iphone-chart-maker">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Chart Maker for iPhone: Make Charts from Your Data | Chartsuno">
+  <meta property="og:description" content="Make charts on your iPhone in the browser. Paste data, edit with your thumb, then export or share. The iOS app is not on the App Store yet.">
+  <meta property="og:url" content="https://www.chartsuno.com/iphone-chart-maker">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Chart Maker for iPhone: Make Charts from Your Data | Chartsuno">
+  <meta name="twitter:description" content="Make charts on your iPhone in the browser. Paste data, edit with your thumb, then export or share. The iOS app is not on the App Store yet.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Chartsuno available on iPhone?","acceptedAnswer":{"@type":"Answer","text":"The iOS app is in App Review and is not on the App Store yet. Chartsuno works today in Safari at chartsuno.com. This page sends you there."}},{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Can I start on my phone and finish on a laptop?","acceptedAnswer":{"@type":"Answer","text":"Yes, after you save. Charts live in My Charts on your account, so you can open them again on another browser and keep editing."}},{"@type":"Question","name":"How do I share a chart from my phone?","acceptedAnswer":{"@type":"Answer","text":"Sign in, then download a PNG or copy a share link. A share link opens a read-only page with the chart title. Saving and sharing need a free account."}},{"@type":"Question","name":"Do I need a spreadsheet first?","acceptedAnswer":{"@type":"Answer","text":"No. Paste or type your data straight into Chartsuno."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-mast {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>A chart maker for your iPhone</h1>
+    <p class="seo-lede">Making a chart on a phone often means squinting at a spreadsheet, dragging selection handles, and hunting for the chart button. Chartsuno starts with the chart. Until the iOS app is on the App Store, open it in Safari.</p>
+    <figure class="seo-sample"><figcaption>Short labels and a few bars stay readable on a phone screen.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Mon</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:40%"></span></span><span class="seo-bar-value">2</span></li><li><span class="seo-bar-label">Wed</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">5</span></li><li><span class="seo-bar-label">Fri</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:80%"></span></span><span class="seo-bar-value">4</span></li></ul></figure>
+    <h2>What you can do on your phone today</h2>
+<ul><li><strong>Create a chart from data.</strong> Paste a table you copied from Notes, Messages, Mail, or a spreadsheet.</li><li><strong>Edit the data.</strong> Change a number, rename a label, or add a row. The chart updates as you type.</li><li><strong>Use the chart editor.</strong> Set the title and adjust the look without a desktop.</li><li><strong>Export and share, with a free account.</strong> Download a PNG from Safari and save it to Photos, or copy a share link. Previewing a chart does not require an account.</li><li><strong>Keep charts in My Charts.</strong> Saved charts stay in one library, so you can open the same account on a laptop and keep editing.</li></ul>
+<h2>The iOS app is not live yet</h2>
+<p>The iOS app is in App Review and is not on the App Store yet. The button below opens the web app, which works in Safari on an iPhone. When the app is approved, this page can point at it. Until then, do not wait on the store.</p>
+<h2>Made for on-the-go moments</h2>
+<ul><li>Posting a quick comparison</li><li>Sending a chart to your team before a meeting</li><li>Tracking personal numbers such as savings, workouts, or reading</li><li>Finishing a school assignment away from a laptop</li></ul>
+<h2>Tips for a phone screen</h2>
+<ul><li>Put the one takeaway in the title.</li><li>Fewer categories read better. Aim for under eight bars or slices.</li><li>Short labels beat long ones. Abbreviate months and units.</li></ul>
+<dl class="seo-faq"><dt>Is Chartsuno available on iPhone?</dt><dd>The iOS app is in App Review and is not on the App Store yet. Chartsuno works today in Safari at chartsuno.com. This page sends you there.</dd><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Can I start on my phone and finish on a laptop?</dt><dd>Yes, after you save. Charts live in My Charts on your account, so you can open them again on another browser and keep editing.</dd><dt>How do I share a chart from my phone?</dt><dd>Sign in, then download a PNG or copy a share link. A share link opens a read-only page with the chart title. Saving and sharing need a free account.</dd><dt>Do I need a spreadsheet first?</dt><dd>No. Paste or type your data straight into Chartsuno.</dd></dl>
+    <a class="seo-cta" href="/">Open Chartsuno in your browser</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a></p>
+  </article>
+</body>
+</html>

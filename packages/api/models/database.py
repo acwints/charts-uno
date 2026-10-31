@@ -124,6 +124,9 @@ class Chart(Base):
 
     # Metadata
     is_public = Column(Boolean, default=False)
+    # Unlisted read-only link. Null means the chart is not shared. Distinct
+    # from is_public, which lists the chart in the community feed.
+    share_token = Column(String(43), unique=True, nullable=True, index=True)
     view_count = Column(Integer, default=0)
     like_count = Column(Integer, default=0)
 
@@ -470,6 +473,7 @@ def init_db():
     # create_all does not add columns to tables that already exist, and the
     # Alembic chain is not a reliable path on the production database.
     ensure_user_auth_schema()
+    ensure_chart_share_schema()
 
 
 def ensure_user_auth_schema() -> None:
@@ -501,6 +505,32 @@ def ensure_user_auth_schema() -> None:
                 )
     except Exception as exc:
         logger.error("Could not ensure user auth columns: %s", exc)
+        raise
+
+
+def ensure_chart_share_schema() -> None:
+    """Add the unlisted share-token column on databases created before it existed.
+
+    create_all does not alter an existing charts table. The column stays null
+    until the owner copies a share link, so existing charts remain private.
+    """
+    import logging
+    from sqlalchemy import inspect, text
+
+    logger = logging.getLogger(__name__)
+    try:
+        inspector = inspect(engine)
+        if "charts" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("charts")}
+        with engine.begin() as conn:
+            if "share_token" not in columns:
+                conn.execute(text("ALTER TABLE charts ADD COLUMN share_token VARCHAR(43)"))
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_charts_share_token ON charts (share_token)"
+            ))
+    except Exception as exc:
+        logger.error("Could not ensure chart share column: %s", exc)
         raise
 
 
