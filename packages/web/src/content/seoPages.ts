@@ -458,6 +458,218 @@ export const seoPages: SeoPage[] = [
     ctaHref: '/',
     ctaLabel: 'Paste a Google Sheet',
   },
+  {
+    slug: 'scatter-plot-maker',
+    title: 'Free Scatter Plot Maker Online: Plot Two Number Columns | Chartsuno',
+    description:
+      'Paste two number columns and preview a scatter plot free in your browser. A free account saves it, exports PNG or SVG, or shares a link.',
+    h1: 'Make a scatter plot online, free',
+    lede:
+      'A scatter plot is for a relationship between two numbers: hours studied and a score, ad spend and signups, price and units sold. Paste the pairs. Chartsuno draws the points in the browser.',
+    sampleCaption: 'Each row is one point. On this page the bar stands in for the second number. In the app, choose Scatter and the same rows become points.',
+    sample: [
+      { label: '2', value: 4 },
+      { label: '5', value: 7 },
+      { label: '8', value: 6 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How it works' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste two number columns.** The first column is the horizontal position. The second is the vertical position. A header row is fine.',
+          '**Check the points in the data editor.** Fix a typo or drop a row that is not part of the comparison. The chart updates as you edit.',
+          '**Choose Scatter in the chart editor.** Set a title that states the relationship you are looking at. A line chart would connect the points and invent an order they may not have.',
+          '**Save, export, or share.** Previewing does not require an account. Sign in free to keep the plot in My Charts, download a PNG or SVG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'Scatter plot, line graph, or bar chart?' },
+      {
+        type: 'p',
+        text: 'Use a scatter plot when both axes are measurements and the question is whether they move together. Use a line graph when the horizontal axis is time and the point is the slope. Use bars when the labels are categories, such as products or cities, and connecting them would not mean anything.',
+      },
+      { type: 'h2', text: 'Tips for a scatter plot people can read' },
+      {
+        type: 'ul',
+        items: [
+          'Name both axes. “Score” and “Hours” beat an unlabeled cloud of points.',
+          'Put the takeaway in the title, for example “Scores rise with study time”, if the points actually show that.',
+          'One series is enough unless a second group is the comparison. A dozen overlapping series is a mess.',
+          'If a point is a typo, fix it in the data editor instead of stretching the axis around it.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I plot more than one series?',
+            a: 'Yes. Add another number column and Chartsuno can draw another series. Two groups are usually the limit of what a scatter plot can show clearly.',
+          },
+          {
+            q: 'Can I change a point after the plot is drawn?',
+            a: 'Yes. Edit any value in the data editor and the point moves. Save the chart if you want My Charts and the share link to match.',
+          },
+          {
+            q: 'How do I get the plot into my slides?',
+            a: 'Sign in, then download a PNG or SVG. You can also copy a share link to the saved chart. Previewing does not require an account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Make a free scatter plot',
+  },
+  {
+    slug: 'chart-from-excel',
+    title: 'Chart from Excel: Paste Cells, Get a Chart | Chartsuno',
+    description:
+      'Copy a range from Excel and turn it into a chart in the browser. Chartsuno does not open .xlsx files. Paste the cells, or upload a CSV, then export or share with a free account.',
+    h1: 'Make a chart from Excel',
+    lede:
+      'Excel can chart a range, and then you spend the next ten minutes on the default colors and a legend that covers the plot. If the chart is the point, copy the cells and paste them into Chartsuno. The workbook stays where it is.',
+    sampleCaption: 'A header and three rows, the kind of range you copy out of a worksheet.',
+    sample: [
+      { label: 'North', value: 42 },
+      { label: 'South', value: 31 },
+      { label: 'West', value: 55 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'From a worksheet to a chart' },
+      {
+        type: 'ol',
+        items: [
+          '**Copy the range in Excel.** Select the header row and the rows you want. Include the labels and the numbers. Leave the totals row out. Excel puts a tab-separated table on the clipboard.',
+          '**Paste into Chartsuno.** A copied range arrives as a table. Chartsuno also accepts a .csv file up to 10MB. It does not open .xlsx or .xls workbooks. If you would rather upload, use Save As and choose CSV.',
+          '**Check the data editor.** Currency symbols, blank rows, and a stray total are easy to fix in place. The chart updates as you edit, and the original workbook is not changed.',
+          '**Choose the chart and share it.** Bar, line, scatter, and pie are the usual fits. Previewing does not require an account. Sign in free to save it, download a PNG or SVG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'What to copy' },
+      {
+        type: 'p',
+        text: 'A tidy range works best: one header row, one label column, and one or more number columns. Copy just the columns the chart needs. Two or three series are easier to read than every column in the sheet.',
+      },
+      {
+        type: 'p',
+        text: 'Chartsuno does not ask for access to the workbook or to OneDrive. Paste is the whole connection. If the file is private, the chart still only contains the cells you copied.',
+      },
+      { type: 'h2', text: 'Example' },
+      {
+        type: 'pre',
+        text: 'Region,Orders,Returns\nNorth,42,3\nSouth,31,2\nWest,55,4',
+      },
+      {
+        type: 'p',
+        text: 'Paste that, or the same cells copied from Excel, and you get orders against returns by region. Comma, tab, semicolon, and pipe-separated tables are detected. A copied Excel range is usually tabs. If a cell splits wrong, fix it in the data editor.',
+      },
+      { type: 'h2', text: 'Why not use the chart inside Excel?' },
+      {
+        type: 'p',
+        text: 'The Excel chart is attached to the grid: default colors, a legend that collides with the plot, and an export that is often a screenshot of the sheet. Chartsuno starts from the chart. Editing a number does not throw away the design, and a share link shows the chart without handing someone the rest of the workbook.',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          {
+            q: 'Can I upload an .xlsx file?',
+            a: 'No. Copy the cells and paste them, or save the sheet as CSV and upload that .csv file, up to 10MB. Chartsuno does not open Excel workbooks directly.',
+          },
+          { q: 'Is it free?', a: freeAccount },
+          {
+            q: 'Will pasting change my spreadsheet?',
+            a: 'No. Chartsuno only receives the cells you copied. The workbook is not opened and is not modified.',
+          },
+          {
+            q: 'What if my sheet uses a totals row or extra columns?',
+            a: 'Leave the totals row out of the copy, and copy only the columns you want on the chart. Anything that still looks wrong can be fixed in the data editor.',
+          },
+          {
+            q: 'Where is the chart saved?',
+            a: 'In My Charts, after you sign in and save. You can reopen, edit, and export it later. A free account includes 10 saved charts a month.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Paste an Excel range',
+  },
+  {
+    slug: 'chartsuno-vs-datawrapper',
+    title: 'Chartsuno vs Datawrapper: Paste a Table or Publish an Embed | Chartsuno',
+    description:
+      'An honest comparison. Datawrapper is built for interactive newsroom embeds. Chartsuno turns a pasted table into a chart you can edit and download. Free limits differ.',
+    h1: 'Chartsuno and Datawrapper, compared',
+    lede:
+      'Both tools make a chart from a table. They are not the same job. Datawrapper is how newsrooms publish interactive graphics. Chartsuno is for pasting the numbers you already have and leaving with a chart you can edit.',
+    sampleCaption: 'A small table you could paste into either tool. The notes below are about the product around the chart, not a score for this data.',
+    sample: [
+      { label: 'Q1', value: 18 },
+      { label: 'Q2', value: 24 },
+      { label: 'Q3', value: 21 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'What each one is for' },
+      {
+        type: 'p',
+        text: 'Datawrapper is a publishing tool. Its free plan, as listed on datawrapper.de/pricing in November 2026, lets you create, publish, and embed interactive charts, maps, and tables, and download a PNG. The free plan keeps a “Created with Datawrapper” attribution. SVG and PDF downloads, and removing that attribution, are listed on the Pro plan at $21 per user each month, excluding VAT.',
+      },
+      {
+        type: 'p',
+        text: 'Chartsuno starts in the browser from pasted cells. You can preview a chart without an account and without paying. A free account saves up to 10 charts a month. Those saved charts can be downloaded as a PNG, an SVG, or a CSV, and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.',
+      },
+      { type: 'h2', text: 'Where Datawrapper is the better fit' },
+      {
+        type: 'ul',
+        items: [
+          'You are embedding an interactive chart, map, or table in an article and you want it to stay online as a published graphic.',
+          'You need the locator maps, symbol maps, and choropleth maps Datawrapper is known for. Chartsuno is not a map newsroom.',
+          'You want unlimited free publishing. Datawrapper’s pricing page says the free plan does not cap how many graphics you create or how many people view them. Chartsuno’s free account stops at 10 saved charts a month.',
+          'Your organization already has a Datawrapper theme, team workspace, or style guide.',
+        ],
+      },
+      { type: 'h2', text: 'Where Chartsuno is the better fit' },
+      {
+        type: 'ul',
+        items: [
+          'The numbers are in Excel, Google Sheets, or a CSV, and you want the chart without connecting the spreadsheet or uploading a workbook. Copy the cells and paste them. Chartsuno does not open .xlsx files.',
+          'You want to fix a number in a data editor and see the chart update, instead of rebuilding it.',
+          'You want a PNG or SVG download on the free account. On Datawrapper’s published pricing, SVG and PDF downloads are part of Pro. Chartsuno does not export PDF.',
+          'You want a read-only share link to one chart, not a public embed in a CMS. Previewing the chart does not require an account.',
+        ],
+      },
+      { type: 'h2', text: 'What this page will not claim' },
+      {
+        type: 'p',
+        text: 'Chartsuno does not have Datawrapper’s chart catalog, its responsive article embeds, or its newsroom maps. A Chartsuno share page is a read-only view of one saved chart, and downloads carry a small “Made with Chartsuno” credit. Datawrapper’s free graphics carry their own attribution, which their paid plans can remove. Pick the tool whose output you actually need.',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is Chartsuno free?', a: freeAccount },
+          {
+            q: 'Does Datawrapper have a free plan?',
+            a: 'Yes. Their pricing page says the free plan can create, publish, and embed charts, maps, and tables, and download PNG, with a Created with Datawrapper line. It does not describe a limit on how many graphics you publish. SVG and PDF downloads are listed on Pro, at $21 per user each month, excluding VAT, as of November 2026. Check datawrapper.de/pricing before you rely on a price.',
+          },
+          {
+            q: 'Is Chartsuno a replacement for Datawrapper?',
+            a: 'Not if you publish interactive graphics in articles. It is a fit when you have a table and you want to edit it and download or share the chart. The free account is 10 saved charts a month, which is smaller than Datawrapper’s free publishing.',
+          },
+          {
+            q: 'Do I have to connect Google or Excel?',
+            a: 'No. Copy the cells and paste them, or upload a CSV up to 10MB. Chartsuno does not request access to the spreadsheet, and it does not open .xlsx files.',
+          },
+          {
+            q: 'Can I try a chart before I make an account?',
+            a: 'Yes. Pasting data and previewing the chart works without an account. Saving, downloading, and copying a share link need a free account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Paste your data into Chartsuno',
+  },
 ];
 
 export function seoPageBySlug(slug: string): SeoPage | undefined {

@@ -40,6 +40,7 @@ interface ChartWorkbenchProps {
   publishedTeamIds: string[];
   publishTeamOptions: PublishTeamOption[];
   watermark: WatermarkSettings;
+  creditHref?: string;
   logoOptions: ChartLogoOption[];
   logoSelectionValue: string;
   canCustomizeBranding: boolean;
@@ -79,6 +80,7 @@ export function ChartWorkbench({
   publishedTeamIds,
   publishTeamOptions,
   watermark,
+  creditHref,
   logoOptions,
   logoSelectionValue,
   canCustomizeBranding,
@@ -170,6 +172,7 @@ export function ChartWorkbench({
                 title={config.title}
                 watermark={watermark}
                 isAuthenticated={isAuthenticated}
+                creditHref={creditHref}
               />
               <ShareMenu
                 chartRef={chartRef}

@@ -10,6 +10,9 @@ const seoRoutes = new Set([
   '/pie-chart-maker',
   '/line-graph-maker',
   '/chart-from-google-sheets',
+  '/scatter-plot-maker',
+  '/chart-from-excel',
+  '/chartsuno-vs-datawrapper',
 ])
 
 function seoPages(): Plugin {

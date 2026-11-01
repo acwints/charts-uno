@@ -104,7 +104,11 @@ class WebAuthTests(unittest.TestCase):
         activity = self.client.get('/api/stats/activity')
         self.assertEqual(activity.json()['referred_signups'], 0)
         self.assertEqual(activity.json()['signups'], 1)
-        self.assertEqual(self.client.get('/api/count').json(), {'count': 1})
+        counted = self.client.get('/api/count').json()
+        self.assertEqual(counted['count'], 1)
+        self.assertEqual(counted['accounts_total'], 2)
+        self.assertEqual(counted['signups_last_7d'], 1)
+        self.assertEqual(counted['users_with_a_chart'], 0)
 
         again = self.client.get('/auth/google', params={
             'web_challenge': pkce_challenge('c' * 43),

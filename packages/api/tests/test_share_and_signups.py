@@ -15,7 +15,13 @@ import main
 from dependencies import create_access_token
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Base, SessionLocal, User, engine
 from models.database import Chart
-from services.share_page import CTA_TEXT, SHARE_LINK_WINDOW_UNSUPPORTED
+from services.share_page import (
+    COUNT_DEFINITION,
+    CTA_TEXT,
+    SHARE_LINK_WINDOW_UNSUPPORTED,
+    credit_url,
+    signup_census,
+)
 
 
 def _png_pixels(data: bytes) -> bytes:
@@ -98,6 +104,11 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertIn("Q3 signups &lt;doubled&gt;", page.text)
         self.assertNotIn("<script>", page.text)
         self.assertIn(CTA_TEXT, page.text)
+        self.assertRegex(
+            page.text,
+            r'class="share-credit" href="https://www.chartsuno.com/\?ref=[A-Za-z0-9_-]{8,16}"',
+        )
+        self.assertIn("Made with Chartsuno", page.text)
         self.assertIn(f"/s/{token}/og.png", page.text)
         self.assertIn('property="og:title"', page.text)
         self.assertIn("noindex", page.text)
@@ -114,8 +125,11 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(image.headers["content-type"], "image/png")
         self.assertIn(bytes((0x7A, 0xA2, 0xFF)), _png_pixels(image.content))
 
-        self.assertEqual(self.client.get("/s/not-a-real-token").status_code, 404)
-        self.assertIn(CTA_TEXT, self.client.get("/s/not-a-real-token").text)
+        missing = self.client.get("/s/not-a-real-token")
+        self.assertEqual(missing.status_code, 404)
+        self.assertIn(CTA_TEXT, missing.text)
+        self.assertIn('class="share-credit" href="https://www.chartsuno.com/"', missing.text)
+        self.assertNotIn("?ref=", missing.text)
 
         turned_off = self.client.delete(f"/api/charts/{self.chart_id}/share", headers=self.owner_auth)
         self.assertEqual(turned_off.status_code, 200, turned_off.text)
@@ -133,18 +147,97 @@ class ShareAndSignupTests(unittest.TestCase):
         self.db.commit()
         counted = self.client.get("/api/stats/signups")
         self.assertEqual(counted.status_code, 200, counted.text)
-        self.assertEqual(counted.json(), {"count": 1})
+        expected = {
+            "count": 1,
+            "definition": COUNT_DEFINITION,
+            "accounts_total": 6,
+            "users_with_a_chart": 0,
+            "signups_last_7d": 1,
+            "count_7_days_ago": 0,
+            "count_yesterday": 0,
+        }
+        self.assertEqual(counted.json(), expected)
         self.assertEqual(counted.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", counted.text)
+        self.assertNotIn("@", counted.headers.get("x-signup-audit", ""))
         public = self.client.get("/api/count")
         self.assertEqual(public.status_code, 200, public.text)
-        self.assertEqual(public.json(), {"count": 1})
+        self.assertEqual(public.json(), expected)
         self.assertEqual(public.headers["cache-control"], "no-store")
         self.assertEqual(public.json(), counted.json())
+        self.assertIn("test_or_demo=", public.headers["x-signup-audit"])
         me = self.client.get("/api/user/me", headers=self.owner_auth)
         self.assertEqual(me.status_code, 200, me.text)
         self.assertRegex(me.json()["referral_code"], r"^[A-Za-z0-9_-]{8}$")
         self.assertNotIn("referred_by", me.json())
+
+    def test_count_is_distinct_people_and_names_bulk_seeds(self):
+        now = datetime(2026, 11, 1, 12, 0, 0)
+        person = User(
+            email="Ada.Person@gmail.com",
+            google_id="ada-person",
+            name="Ada Person",
+            created_at=now - timedelta(days=10),
+            referral_code="Person01",
+        )
+        self.db.add(person)
+        self.db.commit()
+        self.db.add(Chart(
+            user_id=person.id,
+            title="Points",
+            data={"labels": ["2", "5"], "series": [{"name": "Y", "data": [4, 7]}]},
+            config={"type": "scatter", "title": "Points"},
+            created_at=now - timedelta(days=9),
+        ))
+        bulk_at = now - timedelta(days=8)
+        same_second = now - timedelta(days=3)
+        rows = [
+            User(email="ada.person@gmail.com", google_id="ada-case", created_at=now - timedelta(days=1)),
+            User(email="adaperson+news@gmail.com", google_id="ada-plus", created_at=now - timedelta(hours=1)),
+            User(email="acwints78@gmail.com", google_id="site-owner", created_at=now - timedelta(days=20)),
+            User(email="acwints78+team@gmail.com", google_id="site-owner-alias", created_at=now - timedelta(days=2)),
+            User(email="ghost@gmail.com", google_id=None, apple_id=None, created_at=now - timedelta(days=4)),
+            User(email="demo@gmail.com", google_id="demo-kept", created_at=now - timedelta(days=2)),
+        ]
+        rows.extend(
+            User(email=f"user{i}@gmail.com", google_id=f"bulk-{i}", created_at=bulk_at)
+            for i in range(1, 6)
+        )
+        rows.extend(
+            User(email=f"{name}@gmail.com", google_id=f"kept-{name}", created_at=same_second)
+            for name in ("alice", "bob", "carol", "dave", "erin")
+        )
+        self.db.add_all(rows)
+        self.db.commit()
+
+        census = signup_census(self.db, now)
+        self.assertEqual(census["public"], {
+            "count": 7,
+            "definition": COUNT_DEFINITION,
+            "accounts_total": 19,
+            "users_with_a_chart": 1,
+            "signups_last_7d": 6,
+            "count_7_days_ago": 1,
+            "count_yesterday": 7,
+        })
+        self.assertEqual(census["public"]["count"], census["public"]["count_7_days_ago"] + census["public"]["signups_last_7d"])
+        self.assertEqual(census["audit"], {
+            "test_or_demo": 2,
+            "internal": 2,
+            "no_provider": 1,
+            "bulk_seeded": 5,
+            "duplicate_rows": 2,
+            "case_extra": 1,
+            "alias_extra": 1,
+            "largest_same_second": 5,
+            "same_second_rows": 10,
+            "seed_like_kept": 1,
+            "email_verified_stored": 0,
+        })
+        self.assertNotIn("@", census["audit_header"])
+        self.assertEqual(credit_url(None), "https://www.chartsuno.com/")
+        self.assertEqual(credit_url("short"), "https://www.chartsuno.com/")
+        self.assertEqual(credit_url("Person01"), "https://www.chartsuno.com/?ref=Person01")
 
     def test_activity_stats_are_counts_only_and_skip_unsupported_share_window(self):
         now = datetime.utcnow()
