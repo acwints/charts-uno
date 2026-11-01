@@ -1,6 +1,7 @@
+import re
 from datetime import datetime
-from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, Field
+from typing import Literal, Optional, List, Any, Dict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # User schemas
@@ -682,3 +683,99 @@ class SqlQueryResponse(BaseModel):
     rows: List[Dict[str, Any]]
     row_count: int
     chart_data: Dict[str, Any]  # {"labels": [...], "series": [...]}
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def clean_page_path(value: str) -> str:
+    """Keep a same-origin path. Query strings are dropped so tokens are not stored."""
+    path = (value or "").strip()
+    if not path.startswith("/") or path.startswith("//") or "\\" in path or "://" in path:
+        return "/"
+    path = path.split("?", 1)[0].split("#", 1)[0]
+    return (path[:500] or "/")
+
+
+class FeedbackCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    message: str = Field(..., max_length=2000)
+    email: Optional[str] = Field(None, max_length=255)
+    page_path: str = Field(default="/", max_length=2000)
+    # Honeypot. Browsers leave it empty; a filled value is stored as spam.
+    website: str = Field(default="", max_length=2000)
+
+    @field_validator("message")
+    @classmethod
+    def _message(cls, value: str) -> str:
+        text = value.strip()
+        if not text:
+            raise ValueError("Say what should change")
+        return text
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = value.strip()
+        if not text:
+            return None
+        if len(text) > 255 or not _EMAIL_RE.match(text):
+            raise ValueError("Email doesn't look right")
+        return text.lower()
+
+    @field_validator("page_path")
+    @classmethod
+    def _page_path(cls, value: str) -> str:
+        return clean_page_path(value)
+
+    @field_validator("website")
+    @classmethod
+    def _website(cls, value: str) -> str:
+        return value.strip()
+
+
+class FeedbackAccepted(BaseModel):
+    ok: bool = True
+
+
+class FeedbackAdminItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    message: str
+    email: Optional[str] = None
+    page_path: str
+    user_id: Optional[str] = None
+    status: str
+    public_note: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    shipped_at: Optional[datetime] = None
+
+
+class FeedbackAdminList(BaseModel):
+    items: List[FeedbackAdminItem]
+
+
+class FeedbackUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Optional[Literal["new", "shipped", "declined", "spam"]] = None
+    public_note: Optional[str] = Field(None, max_length=2000)
+
+
+class ShippedImprovement(BaseModel):
+    id: str
+    public_note: Optional[str] = None
+    shipped_at: datetime
+
+
+class ShippedImprovementList(BaseModel):
+    items: List[ShippedImprovement]
+
+
+class ShippedCount(BaseModel):
+    count: int

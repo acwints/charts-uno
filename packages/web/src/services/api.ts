@@ -649,3 +649,26 @@ export async function querySqlConnection(teamId: string, connectionId: string, d
 }): Promise<SqlQueryResponse> {
   return apiRequest(`/api/teams/${teamId}/sql-connections/${connectionId}/query`, { method: 'POST', body: data });
 }
+
+export interface ShippedImprovement {
+  id: string;
+  public_note: string | null;
+  shipped_at: string;
+}
+
+export function submitImprovement(body: {
+  message: string;
+  email?: string;
+  page_path: string;
+  website?: string;
+}): Promise<{ ok: boolean }> {
+  return apiRequest('/api/feedback', { method: 'POST', body });
+}
+
+export function getShippedImprovements(): Promise<{ items: ShippedImprovement[] }> {
+  return apiRequest('/api/improvements/shipped');
+}
+
+export function getShippedCount(): Promise<{ count: number }> {
+  return apiRequest('/api/improvements/shipped-count');
+}

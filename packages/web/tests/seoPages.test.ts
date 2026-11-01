@@ -35,6 +35,7 @@ test('landing pages state the real free-account limits and do not send people to
   for (const page of seoPages) {
     expect(sitemap).toContain(`https://www.chartsuno.com/${page.slug}`);
   }
+  expect(sitemap).toContain('https://www.chartsuno.com/changelog');
   expect(readFileSync('public/robots.txt', 'utf8')).toContain('Sitemap: https://www.chartsuno.com/sitemap.xml');
   expect(readFileSync('public/robots.txt', 'utf8')).toContain('Disallow: /s/');
 });

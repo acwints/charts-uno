@@ -21,7 +21,9 @@ const DashboardsListPage = lazy(() => import('./pages/Dashboards').then((m) => (
 const DashboardViewPage = lazy(() => import('./pages/Dashboards').then((m) => ({ default: m.DashboardViewPage })));
 const DashboardEditPage = lazy(() => import('./pages/Dashboards').then((m) => ({ default: m.DashboardEditPage })));
 const SeoLandingPage = lazy(() => import('./pages/SeoLandingPage').then((m) => ({ default: m.SeoLandingPage })));
+const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((m) => ({ default: m.ChangelogPage })));
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ImprovementsBox } from './components/Improvements/ImprovementsBox';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AssistantProvider } from './contexts/AssistantProvider';
@@ -58,6 +60,7 @@ function AppWithTeam() {
           <Route path="invite/:token" element={<InviteAccept />} />
           <Route path="terms" element={<TermsPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
+          <Route path="changelog" element={<ChangelogPage />} />
           <Route path="bar-chart-maker" element={<SeoLandingPage slug="bar-chart-maker" />} />
           <Route path="csv-to-chart" element={<SeoLandingPage slug="csv-to-chart" />} />
           <Route path="iphone-chart-maker" element={<SeoLandingPage slug="iphone-chart-maker" />} />
@@ -138,6 +141,7 @@ function App() {
             <AssistantProvider>
               <BrowserRouter>
                 <AppWithTeam />
+                <ImprovementsBox />
               </BrowserRouter>
             </AssistantProvider>
           </ToastProvider>

@@ -443,6 +443,29 @@ class NativeAuthCode(Base):
     expires_at = Column(DateTime, nullable=False, index=True)
 
 
+class Feedback(Base):
+    """Improvement note. The public changelog only reads shipped rows and public_note."""
+
+    __tablename__ = "feedback"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    message = Column(Text, nullable=False)
+    email = Column(String(255), nullable=True)
+    page_path = Column(String(500), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    # new, shipped, declined, spam
+    status = Column(String(20), nullable=False, default="new")
+    public_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    shipped_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_feedback_created", "created_at"),
+        Index("ix_feedback_status_shipped", "status", "shipped_at"),
+    )
+
+
 def init_db():
     """Initialize database tables via Alembic migrations.
 
