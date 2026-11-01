@@ -2,18 +2,9 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Connect, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { seoPages as seoPageList } from './src/content/seoPages'
 
-const seoRoutes = new Set([
-  '/bar-chart-maker',
-  '/csv-to-chart',
-  '/iphone-chart-maker',
-  '/pie-chart-maker',
-  '/line-graph-maker',
-  '/chart-from-google-sheets',
-  '/scatter-plot-maker',
-  '/chart-from-excel',
-  '/chartsuno-vs-datawrapper',
-])
+const seoRoutes = new Set(seoPageList.map((page) => `/${page.slug}`))
 
 function seoPages(): Plugin {
   const serve: Connect.NextHandleFunction = (req, res, next) => {

@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Heart from 'lucide-react/dist/esm/icons/heart';
@@ -6,6 +7,8 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import { Button } from '../Button';
 import { useChartStore } from '../../stores/chartStore';
 import { DEFAULT_CHART_CONFIG, type ChartConfig, type ChartData, type ChartType } from '../../types';
+import { sampleChartCreatePayload, sampleMonthlySales } from '../../content/sampleChart';
+import { createChart } from '../../services/api';
 import './EmptyState.css';
 
 type EmptyStateType = 'all' | 'published' | 'liked' | 'team' | 'search';
@@ -146,14 +149,55 @@ export function EmptyState({ type, searchQuery }: EmptyStateProps) {
   const navigate = useNavigate();
   const state = searchQuery ? EMPTY_STATES.search : EMPTY_STATES[type];
   const showStarters = type === 'all' && !searchQuery;
+  const [savingSample, setSavingSample] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const savingSampleRef = useRef(false);
 
   const startFromTemplate = (template: StarterTemplate) => {
     openStarter(template);
     navigate('/chart');
   };
 
+  const makeSampleChart = async () => {
+    if (savingSampleRef.current) return;
+    savingSampleRef.current = true;
+    setSavingSample(true);
+    setSampleError(null);
+    try {
+      const { data, config } = sampleMonthlySales();
+      const saved = await createChart(sampleChartCreatePayload());
+      useChartStore.getState().loadDocument(saved.id, data, config);
+      navigate(`/chart/${saved.id}`);
+    } catch (err) {
+      savingSampleRef.current = false;
+      setSavingSample(false);
+      setSampleError(err instanceof Error ? err.message : 'Could not save the sample chart. Try again.');
+    }
+  };
+
   return (
     <div className="empty-state">
+      {showStarters && (
+        <section className="empty-sample" aria-labelledby="empty-sample-title">
+          <p className="empty-sample-kicker">First chart</p>
+          <h3 id="empty-sample-title" className="empty-sample-title">Make a sample chart</h3>
+          <p className="empty-sample-detail" id="empty-sample-detail">
+            One tap saves monthly sales to My Charts and opens it in the editor. The chart counts as yours. Change the title, the numbers, or the colors from there.
+          </p>
+          <Button
+            variant="primary"
+            size="lg"
+            className="empty-sample-action"
+            onClick={makeSampleChart}
+            disabled={savingSample}
+            aria-busy={savingSample}
+            aria-describedby="empty-sample-detail"
+          >
+            {savingSample ? 'Saving sample chart…' : 'Make a sample chart'}
+          </Button>
+          {sampleError && <p className="empty-sample-error" role="alert">{sampleError}</p>}
+        </section>
+      )}
       <div className="empty-state-icon">{state.icon}</div>
       <h3 className="empty-state-title">{state.title}</h3>
       <p className="empty-state-description">
@@ -163,7 +207,7 @@ export function EmptyState({ type, searchQuery }: EmptyStateProps) {
       </p>
       {state.showCreateButton && !searchQuery && (
         <Link to="/new">
-          <Button variant="primary" size="lg">
+          <Button variant="ghost" size="lg">
             <Plus size={18} />
             <span>Create New Chart</span>
           </Button>

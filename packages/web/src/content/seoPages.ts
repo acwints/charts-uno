@@ -670,6 +670,216 @@ export const seoPages: SeoPage[] = [
     ctaHref: '/',
     ctaLabel: 'Paste your data into Chartsuno',
   },
+  {
+    slug: 'area-chart-maker',
+    title: 'Free Area Chart Maker Online: Show a Total Over Time | Chartsuno',
+    description:
+      'Paste months and values and preview an area chart free in your browser. A free account saves it, exports a PNG or SVG, or shares a link.',
+    h1: 'Make an area chart online, free',
+    lede:
+      'An area chart is a line with the space underneath filled in. Use it when the size of the total matters as much as the slope: revenue by month, a running balance, or two series that add up. Paste the table and Chartsuno fills the area in the browser.',
+    sampleCaption: 'A rising total. The filled area is the point, not only the line along the top.',
+    sample: [
+      { label: 'Jan', value: 12 },
+      { label: 'Feb', value: 18 },
+      { label: 'Mar', value: 27 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How it works' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste the time column and the values.** Months, weeks, or dates in the first column. One number column is a single area. Two number columns can be compared, or stacked so each band is a part of the total.',
+          '**Fix a point in the data editor.** Change a value or add the missing month. The filled area updates as you edit, so you do not rebuild the chart.',
+          '**Choose Area in the chart editor.** Set a title that states the total. Turn on Stacked when the series are parts of one whole. Leave it off when each series should be read on its own.',
+          '**Save, export, or share.** Previewing does not require an account. Sign up free to keep the chart in My Charts, download a PNG or SVG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'Area chart, line graph, or stacked bars?' },
+      {
+        type: 'p',
+        text: 'Use an area when the horizontal axis is time and the filled shape should show how large the total is. Use a line graph when the slope is the whole story and a fill would exaggerate it. Use stacked bars when the categories are separate periods you want to compare as columns, not as one continuous shape.',
+      },
+      { type: 'h2', text: 'Tips for an area people can read' },
+      {
+        type: 'ul',
+        items: [
+          'Start the value axis at zero. An area that floats above zero makes a small change look like a large mass.',
+          'Two series is usually the limit. A stack of five translucent bands is hard to trace.',
+          'Keep the time steps even. A missing month looks like the total paused.',
+          'Put the conclusion in the title, for example “Cash on hand grew every month”, not only “Balance”.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I stack two areas?',
+            a: 'Yes. Paste two number columns, choose Area, and turn on Stacked. Each band is then a part of the total. Leave Stacked off if the series should overlap instead of add.',
+          },
+          {
+            q: 'Can I edit a value after the area is drawn?',
+            a: 'Yes. Change any label or number in the data editor and the fill updates. Save the chart if you want My Charts and the share link to match.',
+          },
+          {
+            q: 'How do I put the chart in a slide?',
+            a: 'Sign up, then download a PNG or SVG. You can also copy a share link to the saved chart. Previewing the area does not require an account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/?auth=1',
+    ctaLabel: 'Sign up and make an area chart',
+  },
+  {
+    slug: 'histogram-maker',
+    title: 'Free Histogram Maker Online: Chart a Distribution | Chartsuno',
+    description:
+      'Paste bin labels and counts and preview a histogram free in your browser. A free account saves it, exports a PNG or SVG, or shares a link.',
+    h1: 'Make a histogram online, free',
+    lede:
+      'A histogram shows how a set of numbers is spread: how many orders fell in each dollar range, how many scores landed in each band. Paste the bins and the counts. Chartsuno draws the bars touching, which is what makes it a histogram instead of a category bar chart.',
+    sampleCaption: 'Each label is a bin you already grouped. The bar is how many observations fell in that bin.',
+    sample: [
+      { label: '0-9', value: 4 },
+      { label: '10-19', value: 11 },
+      { label: '20-29', value: 7 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How it works' },
+      {
+        type: 'ol',
+        items: [
+          '**Group the raw numbers into bins first.** Chartsuno does not auto-bin a list of individual measurements. Count how many values fall in each range, then paste one row per bin: the range as the label, the count as the value.',
+          '**Check the counts in the data editor.** Fix a tally or rename a bin. The bars update as you edit.',
+          '**Choose Histogram in the chart editor.** The bars sit against each other, with no gap, so the shape of the distribution reads as one sequence. A normal bar chart leaves a gap because the categories are separate things.',
+          '**Save, export, or share.** Previewing does not require an account. Sign up free to keep the histogram in My Charts, download a PNG or SVG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'Example' },
+      {
+        type: 'pre',
+        text: 'Bin,Orders\n0-9,4\n10-19,11\n20-29,7',
+      },
+      {
+        type: 'p',
+        text: 'Paste that and choose Histogram. You get three touching bars. If you still have the raw order amounts, tally them into bins in a note or a spreadsheet first, then paste only the summary.',
+      },
+      { type: 'h2', text: 'Histogram or bar chart?' },
+      {
+        type: 'p',
+        text: 'Use a histogram when the labels are adjacent ranges of one measurement and the question is the shape: where the values bunch, and where they thin out. Use a bar chart when the labels are categories, such as products or cities. Those bars should have a gap, because there is no sequence between them.',
+      },
+      { type: 'h2', text: 'Tips for a histogram people can read' },
+      {
+        type: 'ul',
+        items: [
+          'Keep the bins the same width. A bin of 0-9 next to a bin of 10-100 hides the shape.',
+          'Put the bins in order, left to right, from the smallest range to the largest.',
+          'Name the axis. “Orders” and “Order value ($)” beat an unlabeled row of bars.',
+          'Write the shape in the title, for example “Most orders are $10 to $19”, if that is what the counts show.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Will Chartsuno bin my raw numbers for me?',
+            a: 'No. Paste the bins and the counts. If you have a list of individual measurements, group them into equal-width ranges first, then chart the counts.',
+          },
+          {
+            q: 'Can I change a count after the histogram is drawn?',
+            a: 'Yes. Edit any bin label or count in the data editor and the bar updates. Save when you want My Charts and the share link to match.',
+          },
+          {
+            q: 'How do I share the histogram?',
+            a: 'Sign up, then download a PNG or SVG, or copy a share link. Previewing does not require an account. Saving and sharing need a free account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/?auth=1',
+    ctaLabel: 'Sign up and make a histogram',
+  },
+  {
+    slug: 'chartsuno-vs-canva-charts',
+    title: 'Chartsuno vs Canva Charts: A Chart, or a Chart Inside a Design | Chartsuno',
+    description:
+      'An honest comparison. Canva puts a chart inside a design. Chartsuno turns a pasted table into a chart you can edit, download, and share. Free limits differ.',
+    h1: 'Chartsuno and Canva Charts, compared',
+    lede:
+      'Both can draw a bar from a table. They are not the same job. Canva is a design editor, and a chart is one object on a poster, a slide, or a social post. Chartsuno starts from the numbers and leaves you with a chart you can edit.',
+    sampleCaption: 'A small sales table you could paste into either tool. The notes below are about the product around the chart, not a score for this data.',
+    sample: [
+      { label: 'Apr', value: 18 },
+      { label: 'May', value: 22 },
+      { label: 'Jun', value: 19 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'What each one is for' },
+      {
+        type: 'p',
+        text: 'Canva’s help center describes 30+ chart types, including bar, line, area, pie, donut, scatter, and histogram, inside the design editor. You can type the numbers, or import a CSV, TSV, or XLSX file. Their import article says a file can be up to 25MB, and up to 1,000 rows and 100 columns. A chart connected to a Canva Sheet in the same design updates with that sheet. Third-party data apps, such as Google Analytics or HubSpot, are listed as Canva Business and Canva Enterprise, not Canva Free. Canva’s pricing page lists Free at US$0 and Pro at US$120 a year for one person, as of November 2026. Check canva.com/pricing and canva.com/help/import-to-charts before you rely on a price or a limit.',
+      },
+      {
+        type: 'p',
+        text: 'Chartsuno starts in the browser from pasted cells. You can preview a chart without an account and without paying. A free account saves up to 10 charts a month. Those saved charts can be downloaded as a PNG, an SVG, or a CSV, and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan. A CSV upload is capped at 10MB. Chartsuno does not open .xlsx files.',
+      },
+      { type: 'h2', text: 'Where Canva is the better fit' },
+      {
+        type: 'ul',
+        items: [
+          'The chart is one piece of a poster, a slide deck, or a social post, and you want templates, photos, and brand colors around it.',
+          'You need a chart type Chartsuno does not offer, such as a funnel, a hierarchy, a bubble plot, or a pictogram.',
+          'You want to upload an .xlsx file directly. Canva’s import help says CSV, TSV, and XLSX are accepted. Chartsuno takes a paste or a .csv file, not an Excel workbook.',
+          'The chart should stay linked to a Canva Sheet in the same design, so edits in the sheet show up on the design without a second paste.',
+        ],
+      },
+      { type: 'h2', text: 'Where Chartsuno is the better fit' },
+      {
+        type: 'ul',
+        items: [
+          'You have a table in Excel, Google Sheets, or a CSV and you want the chart, not a designed page. Copy the cells and paste them. Chartsuno does not ask for access to the spreadsheet.',
+          'You want to fix a number in a data editor and see the chart update, then download a PNG or SVG on the free account.',
+          'You want a read-only share link to one chart. A Canva share is a design. A Chartsuno share page is the chart, with its title, and a small Made with Chartsuno credit.',
+          'You want to try the chart before you make an account. Pasting and previewing work without signing up. Saving, downloading, and the share link need a free account, which includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'What this page will not claim' },
+      {
+        type: 'p',
+        text: 'Chartsuno is not a design suite. It does not have Canva’s template library, photo library, or brand kits. Canva is the better tool when the chart has to live on a designed page. Chartsuno is the better tool when the table is the job and you want to edit it and leave with the chart. Pick the one whose output you actually need.',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is Chartsuno free?', a: freeAccount },
+          {
+            q: 'Does Canva have a free plan?',
+            a: 'Yes. Canva’s pricing page lists Free at US$0, with a drag-and-drop editor, and Pro at US$120 a year for one person, as of November 2026. Their help says third-party data apps for charts are on Canva Business and Enterprise, not Free. You can still type data or upload a CSV, TSV, or XLSX file. Check canva.com/pricing before you rely on a price.',
+          },
+          {
+            q: 'Is Chartsuno a replacement for Canva?',
+            a: 'Not if you are designing a post, a deck, or a poster. It is a fit when you have a table and you want to edit it and download or share the chart. The free account is 10 saved charts a month.',
+          },
+          {
+            q: 'Can I upload an Excel file?',
+            a: 'Not an .xlsx workbook. Copy the cells and paste them, or save the sheet as CSV and upload that .csv file, up to 10MB. Canva’s import help says it accepts XLSX.',
+          },
+          {
+            q: 'Can I try a chart before I sign up?',
+            a: 'Yes. Pasting data and previewing the chart works without an account. Saving, downloading, and copying a share link need a free account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/?auth=1',
+    ctaLabel: 'Sign up and paste your data',
+  },
 ];
 
 export function seoPageBySlug(slug: string): SeoPage | undefined {

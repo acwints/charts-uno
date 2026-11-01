@@ -70,6 +70,9 @@ function AppWithTeam() {
           <Route path="scatter-plot-maker" element={<SeoLandingPage slug="scatter-plot-maker" />} />
           <Route path="chart-from-excel" element={<SeoLandingPage slug="chart-from-excel" />} />
           <Route path="chartsuno-vs-datawrapper" element={<SeoLandingPage slug="chartsuno-vs-datawrapper" />} />
+          <Route path="area-chart-maker" element={<SeoLandingPage slug="area-chart-maker" />} />
+          <Route path="histogram-maker" element={<SeoLandingPage slug="histogram-maker" />} />
+          <Route path="chartsuno-vs-canva-charts" element={<SeoLandingPage slug="chartsuno-vs-canva-charts" />} />
 
           {/* Auth-required dashboard routes */}
           <Route element={<ProtectedRoute />}>

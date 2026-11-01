@@ -13,6 +13,9 @@ test('landing pages state the real free-account limits and do not send people to
     'scatter-plot-maker',
     'chart-from-excel',
     'chartsuno-vs-datawrapper',
+    'area-chart-maker',
+    'histogram-maker',
+    'chartsuno-vs-canva-charts',
   ]);
 
   for (const page of seoPages) {
@@ -39,6 +42,15 @@ test('landing pages state the real free-account limits and do not send people to
     expect(sitemap).toContain(`https://www.chartsuno.com/${page.slug}`);
   }
   expect(sitemap).toContain('https://www.chartsuno.com/changelog');
+  expect(sitemap.match(/<loc>/g)).toHaveLength(seoPages.length + 5);
+  const area = seoPages.find((page) => page.slug === 'area-chart-maker');
+  const histogram = seoPages.find((page) => page.slug === 'histogram-maker');
+  const canva = seoPages.find((page) => page.slug === 'chartsuno-vs-canva-charts');
+  expect(area?.ctaHref).toBe('/?auth=1');
+  expect(histogram?.ctaLabel).toContain('Sign up');
+  expect(canva?.ctaHref).toBe('/?auth=1');
+  expect(readFileSync('public/histogram-maker/index.html', 'utf8')).toContain('does not auto-bin');
+  expect(readFileSync('public/chartsuno-vs-canva-charts/index.html', 'utf8')).toContain('does not open .xlsx');
   expect(readFileSync('public/robots.txt', 'utf8')).toContain('Sitemap: https://www.chartsuno.com/sitemap.xml');
   expect(readFileSync('public/robots.txt', 'utf8')).toContain('Disallow: /s/');
 });

@@ -53,9 +53,9 @@
 
 .seo-mast {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
   margin-bottom: var(--space-8);
 }
 
@@ -261,11 +261,6 @@
     padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
   }
 
-  .seo-mast {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .seo-nav a {
     min-height: 44px;
     display: inline-flex;
@@ -284,7 +279,7 @@
   <article class="seo">
     <header class="seo-mast">
       <a class="seo-brand" href="/">Chartsuno</a>
-      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a></nav>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a></nav>
     </header>
     <p class="seo-kicker">Chartsuno</p>
     <h1>Make a chart from Excel</h1>
@@ -305,7 +300,7 @@ West,55,4</pre>
 <p>The Excel chart is attached to the grid: default colors, a legend that collides with the plot, and an export that is often a screenshot of the sheet. Chartsuno starts from the chart. Editing a number does not throw away the design, and a share link shows the chart without handing someone the rest of the workbook.</p>
 <dl class="seo-faq"><dt>Can I upload an .xlsx file?</dt><dd>No. Copy the cells and paste them, or save the sheet as CSV and upload that .csv file, up to 10MB. Chartsuno does not open Excel workbooks directly.</dd><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Will pasting change my spreadsheet?</dt><dd>No. Chartsuno only receives the cells you copied. The workbook is not opened and is not modified.</dd><dt>What if my sheet uses a totals row or extra columns?</dt><dd>Leave the totals row out of the copy, and copy only the columns you want on the chart. Anything that still looks wrong can be fixed in the data editor.</dd><dt>Where is the chart saved?</dt><dd>In My Charts, after you sign in and save. You can reopen, edit, and export it later. A free account includes 10 saved charts a month.</dd></dl>
     <a class="seo-cta" href="/">Paste an Excel range</a>
-    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a></p>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a></p>
   </article>
 </body>
 </html>

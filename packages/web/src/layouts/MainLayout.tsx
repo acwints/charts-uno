@@ -175,6 +175,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/chart-from-excel" className="footer-link">Excel</Link>
             <Link to="/scatter-plot-maker" className="footer-link">Scatter plots</Link>
             <Link to="/chartsuno-vs-datawrapper" className="footer-link">Vs Datawrapper</Link>
+            <Link to="/area-chart-maker" className="footer-link">Area charts</Link>
+            <Link to="/histogram-maker" className="footer-link">Histograms</Link>
+            <Link to="/chartsuno-vs-canva-charts" className="footer-link">Vs Canva</Link>
             <Link to="/iphone-chart-maker" className="footer-link">iPhone</Link>
             <Link to="/changelog" className="footer-link">Changelog</Link>
             <Link to="/terms" className="footer-link">Terms</Link>

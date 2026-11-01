@@ -7,9 +7,9 @@
 
 .seo-mast {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
   margin-bottom: var(--space-8);
 }
 
@@ -213,11 +213,6 @@
 @media (max-width: 640px) {
   .seo {
     padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
-  }
-
-  .seo-mast {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .seo-nav a {

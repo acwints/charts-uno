@@ -239,6 +239,42 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(credit_url("short"), "https://www.chartsuno.com/")
         self.assertEqual(credit_url("Person01"), "https://www.chartsuno.com/?ref=Person01")
 
+    def test_public_count_includes_users_with_a_chart_after_a_real_save(self):
+        """A chart saved through POST /api/charts is what users_with_a_chart counts."""
+        before = self.client.get("/api/count")
+        self.assertEqual(before.status_code, 200, before.text)
+        self.assertIn("users_with_a_chart", before.json())
+        self.assertEqual(before.json()["users_with_a_chart"], 0)
+
+        maker = User(email="sales@gmail.com", google_id="monthly-sales", name="Sales")
+        self.db.add(maker)
+        self.db.commit()
+        signed_up = self.client.get("/api/count").json()
+        self.assertEqual(signed_up["users_with_a_chart"], 0)
+        self.assertEqual(signed_up["count"], before.json()["count"] + 1)
+
+        saved = self.client.post(
+            "/api/charts",
+            headers={"Authorization": "Bearer " + create_access_token(maker.id)},
+            json={
+                "title": "Monthly sales",
+                "data": {
+                    "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                    "series": [{"name": "Sales", "data": [18400, 17600, 20100, 19850, 22300, 24150]}],
+                },
+                "config": {"type": "bar", "title": "Monthly sales"},
+                "source_type": "paste",
+                "is_public": False,
+            },
+        )
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertTrue(saved.json()["id"])
+        after = self.client.get("/api/count")
+        self.assertEqual(after.status_code, 200, after.text)
+        self.assertEqual(after.json()["users_with_a_chart"], 1)
+        self.assertEqual(after.headers["cache-control"], "no-store")
+        self.assertNotIn("gmail.com", after.text)
+
     def test_activity_stats_are_counts_only_and_skip_unsupported_share_window(self):
         now = datetime.utcnow()
         real = User(email="maker@gmail.com", google_id="maker", name="Maker", referred_by="Abcd1234")
