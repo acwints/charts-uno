@@ -458,7 +458,7 @@
   /* Float above the tab bar and the home indicator. */
   .assistant-sidebar {
     position: fixed;
-    bottom: calc(var(--tabbar-clearance) + 16px);
+    bottom: calc(var(--tabbar-clearance) + 72px);
     right: max(16px, env(safe-area-inset-right));
     width: 56px;
     min-width: 56px;

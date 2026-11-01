@@ -1,5 +1,6 @@
 import os
 import asyncio
+import hashlib
 from dotenv import load_dotenv
 
 # Load environment variables BEFORE other imports
@@ -28,7 +29,7 @@ from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
     Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
     Dashboard, DashboardItem, SqlConnection, generate_uuid,
-    UserBlock, ContentReport,
+    UserBlock, ContentReport, Feedback,
 )
 from dependencies import (
     get_current_user,
@@ -106,6 +107,14 @@ from schemas import (
     SqlConnectionListResponse,
     SqlQueryRequest,
     SqlQueryResponse,
+    FeedbackCreate,
+    FeedbackAccepted,
+    FeedbackAdminItem,
+    FeedbackAdminList,
+    FeedbackUpdate,
+    ShippedImprovement,
+    ShippedImprovementList,
+    ShippedCount,
 )
 from helpers import (
     get_chart_or_404,
@@ -316,6 +325,154 @@ async def providers_health_check(
         "timestamp": datetime.utcnow().isoformat(),
         "details": await probe_research_providers(),
     }
+
+
+# ============================================================================
+# Improvements
+# ============================================================================
+
+def _feedback_client_key(request: Request) -> str:
+    """Prefer the original client IP when the site proxies this API."""
+    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if forwarded:
+        return forwarded
+    real_ip = (request.headers.get("x-real-ip") or "").strip()
+    if real_ip:
+        return real_ip
+    return get_remote_address(request)
+
+
+def _feedback_reader_ok(request: Request) -> bool:
+    """Constant-time bearer check. Unset token and any mismatch are both failures."""
+    expected = os.environ.get("FEEDBACK_READ_TOKEN", "").strip()
+    header = request.headers.get("authorization") or ""
+    scheme, _, token = header.partition(" ")
+    supplied = token.strip() if scheme.lower() == "bearer" else ""
+    if not expected or not supplied:
+        return False
+    return secrets.compare_digest(
+        hashlib.sha256(supplied.encode("utf-8")).digest(),
+        hashlib.sha256(expected.encode("utf-8")).digest(),
+    )
+
+
+def _require_feedback_reader(request: Request) -> None:
+    if not _feedback_reader_ok(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _feedback_admin_item(row: Feedback) -> FeedbackAdminItem:
+    return FeedbackAdminItem.model_validate(row)
+
+
+@app.post("/api/feedback", response_model=FeedbackAccepted, status_code=201)
+@limiter.limit("20/hour", key_func=_feedback_client_key)
+@limiter.limit("5/minute", key_func=_feedback_client_key)
+async def create_feedback(
+    request: Request,
+    body: FeedbackCreate,
+    response: Response,
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
+):
+    """Store an improvement note. Page path comes from the client; time is the server clock."""
+    response.headers["Cache-Control"] = "no-store"
+    honeypot = bool(body.website)
+    now = datetime.utcnow()
+    row = Feedback(
+        message=body.message,
+        email=None if honeypot else body.email,
+        page_path=body.page_path,
+        user_id=None if honeypot or user is None else user.id,
+        status="spam" if honeypot else "new",
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(row)
+    db.commit()
+    return FeedbackAccepted()
+
+
+@app.get("/api/feedback", response_model=FeedbackAdminList)
+@limiter.limit("30/minute")
+async def list_feedback(request: Request, response: Response, db: Session = Depends(get_db)):
+    """Admin read. Newest first. Requires FEEDBACK_READ_TOKEN."""
+    _require_feedback_reader(request)
+    response.headers["Cache-Control"] = "no-store"
+    rows = (
+        db.query(Feedback)
+        .order_by(Feedback.created_at.desc(), Feedback.id.desc())
+        .limit(500)
+        .all()
+    )
+    return FeedbackAdminList(items=[_feedback_admin_item(row) for row in rows])
+
+
+@app.patch("/api/feedback/{feedback_id}", response_model=FeedbackAdminItem)
+@limiter.limit("30/minute")
+async def update_feedback(
+    feedback_id: str,
+    body: FeedbackUpdate,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Set status and the public changelog note. Same bearer token as the admin read."""
+    _require_feedback_reader(request)
+    response.headers["Cache-Control"] = "no-store"
+    if not body.model_fields_set:
+        raise HTTPException(status_code=422, detail="No changes")
+    row = db.query(Feedback).filter(Feedback.id == feedback_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    if "status" in body.model_fields_set:
+        if body.status is None:
+            raise HTTPException(status_code=422, detail="Status is required")
+        row.status = body.status
+        if body.status == "shipped":
+            if row.shipped_at is None:
+                row.shipped_at = datetime.utcnow()
+        else:
+            row.shipped_at = None
+    if "public_note" in body.model_fields_set:
+        note = (body.public_note or "").strip()
+        row.public_note = note[:2000] or None
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(row)
+    return _feedback_admin_item(row)
+
+
+def _shipped_rows(db: Session) -> list[Feedback]:
+    return (
+        db.query(Feedback)
+        .filter(Feedback.status == "shipped")
+        .order_by(Feedback.shipped_at.desc(), Feedback.id.desc())
+        .limit(200)
+        .all()
+    )
+
+
+@app.get("/api/improvements/shipped", response_model=ShippedImprovementList)
+@limiter.limit("60/minute")
+async def list_shipped_improvements(request: Request, db: Session = Depends(get_db)):
+    """Public changelog. Never includes the raw note, email, or account id."""
+    items = [
+        ShippedImprovement(
+            id=row.id,
+            public_note=row.public_note,
+            shipped_at=row.shipped_at or row.updated_at,
+        )
+        for row in _shipped_rows(db)
+    ]
+    return ShippedImprovementList(items=items)
+
+
+@app.get("/api/improvements/shipped-count", response_model=ShippedCount)
+@limiter.limit("60/minute")
+async def shipped_improvement_count(request: Request, db: Session = Depends(get_db)):
+    total = db.query(func.count(Feedback.id)).filter(Feedback.status == "shipped").scalar() or 0
+    return ShippedCount(count=int(total))
 
 
 # ============================================================================
