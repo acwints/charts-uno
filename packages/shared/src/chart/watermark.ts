@@ -20,7 +20,7 @@ export async function addWatermark(imageBuffer: Buffer, logger?: ChartLogger): P
     const height = metadata.height || 600;
 
     const textX = width - WATERMARK_PADDING;
-    const iconX = textX - 80; // approximate text width to place icon before it
+    const iconX = Math.max(WATERMARK_PADDING, textX - 168);
     const centerY = WATERMARK_PADDING + WATERMARK_FONT_SIZE / 2 + 2;
 
     const svgWatermark = `
@@ -45,7 +45,7 @@ export async function addWatermark(imageBuffer: Buffer, logger?: ChartLogger): P
           y="${centerY + WATERMARK_FONT_SIZE * 0.35}"
           text-anchor="end"
           class="wm-text"
-        >Chartsuno</text>
+        >Made with Chartsuno</text>
       </svg>
     `;
 

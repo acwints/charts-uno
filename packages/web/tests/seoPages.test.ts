@@ -10,6 +10,9 @@ test('landing pages state the real free-account limits and do not send people to
     'pie-chart-maker',
     'line-graph-maker',
     'chart-from-google-sheets',
+    'scatter-plot-maker',
+    'chart-from-excel',
+    'chartsuno-vs-datawrapper',
   ]);
 
   for (const page of seoPages) {

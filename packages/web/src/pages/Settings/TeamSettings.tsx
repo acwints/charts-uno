@@ -444,8 +444,8 @@ export function TeamSettings() {
                 </h4>
                 <p className="branding-upgrade__text">
                   {isNativeApp()
-                    ? 'Free accounts include a Chartsuno watermark on exports.'
-                    : 'Free accounts include an "Chartsuno" watermark on exports. Upgrade to remove it or add your own logo and brand colors.'}
+                    ? 'Free accounts include a Chartsuno watermark on exports. Downloads also keep a small Made with Chartsuno credit.'
+                    : 'Free accounts include a Chartsuno watermark on exports. Upgrade to replace it with your logo. Downloads still keep a small Made with Chartsuno credit.'}
                 </p>
                 {!isNativeApp() && (
                   <Link to="/settings/billing">
@@ -549,7 +549,7 @@ export function TeamSettings() {
                 <div className="branding-toggle__info">
                   <span className="branding-toggle__label">Show watermark on exports</span>
                   <span className="branding-toggle__description">
-                    When disabled, exported images will have no watermark
+                    When disabled, the logo watermark is hidden. Downloads still include a small Made with Chartsuno credit.
                   </span>
                 </div>
                 <button

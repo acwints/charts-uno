@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import { domToCanvas } from 'modern-screenshot';
 import type { ChartData } from '../types';
+import { CREDIT_LABEL, safeCreditHref, svgWithCredit, tableChartSvg } from './chartCredit';
 import { isNativeApp, shareNativeFile } from './native';
 
 export interface WatermarkSettings {
@@ -9,7 +10,7 @@ export interface WatermarkSettings {
 }
 
 const EXPORT_SCALE = 2;
-const EXPORT_BOTTOM_CAPTURE_PADDING = 28;
+const EXPORT_BOTTOM_CAPTURE_PADDING = 40;
 const EXPORT_CONTAINER_BOTTOM_PADDING = 20;
 
 type CaptureProfileId = 'clean-export' | 'wysiwyg-share';
@@ -233,6 +234,61 @@ async function applyWatermarkOverlay(
   drawTextWatermark(ctx, canvas.width);
 }
 
+function creditInk(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): string {
+  try {
+    const pixel = ctx.getImageData(8, Math.max(0, canvas.height - 8), 1, 1).data;
+    if (pixel[3] < 16) return 'rgba(220, 224, 232, 0.92)';
+    const luminance = (pixel[0] * 0.2126 + pixel[1] * 0.7152 + pixel[2] * 0.0722) / 255;
+    return luminance > 0.62 ? 'rgba(55, 58, 70, 0.9)' : 'rgba(226, 228, 236, 0.94)';
+  } catch {
+    return 'rgba(90, 94, 110, 0.9)';
+  }
+}
+
+function drawMadeWithCredit(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const fontSize = 12 * EXPORT_SCALE;
+  ctx.save();
+  ctx.font = `500 ${fontSize}px Manrope, "Segoe UI", sans-serif`;
+  ctx.fillStyle = creditInk(ctx, canvas);
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(CREDIT_LABEL, canvas.width - 12 * EXPORT_SCALE, canvas.height - 8 * EXPORT_SCALE);
+  ctx.restore();
+}
+
+function pickChartSvg(element: HTMLElement): SVGSVGElement | null {
+  const list = [...element.querySelectorAll('svg')].filter(
+    (node): node is SVGSVGElement => node instanceof SVGSVGElement && !node.classList.contains('chart-pattern-layer'),
+  );
+  if (!list.length) return null;
+  return list.reduce((best, svg) => {
+    const area = svg.getBoundingClientRect().width * svg.getBoundingClientRect().height;
+    const bestArea = best.getBoundingClientRect().width * best.getBoundingClientRect().height;
+    return area > bestArea ? svg : best;
+  });
+}
+
+export function exportChartSvgMarkup(element: HTMLElement, href: string | undefined, data: ChartData): string {
+  const safe = safeCreditHref(href);
+  const svg = pickChartSvg(element);
+  if (!svg) return tableChartSvg(data, safe);
+  return svgWithCredit(new XMLSerializer().serializeToString(svg), safe);
+}
+
+function downloadTextFile(contents: string, filename: string, type: string): void {
+  const blob = new Blob([contents], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function downloadCanvasAsPng(canvas: HTMLCanvasElement, filename: string): void {
   const url = canvas.toDataURL('image/png');
   const link = document.createElement('a');
@@ -262,13 +318,27 @@ export async function exportToPNG(
 ): Promise<void> {
   const canvas = await renderElementToCanvas(element, 'clean-export');
   await applyWatermarkOverlay(canvas, element, watermark);
+  drawMadeWithCredit(canvas);
   if (isNativeApp()) return shareNativeFile(await canvasToPngBlob(canvas), filename, 'png');
   downloadCanvasAsPng(canvas, filename);
+}
+
+export async function exportToSVG(
+  element: HTMLElement,
+  filename: string,
+  data: ChartData,
+  href?: string,
+): Promise<void> {
+  const markup = exportChartSvgMarkup(element, href, data);
+  const blob = new Blob([markup], { type: 'image/svg+xml;charset=utf-8' });
+  if (isNativeApp()) return shareNativeFile(blob, filename, 'svg');
+  downloadTextFile(markup, `${filename}.svg`, 'image/svg+xml;charset=utf-8');
 }
 
 export async function shareChartImage(element: HTMLElement, filename: string, watermark?: WatermarkSettings): Promise<void> {
   const canvas = await renderElementToCanvas(element, 'wysiwyg-share');
   await applyWatermarkOverlay(canvas, element, watermark);
+  drawMadeWithCredit(canvas);
   await shareNativeFile(await canvasToPngBlob(canvas), filename, 'png');
 }
 
@@ -278,6 +348,7 @@ export async function copyImageToClipboard(
 ): Promise<void> {
   const canvas = await renderElementToCanvas(element, 'wysiwyg-share');
   await applyWatermarkOverlay(canvas, element, watermark);
+  drawMadeWithCredit(canvas);
   const blob = await canvasToPngBlob(canvas);
 
   const clipboardItem = new ClipboardItem({ 'image/png': blob });

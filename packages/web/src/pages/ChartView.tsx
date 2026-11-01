@@ -11,6 +11,7 @@ import { useToast } from '../contexts/ToastContext';
 import { getChart, createChart, getTeamBranding, getChartPublishTargets, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
+import { creditHref } from '../services/chartCredit';
 
 const BRANDING_NONE_VALUE = '__none__';
 const BRANDING_CHARTSUNO_VALUE = '__chartsuno__';
@@ -328,6 +329,7 @@ export function ChartView() {
         publishedTeamIds={publishedTeamIds}
         publishTeamOptions={publishTeamOptions}
         watermark={watermarkSettings}
+        creditHref={creditHref(isAuthenticated ? user?.referral_code : null)}
         logoOptions={logoOptions}
         logoSelectionValue={logoSelectionValue}
         canCustomizeBranding={isAuthenticated}

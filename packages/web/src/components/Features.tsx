@@ -27,7 +27,7 @@ const FEATURES = [
   {
     icon: Zap,
     title: 'Instant Export',
-    description: 'Download as PNG, SVG, or PDF. Embed anywhere with a single link.',
+    description: 'Download as PNG, SVG, or CSV. Share or embed with a single link.',
   },
   {
     icon: Download,

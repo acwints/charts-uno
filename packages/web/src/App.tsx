@@ -67,6 +67,9 @@ function AppWithTeam() {
           <Route path="pie-chart-maker" element={<SeoLandingPage slug="pie-chart-maker" />} />
           <Route path="line-graph-maker" element={<SeoLandingPage slug="line-graph-maker" />} />
           <Route path="chart-from-google-sheets" element={<SeoLandingPage slug="chart-from-google-sheets" />} />
+          <Route path="scatter-plot-maker" element={<SeoLandingPage slug="scatter-plot-maker" />} />
+          <Route path="chart-from-excel" element={<SeoLandingPage slug="chart-from-excel" />} />
+          <Route path="chartsuno-vs-datawrapper" element={<SeoLandingPage slug="chartsuno-vs-datawrapper" />} />
 
           {/* Auth-required dashboard routes */}
           <Route element={<ProtectedRoute />}>

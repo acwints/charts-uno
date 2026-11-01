@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chartsuno vs Datawrapper: Paste a Table or Publish an Embed | Chartsuno</title>
+  <meta name="description" content="An honest comparison. Datawrapper is built for interactive newsroom embeds. Chartsuno turns a pasted table into a chart you can edit and download. Free limits differ.">
+  <link rel="canonical" href="https://www.chartsuno.com/chartsuno-vs-datawrapper">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Chartsuno vs Datawrapper: Paste a Table or Publish an Embed | Chartsuno">
+  <meta property="og:description" content="An honest comparison. Datawrapper is built for interactive newsroom embeds. Chartsuno turns a pasted table into a chart you can edit and download. Free limits differ.">
+  <meta property="og:url" content="https://www.chartsuno.com/chartsuno-vs-datawrapper">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Chartsuno vs Datawrapper: Paste a Table or Publish an Embed | Chartsuno">
+  <meta name="twitter:description" content="An honest comparison. Datawrapper is built for interactive newsroom embeds. Chartsuno turns a pasted table into a chart you can edit and download. Free limits differ.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Chartsuno free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Does Datawrapper have a free plan?","acceptedAnswer":{"@type":"Answer","text":"Yes. Their pricing page says the free plan can create, publish, and embed charts, maps, and tables, and download PNG, with a Created with Datawrapper line. It does not describe a limit on how many graphics you publish. SVG and PDF downloads are listed on Pro, at $21 per user each month, excluding VAT, as of November 2026. Check datawrapper.de/pricing before you rely on a price."}},{"@type":"Question","name":"Is Chartsuno a replacement for Datawrapper?","acceptedAnswer":{"@type":"Answer","text":"Not if you publish interactive graphics in articles. It is a fit when you have a table and you want to edit it and download or share the chart. The free account is 10 saved charts a month, which is smaller than Datawrapper’s free publishing."}},{"@type":"Question","name":"Do I have to connect Google or Excel?","acceptedAnswer":{"@type":"Answer","text":"No. Copy the cells and paste them, or upload a CSV up to 10MB. Chartsuno does not request access to the spreadsheet, and it does not open .xlsx files."}},{"@type":"Question","name":"Can I try a chart before I make an account?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pasting data and previewing the chart works without an account. Saving, downloading, and copying a share link need a free account."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-mast {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Chartsuno and Datawrapper, compared</h1>
+    <p class="seo-lede">Both tools make a chart from a table. They are not the same job. Datawrapper is how newsrooms publish interactive graphics. Chartsuno is for pasting the numbers you already have and leaving with a chart you can edit.</p>
+    <figure class="seo-sample"><figcaption>A small table you could paste into either tool. The notes below are about the product around the chart, not a score for this data.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Q1</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:75%"></span></span><span class="seo-bar-value">18</span></li><li><span class="seo-bar-label">Q2</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">24</span></li><li><span class="seo-bar-label">Q3</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:88%"></span></span><span class="seo-bar-value">21</span></li></ul></figure>
+    <h2>What each one is for</h2>
+<p>Datawrapper is a publishing tool. Its free plan, as listed on datawrapper.de/pricing in November 2026, lets you create, publish, and embed interactive charts, maps, and tables, and download a PNG. The free plan keeps a “Created with Datawrapper” attribution. SVG and PDF downloads, and removing that attribution, are listed on the Pro plan at $21 per user each month, excluding VAT.</p>
+<p>Chartsuno starts in the browser from pasted cells. You can preview a chart without an account and without paying. A free account saves up to 10 charts a month. Those saved charts can be downloaded as a PNG, an SVG, or a CSV, and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</p>
+<h2>Where Datawrapper is the better fit</h2>
+<ul><li>You are embedding an interactive chart, map, or table in an article and you want it to stay online as a published graphic.</li><li>You need the locator maps, symbol maps, and choropleth maps Datawrapper is known for. Chartsuno is not a map newsroom.</li><li>You want unlimited free publishing. Datawrapper’s pricing page says the free plan does not cap how many graphics you create or how many people view them. Chartsuno’s free account stops at 10 saved charts a month.</li><li>Your organization already has a Datawrapper theme, team workspace, or style guide.</li></ul>
+<h2>Where Chartsuno is the better fit</h2>
+<ul><li>The numbers are in Excel, Google Sheets, or a CSV, and you want the chart without connecting the spreadsheet or uploading a workbook. Copy the cells and paste them. Chartsuno does not open .xlsx files.</li><li>You want to fix a number in a data editor and see the chart update, instead of rebuilding it.</li><li>You want a PNG or SVG download on the free account. On Datawrapper’s published pricing, SVG and PDF downloads are part of Pro. Chartsuno does not export PDF.</li><li>You want a read-only share link to one chart, not a public embed in a CMS. Previewing the chart does not require an account.</li></ul>
+<h2>What this page will not claim</h2>
+<p>Chartsuno does not have Datawrapper’s chart catalog, its responsive article embeds, or its newsroom maps. A Chartsuno share page is a read-only view of one saved chart, and downloads carry a small “Made with Chartsuno” credit. Datawrapper’s free graphics carry their own attribution, which their paid plans can remove. Pick the tool whose output you actually need.</p>
+<dl class="seo-faq"><dt>Is Chartsuno free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Does Datawrapper have a free plan?</dt><dd>Yes. Their pricing page says the free plan can create, publish, and embed charts, maps, and tables, and download PNG, with a Created with Datawrapper line. It does not describe a limit on how many graphics you publish. SVG and PDF downloads are listed on Pro, at $21 per user each month, excluding VAT, as of November 2026. Check datawrapper.de/pricing before you rely on a price.</dd><dt>Is Chartsuno a replacement for Datawrapper?</dt><dd>Not if you publish interactive graphics in articles. It is a fit when you have a table and you want to edit it and download or share the chart. The free account is 10 saved charts a month, which is smaller than Datawrapper’s free publishing.</dd><dt>Do I have to connect Google or Excel?</dt><dd>No. Copy the cells and paste them, or upload a CSV up to 10MB. Chartsuno does not request access to the spreadsheet, and it does not open .xlsx files.</dd><dt>Can I try a chart before I make an account?</dt><dd>Yes. Pasting data and previewing the chart works without an account. Saving, downloading, and copying a share link need a free account.</dd></dl>
+    <a class="seo-cta" href="/">Paste your data into Chartsuno</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a></p>
+  </article>
+</body>
+</html>

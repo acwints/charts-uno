@@ -144,7 +144,7 @@ from services.share_page import (
     TOKEN_RE,
     display_title,
     activity_stats,
-    real_signup_count,
+    signup_census,
     render_missing_share_html,
     render_share_html,
     render_share_png,
@@ -254,44 +254,52 @@ async def startup_event():
     logger.info("Database initialized")
 
 
-def _public_json(payload: dict) -> Response:
+def _public_json(payload: dict, extra_headers: Optional[dict] = None) -> Response:
+    headers = {"Cache-Control": "no-store"}
+    if extra_headers:
+        headers.update(extra_headers)
     return Response(
         content=json.dumps(payload),
         media_type="application/json",
-        headers={"Cache-Control": "no-store"},
+        headers=headers,
     )
 
 
-def _signup_count_payload(db: Session) -> dict:
-    """Real signup count. Test domains and the App Review demo are excluded."""
-    return {"count": real_signup_count(db)}
+def _signup_count_response(db: Session) -> Response:
+    """Distinct real people. The audit header is counts only, never an email."""
+    census = signup_census(db)
+    return _public_json(census["public"], {"X-Signup-Audit": census["audit_header"]})
 
 
 # Health check
 @app.get("/api/count")
 @limiter.limit("30/minute")
 async def public_count(request: Request, db: Session = Depends(get_db)):
-    """Public signup count. Same number as /api/stats/signups.
+    """Distinct real people. Same JSON as /api/stats/signups.
+
+    X-Signup-Audit is an integer breakdown (test rows, duplicates, bulk
+    inserts). It does not include emails or names.
 
         curl -s https://www.chartsuno.com/api/count
     """
     _ = request
-    return _public_json(_signup_count_payload(db))
+    return _signup_count_response(db)
 
 
 @app.get("/api/stats/signups")
 @limiter.limit("30/minute")
 async def signup_count(request: Request, db: Session = Depends(get_db)):
-    """Real signup count.
+    """Distinct real people. Same JSON as /api/count.
 
-    Returns only an aggregate. Accounts on reserved example domains, the
-    .test/.invalid/.localhost TLDs, the bot user, and the App Review demo
-    are excluded. /api/count returns the same JSON. Read it with:
+    One person per email after ignoring case, Gmail dots, and plus-tags.
+    Test domains, the bot, the App Review demo, the site owner, accounts
+    with no sign-in provider, and fixture-like batches are excluded.
+    created_at supplies the 7-day and yesterday snapshots.
 
         curl -s https://www.chartsuno.com/api/stats/signups
     """
     _ = request
-    return _public_json(_signup_count_payload(db))
+    return _signup_count_response(db)
 
 
 @app.get("/api/stats/activity")
@@ -300,7 +308,7 @@ async def activity_count(request: Request, db: Session = Depends(get_db)):
     """Signup and recent-chart counts. No personal data.
 
     share_link_enablers_7d is null: share links are not timestamped.
-    referred_signups counts real accounts that signed up with an invite code.
+    referred_signups counts distinct people from /api/count who signed up with an invite code.
     """
     _ = request
     return _public_json(activity_stats(db))

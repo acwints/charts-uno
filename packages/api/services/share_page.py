@@ -16,7 +16,6 @@ import zlib
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
-from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Chart, User
@@ -24,6 +23,31 @@ from models.database import REVIEW_LOGIN_GOOGLE_ID, Chart, User
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 CANONICAL_ORIGIN = "https://www.chartsuno.com"
 CTA_TEXT = "Made with Chartsuno: make your own free"
+CREDIT_TEXT = "Made with Chartsuno"
+COUNT_DEFINITION = (
+    "Distinct people: one per email, ignoring letter case, Gmail dots, and plus-tags. "
+    "Excludes test domains, the bot, the App Review demo, the site owner, accounts with no sign-in provider, "
+    "and batches of five or more fixture-like accounts created in the same second."
+)
+_OWNER_EMAILS = ("acwints78@gmail.com",)
+_INTERNAL_DOMAINS = frozenset({"chartsuno.com", "chartsuno.app"})
+_BULK_MIN = 5
+_SEED_LOCAL = re.compile(
+    r"^(test|tests|demo|seed|fixture|sample|fake|bot|qa|dummy|example|user)(\d+)?$"
+)
+_AUDIT_KEYS = (
+    "test_or_demo",
+    "internal",
+    "no_provider",
+    "bulk_seeded",
+    "duplicate_rows",
+    "case_extra",
+    "alias_extra",
+    "largest_same_second",
+    "same_second_rows",
+    "seed_like_kept",
+    "email_verified_stored",
+)
 _MAX_LABELS = 12
 _MAX_SERIES = 4
 _SERIES_COLORS = ("#7aa2ff", "#c4b5fd", "#5eead4", "#fcd34d")
@@ -99,45 +123,180 @@ def share_url(token: str) -> str:
     return f"{public_web_origin()}/s/{token}"
 
 
-def excluded_account_clause():
-    """Accounts that are not real signups.
+def person_key(email: str) -> str:
+    """One mailbox: lowercased, plus-tags removed, Gmail dots ignored."""
+    cleaned = (email or "").strip().lower()
+    local, sep, domain = cleaned.partition("@")
+    if not sep:
+        return cleaned
+    local = local.split("+", 1)[0]
+    if domain in {"gmail.com", "googlemail.com"}:
+        local = local.replace(".", "")
+        domain = "gmail.com"
+    return f"{local}@{domain}"
 
-    Excluded:
-    - @example.com, @example.org, @example.net (reserved examples)
-    - the .test, .invalid, and .localhost TLDs
-    - @chartsuno.local (the bot service user)
-    - the App Review demo account
+
+def _as_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return datetime.min
+    return datetime.min
+
+
+def is_test_account(email: str, google_id: Optional[str]) -> bool:
+    """Reserved example domains, test TLDs, the bot, and the App Review demo."""
+    lowered = (email or "").strip().lower()
+    if google_id == REVIEW_LOGIN_GOOGLE_ID:
+        return True
+    if isinstance(google_id, str) and google_id.startswith("bot-service:"):
+        return True
+    return lowered.endswith((
+        "@example.com",
+        "@example.org",
+        "@example.net",
+        ".test",
+        ".invalid",
+        ".localhost",
+        "@chartsuno.local",
+    ))
+
+
+def is_internal_account(email: str) -> bool:
+    key = person_key(email)
+    domain = key.rsplit("@", 1)[-1]
+    owners = {person_key(item) for item in _OWNER_EMAILS}
+    return key in owners or domain in _INTERNAL_DOMAINS
+
+
+def looks_seeded(email: str) -> bool:
+    local = person_key(email).split("@", 1)[0]
+    return _SEED_LOCAL.fullmatch(local) is not None
+
+
+def has_sign_in_provider(google_id: Optional[str], apple_id: Optional[str]) -> bool:
+    if apple_id:
+        return True
+    if not google_id or google_id == REVIEW_LOGIN_GOOGLE_ID:
+        return False
+    return not str(google_id).startswith("bot-service:")
+
+
+def credit_url(code: object) -> str:
+    """Invite link for a chart credit. A missing code is the plain homepage."""
+    from services.referrals import normalize_referral
+
+    normalized = normalize_referral(code)
+    if normalized:
+        return f"{CANONICAL_ORIGIN}/?ref={normalized}"
+    return f"{CANONICAL_ORIGIN}/"
+
+
+def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
+    """Distinct real people, plus the integer audit behind that count.
+
+    email_verified is not a column. Signups are Google or Apple accounts, so
+    unverified addresses cannot be separated after the fact. The audit header
+    records that as email_verified_stored=0 and never includes an email.
     """
-    return or_(
-        User.email.ilike("%@example.com"),
-        User.email.ilike("%@example.org"),
-        User.email.ilike("%@example.net"),
-        User.email.ilike("%.test"),
-        User.email.ilike("%.invalid"),
-        User.email.ilike("%.localhost"),
-        User.email.ilike("%@chartsuno.local"),
-        User.google_id == REVIEW_LOGIN_GOOGLE_ID,
-    )
+    moment = now or datetime.utcnow()
+    week_ago = moment - timedelta(days=7)
+    day_ago = moment - timedelta(days=1)
+    rows = db.query(
+        User.id,
+        User.email,
+        User.google_id,
+        User.apple_id,
+        User.created_at,
+        User.referred_by,
+    ).all()
+    charters = {user_id for (user_id,) in db.query(Chart.user_id).distinct().all()}
+    audit = {key: 0 for key in _AUDIT_KEYS}
+    candidates = []
+    for row in rows:
+        email = row.email or ""
+        if is_test_account(email, row.google_id):
+            audit["test_or_demo"] += 1
+            continue
+        if is_internal_account(email):
+            audit["internal"] += 1
+            continue
+        if not has_sign_in_provider(row.google_id, row.apple_id):
+            audit["no_provider"] += 1
+            continue
+        created = _as_datetime(row.created_at)
+        candidates.append({
+            "id": row.id,
+            "lower": email.strip().lower(),
+            "key": person_key(email),
+            "created_at": created,
+            "second": created.replace(microsecond=0),
+            "referred": bool(row.referred_by),
+            "seed": looks_seeded(email),
+            "chart": row.id in charters,
+        })
+
+    by_second: dict[datetime, list] = {}
+    for item in candidates:
+        by_second.setdefault(item["second"], []).append(item)
+    sizes = [len(group) for group in by_second.values()]
+    audit["largest_same_second"] = max(sizes) if sizes else 0
+    audit["same_second_rows"] = sum(len(group) for group in by_second.values() if len(group) >= 2)
+    bulk_ids = set()
+    for group in by_second.values():
+        if len(group) < _BULK_MIN:
+            continue
+        seeded = sum(1 for item in group if item["seed"])
+        if seeded * 2 >= len(group):
+            bulk_ids.update(item["id"] for item in group)
+    audit["bulk_seeded"] = len(bulk_ids)
+    survivors = [item for item in candidates if item["id"] not in bulk_ids]
+
+    by_lower: dict[str, list] = {}
+    by_key: dict[str, list] = {}
+    for item in survivors:
+        by_lower.setdefault(item["lower"], []).append(item)
+        by_key.setdefault(item["key"], []).append(item)
+    audit["case_extra"] = sum(len(group) - 1 for group in by_lower.values())
+    audit["duplicate_rows"] = sum(len(group) - 1 for group in by_key.values())
+    audit["alias_extra"] = audit["duplicate_rows"] - audit["case_extra"]
+    audit["seed_like_kept"] = sum(1 for item in survivors if item["seed"])
+
+    people = []
+    referred = 0
+    for group in by_key.values():
+        earliest = min(item["created_at"] for item in group)
+        if any(item["referred"] for item in group):
+            referred += 1
+        people.append({
+            "created_at": earliest,
+            "chart": any(item["chart"] for item in group),
+        })
+    public = {
+        "count": len(people),
+        "definition": COUNT_DEFINITION,
+        "accounts_total": len(rows),
+        "users_with_a_chart": sum(1 for person in people if person["chart"]),
+        "signups_last_7d": sum(1 for person in people if person["created_at"] >= week_ago),
+        "count_7_days_ago": sum(1 for person in people if person["created_at"] < week_ago),
+        "count_yesterday": sum(1 for person in people if person["created_at"] < day_ago),
+    }
+    return {
+        "public": public,
+        "referred": referred,
+        "audit": audit,
+        "audit_header": ";".join(f"{key}={audit[key]}" for key in _AUDIT_KEYS),
+        "user_ids": [item["id"] for item in survivors],
+        "person_of": {item["id"]: item["key"] for item in survivors},
+    }
 
 
-def real_signup_count(db: Session) -> int:
-    """Accounts a person created. Reserved test domains and the review demo are out."""
-    count = db.query(func.count(User.id)).filter(~excluded_account_clause()).scalar()
-    return int(count or 0)
-
-
-def referred_signup_count(db: Session) -> int:
-    """Real accounts that signed up with someone else's invite code.
-
-    Uses the same exclusions as the public signup count. The code itself is
-    not returned.
-    """
-    count = (
-        db.query(func.count(User.id))
-        .filter(User.referred_by.isnot(None), ~excluded_account_clause())
-        .scalar()
-    )
-    return int(count or 0)
+def real_signup_count(db: Session, now: Optional[datetime] = None) -> int:
+    """Distinct real people. See signup_census for the definition."""
+    return signup_census(db, now)["public"]["count"]
 
 
 SHARE_LINK_WINDOW_UNSUPPORTED = (
@@ -150,26 +309,29 @@ def activity_stats(db: Session, now=None) -> dict:
     """Aggregate counts only. No emails, names, or chart contents.
 
     share_link_enablers_7d is null because the schema cannot support it.
-    referred_signups counts real accounts that stored an invite code at signup.
+    signups and referred_signups use the same distinct-person count as /api/count.
+    Chart windows count only those people.
     """
     moment = now or datetime.utcnow()
+    census = signup_census(db, moment)
     window_start = moment - timedelta(days=7)
-    real_users = db.query(User.id).filter(~excluded_account_clause())
-    recent_charts = db.query(Chart).filter(
-        Chart.created_at >= window_start,
-        Chart.user_id.in_(real_users),
-    )
-    charts_created = recent_charts.count()
-    creators = (
-        db.query(func.count(func.distinct(Chart.user_id)))
-        .filter(Chart.created_at >= window_start, Chart.user_id.in_(real_users))
-        .scalar()
-    )
+    real_ids = census["user_ids"]
+    if real_ids:
+        recent_ids = [
+            user_id
+            for (user_id,) in db.query(Chart.user_id).filter(
+                Chart.created_at >= window_start,
+                Chart.user_id.in_(real_ids),
+            ).all()
+        ]
+    else:
+        recent_ids = []
+    creators = {census["person_of"][user_id] for user_id in recent_ids if user_id in census["person_of"]}
     return {
-        "signups": real_signup_count(db),
-        "referred_signups": referred_signup_count(db),
-        "chart_creators_7d": int(creators or 0),
-        "charts_created_7d": int(charts_created or 0),
+        "signups": census["public"]["count"],
+        "referred_signups": census["referred"],
+        "chart_creators_7d": len(creators),
+        "charts_created_7d": len(recent_ids),
         "share_link_enablers_7d": None,
         "unsupported": {"share_link_enablers_7d": SHARE_LINK_WINDOW_UNSUPPORTED},
     }
@@ -321,7 +483,7 @@ def render_share_png(chart: Chart) -> bytes:
     top = 96 + max(1, len(lines)) * 32 + 28
     footer_y = 590
     _draw_png_chart(canvas, chart, 72, top, 1056, max(120, footer_y - top - 24))
-    canvas.text("MAKE YOUR OWN FREE", 72, footer_y, 2, (154, 168, 198), 700)
+    canvas.text("MADE WITH CHARTSUNO", 72, footer_y, 2, (154, 168, 198), 700)
     return _png(canvas)
 
 
@@ -615,10 +777,20 @@ _PAGE_CSS = """
   transition: background-color 150ms, color 150ms;
 }
 .share-cta:hover { background: #9db7ff; }
+.share-credit {
+  display: inline-block;
+  margin-top: 12px;
+  color: #9aa0b4;
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color 150ms;
+}
+.share-credit:hover { color: #e4e6ee; }
+.share-credit:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 3px; }
 .share-note { color: #9aa0b4; font-size: 0.92rem; line-height: 1.5; }
 .share-quiet { color: #9db7ff; }
 @media (prefers-reduced-motion: reduce) {
-  .share-cta { transition: none; }
+  .share-cta, .share-credit { transition: none; }
 }
 """
 
@@ -647,6 +819,11 @@ def render_share_html(chart: Chart, token: str) -> str:
     chart_html = _legend_positions(_svg_chart(_chart_data(chart), _chart_config(chart)))
     cta = html.escape(CTA_TEXT)
     origin = public_web_origin()
+    owner = getattr(chart, "user", None)
+    credit_href = html.escape(
+        credit_url(getattr(owner, "referral_code", None) if owner is not None else None),
+        quote=True,
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -679,6 +856,7 @@ def render_share_html(chart: Chart, token: str) -> str:
     <h1 class="share-title">{safe_title}</h1>
     {byline}
     <figure class="share-figure">{chart_html}</figure>
+    <a class="share-credit" href="{credit_href}">{CREDIT_TEXT}</a>
     <a class="share-cta" href="{origin}/?auth=1">{cta}</a>
     <p class="share-note">Anyone with this link can view the saved chart. Previewing your own chart is free, and a free account saves up to 10 charts a month.</p>
   </main>
@@ -690,6 +868,7 @@ def render_share_html(chart: Chart, token: str) -> str:
 def render_missing_share_html() -> str:
     origin = public_web_origin()
     cta = html.escape(CTA_TEXT)
+    credit_href = html.escape(credit_url(None), quote=True)
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -705,6 +884,7 @@ def render_missing_share_html() -> str:
     <a class="share-brand" href="{origin}/">Chartsuno</a>
     <h1 class="share-title">This chart link is off</h1>
     <p class="share-note">The link was turned off, or the chart was deleted.</p>
+    <a class="share-credit" href="{credit_href}">{CREDIT_TEXT}</a>
     <a class="share-cta" href="{origin}/?auth=1">{cta}</a>
   </main>
 </body>

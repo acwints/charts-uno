@@ -5,9 +5,11 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Image from 'lucide-react/dist/esm/icons/image';
 import Code from 'lucide-react/dist/esm/icons/code';
 import Check from 'lucide-react/dist/esm/icons/check';
+import FileImage from 'lucide-react/dist/esm/icons/file-image';
 import {
   exportToCSV,
   exportToPNG,
+  exportToSVG,
   generateEmbedCode,
   type WatermarkSettings,
 } from '../../services/exportService';
@@ -24,9 +26,10 @@ interface ExportMenuProps {
   title?: string;
   watermark?: WatermarkSettings;
   isAuthenticated?: boolean;
+  creditHref?: string;
 }
 
-export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthenticated = false }: ExportMenuProps) {
+export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthenticated = false, creditHref }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -72,6 +75,20 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
     } catch (error) {
       console.error('Failed to export PNG:', error);
       toast.error(isNativeApp() && error instanceof Error ? error.message : 'Unable to export PNG. Please try again.');
+    } finally {
+      setExporting(null);
+      setIsOpen(false);
+    }
+  };
+
+  const handleSVG = async () => {
+    if (!chartRef.current) return;
+    setExporting('svg');
+    try {
+      await exportToSVG(chartRef.current, filename, data, creditHref);
+    } catch (error) {
+      console.error('Failed to export SVG:', error);
+      toast.error(isNativeApp() && error instanceof Error ? error.message : 'Unable to export SVG. Please try again.');
     } finally {
       setExporting(null);
       setIsOpen(false);
@@ -128,6 +145,16 @@ export function ExportMenu({ data, chartRef, chartId, title, watermark, isAuthen
               <Image size={16} />
               <span>{isNativeApp() ? 'Save or share PNG' : 'Download PNG'}</span>
               {exporting === 'png' && <span className="export-loading">...</span>}
+            </button>
+
+            <button
+              className="export-option"
+              onClick={handleSVG}
+              disabled={exporting !== null || !isAuthenticated}
+            >
+              <FileImage size={16} />
+              <span>{isNativeApp() ? 'Save or share SVG' : 'Download SVG'}</span>
+              {exporting === 'svg' && <span className="export-loading">...</span>}
             </button>
 
             {chartId && !isNativeApp() && (

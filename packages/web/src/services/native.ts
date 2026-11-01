@@ -210,7 +210,7 @@ function blobToBase64(blob: Blob): Promise<string> {
  * iOS uses the Capacitor Filesystem and Share plugins (UIActivityViewController).
  * Dismissing the sheet is a normal end to the flow and does not throw.
  */
-export async function shareNativeFile(blob: Blob, filename: string, extension: 'png' | 'csv'): Promise<void> {
+export async function shareNativeFile(blob: Blob, filename: string, extension: 'png' | 'csv' | 'svg'): Promise<void> {
   if (!Capacitor.isPluginAvailable('Filesystem') || !Capacitor.isPluginAvailable('Share')) {
     throw new Error('Please update Chartsuno in TestFlight to export files.');
   }
