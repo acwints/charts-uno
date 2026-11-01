@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chart from Google Sheets: Paste a Range, Get a Chart | Chartsuno</title>
+  <meta name="description" content="Copy a range from Google Sheets and turn it into a chart in the browser. Edit any cell, then save, export a PNG, or share a link with a free account.">
+  <link rel="canonical" href="https://www.chartsuno.com/chart-from-google-sheets">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Chart from Google Sheets: Paste a Range, Get a Chart | Chartsuno">
+  <meta property="og:description" content="Copy a range from Google Sheets and turn it into a chart in the browser. Edit any cell, then save, export a PNG, or share a link with a free account.">
+  <meta property="og:url" content="https://www.chartsuno.com/chart-from-google-sheets">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Chart from Google Sheets: Paste a Range, Get a Chart | Chartsuno">
+  <meta name="twitter:description" content="Copy a range from Google Sheets and turn it into a chart in the browser. Edit any cell, then save, export a PNG, or share a link with a free account.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do I have to connect my Google account?","acceptedAnswer":{"@type":"Answer","text":"No. Copy the cells and paste them. Chartsuno does not request access to Google Drive or to the spreadsheet."}},{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Can I edit the data after pasting?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every label and value can be changed in the data editor, and the chart updates. The original sheet is not modified."}},{"@type":"Question","name":"What if my sheet uses a totals row or extra columns?","acceptedAnswer":{"@type":"Answer","text":"Leave the totals row out of the copy, and copy only the columns you want on the chart. Anything that still looks wrong can be fixed in the data editor."}},{"@type":"Question","name":"Where is the chart saved?","acceptedAnswer":{"@type":"Answer","text":"In My Charts, after you sign in and save. You can reopen, edit, and export it later. A free account includes 10 saved charts a month."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-mast {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Make a chart from Google Sheets</h1>
+    <p class="seo-lede">Google Sheets can chart a range, but the result often needs a pass through menus before it is fit to share. If the chart is the point, copy the cells and paste them into Chartsuno. You do not connect your Google account. The sheet stays where it is.</p>
+    <figure class="seo-sample"><figcaption>A header and three rows, the kind of range you copy out of a sheet.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Q1</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:73%"></span></span><span class="seo-bar-value">40</span></li><li><span class="seo-bar-label">Q2</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">55</span></li><li><span class="seo-bar-label">Q3</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:87%"></span></span><span class="seo-bar-value">48</span></li></ul></figure>
+    <h2>From a sheet to a chart</h2>
+<ol><li><strong>Copy the range in Google Sheets.</strong> Select the header row and the rows you want. Include the labels and the numbers. Leave the totals row out.</li><li><strong>Paste into Chartsuno.</strong> A copied sheet arrives as a table, the same way a CSV does. You can also paste into the data box or upload a CSV export of the sheet, up to 10MB.</li><li><strong>Check the data editor.</strong> Currency symbols, blank rows, and a stray total are easy to fix in place. The chart updates as you edit.</li><li><strong>Choose the chart and share it.</strong> Bar, line, and pie are the usual fits. Previewing does not require an account. Sign in free to save it, download a PNG, or copy a share link. A free account includes 10 saved charts a month.</li></ol>
+<h2>What to copy</h2>
+<p>A tidy range works best: one header row, one label column, and one or more number columns. Copy just the columns the chart needs. Two or three series are easier to read than every tab in the workbook.</p>
+<p>Chartsuno does not ask for access to Drive or to the spreadsheet. Paste is the whole connection. If the sheet is private, the chart still only contains the cells you copied.</p>
+<h2>Example</h2>
+<pre>Quarter,Revenue,Costs
+Q1,40,22
+Q2,55,24
+Q3,48,21</pre>
+<p>Paste that, or the same cells copied from a sheet, and you get revenue against costs by quarter. Comma, tab, semicolon, and pipe-separated tables are detected. If a cell splits wrong, fix it in the data editor.</p>
+<h2>Why not use the chart inside the sheet?</h2>
+<p>The sheet chart is attached to the grid: default colors, a legend that collides with the plot, and an export that is a screenshot of the tab. Chartsuno starts from the chart. Editing a number does not throw away the design, and a share link shows the chart without handing someone the rest of the spreadsheet.</p>
+<dl class="seo-faq"><dt>Do I have to connect my Google account?</dt><dd>No. Copy the cells and paste them. Chartsuno does not request access to Google Drive or to the spreadsheet.</dd><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Can I edit the data after pasting?</dt><dd>Yes. Every label and value can be changed in the data editor, and the chart updates. The original sheet is not modified.</dd><dt>What if my sheet uses a totals row or extra columns?</dt><dd>Leave the totals row out of the copy, and copy only the columns you want on the chart. Anything that still looks wrong can be fixed in the data editor.</dd><dt>Where is the chart saved?</dt><dd>In My Charts, after you sign in and save. You can reopen, edit, and export it later. A free account includes 10 saved charts a month.</dd></dl>
+    <a class="seo-cta" href="/">Paste a Google Sheet</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a></p>
+  </article>
+</body>
+</html>

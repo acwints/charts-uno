@@ -84,7 +84,7 @@ try {
   check('chart id stays private without the share token', privateChart.status === 403, `status ${privateChart.status}`);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const slug of ['bar-chart-maker', 'csv-to-chart', 'iphone-chart-maker']) {
+  for (const slug of ['bar-chart-maker', 'csv-to-chart', 'iphone-chart-maker', 'pie-chart-maker', 'line-graph-maker', 'chart-from-google-sheets']) {
     const response = await page.goto(`${web}/${slug}`, { waitUntil: 'domcontentloaded' });
     const body = await page.locator('h1').innerText();
     const cta = page.locator('.seo-cta');

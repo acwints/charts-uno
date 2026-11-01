@@ -29,7 +29,7 @@ import main
 import dependencies
 import services.native_auth as native_auth_service
 from dependencies import decode_token
-from models.database import Base, engine, SessionLocal
+from models.database import Base, engine, SessionLocal, User
 from services.native_auth import NativeAuthCode, pkce_challenge
 
 
@@ -100,6 +100,25 @@ class NativeAuthTests(unittest.TestCase):
 
     def exchange(self, code, verifier=None):
         return self.client.post("/api/auth/native/exchange", json={"code": code, "verifier": verifier or self.verifier})
+
+    def test_native_signup_stores_referral_from_the_auth_request(self):
+        db = SessionLocal()
+        self.addCleanup(db.close)
+        db.add(User(email="friend@gmail.com", google_id="friend-native", name="Friend", referral_code="Abcd1234"))
+        db.commit()
+        response = self.client.get("/auth/google", params={
+            "native_challenge": pkce_challenge(self.verifier),
+            "native_nonce": self.nonce,
+            "ref": "Abcd1234",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        state = parse_qs(urlsplit(response.json()["auth_url"]).query)["state"][0]
+        with patch.object(main.httpx, "AsyncClient", return_value=FakeGoogle()):
+            callback = self.client.get("/auth/callback", params={"code": "google-code", "state": state}, follow_redirects=False)
+        self.assertEqual(callback.status_code, 302, callback.text)
+        db.expire_all()
+        created = db.query(User).filter(User.email == "native@example.test").one()
+        self.assertEqual(created.referred_by, "Abcd1234")
 
     def test_callback_and_cookie_survive_subsequent_requests(self):
         code = self.callback()

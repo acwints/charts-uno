@@ -1,4 +1,5 @@
 import os
+import secrets
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -60,6 +61,11 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
+def generate_referral_code() -> str:
+    """URL-safe code for https://www.chartsuno.com/?ref=<code>. Always 8 characters."""
+    return secrets.token_urlsafe(6)
+
+
 # Not a Google subject. The App Review demo account uses this stable id so
 # it can be recreated after deletion without colliding with a real sign-in.
 REVIEW_LOGIN_GOOGLE_ID = "review-login"
@@ -76,6 +82,9 @@ class User(Base):
     # google_id null. Existing databases are altered in ensure_user_auth_schema.
     google_id = Column(String(255), unique=True, nullable=True, index=True)
     apple_id = Column(String(255), unique=True, nullable=True, index=True)
+    # Public invite code. referred_by stores the code this account signed up with.
+    referral_code = Column(String(16), unique=True, nullable=True, index=True, default=generate_referral_code)
+    referred_by = Column(String(16), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -474,6 +483,7 @@ def init_db():
     # Alembic chain is not a reliable path on the production database.
     ensure_user_auth_schema()
     ensure_chart_share_schema()
+    ensure_referral_schema()
 
 
 def ensure_user_auth_schema() -> None:
@@ -531,6 +541,39 @@ def ensure_chart_share_schema() -> None:
             ))
     except Exception as exc:
         logger.error("Could not ensure chart share column: %s", exc)
+        raise
+
+
+def ensure_referral_schema() -> None:
+    """Add referral columns on databases created before invite links existed.
+
+    create_all does not alter an existing users table. Each account gets a
+    code so an invite link can be copied without a second signup.
+    """
+    import logging
+    from sqlalchemy import inspect, text
+
+    logger = logging.getLogger(__name__)
+    try:
+        inspector = inspect(engine)
+        if "users" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("users")}
+        with engine.begin() as conn:
+            if "referral_code" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR(16)"))
+            if "referred_by" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN referred_by VARCHAR(16)"))
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_users_referred_by ON users (referred_by)"
+            ))
+        from services.referrals import backfill_referral_codes
+        backfill_referral_codes()
+    except Exception as exc:
+        logger.error("Could not ensure referral columns: %s", exc)
         raise
 
 

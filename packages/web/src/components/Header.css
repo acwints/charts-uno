@@ -206,6 +206,11 @@
   color: var(--text-primary);
 }
 
+.user-menu-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .user-menu-item--danger {
   color: var(--error-text);
 }
@@ -279,6 +284,10 @@
 
   .user-menu-dropdown {
     min-width: 240px;
+  }
+
+  .user-menu-item--invite {
+    min-height: 44px;
   }
 }
 

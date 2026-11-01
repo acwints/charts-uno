@@ -258,6 +258,206 @@ export const seoPages: SeoPage[] = [
     ctaHref: '/',
     ctaLabel: 'Open Chartsuno in your browser',
   },
+  {
+    slug: 'pie-chart-maker',
+    title: 'Free Pie Chart Maker Online: Show a Split | Chartsuno',
+    description:
+      'Paste a few categories and preview a pie chart free in your browser. A free account saves it, exports a PNG, or shares a link. No spreadsheet required.',
+    h1: 'Make a pie chart online, free',
+    lede:
+      'A pie chart answers one question: how is this whole divided? A budget, survey answers, traffic sources, or a vote. Paste the categories and the numbers, and Chartsuno draws the chart in the browser.',
+    sampleCaption: 'Three parts of one whole. The same labels and values become the slices.',
+    sample: [
+      { label: 'Web', value: 62 },
+      { label: 'Email', value: 24 },
+      { label: 'Other', value: 14 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How it works' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste the categories and the numbers.** Two columns are enough: a label and a value. Copy them from a note, a doc, or a spreadsheet.',
+          '**Fix any cell in the data editor.** Change a value, rename a slice, or group a small category into Other. The chart updates as you edit.',
+          '**Choose pie in the chart editor.** Set the title and keep the number of slices small enough to read on a slide or a phone.',
+          '**Save, export, or share.** Previewing does not require an account. Sign in free to keep the chart in My Charts, download a PNG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'When a pie chart is the right chart' },
+      {
+        type: 'p',
+        text: 'Use a pie when every value is a part of one total and you only have a few categories. If people need to compare numbers that are close together, a bar chart is easier to read. If the story is change over time, use a line graph instead.',
+      },
+      { type: 'h2', text: 'Tips for a pie people can read' },
+      {
+        type: 'ul',
+        items: [
+          'Aim for six slices or fewer. Roll the long tail into one Other slice.',
+          'Put the largest slice first so the eye lands on the main share.',
+          'Write the takeaway in the title, for example “Most traffic is direct”, not only “Traffic”.',
+          'Skip the pie when the values are not parts of one whole.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I change the numbers after the pie is drawn?',
+            a: 'Yes. Edit any label or value in the data editor and the slices update. Save the chart if you want My Charts and the share link to show the new numbers.',
+          },
+          {
+            q: 'How do I put the pie in my slides?',
+            a: 'Sign in, export a PNG, and drop it into PowerPoint, Keynote, Google Slides, or a doc. You can also copy a share link to the saved chart.',
+          },
+          {
+            q: 'What if I have too many categories?',
+            a: 'A pie with a dozen slices is hard to read. Keep the largest categories and combine the rest as Other, or switch the chart to bars.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Make a free pie chart',
+  },
+  {
+    slug: 'line-graph-maker',
+    title: 'Free Line Graph Maker Online: Plot a Trend | Chartsuno',
+    description:
+      'Paste dates and values and preview a line graph free in your browser. A free account saves the chart, exports a PNG, or shares a link.',
+    h1: 'Make a line graph online, free',
+    lede:
+      'A line graph is for change: revenue by month, a temperature log, signups by week. Paste the dates and the numbers. Chartsuno draws the line in the browser so you can see the trend without building it inside a spreadsheet.',
+    sampleCaption: 'A rising line. The first column is the time label, and the second is the value.',
+    sample: [
+      { label: 'Jan', value: 120 },
+      { label: 'Feb', value: 140 },
+      { label: 'Mar', value: 190 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How it works' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste the time column and the values.** Months, dates, or weeks in the first column. One or two number columns beside it.',
+          '**Check the points in the data editor.** Fix a typo or add the missing month. The line updates as you edit, so you do not rebuild the graph.',
+          '**Set the chart to a line.** Add a title that states the trend. A second series is fine when you are comparing two lines, and crowded when you add five.',
+          '**Save, export, or share.** Previewing does not require an account. Sign in free to keep the graph, download a PNG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'Line graph or bar chart?' },
+      {
+        type: 'p',
+        text: 'Use a line when the horizontal axis is time and the point is the slope. Use bars when the categories are separate things, such as products or cities, and connecting them with a line would invent a trend that is not there.',
+      },
+      { type: 'h2', text: 'Tips for a line that reads at a glance' },
+      {
+        type: 'ul',
+        items: [
+          'Keep the time steps even. A missing month looks like a flat stretch if you leave it out without saying so.',
+          'Start the axis at zero unless a small change is the whole story, and then say so in the title.',
+          'One or two lines. More than that, and the reader has to hunt for the series that matters.',
+          'Put the conclusion in the title, for example “Signups rose every month”, not only “Signups”.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I plot more than one line?',
+            a: 'Yes. Add another number column and Chartsuno draws another series. Two lines are usually enough. Name each series so the legend is readable.',
+          },
+          {
+            q: 'Can I edit a point after the graph is made?',
+            a: 'Yes. Change any value or label in the data editor and the line updates. Save when you want the share link and My Charts to match.',
+          },
+          {
+            q: 'How do I share the graph?',
+            a: 'Sign in, then download a PNG or copy a share link. Previewing the graph does not require an account. Saving and sharing need a free account.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Make a free line graph',
+  },
+  {
+    slug: 'chart-from-google-sheets',
+    title: 'Chart from Google Sheets: Paste a Range, Get a Chart | Chartsuno',
+    description:
+      'Copy a range from Google Sheets and turn it into a chart in the browser. Edit any cell, then save, export a PNG, or share a link with a free account.',
+    h1: 'Make a chart from Google Sheets',
+    lede:
+      'Google Sheets can chart a range, but the result often needs a pass through menus before it is fit to share. If the chart is the point, copy the cells and paste them into Chartsuno. You do not connect your Google account. The sheet stays where it is.',
+    sampleCaption: 'A header and three rows, the kind of range you copy out of a sheet.',
+    sample: [
+      { label: 'Q1', value: 40 },
+      { label: 'Q2', value: 55 },
+      { label: 'Q3', value: 48 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'From a sheet to a chart' },
+      {
+        type: 'ol',
+        items: [
+          '**Copy the range in Google Sheets.** Select the header row and the rows you want. Include the labels and the numbers. Leave the totals row out.',
+          '**Paste into Chartsuno.** A copied sheet arrives as a table, the same way a CSV does. You can also paste into the data box or upload a CSV export of the sheet, up to 10MB.',
+          '**Check the data editor.** Currency symbols, blank rows, and a stray total are easy to fix in place. The chart updates as you edit.',
+          '**Choose the chart and share it.** Bar, line, and pie are the usual fits. Previewing does not require an account. Sign in free to save it, download a PNG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'What to copy' },
+      {
+        type: 'p',
+        text: 'A tidy range works best: one header row, one label column, and one or more number columns. Copy just the columns the chart needs. Two or three series are easier to read than every tab in the workbook.',
+      },
+      {
+        type: 'p',
+        text: 'Chartsuno does not ask for access to Drive or to the spreadsheet. Paste is the whole connection. If the sheet is private, the chart still only contains the cells you copied.',
+      },
+      { type: 'h2', text: 'Example' },
+      {
+        type: 'pre',
+        text: 'Quarter,Revenue,Costs\nQ1,40,22\nQ2,55,24\nQ3,48,21',
+      },
+      {
+        type: 'p',
+        text: 'Paste that, or the same cells copied from a sheet, and you get revenue against costs by quarter. Comma, tab, semicolon, and pipe-separated tables are detected. If a cell splits wrong, fix it in the data editor.',
+      },
+      { type: 'h2', text: 'Why not use the chart inside the sheet?' },
+      {
+        type: 'p',
+        text: 'The sheet chart is attached to the grid: default colors, a legend that collides with the plot, and an export that is a screenshot of the tab. Chartsuno starts from the chart. Editing a number does not throw away the design, and a share link shows the chart without handing someone the rest of the spreadsheet.',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          {
+            q: 'Do I have to connect my Google account?',
+            a: 'No. Copy the cells and paste them. Chartsuno does not request access to Google Drive or to the spreadsheet.',
+          },
+          { q: 'Is it free?', a: freeAccount },
+          {
+            q: 'Can I edit the data after pasting?',
+            a: 'Yes. Every label and value can be changed in the data editor, and the chart updates. The original sheet is not modified.',
+          },
+          {
+            q: 'What if my sheet uses a totals row or extra columns?',
+            a: 'Leave the totals row out of the copy, and copy only the columns you want on the chart. Anything that still looks wrong can be fixed in the data editor.',
+          },
+          {
+            q: 'Where is the chart saved?',
+            a: 'In My Charts, after you sign in and save. You can reopen, edit, and export it later. A free account includes 10 saved charts a month.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Paste a Google Sheet',
+  },
 ];
 
 export function seoPageBySlug(slug: string): SeoPage | undefined {

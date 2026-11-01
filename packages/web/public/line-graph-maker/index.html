@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Free Line Graph Maker Online: Plot a Trend | Chartsuno</title>
+  <meta name="description" content="Paste dates and values and preview a line graph free in your browser. A free account saves the chart, exports a PNG, or shares a link.">
+  <link rel="canonical" href="https://www.chartsuno.com/line-graph-maker">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Free Line Graph Maker Online: Plot a Trend | Chartsuno">
+  <meta property="og:description" content="Paste dates and values and preview a line graph free in your browser. A free account saves the chart, exports a PNG, or shares a link.">
+  <meta property="og:url" content="https://www.chartsuno.com/line-graph-maker">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Free Line Graph Maker Online: Plot a Trend | Chartsuno">
+  <meta name="twitter:description" content="Paste dates and values and preview a line graph free in your browser. A free account saves the chart, exports a PNG, or shares a link.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Do I need to sign up?","acceptedAnswer":{"@type":"Answer","text":"Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple."}},{"@type":"Question","name":"Can I plot more than one line?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add another number column and Chartsuno draws another series. Two lines are usually enough. Name each series so the legend is readable."}},{"@type":"Question","name":"Can I edit a point after the graph is made?","acceptedAnswer":{"@type":"Answer","text":"Yes. Change any value or label in the data editor and the line updates. Save when you want the share link and My Charts to match."}},{"@type":"Question","name":"How do I share the graph?","acceptedAnswer":{"@type":"Answer","text":"Sign in, then download a PNG or copy a share link. Previewing the graph does not require an account. Saving and sharing need a free account."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-mast {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Make a line graph online, free</h1>
+    <p class="seo-lede">A line graph is for change: revenue by month, a temperature log, signups by week. Paste the dates and the numbers. Chartsuno draws the line in the browser so you can see the trend without building it inside a spreadsheet.</p>
+    <figure class="seo-sample"><figcaption>A rising line. The first column is the time label, and the second is the value.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Jan</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:63%"></span></span><span class="seo-bar-value">120</span></li><li><span class="seo-bar-label">Feb</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:74%"></span></span><span class="seo-bar-value">140</span></li><li><span class="seo-bar-label">Mar</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">190</span></li></ul></figure>
+    <h2>How it works</h2>
+<ol><li><strong>Paste the time column and the values.</strong> Months, dates, or weeks in the first column. One or two number columns beside it.</li><li><strong>Check the points in the data editor.</strong> Fix a typo or add the missing month. The line updates as you edit, so you do not rebuild the graph.</li><li><strong>Set the chart to a line.</strong> Add a title that states the trend. A second series is fine when you are comparing two lines, and crowded when you add five.</li><li><strong>Save, export, or share.</strong> Previewing does not require an account. Sign in free to keep the graph, download a PNG, or copy a share link. A free account includes 10 saved charts a month.</li></ol>
+<h2>Line graph or bar chart?</h2>
+<p>Use a line when the horizontal axis is time and the point is the slope. Use bars when the categories are separate things, such as products or cities, and connecting them with a line would invent a trend that is not there.</p>
+<h2>Tips for a line that reads at a glance</h2>
+<ul><li>Keep the time steps even. A missing month looks like a flat stretch if you leave it out without saying so.</li><li>Start the axis at zero unless a small change is the whole story, and then say so in the title.</li><li>One or two lines. More than that, and the reader has to hunt for the series that matters.</li><li>Put the conclusion in the title, for example “Signups rose every month”, not only “Signups”.</li></ul>
+<dl class="seo-faq"><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Do I need to sign up?</dt><dd>Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple.</dd><dt>Can I plot more than one line?</dt><dd>Yes. Add another number column and Chartsuno draws another series. Two lines are usually enough. Name each series so the legend is readable.</dd><dt>Can I edit a point after the graph is made?</dt><dd>Yes. Change any value or label in the data editor and the line updates. Save when you want the share link and My Charts to match.</dd><dt>How do I share the graph?</dt><dd>Sign in, then download a PNG or copy a share link. Previewing the graph does not require an account. Saving and sharing need a free account.</dd></dl>
+    <a class="seo-cta" href="/">Make a free line graph</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a></p>
+  </article>
+</body>
+</html>

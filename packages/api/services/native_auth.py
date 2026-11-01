@@ -27,13 +27,18 @@ def pkce_challenge(verifier: str) -> str:
     return base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).decode().rstrip("=")
 
 
-def create_native_state(challenge: str, nonce: str) -> str:
+def create_native_state(challenge: str, nonce: str, ref: str | None = None) -> str:
     if not re.fullmatch(r"[A-Za-z0-9_-]{43}", challenge) or not re.fullmatch(r"[A-Za-z0-9_-]{32,128}", nonce):
         raise HTTPException(400, "Invalid native authentication request")
-    return "native." + jwt.encode({
+    payload = {
         "aud": AUDIENCE, "challenge": challenge, "nonce": nonce,
         "exp": datetime.utcnow() + timedelta(minutes=10),
-    }, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    }
+    from services.referrals import normalize_referral
+    code = normalize_referral(ref)
+    if code:
+        payload["ref"] = code
+    return "native." + jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
 def read_native_state(state: str) -> dict:

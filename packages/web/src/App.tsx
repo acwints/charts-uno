@@ -61,6 +61,9 @@ function AppWithTeam() {
           <Route path="bar-chart-maker" element={<SeoLandingPage slug="bar-chart-maker" />} />
           <Route path="csv-to-chart" element={<SeoLandingPage slug="csv-to-chart" />} />
           <Route path="iphone-chart-maker" element={<SeoLandingPage slug="iphone-chart-maker" />} />
+          <Route path="pie-chart-maker" element={<SeoLandingPage slug="pie-chart-maker" />} />
+          <Route path="line-graph-maker" element={<SeoLandingPage slug="line-graph-maker" />} />
+          <Route path="chart-from-google-sheets" element={<SeoLandingPage slug="chart-from-google-sheets" />} />
 
           {/* Auth-required dashboard routes */}
           <Route element={<ProtectedRoute />}>

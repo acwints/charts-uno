@@ -57,7 +57,7 @@ def _clean_name(full_name: str | None) -> str | None:
     return cleaned[:255] or None
 
 
-def upsert_apple_user(db: Session, claims: dict, full_name: str | None) -> tuple[User, bool]:
+def upsert_apple_user(db: Session, claims: dict, full_name: str | None, referral: str | None = None) -> tuple[User, bool]:
     """Find or create the account for an Apple subject. Returns (user, is_new)."""
     apple_id = claims["sub"]
     raw_email = claims.get("email")
@@ -103,8 +103,12 @@ def upsert_apple_user(db: Session, claims: dict, full_name: str | None) -> tuple
             ),
         )
 
+    from services.referrals import allocate_referral_code, attach_referral
+
     user = User(apple_id=apple_id, email=email, name=name, google_id=None)
+    user.referral_code = allocate_referral_code(db)
     db.add(user)
+    attach_referral(db, user, referral)
     db.commit()
     db.refresh(user)
     return user, True
