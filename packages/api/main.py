@@ -38,6 +38,7 @@ from dependencies import (
 )
 from schemas import (
     UserResponse,
+    CurrentUserResponse,
     PublicAuthorResponse,
     ChartCreate,
     ChartUpdate,
@@ -140,6 +141,7 @@ from services.share_page import (
     render_share_png,
     share_url,
 )
+from services.referrals import allocate_referral_code, attach_referral, ensure_referral_code
 
 # Configure logging
 logging.basicConfig(
@@ -243,7 +245,31 @@ async def startup_event():
     logger.info("Database initialized")
 
 
+def _public_json(payload: dict) -> Response:
+    return Response(
+        content=json.dumps(payload),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+def _signup_count_payload(db: Session) -> dict:
+    """Real signup count. Test domains and the App Review demo are excluded."""
+    return {"count": real_signup_count(db)}
+
+
 # Health check
+@app.get("/api/count")
+@limiter.limit("30/minute")
+async def public_count(request: Request, db: Session = Depends(get_db)):
+    """Public signup count. Same number as /api/stats/signups.
+
+        curl -s https://www.chartsuno.com/api/count
+    """
+    _ = request
+    return _public_json(_signup_count_payload(db))
+
+
 @app.get("/api/stats/signups")
 @limiter.limit("30/minute")
 async def signup_count(request: Request, db: Session = Depends(get_db)):
@@ -251,16 +277,12 @@ async def signup_count(request: Request, db: Session = Depends(get_db)):
 
     Returns only an aggregate. Accounts on reserved example domains, the
     .test/.invalid/.localhost TLDs, the bot user, and the App Review demo
-    are excluded. Read it with:
+    are excluded. /api/count returns the same JSON. Read it with:
 
         curl -s https://www.chartsuno.com/api/stats/signups
     """
     _ = request
-    return Response(
-        content=json.dumps({"count": real_signup_count(db)}),
-        media_type="application/json",
-        headers={"Cache-Control": "no-store"},
-    )
+    return _public_json(_signup_count_payload(db))
 
 
 @app.get("/api/stats/activity")
@@ -269,13 +291,10 @@ async def activity_count(request: Request, db: Session = Depends(get_db)):
     """Signup and recent-chart counts. No personal data.
 
     share_link_enablers_7d is null: share links are not timestamped.
+    referred_signups counts real accounts that signed up with an invite code.
     """
     _ = request
-    return Response(
-        content=json.dumps(activity_stats(db)),
-        media_type="application/json",
-        headers={"Cache-Control": "no-store"},
-    )
+    return _public_json(activity_stats(db))
 
 
 @app.get("/health")
@@ -333,15 +352,16 @@ def _safe_frontend_target(target: Optional[str]) -> str:
 
 @app.get("/auth/google")
 async def google_auth(target: Optional[str] = None, native_challenge: Optional[str] = None, native_nonce: Optional[str] = None,
-                      web_challenge: Optional[str] = None, web_nonce: Optional[str] = None):
+                      web_challenge: Optional[str] = None, web_nonce: Optional[str] = None,
+                      ref: Optional[str] = None):
     """Initiate Google OAuth flow"""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
 
     if native_challenge is not None or native_nonce is not None:
-        state = create_native_state(native_challenge or "", native_nonce or "")
+        state = create_native_state(native_challenge or "", native_nonce or "", ref)
     else:
-        state = create_web_state(web_challenge or "", web_nonce or "", _safe_frontend_target(target))
+        state = create_web_state(web_challenge or "", web_nonce or "", _safe_frontend_target(target), ref)
 
     # Build authorization URL
     auth_url = (
@@ -454,7 +474,10 @@ async def google_callback(
             name=name,
             picture=picture,
         )
+        user.referral_code = allocate_referral_code(db)
         db.add(user)
+        state_payload = native_state or web_state or {}
+        attach_referral(db, user, state_payload.get("ref"))
         is_new_user = True
 
     db.commit()
@@ -549,6 +572,8 @@ async def exchange_native_auth(request: Request, response: Response, body: Nativ
 class AppleSignInRequest(BaseModel):
     identity_token: str = Field(min_length=20, max_length=8192)
     full_name: Optional[str] = Field(default=None, max_length=255)
+    # Invite code from ?ref=, when this sign-in creates the account.
+    referral: Optional[str] = Field(default=None, max_length=32)
     # The iOS app keeps the JWT in the Keychain. "cookie" exists so a future
     # first-party web origin can use the same endpoint without a new route.
     deliver: Literal["cookie", "token"] = "token"
@@ -559,7 +584,7 @@ class AppleSignInRequest(BaseModel):
 async def apple_sign_in(request: Request, response: Response, body: AppleSignInRequest, db: Session = Depends(get_db)):
     """Sign in with the identity token from native Sign in with Apple."""
     claims = verify_apple_identity_token(body.identity_token.strip())
-    user, is_new = upsert_apple_user(db, claims, body.full_name)
+    user, is_new = upsert_apple_user(db, claims, body.full_name, body.referral)
     if is_new:
         _create_personal_team(db, user)
     response.headers["Cache-Control"] = "no-store"
@@ -637,11 +662,13 @@ async def logout(request: Request, response: Response):
 # User Endpoints
 # ============================================================================
 
-@app.get("/api/user/me", response_model=UserResponse)
+@app.get("/api/user/me", response_model=CurrentUserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """Get current authenticated user info"""
+    """Get current authenticated user info, including their invite code."""
+    ensure_referral_code(db, current_user)
     return current_user
 
 

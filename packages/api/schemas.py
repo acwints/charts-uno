@@ -21,6 +21,14 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+class CurrentUserResponse(UserResponse):
+    """Signed-in account. referral_code is omitted from other users' payloads."""
+    referral_code: str
+
+    class Config:
+        from_attributes = True
+
+
 class PublicAuthorResponse(BaseModel):
     """Attribution safe to include in shared charts and dashboards."""
     id: str

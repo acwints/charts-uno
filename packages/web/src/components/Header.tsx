@@ -6,12 +6,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import { Button } from './Button';
 import { ThemeToggle } from './ThemeToggle';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../hooks/useAuth';
+import { copyReferralLink } from '../services/referrals';
 import { useMobileNav } from '../hooks/useMobileNav';
 import './Header.css';
 
@@ -151,6 +153,25 @@ export function Header({
                       <Settings size={16} />
                       <span>Settings</span>
                     </Link>
+
+                    {user.referral_code && (
+                      <button
+                        type="button"
+                        className="user-menu-item user-menu-item--invite"
+                        onClick={() => {
+                          const code = user.referral_code;
+                          if (!code) return;
+                          setIsUserMenuOpen(false);
+                          void copyReferralLink(code).then((copied) => {
+                            if (copied) toast.success('Invite link copied');
+                            else toast.error('Could not copy the invite link');
+                          });
+                        }}
+                      >
+                        <UserPlus size={16} />
+                        <span>Invite friends</span>
+                      </button>
+                    )}
 
                     {!isNativeApp() && (
                       <Link

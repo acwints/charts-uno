@@ -1,5 +1,6 @@
 import { fetchApiJson } from './apiBase';
 import type { ChartData } from '../types';
+import { pendingReferral } from './referrals';
 
 export type StoredChartData = Omit<ChartData, 'sourceType'>;
 
@@ -15,6 +16,8 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 // Auth
 export async function getAuthUrl(target: string, challenge: string, nonce: string): Promise<{ auth_url: string }> {
   const params = new URLSearchParams({ target, web_challenge: challenge, web_nonce: nonce });
+  const ref = pendingReferral();
+  if (ref) params.set('ref', ref);
   return apiRequest(`/auth/google?${params}`);
 }
 
@@ -47,6 +50,8 @@ export interface User {
   picture: string | null;
   created_at: string;
   providers?: Array<'google' | 'apple' | string>;
+  /** Present on the signed-in account. Invite link is /?ref=<referral_code>. */
+  referral_code?: string;
 }
 
 export async function getCurrentUser(): Promise<User> {

@@ -136,12 +136,21 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(counted.json(), {"count": 1})
         self.assertEqual(counted.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", counted.text)
+        public = self.client.get("/api/count")
+        self.assertEqual(public.status_code, 200, public.text)
+        self.assertEqual(public.json(), {"count": 1})
+        self.assertEqual(public.headers["cache-control"], "no-store")
+        self.assertEqual(public.json(), counted.json())
+        me = self.client.get("/api/user/me", headers=self.owner_auth)
+        self.assertEqual(me.status_code, 200, me.text)
+        self.assertRegex(me.json()["referral_code"], r"^[A-Za-z0-9_-]{8}$")
+        self.assertNotIn("referred_by", me.json())
 
     def test_activity_stats_are_counts_only_and_skip_unsupported_share_window(self):
         now = datetime.utcnow()
-        real = User(email="maker@gmail.com", google_id="maker", name="Maker")
+        real = User(email="maker@gmail.com", google_id="maker", name="Maker", referred_by="Abcd1234")
         quiet = User(email="quiet@gmail.com", google_id="quiet", name="Quiet")
-        sample = User(email="sample@example.com", google_id="sample", name="Sample")
+        sample = User(email="sample@example.com", google_id="sample", name="Sample", referred_by="Abcd1234")
         self.db.add_all([real, quiet, sample])
         self.db.commit()
         recent = Chart(
@@ -182,6 +191,7 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(response.headers["cache-control"], "no-store")
         body = response.json()
         self.assertEqual(body["signups"], 2)
+        self.assertEqual(body["referred_signups"], 1)
         self.assertEqual(body["chart_creators_7d"], 1)
         self.assertEqual(body["charts_created_7d"], 2)
         self.assertIsNone(body["share_link_enablers_7d"])
@@ -190,3 +200,26 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertNotIn("gmail.com", response.text)
         self.assertNotIn("example.com", response.text)
         self.assertNotIn("Maker", response.text)
+
+    def test_referral_attach_ignores_unknown_self_and_later_codes(self):
+        from services.referrals import attach_referral
+
+        self.owner.referral_code = "owner1234"
+        self.owner.referred_by = None
+        friend = User(email="friend@gmail.com", google_id="friend", name="Friend", referral_code="Abcd1234")
+        self.db.add(friend)
+        self.db.commit()
+
+        attach_referral(self.db, self.owner, "owner1234")
+        self.assertIsNone(self.owner.referred_by)
+        attach_referral(self.db, self.owner, "bad")
+        self.assertIsNone(self.owner.referred_by)
+        attach_referral(self.db, self.owner, "no-such-1")
+        self.assertIsNone(self.owner.referred_by)
+        attach_referral(self.db, self.owner, "Abcd1234")
+        self.assertEqual(self.owner.referred_by, "Abcd1234")
+        other = User(email="second@gmail.com", google_id="second", name="Second", referral_code="zzzzzzzz")
+        self.db.add(other)
+        self.db.commit()
+        attach_referral(self.db, self.owner, "zzzzzzzz")
+        self.assertEqual(self.owner.referred_by, "Abcd1234")

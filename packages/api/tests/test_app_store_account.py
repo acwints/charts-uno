@@ -55,13 +55,16 @@ class AppStoreAccountTests(unittest.TestCase):
     def _auth(self, user_id: str) -> dict:
         return {"Authorization": f"Bearer {create_access_token(user_id)}"}
 
-    def _apple(self, claims, full_name=None):
+    def _apple(self, claims, full_name=None, referral=None):
+        body = {
+            "identity_token": "header.payload.signature",
+            "full_name": full_name,
+            "deliver": "token",
+        }
+        if referral is not None:
+            body["referral"] = referral
         with patch.object(main, "verify_apple_identity_token", return_value=claims):
-            return self.client.post("/api/auth/apple", json={
-                "identity_token": "header.payload.signature",
-                "full_name": full_name,
-                "deliver": "token",
-            })
+            return self.client.post("/api/auth/apple", json=body)
 
     def test_apple_sign_in_creates_account_and_bearer_session(self):
         response = self._apple(
@@ -81,6 +84,36 @@ class AppStoreAccountTests(unittest.TestCase):
             user = db.query(User).filter(User.apple_id == "apple-sub-1").one()
             self.assertIsNone(user.google_id)
             self.assertIsNotNone(db.query(Team).filter(Team.owner_id == user.id, Team.is_personal.is_(True)).first())
+
+    def test_apple_signup_stores_referral_once(self):
+        with SessionLocal() as db:
+            db.add(User(email="friend@gmail.com", name="Friend", google_id="friend", referral_code="Abcd1234"))
+            db.commit()
+        created = self._apple(
+            {"sub": "apple-ref", "email": "new@gmail.com", "email_verified": "true"},
+            referral="Abcd1234",
+        )
+        self.assertEqual(created.status_code, 200, created.text)
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.apple_id == "apple-ref").one()
+            self.assertEqual(user.referred_by, "Abcd1234")
+            self.assertRegex(user.referral_code, r"^[A-Za-z0-9_-]{8}$")
+        again = self._apple(
+            {"sub": "apple-ref", "email": "new@gmail.com", "email_verified": "true"},
+            referral="zzzzzzzz",
+        )
+        self.assertEqual(again.status_code, 200, again.text)
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.apple_id == "apple-ref").one()
+            self.assertEqual(user.referred_by, "Abcd1234")
+        unknown = self._apple(
+            {"sub": "apple-unknown", "email": "other@gmail.com", "email_verified": "true"},
+            referral="missing1",
+        )
+        self.assertEqual(unknown.status_code, 200, unknown.text)
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.apple_id == "apple-unknown").one()
+            self.assertIsNone(user.referred_by)
 
     def test_apple_links_verified_email_to_existing_google_account(self):
         with SessionLocal() as db:

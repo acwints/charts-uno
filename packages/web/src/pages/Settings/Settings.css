@@ -299,6 +299,15 @@
   box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
+.settings-invite__link {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .settings-button__icon {
   margin-right: 6px;
   vertical-align: middle;

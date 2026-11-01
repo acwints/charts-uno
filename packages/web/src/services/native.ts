@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { fetchApiJson, setSessionToken } from './apiBase';
+import { pendingReferral } from './referrals';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 const NativeAuth = registerPlugin<{
@@ -103,6 +104,8 @@ export async function signInNative(): Promise<void> {
   const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
   const params = new URLSearchParams({ native_challenge: challenge, native_nonce: nonce });
+  const ref = pendingReferral();
+  if (ref) params.set('ref', ref);
   const { auth_url } = await fetchApiJson<{ auth_url: string }>(`/auth/google?${params}`);
   const result = await NativeAuth.authenticate({ url: auth_url });
   const callback = new URL(result.url);
@@ -144,12 +147,14 @@ export async function signInWithApple(): Promise<void> {
     }
     throw error instanceof Error ? error : new Error('Could not finish sign-in. Please try again.');
   }
+  const referral = pendingReferral();
   const { token } = await fetchApiJson<{ token: string }>('/api/auth/apple', {
     method: 'POST',
     body: {
       identity_token: result.identityToken,
       full_name: result.fullName,
       deliver: 'token',
+      ...(referral ? { referral } : {}),
     },
   });
   setSessionToken(token);

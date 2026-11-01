@@ -3,7 +3,14 @@ import path from 'node:path'
 import { defineConfig, type Connect, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const seoRoutes = new Set(['/bar-chart-maker', '/csv-to-chart', '/iphone-chart-maker'])
+const seoRoutes = new Set([
+  '/bar-chart-maker',
+  '/csv-to-chart',
+  '/iphone-chart-maker',
+  '/pie-chart-maker',
+  '/line-graph-maker',
+  '/chart-from-google-sheets',
+])
 
 function seoPages(): Plugin {
   const serve: Connect.NextHandleFunction = (req, res, next) => {

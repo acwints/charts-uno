@@ -75,3 +75,66 @@ class WebAuthTests(unittest.TestCase):
         self.assertNotIn('token', accepted.json())
         self.assertEqual(self.client.get('/api/user/me').json()['email'], 'web@example.test')
         self.assertEqual(self.client.post('/api/auth/web/exchange', json={'code': code, 'verifier': self.verifier}).status_code, 401)
+
+    def test_new_google_signup_stores_a_known_referral_and_ignores_a_later_one(self):
+        from models.database import SessionLocal, User
+
+        db = SessionLocal()
+        self.addCleanup(db.close)
+        db.add(User(email='friend@gmail.com', google_id='friend', name='Friend', referral_code='Abcd1234'))
+        db.commit()
+
+        started = self.client.get('/auth/google', params={
+            'web_challenge': pkce_challenge(self.verifier),
+            'web_nonce': self.nonce,
+            'target': 'http://localhost:5173/',
+            'ref': 'Abcd1234',
+        })
+        self.assertEqual(started.status_code, 200, started.text)
+        state = parse_qs(urlsplit(started.json()['auth_url']).query)['state'][0]
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            callback = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(callback.status_code, 302, callback.text)
+        db.expire_all()
+        created = db.query(User).filter(User.email == 'web@example.test').one()
+        self.assertEqual(created.referred_by, 'Abcd1234')
+        self.assertRegex(created.referral_code, r'^[A-Za-z0-9_-]{8}$')
+        self.assertNotEqual(created.referral_code, 'Abcd1234')
+
+        activity = self.client.get('/api/stats/activity')
+        self.assertEqual(activity.json()['referred_signups'], 0)
+        self.assertEqual(activity.json()['signups'], 1)
+        self.assertEqual(self.client.get('/api/count').json(), {'count': 1})
+
+        again = self.client.get('/auth/google', params={
+            'web_challenge': pkce_challenge('c' * 43),
+            'web_nonce': 'd' * 43,
+            'target': 'http://localhost:5173/',
+            'ref': 'zzzzzzzz',
+        })
+        state = parse_qs(urlsplit(again.json()['auth_url']).query)['state'][0]
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            second = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(second.status_code, 302, second.text)
+        db.expire_all()
+        self.assertEqual(db.query(User).filter(User.email == 'web@example.test').one().referred_by, 'Abcd1234')
+
+    def test_unknown_referral_does_not_block_signup(self):
+        from models.database import SessionLocal, User
+
+        started = self.client.get('/auth/google', params={
+            'web_challenge': pkce_challenge(self.verifier),
+            'web_nonce': self.nonce,
+            'target': 'http://localhost:5173/',
+            'ref': 'nope',
+        })
+        self.assertEqual(started.status_code, 200, started.text)
+        state = parse_qs(urlsplit(started.json()['auth_url']).query)['state'][0]
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            callback = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(callback.status_code, 302, callback.text)
+        db = SessionLocal()
+        self.addCleanup(db.close)
+        created = db.query(User).filter(User.email == 'web@example.test').one()
+        self.assertIsNone(created.referred_by)
+        self.assertRegex(created.referral_code, r'^[A-Za-z0-9_-]{8}$')

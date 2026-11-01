@@ -11,13 +11,18 @@ from dependencies import JWT_SECRET_KEY, JWT_ALGORITHM
 AUDIENCE = "chartsuno-web-auth"
 
 
-def create_web_state(challenge: str, nonce: str, frontend: str) -> str:
+def create_web_state(challenge: str, nonce: str, frontend: str, ref: str | None = None) -> str:
     if not re.fullmatch(r"[A-Za-z0-9_-]{43}", challenge) or not re.fullmatch(r"[A-Za-z0-9_-]{43}", nonce):
         raise HTTPException(400, "Invalid browser sign-in request. Reload and try again.")
-    return "web." + jwt.encode({
+    payload = {
         "aud": AUDIENCE, "challenge": challenge, "nonce": nonce, "frontend": frontend,
         "exp": datetime.utcnow() + timedelta(minutes=10),
-    }, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    }
+    from services.referrals import normalize_referral
+    code = normalize_referral(ref)
+    if code:
+        payload["ref"] = code
+    return "web." + jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
 def read_web_state(state: str) -> dict:

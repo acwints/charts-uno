@@ -7,6 +7,9 @@ test('landing pages state the real free-account limits and do not send people to
     'bar-chart-maker',
     'csv-to-chart',
     'iphone-chart-maker',
+    'pie-chart-maker',
+    'line-graph-maker',
+    'chart-from-google-sheets',
   ]);
 
   for (const page of seoPages) {

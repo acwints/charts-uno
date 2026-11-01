@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { User } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { isNativeApp } from '../../services/native';
+import { copyReferralLink, referralShareUrl } from '../../services/referrals';
+import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/Button';
 
 interface AccountSettingsProps {
@@ -18,7 +20,9 @@ function signInLabel(user: User): string {
 
 export function AccountSettings({ user }: AccountSettingsProps) {
   const { deleteAccount } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
+  const inviteLink = user.referral_code ? referralShareUrl(user.referral_code) : null;
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -84,6 +88,41 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           </div>
         </div>
       </div>
+
+      {inviteLink && (
+        <div className="settings-card">
+          <div className="settings-card__header">
+            <h3 className="settings-card__title">Invite friends</h3>
+          </div>
+          <div className="settings-card__content">
+            <p className="settings-privacy-text">
+              Share your link. When a friend creates an account from it, that signup counts as your referral.
+            </p>
+            <label className="settings-field" htmlFor="invite-link">
+              <span className="settings-field__label">Your link</span>
+              <input
+                id="invite-link"
+                className="settings-field__input settings-invite__link"
+                readOnly
+                value={inviteLink}
+                spellCheck={false}
+              />
+            </label>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (!user.referral_code) return;
+                void copyReferralLink(user.referral_code).then((copied) => {
+                  if (copied) toast.success('Invite link copied');
+                  else toast.error('Could not copy the invite link');
+                });
+              }}
+            >
+              Invite friends
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="settings-card">
         <div className="settings-card__header">

@@ -126,6 +126,20 @@ def real_signup_count(db: Session) -> int:
     return int(count or 0)
 
 
+def referred_signup_count(db: Session) -> int:
+    """Real accounts that signed up with someone else's invite code.
+
+    Uses the same exclusions as the public signup count. The code itself is
+    not returned.
+    """
+    count = (
+        db.query(func.count(User.id))
+        .filter(User.referred_by.isnot(None), ~excluded_account_clause())
+        .scalar()
+    )
+    return int(count or 0)
+
+
 SHARE_LINK_WINDOW_UNSUPPORTED = (
     "charts.share_token has no timestamp. A link can be on or off, but not dated, "
     "so users who enabled a share link in the last 7 days cannot be counted."
@@ -136,6 +150,7 @@ def activity_stats(db: Session, now=None) -> dict:
     """Aggregate counts only. No emails, names, or chart contents.
 
     share_link_enablers_7d is null because the schema cannot support it.
+    referred_signups counts real accounts that stored an invite code at signup.
     """
     moment = now or datetime.utcnow()
     window_start = moment - timedelta(days=7)
@@ -152,6 +167,7 @@ def activity_stats(db: Session, now=None) -> dict:
     )
     return {
         "signups": real_signup_count(db),
+        "referred_signups": referred_signup_count(db),
         "chart_creators_7d": int(creators or 0),
         "charts_created_7d": int(charts_created or 0),
         "share_link_enablers_7d": None,
