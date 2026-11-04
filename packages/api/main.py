@@ -29,7 +29,7 @@ from models.database import (
     init_db, get_db, User, Chart, SavedChart, Like,
     Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
     Dashboard, DashboardItem, SqlConnection, generate_uuid,
-    UserBlock, ContentReport, Feedback,
+    UserBlock, ContentReport, Feedback, HomepageChartEvent,
 )
 from dependencies import (
     get_current_user,
@@ -152,6 +152,10 @@ from services.share_page import (
     share_url,
 )
 from services.referrals import allocate_referral_code, attach_referral, ensure_referral_code
+from services.access_log import SkipHomepageChartAccess
+from services.homepage_events import SOURCES as HOMEPAGE_CHART_SOURCES, allow_homepage_event
+
+logging.getLogger("uvicorn.access").addFilter(SkipHomepageChartAccess())
 
 # Configure logging
 logging.basicConfig(
@@ -280,6 +284,8 @@ async def public_count(request: Request, db: Session = Depends(get_db)):
 
     X-Signup-Audit is an integer breakdown (test rows, duplicates, bulk
     inserts). It does not include emails or names.
+    homepage_charts_today is anonymous renders on the UTC day. homepage_charts_7d
+    is the same renders in the last 7 days. Neither field is a person.
 
         curl -s https://www.chartsuno.com/api/count
     """
@@ -318,6 +324,29 @@ async def chart_count_series(request: Request, db: Session = Depends(get_db)):
     """
     _ = request
     return _public_json(chart_daily_stats(db))
+
+
+class HomepageChartEventBody(BaseModel):
+    source: Literal["paste", "drop", "sample"]
+
+
+@app.post("/api/events/homepage-chart", status_code=204)
+async def record_homepage_chart(
+    body: HomepageChartEventBody,
+    db: Session = Depends(get_db),
+):
+    """Count one chart rendered on the homepage before sign-up.
+
+    The body is a source only: paste, drop, or sample. Nothing else is read.
+    This handler does not take the client address, user agent, cookies, or an id,
+    and the access log skips the route so the address is not written there either.
+    A process-wide cap limits bursts without keying them to a visitor.
+    """
+    if body.source not in HOMEPAGE_CHART_SOURCES or not allow_homepage_event():
+        raise HTTPException(status_code=429, detail="Too many homepage charts.")
+    db.add(HomepageChartEvent(source=body.source, created_at=datetime.utcnow()))
+    db.commit()
+    return Response(status_code=204)
 
 
 @app.get("/api/stats/activity")

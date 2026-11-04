@@ -466,6 +466,19 @@ class Feedback(Base):
     )
 
 
+class HomepageChartEvent(Base):
+    """One anonymous homepage chart render. Timestamp and source only.
+
+    The integer primary key is not a visitor id and is never returned.
+    """
+
+    __tablename__ = "homepage_chart_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source = Column(String(16), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 def init_db():
     """Initialize database tables via Alembic migrations.
 

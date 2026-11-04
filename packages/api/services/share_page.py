@@ -19,6 +19,7 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Chart, User
+from services.homepage_events import homepage_chart_counts
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 CANONICAL_ORIGIN = "https://www.chartsuno.com"
@@ -311,6 +312,7 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         "signups_last_7d": sum(1 for person in people if person["created_at"] >= week_ago),
         "count_7_days_ago": sum(1 for person in people if person["created_at"] < week_ago),
         "count_yesterday": sum(1 for person in people if person["created_at"] < day_ago),
+        **homepage_chart_counts(db, moment),
     }
     return {
         "public": public,

@@ -1,7 +1,9 @@
 """Unlisted share links and the public signup count."""
+import logging
 import os
 import struct
 import tempfile
+import time
 import unittest
 import zlib
 from datetime import datetime, timedelta
@@ -14,7 +16,7 @@ from fastapi.testclient import TestClient
 import main
 from dependencies import create_access_token
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Base, SessionLocal, User, engine
-from models.database import Chart
+from models.database import Chart, HomepageChartEvent
 from services.share_page import (
     COUNT_DEFINITION,
     CTA_TEXT,
@@ -158,6 +160,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "signups_last_7d": 1,
             "count_7_days_ago": 0,
             "count_yesterday": 0,
+            "homepage_charts_today": 0,
+            "homepage_charts_7d": 0,
         }
         self.assertEqual(counted.json(), expected)
         self.assertEqual(counted.headers["cache-control"], "no-store")
@@ -224,6 +228,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "signups_last_7d": 6,
             "count_7_days_ago": 1,
             "count_yesterday": 7,
+            "homepage_charts_today": 0,
+            "homepage_charts_7d": 0,
         })
         self.assertEqual(census["public"]["count"], census["public"]["count_7_days_ago"] + census["public"]["signups_last_7d"])
         self.assertEqual(census["audit"], {
@@ -430,3 +436,72 @@ class ShareAndSignupTests(unittest.TestCase):
         self.db.commit()
         attach_referral(self.db, self.owner, "zzzzzzzz")
         self.assertEqual(self.owner.referred_by, "Abcd1234")
+
+    def test_homepage_chart_event_stores_source_and_time_only(self):
+        from services.access_log import SkipHomepageChartAccess
+        from services.homepage_events import LIMIT_PER_MINUTE, reset_homepage_event_limit
+        import services.homepage_events as homepage_events
+
+        reset_homepage_event_limit()
+        now = datetime(2026, 11, 4, 15, 0, 0)
+        self.db.add_all([
+            HomepageChartEvent(source="paste", created_at=now - timedelta(days=8)),
+            HomepageChartEvent(source="drop", created_at=now - timedelta(days=2)),
+            HomepageChartEvent(source="sample", created_at=now.replace(hour=1)),
+        ])
+        self.db.commit()
+        counted = signup_census(self.db, now)["public"]
+        self.assertEqual(counted["homepage_charts_today"], 1)
+        self.assertEqual(counted["homepage_charts_7d"], 2)
+
+        before = self.client.get("/api/count").json()
+        posted = self.client.post(
+            "/api/events/homepage-chart",
+            json={"source": "paste"},
+            headers={
+                "User-Agent": "SecretAgent/9",
+                "X-Forwarded-For": "203.0.113.50",
+                "Cookie": "auth_token=secret-cookie",
+            },
+        )
+        self.assertEqual(posted.status_code, 204, posted.text)
+        self.assertEqual(posted.content, b"")
+        self.db.expire_all()
+        fresh = (
+            self.db.query(HomepageChartEvent)
+            .filter(HomepageChartEvent.source == "paste", HomepageChartEvent.created_at >= now)
+            .one()
+        )
+        stored = f"{fresh.source} {fresh.created_at}"
+        self.assertNotIn("203.0.113.50", stored)
+        self.assertNotIn("SecretAgent", stored)
+        self.assertNotIn("secret-cookie", stored)
+        self.assertEqual({column.name for column in HomepageChartEvent.__table__.columns}, {"id", "source", "created_at"})
+        after = self.client.get("/api/count").json()
+        self.assertEqual(after["homepage_charts_today"], before["homepage_charts_today"] + 1)
+        self.assertEqual(after["homepage_charts_7d"], before["homepage_charts_7d"] + 1)
+        self.assertNotIn("@", str(after["homepage_charts_today"]))
+        self.assertEqual(self.client.post("/api/events/homepage-chart", json={"source": "email"}).status_code, 422)
+
+        homepage_events._window["count"] = LIMIT_PER_MINUTE
+        homepage_events._window["start"] = time.monotonic()
+        limited = self.client.post("/api/events/homepage-chart", json={"source": "drop"})
+        self.assertEqual(limited.status_code, 429)
+        self.assertNotIn("203.0.113.50", limited.text)
+        reset_homepage_event_limit()
+
+        access = SkipHomepageChartAccess()
+        hidden = logging.LogRecord(
+            "uvicorn.access", logging.INFO, __file__, 1,
+            '%s - "%s %s HTTP/%s" %d',
+            ("203.0.113.50:9", "POST", "/api/events/homepage-chart", "1.1", 204),
+            None,
+        )
+        visible = logging.LogRecord(
+            "uvicorn.access", logging.INFO, __file__, 1,
+            '%s - "%s %s HTTP/%s" %d',
+            ("203.0.113.50:9", "GET", "/api/count", "1.1", 200),
+            None,
+        )
+        self.assertFalse(access.filter(hidden))
+        self.assertTrue(access.filter(visible))

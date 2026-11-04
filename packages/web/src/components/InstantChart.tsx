@@ -1,6 +1,7 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { reportHomepageChart, type HomepageChartSource } from '../services/homepageChartEvent';
 import { rememberPendingChart, readPendingChart } from '../services/pendingChart';
 import type { CreateChartData } from '../services/api';
 import {
@@ -53,7 +54,9 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       : undefined,
   );
   const [fileError, setFileError] = useState<string | null>(null);
+  const [eventSource, setEventSource] = useState<HomepageChartSource>('paste');
   const [dragActive, setDragActive] = useState(false);
+  const restoredText = useRef(pending?.text ?? '');
 
   const options = useMemo(() => ({
     type: requestedChartType(typeParam) ?? forcedType,
@@ -66,11 +69,19 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const chart = built && !('error' in built) ? built : null;
   const message = fileError || (built && 'error' in built && showParseError(text) ? built.error : null);
 
-  const applyText = (next: string, extra?: { sourceType?: 'paste' | 'csv'; title?: string; type?: ChartType }) => {
+  useEffect(() => {
+    if (!chart) return;
+    if (restoredText.current && text === restoredText.current) return;
+    restoredText.current = '';
+    reportHomepageChart(eventSource);
+  }, [chart, eventSource, text]);
+
+  const applyText = (next: string, extra?: { sourceType?: 'paste' | 'csv'; title?: string; type?: ChartType; eventSource?: HomepageChartSource }) => {
     setText(next);
     setSourceType(extra?.sourceType ?? 'paste');
     setTitleOverride(extra?.title);
     setForcedType(extra?.type);
+    setEventSource(extra?.eventSource ?? 'paste');
     setFileError(null);
   };
 
@@ -92,6 +103,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       applyText(content, {
         sourceType: name.endsWith('.json') ? 'paste' : 'csv',
         title: fromName || undefined,
+        eventSource: 'drop',
       });
     } catch {
       setFileError('Could not read that file.');
@@ -156,7 +168,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
         <button
           type="button"
           className="instant-sample"
-          onClick={() => applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar' })}
+          onClick={() => applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' })}
         >
           Try sample data
         </button>
