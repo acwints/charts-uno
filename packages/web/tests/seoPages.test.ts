@@ -16,6 +16,9 @@ test('landing pages state the real free-account limits and do not send people to
     'area-chart-maker',
     'histogram-maker',
     'chartsuno-vs-canva-charts',
+    'donut-chart-maker',
+    'stacked-bar-chart-maker',
+    'chart-from-json',
   ]);
 
   for (const page of seoPages) {
@@ -49,6 +52,12 @@ test('landing pages state the real free-account limits and do not send people to
   expect(area?.ctaHref).toBe('/?auth=1');
   expect(histogram?.ctaLabel).toContain('Sign up');
   expect(canva?.ctaHref).toBe('/?auth=1');
+  expect(seoPages.find((page) => page.slug === 'donut-chart-maker')?.ctaHref).toBe('/?type=pie');
+  expect(seoPages.find((page) => page.slug === 'stacked-bar-chart-maker')?.ctaHref).toBe('/?type=bar&stacked=1');
+  expect(seoPages.find((page) => page.slug === 'chart-from-json')?.ctaHref).toBe('/');
+  expect(readFileSync('public/donut-chart-maker/index.html', 'utf8')).toContain('center stays empty');
+  expect(readFileSync('public/stacked-bar-chart-maker/index.html', 'utf8')).toContain('two or more number columns');
+  expect(readFileSync('public/chart-from-json/index.html', 'utf8')).toContain('does not fetch a URL');
   expect(readFileSync('public/histogram-maker/index.html', 'utf8')).toContain('does not auto-bin');
   expect(readFileSync('public/chartsuno-vs-canva-charts/index.html', 'utf8')).toContain('does not open .xlsx');
   expect(readFileSync('public/robots.txt', 'utf8')).toContain('Sitemap: https://www.chartsuno.com/sitemap.xml');

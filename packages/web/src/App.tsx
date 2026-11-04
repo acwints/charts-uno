@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { MotionConfig } from 'motion/react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ChartFeedPage } from './pages/ChartFeedPage';
 import { NotFound } from './pages/NotFound';
@@ -34,6 +34,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
 import { isNativeApp } from './services/native';
+import { readPendingChart } from './services/pendingChart';
 
 function AppWithTeam() {
   const { isAuthenticated, user } = useAuth();
@@ -73,6 +74,9 @@ function AppWithTeam() {
           <Route path="area-chart-maker" element={<SeoLandingPage slug="area-chart-maker" />} />
           <Route path="histogram-maker" element={<SeoLandingPage slug="histogram-maker" />} />
           <Route path="chartsuno-vs-canva-charts" element={<SeoLandingPage slug="chartsuno-vs-canva-charts" />} />
+          <Route path="donut-chart-maker" element={<SeoLandingPage slug="donut-chart-maker" />} />
+          <Route path="stacked-bar-chart-maker" element={<SeoLandingPage slug="stacked-bar-chart-maker" />} />
+          <Route path="chart-from-json" element={<SeoLandingPage slug="chart-from-json" />} />
 
           {/* Auth-required dashboard routes */}
           <Route element={<ProtectedRoute />}>
@@ -118,8 +122,10 @@ function RouteFallback() {
 // Home route: authenticated users go to dashboard, others see landing page
 function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { pendingChartFailed = false } = useOutletContext<{ pendingChartFailed?: boolean }>() ?? {};
+  const waitingToSave = isAuthenticated && !pendingChartFailed && readPendingChart() !== null;
 
-  if (isLoading) {
+  if (isLoading || waitingToSave) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
         <LoadingSpinner size="lg" />

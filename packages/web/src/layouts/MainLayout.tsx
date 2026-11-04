@@ -13,7 +13,10 @@ import { AuthModal } from '../components/AuthModal';
 import { ChatPanel } from '../components/ChatPanel';
 import { useAuth } from '../hooks/useAuth';
 import { useAuthModal } from '../hooks/useAuthModal';
+import { useToast } from '../contexts/ToastContext';
 import { useChartStore } from '../stores/chartStore';
+import { createChart } from '../services/api';
+import { flushPendingChart, readPendingChart } from '../services/pendingChart';
 import { rememberReferral } from '../services/referrals';
 
 interface MainLayoutProps {
@@ -31,11 +34,30 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isPhoneViewport = useMediaQuery('(max-width: 768px)');
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
+  const { error: showSaveError } = useToast();
+  const [pendingChartFailed, setPendingChartFailed] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(
     () => localStorage.getItem(ONBOARDED_STORAGE_KEY) === 'true'
   );
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
-  const routeContent = children || <Outlet context={{ openAuthModal }} />;
+  const routeContent = children || <Outlet context={{ openAuthModal, pendingChartFailed }} />;
+
+  useEffect(() => {
+    if (!isAuthenticated || isAuthLoading || pendingChartFailed || !readPendingChart()) return;
+    let active = true;
+    flushPendingChart((payload) => createChart(payload))
+      .then((id) => {
+        if (active && id) navigate(`/chart/${id}`, { replace: true });
+      })
+      .catch(() => {
+        if (!active) return;
+        setPendingChartFailed(true);
+        showSaveError('Could not save your chart yet. It is still on this device.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, isAuthLoading, navigate, pendingChartFailed, showSaveError]);
 
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
   const isNewRoute = location.pathname === '/new';
@@ -104,7 +126,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [location.hash, location.pathname, location.search, isAuthLoading, isAuthenticated, navigate, openAuthModal]);
 
   const showOnboarding =
-    isPhoneViewport && !isAuthLoading && !isAuthenticated && !hasOnboarded;
+    isPhoneViewport && !isAuthLoading && !isAuthenticated && !hasOnboarded && location.pathname !== '/';
 
   if (showOnboarding) {
     return (
@@ -177,6 +199,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/chartsuno-vs-datawrapper" className="footer-link">Vs Datawrapper</Link>
             <Link to="/area-chart-maker" className="footer-link">Area charts</Link>
             <Link to="/histogram-maker" className="footer-link">Histograms</Link>
+            <Link to="/donut-chart-maker" className="footer-link">Donut charts</Link>
+            <Link to="/stacked-bar-chart-maker" className="footer-link">Stacked bars</Link>
+            <Link to="/chart-from-json" className="footer-link">JSON</Link>
             <Link to="/chartsuno-vs-canva-charts" className="footer-link">Vs Canva</Link>
             <Link to="/iphone-chart-maker" className="footer-link">iPhone</Link>
             <Link to="/changelog" className="footer-link">Changelog</Link>

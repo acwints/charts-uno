@@ -880,6 +880,183 @@ export const seoPages: SeoPage[] = [
     ctaHref: '/?auth=1',
     ctaLabel: 'Sign up and paste your data',
   },
+  {
+    slug: 'donut-chart-maker',
+    title: 'Free Donut Chart Maker: Paste Shares, See the Ring | Chartsuno',
+    description:
+      'Paste category shares and preview a donut chart in the browser. Chartsuno draws a pie with the center open. No account to preview. A free account saves it.',
+    h1: 'Make a donut chart from a short table',
+    lede:
+      'A donut chart is a pie with the middle left open, so the parts read as a ring instead of a solid disk. Chartsuno does not have a separate donut control. Its pie chart is drawn that way: the center stays empty. Paste one label and one number per slice, and the ring shows up on the page before you create an account.',
+    sampleCaption: 'Three shares of a monthly budget. The ring is the chart; the labels name the slices.',
+    sample: [
+      { label: 'Rent', value: 1800 },
+      { label: 'Payroll', value: 4200 },
+      { label: 'Tools', value: 640 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'How the ring gets made' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste two columns.** The first column is the slice name. The second is the number. A header row such as Category,Amount is enough.',
+          '**Look at the ring.** This page opens the homepage paste box with the pie chart selected. The preview draws in the browser, with the center left open.',
+          '**Keep one number column.** Extra number columns are ignored for a pie. If you need parts of a total across categories, a stacked bar is the clearer chart.',
+          '**Save it if you want it later.** Previewing does not require an account. Sign in free to keep the chart, download a PNG, or copy a share link. A free account includes 10 saved charts a month.',
+        ],
+      },
+      { type: 'h2', text: 'When a donut is the right chart' },
+      {
+        type: 'p',
+        text: 'Use a donut when you have a few parts of one whole: a budget, a traffic mix, or answers to a single survey question. Five slices is already crowded. More than that, and a bar sorted from largest to smallest is easier to read. The hole does not add a number. It only makes the ring easier to tell apart from a solid pie.',
+      },
+      { type: 'h2', text: 'A table you can paste' },
+      {
+        type: 'pre',
+        text: 'Category,Amount\nRent,1800\nPayroll,4200\nTools,640',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Is a donut different from a pie here?',
+            a: 'The chart type is pie. Chartsuno draws that pie as a ring, with the center open, which is the donut form. There is no second setting that fills the hole back in.',
+          },
+          {
+            q: 'Can the slices be percentages?',
+            a: 'Paste the raw numbers. Chartsuno sizes each slice from the values. You do not have to make them add up to 100 first.',
+          },
+          {
+            q: 'Does it work on a phone?',
+            a: 'The paste box and the preview run in the mobile browser. Saving the chart needs a free account, which includes 10 charts a month.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/?type=pie',
+    ctaLabel: 'Paste data and see the donut',
+  },
+  {
+    slug: 'stacked-bar-chart-maker',
+    title: 'Stacked Bar Chart Maker: Paste Series, See the Stack | Chartsuno',
+    description:
+      'Paste two or more number columns and preview a stacked bar chart online. No account to see it. A free account saves, exports, or shares it.',
+    h1: 'Make a stacked bar chart online',
+    lede:
+      'A stacked bar puts each series on top of the last one. The full height is the total, and the colors are the parts. Paste a label column plus at least two number columns. This page opens the homepage paste box with stacking turned on, and the chart draws before you sign up.',
+    sampleCaption: 'Two series on the same months. Stacked, each bar is signups plus churned, not a side-by-side pair.',
+    sample: [
+      { label: 'Jan', value: 420 },
+      { label: 'Feb', value: 510 },
+      { label: 'Mar', value: 690 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'From columns to a stack' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste the header.** The first cell names the categories. Each later cell names a series, such as New and Returning.',
+          '**Use at least two number columns.** One column has nothing to stack. Chartsuno leaves a single series as an ordinary bar.',
+          '**Read the preview.** The homepage opens with stacked bars selected. Totals are the bar heights. You can still see the chart with no account.',
+          '**Save when the stack is right.** A free account stores up to 10 charts a month and lets you export a PNG or copy a share link.',
+        ],
+      },
+      { type: 'h2', text: 'What stacking is good at' },
+      {
+        type: 'p',
+        text: 'Stack when the parts belong to the same total: revenue by product inside each month, or tickets by channel inside each week. If people need to compare the parts to each other more than to the total, leave the bars side by side. Stacking hides that comparison, because only the bottom series shares a baseline.',
+      },
+      { type: 'h2', text: 'Example' },
+      {
+        type: 'pre',
+        text: 'Month,New,Returning\nJan,120,300\nFeb,160,350\nMar,210,480',
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I stack a single column?',
+            a: 'No. Stacking needs two or more number columns. A table with one number column stays a normal bar chart.',
+          },
+          {
+            q: 'Will the bars be horizontal?',
+            a: 'The preview uses vertical stacked bars. After you save, the chart editor can switch a bar chart to horizontal bars when the category names are long.',
+          },
+          {
+            q: 'How many series should I stack?',
+            a: 'Two or three stay readable. Past five, the middle colors are hard to compare because they do not start at zero. Consider a separate bar for each series instead.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/?type=bar&stacked=1',
+    ctaLabel: 'Paste columns and stack the bars',
+  },
+  {
+    slug: 'chart-from-json',
+    title: 'Chart from JSON: Paste an Array, Get a Chart | Chartsuno',
+    description:
+      'Turn JSON into a chart in the browser. Paste an array of objects, or labels and series. Preview without an account. A free account saves the chart.',
+    h1: 'Turn JSON into a chart',
+    lede:
+      'Scripts and APIs hand you JSON, not a worksheet. Paste an array of objects, or an object with labels and series, into the box on the homepage. Chartsuno reads the numbers in the browser and draws the chart. You do not upload a file, and you do not need an account to see it.',
+    sampleCaption: 'Three months from a JSON array. The month field becomes the labels, and sales becomes the series.',
+    sample: [
+      { label: 'Jan', value: 18400 },
+      { label: 'Feb', value: 17600 },
+      { label: 'Mar', value: 20100 },
+    ],
+    blocks: [
+      { type: 'h2', text: 'Two shapes that work' },
+      {
+        type: 'p',
+        text: 'An array of objects uses one text field as the labels and every numeric field as a series. A field named month, date, label, name, or category is preferred for the labels. The other shape is an object with a labels array and a series array. Each series has a name and a data array of numbers.',
+      },
+      {
+        type: 'pre',
+        text: '[{"month":"Jan","sales":18400,"returns":900},{"month":"Feb","sales":17600,"returns":840}]',
+      },
+      {
+        type: 'pre',
+        text: '{"labels":["Jan","Feb"],"series":[{"name":"Sales","data":[18400,17600]}]}',
+      },
+      { type: 'h2', text: 'What happens after you paste' },
+      {
+        type: 'ol',
+        items: [
+          '**Paste into the homepage box.** The same box also accepts a CSV. JSON is detected when the text starts with [ or {.',
+          '**Check the preview.** Month names become a line chart unless you picked another type. A single numeric field is one series.',
+          '**Fix a value in the editor after you save.** The preview is the chart. Saving, downloading a PNG, and the share link need a free account.',
+          '**Leave private payloads out.** The paste stays in your browser until you choose Save this chart. Do not paste secrets you would not want stored with the chart.',
+        ],
+      },
+      {
+        type: 'faq',
+        faqs: [
+          { q: 'Is it free?', a: freeAccount },
+          { q: 'Do I need to sign up?', a: signupAnswer },
+          {
+            q: 'Can I paste a JSON string from an API response?',
+            a: 'Yes, if it is an array of objects or an object with labels and series. Nested objects that are not one of those two shapes are skipped. Chartsuno does not fetch a URL for you.',
+          },
+          {
+            q: 'Does a .json file work, or only paste?',
+            a: 'Both. Drop a .json file on the homepage, or paste the text. Files over 2MB are too large for the instant preview.',
+          },
+          {
+            q: 'Will this store the raw JSON on a server before I sign in?',
+            a: 'No. The preview is drawn on this device. The chart is sent to your account only after you sign in and save it.',
+          },
+        ],
+      },
+    ],
+    ctaHref: '/',
+    ctaLabel: 'Paste JSON and see the chart',
+  },
 ];
 
 export function seoPageBySlug(slug: string): SeoPage | undefined {

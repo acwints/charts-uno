@@ -84,13 +84,15 @@ try {
   check('chart id stays private without the share token', privateChart.status === 403, `status ${privateChart.status}`);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const slug of ['bar-chart-maker', 'csv-to-chart', 'iphone-chart-maker', 'pie-chart-maker', 'line-graph-maker', 'chart-from-google-sheets', 'area-chart-maker', 'histogram-maker', 'chartsuno-vs-canva-charts']) {
+  for (const slug of ['bar-chart-maker', 'csv-to-chart', 'iphone-chart-maker', 'pie-chart-maker', 'line-graph-maker', 'chart-from-google-sheets', 'area-chart-maker', 'histogram-maker', 'chartsuno-vs-canva-charts', 'donut-chart-maker', 'stacked-bar-chart-maker', 'chart-from-json']) {
     const response = await page.goto(`${web}/${slug}`, { waitUntil: 'domcontentloaded' });
     const body = await page.locator('h1').innerText();
     const cta = page.locator('.seo-cta');
     const href = await cta.getAttribute('href');
     check(`${slug} is crawlable HTML`, response?.headers()['content-type']?.includes('text/html') && response.status() === 200, body);
-    check(`${slug} CTA stays on the web app`, href === '/' || href === '/?auth=1', href || '');
+    const params = href?.startsWith('/?') ? new URLSearchParams(href.slice(2)) : null;
+    const homepageFlow = href === '/' || href === '/?auth=1' || (params !== null && [...params.keys()].every((key) => key === 'type' || key === 'stacked' || key === 'auth'));
+    check(`${slug} CTA stays on the web app`, homepageFlow, href || '');
   }
   await page.goto(`${web}/iphone-chart-maker`, { waitUntil: 'domcontentloaded' });
   const iphoneCta = await page.locator('.seo-cta').innerText();

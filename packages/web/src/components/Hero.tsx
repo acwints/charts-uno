@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { Button } from './Button';
 import './Hero.css';
@@ -5,13 +6,14 @@ import './Hero.css';
 interface HeroProps {
   showAuthCta?: boolean;
   onAuthOpen?: () => void;
+  children?: ReactNode;
 }
 
-export function Hero({ showAuthCta = false, onAuthOpen }: HeroProps) {
+export function Hero({ showAuthCta = false, onAuthOpen, children }: HeroProps) {
   return (
     <div className="hero">
       <motion.div
-        className="hero-content"
+        className={children ? 'hero-content hero-content--maker' : 'hero-content'}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -27,7 +29,9 @@ export function Hero({ showAuthCta = false, onAuthOpen }: HeroProps) {
           AI generates beautiful charts instantly.
         </p>
 
-        {showAuthCta && onAuthOpen && (
+        {children}
+
+        {showAuthCta && onAuthOpen && !children && (
           <div className="hero-actions">
             <Button variant="primary" size="lg" onClick={onAuthOpen}>
               Get Started Free

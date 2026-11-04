@@ -144,6 +144,7 @@ from services.share_page import (
     TOKEN_RE,
     display_title,
     activity_stats,
+    chart_daily_stats,
     signup_census,
     render_missing_share_html,
     render_share_html,
@@ -295,11 +296,28 @@ async def signup_count(request: Request, db: Session = Depends(get_db)):
     Test domains, the bot, the App Review demo, the site owner, accounts
     with no sign-in provider, and fixture-like batches are excluded.
     created_at supplies the 7-day and yesterday snapshots.
+    users_with_a_chart_7_days_ago and users_with_a_chart_yesterday count people
+    whose first saved chart was created before those same cutoffs.
 
         curl -s https://www.chartsuno.com/api/stats/signups
     """
     _ = request
     return _signup_count_response(db)
+
+
+@app.get("/api/stats/charts")
+@limiter.limit("30/minute")
+async def chart_count_series(request: Request, db: Session = Depends(get_db)):
+    """Daily chart counts for the last 30 UTC days. No personal data.
+
+    Each day has the cumulative users_with_a_chart through the end of that
+    day, and the number of charts those people created that day. The person
+    definition matches /api/count. Test, demo, and internal charts are excluded.
+
+        curl -s https://www.chartsuno.com/api/stats/charts
+    """
+    _ = request
+    return _public_json(chart_daily_stats(db))
 
 
 @app.get("/api/stats/activity")

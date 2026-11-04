@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { isNativeApp } from '../services/native';
 import { Hero } from '../components/Hero';
+import { InstantChart } from '../components/InstantChart';
 import { DataInput } from '../components/DataInput';
 import { ValueOfCharts } from '../components/ValueOfCharts';
 import { Features } from '../components/Features';
@@ -134,6 +135,8 @@ export function ChartBuilder() {
     }
   }, [navigate, setChartData, setChartConfig, reset]);
 
+  const showInstant = !isAuthenticated && !isNativeApp();
+
   return (
     <motion.div
       key="input"
@@ -143,7 +146,11 @@ export function ChartBuilder() {
       transition={{ duration: 0.3 }}
       className="input-view"
     >
-      {isNativeApp() ? <div className="native-create-heading"><h1>Create a chart</h1><p>Start with a prompt, image, or your own data.</p></div> : <Hero showAuthCta={!isAuthenticated} onAuthOpen={context?.openAuthModal} />}
+      {isNativeApp() ? <div className="native-create-heading"><h1>Create a chart</h1><p>Start with a prompt, image, or your own data.</p></div> : (
+        <Hero showAuthCta={!showInstant} onAuthOpen={context?.openAuthModal}>
+          {showInstant && <InstantChart onRequestAuth={context?.openAuthModal} />}
+        </Hero>
+      )}
       <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
       {!isAuthenticated && !isNativeApp() && (
         <>

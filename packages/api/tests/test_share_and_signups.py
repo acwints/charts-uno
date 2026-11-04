@@ -19,6 +19,7 @@ from services.share_page import (
     COUNT_DEFINITION,
     CTA_TEXT,
     SHARE_LINK_WINDOW_UNSUPPORTED,
+    chart_daily_stats,
     credit_url,
     signup_census,
 )
@@ -152,6 +153,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "definition": COUNT_DEFINITION,
             "accounts_total": 6,
             "users_with_a_chart": 0,
+            "users_with_a_chart_7_days_ago": 0,
+            "users_with_a_chart_yesterday": 0,
             "signups_last_7d": 1,
             "count_7_days_ago": 0,
             "count_yesterday": 0,
@@ -216,6 +219,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "definition": COUNT_DEFINITION,
             "accounts_total": 19,
             "users_with_a_chart": 1,
+            "users_with_a_chart_7_days_ago": 1,
+            "users_with_a_chart_yesterday": 1,
             "signups_last_7d": 6,
             "count_7_days_ago": 1,
             "count_yesterday": 7,
@@ -272,8 +277,81 @@ class ShareAndSignupTests(unittest.TestCase):
         after = self.client.get("/api/count")
         self.assertEqual(after.status_code, 200, after.text)
         self.assertEqual(after.json()["users_with_a_chart"], 1)
+        self.assertEqual(after.json()["users_with_a_chart_yesterday"], 0)
+        self.assertEqual(after.json()["users_with_a_chart_7_days_ago"], 0)
         self.assertEqual(after.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", after.text)
+
+    def test_chart_stats_are_a_30_day_series_without_private_data(self):
+        now = datetime(2026, 11, 4, 15, 0, 0)
+        ada = User(email="Ada.Person@gmail.com", google_id="ada-series", name="Ada", created_at=now - timedelta(days=20))
+        alias = User(email="ada.person+news@gmail.com", google_id="ada-alias", name="Ada Alias", created_at=now - timedelta(days=2))
+        bao = User(email="bao@gmail.com", google_id="bao-series", name="Bao", created_at=now - timedelta(days=3))
+        sample = User(email="sample@example.com", google_id="sample-series", name="Sample")
+        self.db.add_all([ada, alias, bao, sample])
+        self.db.commit()
+        self.db.add_all([
+            Chart(
+                user_id=ada.id,
+                title="Older",
+                data={"labels": ["A"], "series": [{"name": "S", "data": [1]}]},
+                config={"type": "bar", "title": "Older"},
+                created_at=datetime(2026, 11, 1, 9, 0, 0),
+            ),
+            Chart(
+                user_id=alias.id,
+                title="Same person later",
+                data={"labels": ["A"], "series": [{"name": "S", "data": [2]}]},
+                config={"type": "line", "title": "Later"},
+                created_at=datetime(2026, 11, 4, 8, 0, 0),
+            ),
+            Chart(
+                user_id=bao.id,
+                title="Today",
+                data={"labels": ["A"], "series": [{"name": "S", "data": [3]}]},
+                config={"type": "bar", "title": "Today"},
+                created_at=datetime(2026, 11, 4, 10, 0, 0),
+            ),
+            Chart(
+                user_id=sample.id,
+                title="Ignored",
+                data={"labels": ["A"], "series": [{"name": "S", "data": [9]}]},
+                config={"type": "bar", "title": "Ignored"},
+                created_at=datetime(2026, 11, 4, 11, 0, 0),
+            ),
+        ])
+        self.db.commit()
+
+        census = signup_census(self.db, now)
+        self.assertEqual(census["public"]["users_with_a_chart"], 2)
+        self.assertEqual(census["public"]["users_with_a_chart_yesterday"], 1)
+        self.assertEqual(census["public"]["users_with_a_chart_7_days_ago"], 0)
+        days = chart_daily_stats(self.db, now)["days"]
+        self.assertEqual(len(days), 30)
+        self.assertEqual(days[0]["date"], "2026-10-06")
+        self.assertEqual(days[-1]["date"], "2026-11-04")
+        by_date = {day["date"]: day for day in days}
+        self.assertEqual(by_date["2026-10-31"], {"date": "2026-10-31", "users_with_a_chart": 0, "charts_created": 0})
+        self.assertEqual(by_date["2026-11-01"], {"date": "2026-11-01", "users_with_a_chart": 1, "charts_created": 1})
+        self.assertEqual(by_date["2026-11-03"], {"date": "2026-11-03", "users_with_a_chart": 1, "charts_created": 0})
+        self.assertEqual(by_date["2026-11-04"], {"date": "2026-11-04", "users_with_a_chart": 2, "charts_created": 2})
+
+        response = self.client.get("/api/stats/charts")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertNotIn("gmail.com", response.text)
+        self.assertNotIn("example.com", response.text)
+        self.assertNotIn("Ada", response.text)
+        self.assertNotIn("Bao", response.text)
+        live = response.json()["days"]
+        self.assertEqual(len(live), 30)
+        self.assertTrue(all(set(day) == {"date", "users_with_a_chart", "charts_created"} for day in live))
+        counted = self.client.get("/api/count")
+        self.assertEqual(counted.status_code, 200, counted.text)
+        self.assertEqual(live[-1]["users_with_a_chart"], counted.json()["users_with_a_chart"])
+        self.assertNotIn("gmail.com", counted.text)
+        self.assertIn("users_with_a_chart_yesterday", counted.json())
+        self.assertIn("users_with_a_chart_7_days_ago", counted.json())
 
     def test_activity_stats_are_counts_only_and_skip_unsupported_share_window(self):
         now = datetime.utcnow()

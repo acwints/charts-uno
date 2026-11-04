@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stacked Bar Chart Maker: Paste Series, See the Stack | Chartsuno</title>
+  <meta name="description" content="Paste two or more number columns and preview a stacked bar chart online. No account to see it. A free account saves, exports, or shares it.">
+  <link rel="canonical" href="https://www.chartsuno.com/stacked-bar-chart-maker">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Stacked Bar Chart Maker: Paste Series, See the Stack | Chartsuno">
+  <meta property="og:description" content="Paste two or more number columns and preview a stacked bar chart online. No account to see it. A free account saves, exports, or shares it.">
+  <meta property="og:url" content="https://www.chartsuno.com/stacked-bar-chart-maker">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Stacked Bar Chart Maker: Paste Series, See the Stack | Chartsuno">
+  <meta name="twitter:description" content="Paste two or more number columns and preview a stacked bar chart online. No account to see it. A free account saves, exports, or shares it.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Do I need to sign up?","acceptedAnswer":{"@type":"Answer","text":"Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple."}},{"@type":"Question","name":"Can I stack a single column?","acceptedAnswer":{"@type":"Answer","text":"No. Stacking needs two or more number columns. A table with one number column stays a normal bar chart."}},{"@type":"Question","name":"Will the bars be horizontal?","acceptedAnswer":{"@type":"Answer","text":"The preview uses vertical stacked bars. After you save, the chart editor can switch a bar chart to horizontal bars when the category names are long."}},{"@type":"Question","name":"How many series should I stack?","acceptedAnswer":{"@type":"Answer","text":"Two or three stay readable. Past five, the middle colors are hard to compare because they do not start at zero. Consider a separate bar for each series instead."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a><a href="/donut-chart-maker">Make a donut chart from a short table</a><a href="/stacked-bar-chart-maker">Make a stacked bar chart online</a><a href="/chart-from-json">Turn JSON into a chart</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Make a stacked bar chart online</h1>
+    <p class="seo-lede">A stacked bar puts each series on top of the last one. The full height is the total, and the colors are the parts. Paste a label column plus at least two number columns. This page opens the homepage paste box with stacking turned on, and the chart draws before you sign up.</p>
+    <figure class="seo-sample"><figcaption>Two series on the same months. Stacked, each bar is signups plus churned, not a side-by-side pair.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Jan</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:61%"></span></span><span class="seo-bar-value">420</span></li><li><span class="seo-bar-label">Feb</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:74%"></span></span><span class="seo-bar-value">510</span></li><li><span class="seo-bar-label">Mar</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">690</span></li></ul></figure>
+    <h2>From columns to a stack</h2>
+<ol><li><strong>Paste the header.</strong> The first cell names the categories. Each later cell names a series, such as New and Returning.</li><li><strong>Use at least two number columns.</strong> One column has nothing to stack. Chartsuno leaves a single series as an ordinary bar.</li><li><strong>Read the preview.</strong> The homepage opens with stacked bars selected. Totals are the bar heights. You can still see the chart with no account.</li><li><strong>Save when the stack is right.</strong> A free account stores up to 10 charts a month and lets you export a PNG or copy a share link.</li></ol>
+<h2>What stacking is good at</h2>
+<p>Stack when the parts belong to the same total: revenue by product inside each month, or tickets by channel inside each week. If people need to compare the parts to each other more than to the total, leave the bars side by side. Stacking hides that comparison, because only the bottom series shares a baseline.</p>
+<h2>Example</h2>
+<pre>Month,New,Returning
+Jan,120,300
+Feb,160,350
+Mar,210,480</pre>
+<dl class="seo-faq"><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Do I need to sign up?</dt><dd>Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple.</dd><dt>Can I stack a single column?</dt><dd>No. Stacking needs two or more number columns. A table with one number column stays a normal bar chart.</dd><dt>Will the bars be horizontal?</dt><dd>The preview uses vertical stacked bars. After you save, the chart editor can switch a bar chart to horizontal bars when the category names are long.</dd><dt>How many series should I stack?</dt><dd>Two or three stay readable. Past five, the middle colors are hard to compare because they do not start at zero. Consider a separate bar for each series instead.</dd></dl>
+    <a class="seo-cta" href="/?type=bar&amp;stacked=1">Paste columns and stack the bars</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a><a href="/donut-chart-maker">Make a donut chart from a short table</a><a href="/chart-from-json">Turn JSON into a chart</a></p>
+  </article>
+</body>
+</html>

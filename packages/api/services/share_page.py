@@ -195,6 +195,17 @@ def credit_url(code: object) -> str:
     return f"{CANONICAL_ORIGIN}/"
 
 
+def _first_chart_at(db: Session) -> dict[str, datetime]:
+    """Earliest chart created_at for each user id. Test rows are filtered later."""
+    first: dict[str, datetime] = {}
+    for user_id, created_at in db.query(Chart.user_id, Chart.created_at).all():
+        created = _as_datetime(created_at)
+        previous = first.get(user_id)
+        if previous is None or created < previous:
+            first[user_id] = created
+    return first
+
+
 def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
     """Distinct real people, plus the integer audit behind that count.
 
@@ -213,7 +224,8 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         User.created_at,
         User.referred_by,
     ).all()
-    charters = {user_id for (user_id,) in db.query(Chart.user_id).distinct().all()}
+    first_chart = _first_chart_at(db)
+    charters = set(first_chart)
     audit = {key: 0 for key in _AUDIT_KEYS}
     candidates = []
     for row in rows:
@@ -271,15 +283,31 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         earliest = min(item["created_at"] for item in group)
         if any(item["referred"] for item in group):
             referred += 1
+        opened = [
+            first_chart[item["id"]]
+            for item in group
+            if item["id"] in first_chart
+        ]
+        first_saved = min(opened) if opened else None
         people.append({
             "created_at": earliest,
-            "chart": any(item["chart"] for item in group),
+            "chart": first_saved is not None,
+            "first_chart_at": first_saved,
         })
+
+    def had_chart_before(cutoff: datetime) -> int:
+        return sum(
+            1 for person in people
+            if person["first_chart_at"] is not None and person["first_chart_at"] < cutoff
+        )
+
     public = {
         "count": len(people),
         "definition": COUNT_DEFINITION,
         "accounts_total": len(rows),
         "users_with_a_chart": sum(1 for person in people if person["chart"]),
+        "users_with_a_chart_7_days_ago": had_chart_before(week_ago),
+        "users_with_a_chart_yesterday": had_chart_before(day_ago),
         "signups_last_7d": sum(1 for person in people if person["created_at"] >= week_ago),
         "count_7_days_ago": sum(1 for person in people if person["created_at"] < week_ago),
         "count_yesterday": sum(1 for person in people if person["created_at"] < day_ago),
@@ -303,6 +331,50 @@ SHARE_LINK_WINDOW_UNSUPPORTED = (
     "charts.share_token has no timestamp. A link can be on or off, but not dated, "
     "so users who enabled a share link in the last 7 days cannot be counted."
 )
+
+
+def chart_daily_stats(db: Session, now: Optional[datetime] = None, days: int = 30) -> dict:
+    """UTC daily series for real people. Counts only: no emails or chart contents.
+
+    Each day reports how many distinct people had saved a chart by the end of
+    that day, and how many of their charts were created that day. The person
+    definition matches signup_census. Days are oldest first and include today.
+    """
+    moment = now or datetime.utcnow()
+    census = signup_census(db, moment)
+    real_ids = set(census["user_ids"])
+    person_of = census["person_of"]
+    earliest: dict[str, datetime] = {}
+    created_on: dict[str, int] = {}
+    if real_ids:
+        rows = (
+            db.query(Chart.user_id, Chart.created_at)
+            .filter(Chart.user_id.in_(real_ids))
+            .all()
+        )
+        for user_id, created_at in rows:
+            person = person_of.get(user_id)
+            if not person:
+                continue
+            created = _as_datetime(created_at)
+            previous = earliest.get(person)
+            if previous is None or created < previous:
+                earliest[person] = created
+            day_key = created.date().isoformat()
+            created_on[day_key] = created_on.get(day_key, 0) + 1
+
+    end = moment.date()
+    series = []
+    for offset in range(days - 1, -1, -1):
+        day = end - timedelta(days=offset)
+        cutoff = datetime.combine(day + timedelta(days=1), datetime.min.time())
+        cumulative = sum(1 for stamp in earliest.values() if stamp < cutoff)
+        series.append({
+            "date": day.isoformat(),
+            "users_with_a_chart": cumulative,
+            "charts_created": created_on.get(day.isoformat(), 0),
+        })
+    return {"days": series}
 
 
 def activity_stats(db: Session, now=None) -> dict:

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chart from JSON: Paste an Array, Get a Chart | Chartsuno</title>
+  <meta name="description" content="Turn JSON into a chart in the browser. Paste an array of objects, or labels and series. Preview without an account. A free account saves the chart.">
+  <link rel="canonical" href="https://www.chartsuno.com/chart-from-json">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chartsuno">
+  <meta property="og:title" content="Chart from JSON: Paste an Array, Get a Chart | Chartsuno">
+  <meta property="og:description" content="Turn JSON into a chart in the browser. Paste an array of objects, or labels and series. Preview without an account. A free account saves the chart.">
+  <meta property="og:url" content="https://www.chartsuno.com/chart-from-json">
+  <meta property="og:image" content="https://www.chartsuno.com/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Chart from JSON: Paste an Array, Get a Chart | Chartsuno">
+  <meta name="twitter:description" content="Turn JSON into a chart in the browser. Paste an array of objects, or labels and series. Preview without an account. A free account saves the chart.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan."}},{"@type":"Question","name":"Do I need to sign up?","acceptedAnswer":{"@type":"Answer","text":"Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple."}},{"@type":"Question","name":"Can I paste a JSON string from an API response?","acceptedAnswer":{"@type":"Answer","text":"Yes, if it is an array of objects or an object with labels and series. Nested objects that are not one of those two shapes are skipped. Chartsuno does not fetch a URL for you."}},{"@type":"Question","name":"Does a .json file work, or only paste?","acceptedAnswer":{"@type":"Answer","text":"Both. Drop a .json file on the homepage, or paste the text. Files over 2MB are too large for the instant preview."}},{"@type":"Question","name":"Will this store the raw JSON on a server before I sign in?","acceptedAnswer":{"@type":"Answer","text":"No. The preview is drawn on this device. The chart is sent to your account only after you sign in and save it."}}]}</script>
+  <style>
+.seo-body {
+  margin: 0;
+  background: #101014;
+  color: #f4f4f5;
+  --bg-primary: #101014;
+  --bg-secondary: #1c1c22;
+  --bg-tertiary: #2a2a32;
+  --text-primary: #f4f4f5;
+  --text-secondary: #d5d7e0;
+  --text-muted: #a3a8b8;
+  --accent: #4c6fff;
+  --accent-hover: #3d5ce0;
+  --accent-text: #b9c8ff;
+  --accent-foreground: #ffffff;
+  --chart-1: #7aa2ff;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: Manrope, "Segoe UI", sans-serif;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-md: 8px;
+  font-family: var(--font-body);
+}
+.seo {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--text-primary);
+}
+
+.seo-mast {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.seo-brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.seo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seo-nav a,
+.seo-related a,
+.seo a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.seo-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.seo-lede {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.seo-sample {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.seo-sample figcaption {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.seo-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seo-bars li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr 3.2rem;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-bar-label,
+.seo-bar-value {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.seo-bar-value {
+  text-align: right;
+}
+
+.seo-bar-track {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.seo-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--chart-1);
+  border-radius: 999px;
+}
+
+.seo h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7rem;
+}
+
+.seo p,
+.seo li {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo p {
+  margin: 0 0 var(--space-4);
+}
+
+.seo ol,
+.seo ul {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.2rem;
+}
+
+.seo li {
+  margin-bottom: var(--space-2);
+}
+
+.seo li strong,
+.seo p strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo pre {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.seo-faq {
+  margin: 0 0 var(--space-4);
+}
+
+.seo-faq dt {
+  margin-top: var(--space-4);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.seo-faq dd {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.seo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms, color 150ms;
+}
+
+.seo-cta:hover {
+  background: var(--accent-hover);
+}
+
+.seo-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.seo-brand:focus-visible,
+.seo-nav a:focus-visible,
+.seo-related a:focus-visible,
+.seo-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .seo {
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .seo-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-cta {
+    transition: none;
+  }
+}
+</style>
+</head>
+<body class="seo-body">
+  <article class="seo">
+    <header class="seo-mast">
+      <a class="seo-brand" href="/">Chartsuno</a>
+      <nav class="seo-nav" aria-label="Guides"><a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a><a href="/donut-chart-maker">Make a donut chart from a short table</a><a href="/stacked-bar-chart-maker">Make a stacked bar chart online</a><a href="/chart-from-json">Turn JSON into a chart</a></nav>
+    </header>
+    <p class="seo-kicker">Chartsuno</p>
+    <h1>Turn JSON into a chart</h1>
+    <p class="seo-lede">Scripts and APIs hand you JSON, not a worksheet. Paste an array of objects, or an object with labels and series, into the box on the homepage. Chartsuno reads the numbers in the browser and draws the chart. You do not upload a file, and you do not need an account to see it.</p>
+    <figure class="seo-sample"><figcaption>Three months from a JSON array. The month field becomes the labels, and sales becomes the series.</figcaption><ul class="seo-bars"><li><span class="seo-bar-label">Jan</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:92%"></span></span><span class="seo-bar-value">18400</span></li><li><span class="seo-bar-label">Feb</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:88%"></span></span><span class="seo-bar-value">17600</span></li><li><span class="seo-bar-label">Mar</span><span class="seo-bar-track"><span class="seo-bar-fill" style="width:100%"></span></span><span class="seo-bar-value">20100</span></li></ul></figure>
+    <h2>Two shapes that work</h2>
+<p>An array of objects uses one text field as the labels and every numeric field as a series. A field named month, date, label, name, or category is preferred for the labels. The other shape is an object with a labels array and a series array. Each series has a name and a data array of numbers.</p>
+<pre>[{&quot;month&quot;:&quot;Jan&quot;,&quot;sales&quot;:18400,&quot;returns&quot;:900},{&quot;month&quot;:&quot;Feb&quot;,&quot;sales&quot;:17600,&quot;returns&quot;:840}]</pre>
+<pre>{&quot;labels&quot;:[&quot;Jan&quot;,&quot;Feb&quot;],&quot;series&quot;:[{&quot;name&quot;:&quot;Sales&quot;,&quot;data&quot;:[18400,17600]}]}</pre>
+<h2>What happens after you paste</h2>
+<ol><li><strong>Paste into the homepage box.</strong> The same box also accepts a CSV. JSON is detected when the text starts with [ or {.</li><li><strong>Check the preview.</strong> Month names become a line chart unless you picked another type. A single numeric field is one series.</li><li><strong>Fix a value in the editor after you save.</strong> The preview is the chart. Saving, downloading a PNG, and the share link need a free account.</li><li><strong>Leave private payloads out.</strong> The paste stays in your browser until you choose Save this chart. Do not paste secrets you would not want stored with the chart.</li></ol>
+<dl class="seo-faq"><dt>Is it free?</dt><dd>You can paste data and preview a chart without an account and without paying. A free account saves up to 10 charts a month, and those saved charts can be exported as a PNG or CSV and shared with a link. Paid plans remove that monthly cap. There is no credit card for the free plan.</dd><dt>Do I need to sign up?</dt><dd>Not to paste data and see the chart. Saving to My Charts, downloading a PNG or CSV, and copying a share link need a free account. On the web, Continue with Google creates the account. The iOS app also offers Sign in with Apple.</dd><dt>Can I paste a JSON string from an API response?</dt><dd>Yes, if it is an array of objects or an object with labels and series. Nested objects that are not one of those two shapes are skipped. Chartsuno does not fetch a URL for you.</dd><dt>Does a .json file work, or only paste?</dt><dd>Both. Drop a .json file on the homepage, or paste the text. Files over 2MB are too large for the instant preview.</dd><dt>Will this store the raw JSON on a server before I sign in?</dt><dd>No. The preview is drawn on this device. The chart is sent to your account only after you sign in and save it.</dd></dl>
+    <a class="seo-cta" href="/">Paste JSON and see the chart</a>
+    <p class="seo-related">More guides: <a href="/bar-chart-maker">Make a bar chart online, free</a><a href="/csv-to-chart">Turn a CSV into a chart</a><a href="/iphone-chart-maker">A chart maker for your iPhone</a><a href="/pie-chart-maker">Make a pie chart online, free</a><a href="/line-graph-maker">Make a line graph online, free</a><a href="/chart-from-google-sheets">Make a chart from Google Sheets</a><a href="/scatter-plot-maker">Make a scatter plot online, free</a><a href="/chart-from-excel">Make a chart from Excel</a><a href="/chartsuno-vs-datawrapper">Chartsuno and Datawrapper, compared</a><a href="/area-chart-maker">Make an area chart online, free</a><a href="/histogram-maker">Make a histogram online, free</a><a href="/chartsuno-vs-canva-charts">Chartsuno and Canva Charts, compared</a><a href="/donut-chart-maker">Make a donut chart from a short table</a><a href="/stacked-bar-chart-maker">Make a stacked bar chart online</a></p>
+  </article>
+</body>
+</html>
