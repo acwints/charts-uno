@@ -285,7 +285,10 @@ async def public_count(request: Request, db: Session = Depends(get_db)):
     X-Signup-Audit is an integer breakdown (test rows, duplicates, bulk
     inserts). It does not include emails or names.
     homepage_charts_today is anonymous renders on the UTC day. homepage_charts_7d
-    is the same renders in the last 7 days. Neither field is a person.
+    is the same renders in the last 7 days. homepage_views_today and
+    homepage_views_7d count homepage loads. chart_starts_today and
+    chart_starts_7d count the first paste, drop, or sample. chart_saves_7d
+    counts pending homepage charts saved after sign-in. None of these is a person.
 
         curl -s https://www.chartsuno.com/api/count
     """
@@ -329,7 +332,8 @@ async def chart_count_series(request: Request, db: Session = Depends(get_db)):
 
 
 class HomepageChartEventBody(BaseModel):
-    source: Literal["paste", "drop", "sample"]
+    kind: Literal["view", "start", "save", "render"] = "render"
+    source: Optional[Literal["paste", "drop", "sample"]] = None
 
 
 @app.post("/api/events/homepage-chart", status_code=204)
@@ -337,16 +341,24 @@ async def record_homepage_chart(
     body: HomepageChartEventBody,
     db: Session = Depends(get_db),
 ):
-    """Count one chart rendered on the homepage before sign-up.
+    """Count one anonymous homepage funnel step.
 
-    The body is a source only: paste, drop, or sample. Nothing else is read.
-    This handler does not take the client address, user agent, cookies, or an id,
-    and the access log skips the route so the address is not written there either.
-    A process-wide cap limits bursts without keying them to a visitor.
+    kind is view, start, save, or render. A start or a render also sends
+    source: paste, drop, or sample. A view or a save does not. Nothing else
+    is read. This handler does not take the client address, user agent,
+    cookies, or an id, and the access log skips the route. A process-wide
+    cap limits bursts without keying them to a visitor.
     """
-    if body.source not in HOMEPAGE_CHART_SOURCES or not allow_homepage_event():
+    needs_source = body.kind in {"start", "render"}
+    if needs_source and body.source not in HOMEPAGE_CHART_SOURCES:
+        raise HTTPException(status_code=422, detail="source is required")
+    if not allow_homepage_event():
         raise HTTPException(status_code=429, detail="Too many homepage charts.")
-    db.add(HomepageChartEvent(source=body.source, created_at=datetime.utcnow()))
+    db.add(HomepageChartEvent(
+        kind=body.kind,
+        source=body.source if needs_source else None,
+        created_at=datetime.utcnow(),
+    ))
     db.commit()
     return Response(status_code=204)
 

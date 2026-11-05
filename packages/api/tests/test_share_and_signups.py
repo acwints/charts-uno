@@ -163,6 +163,11 @@ class ShareAndSignupTests(unittest.TestCase):
             "count_yesterday": 0,
             "homepage_charts_today": 0,
             "homepage_charts_7d": 0,
+            "homepage_views_today": 0,
+            "homepage_views_7d": 0,
+            "chart_starts_today": 0,
+            "chart_starts_7d": 0,
+            "chart_saves_7d": 0,
         }
         self.assertEqual(counted.json(), expected)
         self.assertEqual(counted.headers["cache-control"], "no-store")
@@ -232,6 +237,11 @@ class ShareAndSignupTests(unittest.TestCase):
             "count_yesterday": 7,
             "homepage_charts_today": 0,
             "homepage_charts_7d": 0,
+            "homepage_views_today": 0,
+            "homepage_views_7d": 0,
+            "chart_starts_today": 0,
+            "chart_starts_7d": 0,
+            "chart_saves_7d": 0,
         })
         self.assertEqual(census["public"]["count"], census["public"]["count_7_days_ago"] + census["public"]["signups_last_7d"])
         self.assertEqual(census["audit"], {
@@ -518,7 +528,11 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertNotIn("203.0.113.50", stored)
         self.assertNotIn("SecretAgent", stored)
         self.assertNotIn("secret-cookie", stored)
-        self.assertEqual({column.name for column in HomepageChartEvent.__table__.columns}, {"id", "source", "created_at"})
+        self.assertEqual(
+            {column.name for column in HomepageChartEvent.__table__.columns},
+            {"id", "kind", "source", "created_at"},
+        )
+        self.assertEqual(fresh.kind, "render")
         after = self.client.get("/api/count").json()
         self.assertEqual(after["homepage_charts_today"], before["homepage_charts_today"] + 1)
         self.assertEqual(after["homepage_charts_7d"], before["homepage_charts_7d"] + 1)
@@ -547,3 +561,53 @@ class ShareAndSignupTests(unittest.TestCase):
         )
         self.assertFalse(access.filter(hidden))
         self.assertTrue(access.filter(visible))
+
+    def test_homepage_funnel_counts_views_starts_and_saves_without_personal_data(self):
+        from services.homepage_events import reset_homepage_event_limit
+
+        reset_homepage_event_limit()
+        now = datetime(2026, 11, 4, 15, 0, 0)
+        self.db.add_all([
+            HomepageChartEvent(kind="view", created_at=now - timedelta(days=8)),
+            HomepageChartEvent(kind="view", created_at=now - timedelta(days=2)),
+            HomepageChartEvent(kind="view", created_at=now.replace(hour=1)),
+            HomepageChartEvent(kind="start", source="paste", created_at=now - timedelta(hours=3)),
+            HomepageChartEvent(kind="save", created_at=now - timedelta(days=3)),
+            HomepageChartEvent(kind="save", created_at=now - timedelta(days=9)),
+        ])
+        self.db.commit()
+        counted = signup_census(self.db, now)["public"]
+        self.assertEqual(counted["homepage_views_today"], 1)
+        self.assertEqual(counted["homepage_views_7d"], 2)
+        self.assertEqual(counted["chart_starts_today"], 1)
+        self.assertEqual(counted["chart_starts_7d"], 1)
+        self.assertEqual(counted["chart_saves_7d"], 1)
+
+        viewed = self.client.post(
+            "/api/events/homepage-chart",
+            json={"kind": "view"},
+            headers={"User-Agent": "SecretAgent/9", "X-Forwarded-For": "203.0.113.50"},
+        )
+        self.assertEqual(viewed.status_code, 204, viewed.text)
+        self.assertEqual(viewed.content, b"")
+        started = self.client.post("/api/events/homepage-chart", json={"kind": "start", "source": "drop"})
+        self.assertEqual(started.status_code, 204, started.text)
+        saved = self.client.post("/api/events/homepage-chart", json={"kind": "save"})
+        self.assertEqual(saved.status_code, 204, saved.text)
+        self.assertEqual(self.client.post("/api/events/homepage-chart", json={"kind": "start"}).status_code, 422)
+        self.db.expire_all()
+        view_row = (
+            self.db.query(HomepageChartEvent)
+            .filter(HomepageChartEvent.kind == "view", HomepageChartEvent.created_at >= now)
+            .one()
+        )
+        self.assertIsNone(view_row.source)
+        stored = f"{view_row.kind} {view_row.source} {view_row.created_at}"
+        self.assertNotIn("203.0.113.50", stored)
+        self.assertNotIn("SecretAgent", stored)
+        after = self.client.get("/api/count").json()
+        self.assertGreaterEqual(after["homepage_views_today"], 1)
+        self.assertGreaterEqual(after["chart_starts_7d"], 1)
+        self.assertGreaterEqual(after["chart_saves_7d"], 1)
+        self.assertNotIn("gmail.com", str(after))
+        reset_homepage_event_limit()

@@ -16,7 +16,9 @@ import { useAuthModal } from '../hooks/useAuthModal';
 import { useToast } from '../contexts/ToastContext';
 import { useChartStore } from '../stores/chartStore';
 import { createChart } from '../services/api';
+import { reportHomepageSave } from '../services/homepageChartEvent';
 import { flushPendingChart, readPendingChart } from '../services/pendingChart';
+import { FirstChartNudge } from '../components/FirstChartNudge';
 import { rememberReferral } from '../services/referrals';
 
 interface MainLayoutProps {
@@ -47,6 +49,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     let active = true;
     flushPendingChart((payload) => createChart(payload))
       .then((id) => {
+        if (id) reportHomepageSave();
         if (active && id) navigate(`/chart/${id}`, { replace: true });
       })
       .catch(() => {
@@ -140,6 +143,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="app app--has-tabbar">
       <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />
+      {isAuthenticated && !isAuthLoading && <FirstChartNudge />}
       <NativeAppStatus />
       {isAuthenticated && <NativeLibraryNav />}
 

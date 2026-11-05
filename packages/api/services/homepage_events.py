@@ -35,18 +35,36 @@ def allow_homepage_event(now: Optional[float] = None) -> bool:
 
 
 def homepage_chart_counts(db: Session, now: Optional[datetime] = None) -> dict:
-    """UTC calendar day, and the rolling 7 days ending at `now`."""
+    """UTC calendar day, and the rolling 7 days ending at `now`.
+
+    Renders, views, starts, and saves are separate. A row is only a timestamp
+    and, for a render or a start, the source.
+    """
     moment = now or datetime.utcnow()
     start_today = moment.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = moment - timedelta(days=7)
-    today = 0
-    week = 0
-    for (created_at,) in db.query(HomepageChartEvent.created_at).all():
+    totals = {
+        "homepage_charts_today": 0,
+        "homepage_charts_7d": 0,
+        "homepage_views_today": 0,
+        "homepage_views_7d": 0,
+        "chart_starts_today": 0,
+        "chart_starts_7d": 0,
+        "chart_saves_7d": 0,
+    }
+    fields = {
+        "render": ("homepage_charts_today", "homepage_charts_7d"),
+        "view": ("homepage_views_today", "homepage_views_7d"),
+        "start": ("chart_starts_today", "chart_starts_7d"),
+        "save": (None, "chart_saves_7d"),
+    }
+    for kind, created_at in db.query(HomepageChartEvent.kind, HomepageChartEvent.created_at).all():
         created = created_at if isinstance(created_at, datetime) else datetime.min
         if created > moment:
             continue
-        if created >= week_ago:
-            week += 1
-        if created >= start_today:
-            today += 1
-    return {"homepage_charts_today": today, "homepage_charts_7d": week}
+        today_key, week_key = fields.get(kind or "render", (None, None))
+        if created >= start_today and today_key:
+            totals[today_key] += 1
+        if created >= week_ago and week_key:
+            totals[week_key] += 1
+    return totals

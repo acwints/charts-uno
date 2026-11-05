@@ -475,7 +475,9 @@ class HomepageChartEvent(Base):
     __tablename__ = "homepage_chart_events"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    source = Column(String(16), nullable=False)
+    # render, view, start, or save. Not a visitor id.
+    kind = Column(String(16), nullable=False, default="render")
+    source = Column(String(16), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
@@ -520,6 +522,7 @@ def init_db():
     ensure_user_auth_schema()
     ensure_chart_share_schema()
     ensure_referral_schema()
+    ensure_homepage_event_schema()
 
 
 def ensure_user_auth_schema() -> None:
@@ -610,6 +613,37 @@ def ensure_referral_schema() -> None:
         backfill_referral_codes()
     except Exception as exc:
         logger.error("Could not ensure referral columns: %s", exc)
+        raise
+
+
+def ensure_homepage_event_schema() -> None:
+    """Add the funnel kind on databases created when the table only stored renders.
+
+    create_all does not alter an existing table. Source stays optional so a
+    view or a save does not invent a paste/drop/sample value.
+    """
+    import logging
+    from sqlalchemy import inspect, text
+
+    logger = logging.getLogger(__name__)
+    try:
+        inspector = inspect(engine)
+        if "homepage_chart_events" not in inspector.get_table_names():
+            return
+        columns = {column["name"]: column for column in inspector.get_columns("homepage_chart_events")}
+        with engine.begin() as conn:
+            if "kind" not in columns:
+                conn.execute(text(
+                    "ALTER TABLE homepage_chart_events "
+                    "ADD COLUMN kind VARCHAR(16) NOT NULL DEFAULT 'render'"
+                ))
+            source = columns.get("source")
+            if engine.dialect.name == "postgresql" and source is not None and source.get("nullable") is False:
+                conn.execute(text(
+                    "ALTER TABLE homepage_chart_events ALTER COLUMN source DROP NOT NULL"
+                ))
+    except Exception as exc:
+        logger.error("Could not ensure homepage event columns: %s", exc)
         raise
 
 
