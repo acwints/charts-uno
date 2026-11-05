@@ -155,6 +155,7 @@ class ShareAndSignupTests(unittest.TestCase):
             "definition": COUNT_DEFINITION,
             "accounts_total": 6,
             "users_with_a_chart": 0,
+            "users_with_a_chart_24h": 0,
             "users_with_a_chart_7_days_ago": 0,
             "users_with_a_chart_yesterday": 0,
             "signups_last_7d": 1,
@@ -223,6 +224,7 @@ class ShareAndSignupTests(unittest.TestCase):
             "definition": COUNT_DEFINITION,
             "accounts_total": 19,
             "users_with_a_chart": 1,
+            "users_with_a_chart_24h": 0,
             "users_with_a_chart_7_days_ago": 1,
             "users_with_a_chart_yesterday": 1,
             "signups_last_7d": 6,
@@ -283,10 +285,49 @@ class ShareAndSignupTests(unittest.TestCase):
         after = self.client.get("/api/count")
         self.assertEqual(after.status_code, 200, after.text)
         self.assertEqual(after.json()["users_with_a_chart"], 1)
+        self.assertEqual(after.json()["users_with_a_chart_24h"], 1)
         self.assertEqual(after.json()["users_with_a_chart_yesterday"], 0)
         self.assertEqual(after.json()["users_with_a_chart_7_days_ago"], 0)
         self.assertEqual(after.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", after.text)
+
+    def test_users_with_a_chart_24h_is_the_first_saved_chart_only(self):
+        now = datetime(2026, 11, 4, 15, 0, 0)
+        recent = User(email="New.Maker@gmail.com", google_id="new-maker", name="New", created_at=now - timedelta(hours=3))
+        alias = User(email="new.maker+news@gmail.com", google_id="new-alias", name="New Alias", created_at=now - timedelta(hours=1))
+        veteran = User(email="old.maker@gmail.com", google_id="old-maker", name="Old", created_at=now - timedelta(days=30))
+        sample = User(email="sample@example.com", google_id="sample-24h", name="Sample")
+        self.db.add_all([recent, alias, veteran, sample])
+        self.db.commit()
+
+        def chart(user, hours_ago, title):
+            return Chart(
+                user_id=user.id,
+                title=title,
+                data={"labels": ["A"], "series": [{"name": "S", "data": [1]}]},
+                config={"type": "bar", "title": title},
+                created_at=now - timedelta(hours=hours_ago),
+            )
+
+        self.db.add_all([
+            chart(recent, 2, "First"),
+            chart(alias, 0.5, "Alias later"),
+            chart(veteran, 24 * 9, "Old first"),
+            chart(veteran, 1, "Old again"),
+            chart(sample, 1, "Ignored"),
+        ])
+        self.db.commit()
+
+        counted = signup_census(self.db, now)["public"]
+        self.assertEqual(counted["users_with_a_chart_24h"], 1)
+        self.assertEqual(counted["users_with_a_chart"], 2)
+        self.assertNotIn("gmail.com", str(counted["users_with_a_chart_24h"]))
+
+        public = self.client.get("/api/count")
+        self.assertEqual(public.status_code, 200, public.text)
+        self.assertIn("users_with_a_chart_24h", public.json())
+        self.assertNotIn("New.Maker", public.text)
+        self.assertNotIn("gmail.com", public.text)
 
     def test_chart_stats_are_a_30_day_series_without_private_data(self):
         now = datetime(2026, 11, 4, 15, 0, 0)
@@ -330,6 +371,7 @@ class ShareAndSignupTests(unittest.TestCase):
 
         census = signup_census(self.db, now)
         self.assertEqual(census["public"]["users_with_a_chart"], 2)
+        self.assertEqual(census["public"]["users_with_a_chart_24h"], 1)
         self.assertEqual(census["public"]["users_with_a_chart_yesterday"], 1)
         self.assertEqual(census["public"]["users_with_a_chart_7_days_ago"], 0)
         days = chart_daily_stats(self.db, now)["days"]

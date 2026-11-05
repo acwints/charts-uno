@@ -302,11 +302,19 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
             if person["first_chart_at"] is not None and person["first_chart_at"] < cutoff
         )
 
+    def first_chart_in_window(cutoff: datetime) -> int:
+        return sum(
+            1 for person in people
+            if person["first_chart_at"] is not None
+            and cutoff <= person["first_chart_at"] <= moment
+        )
+
     public = {
         "count": len(people),
         "definition": COUNT_DEFINITION,
         "accounts_total": len(rows),
         "users_with_a_chart": sum(1 for person in people if person["chart"]),
+        "users_with_a_chart_24h": first_chart_in_window(day_ago),
         "users_with_a_chart_7_days_ago": had_chart_before(week_ago),
         "users_with_a_chart_yesterday": had_chart_before(day_ago),
         "signups_last_7d": sum(1 for person in people if person["created_at"] >= week_ago),
