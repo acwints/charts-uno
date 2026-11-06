@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
   reportHomepageChart,
+  reportHomepageDownload,
   reportHomepageSave,
   reportHomepageStart,
   reportHomepageView,
@@ -27,13 +28,17 @@ test('homepage funnel events post once each and send no cookies', () => {
   reportHomepageChart('drop');
   reportHomepageSave();
   reportHomepageSave();
+  reportHomepageDownload();
+  reportHomepageDownload();
 
   expect(calls.map((call) => call.init.body)).toEqual([
     '{"kind":"view"}',
     '{"kind":"start","source":"paste"}',
     '{"kind":"render","source":"paste"}',
     '{"kind":"save"}',
+    '{"kind":"download"}',
   ]);
+  expect(sessionStorage.getItem('chartsuno.homepageDownloadCounted')).toBe('1');
   for (const call of calls) {
     expect(String(call.url)).toMatch(/\/api\/events\/homepage-chart$/);
     expect(call.init.credentials).toBe('omit');

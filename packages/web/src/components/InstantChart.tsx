@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   reportHomepageChart,
+  reportHomepageDownload,
   reportHomepageStart,
   reportHomepageView,
   type HomepageChartSource,
@@ -65,10 +66,12 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [eventSource, setEventSource] = useState<HomepageChartSource>('sample');
   const [dragActive, setDragActive] = useState(false);
-  const [dataOpen, setDataOpen] = useState(hasPending);
+  const [downloaded, setDownloaded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const restoredText = useRef(pending?.text ?? '');
   const userStarted = useRef(false);
   const pasteRef = useRef<HTMLTextAreaElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
 
   const options = useMemo(() => ({
     type: requestedChartType(typeParam) ?? forcedType,
@@ -100,7 +103,6 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     setForcedType(extra?.type);
     setEventSource(source);
     setFileError(null);
-    setDataOpen(true);
     userStarted.current = true;
     reportHomepageStart(source);
   };
@@ -111,12 +113,10 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       || file.type === 'text/csv' || file.type === 'application/json' || file.type.startsWith('text/');
     if (!allowed) {
       setFileError('Drop a CSV, TSV, or JSON file.');
-      setDataOpen(true);
       return;
     }
     if (file.size > 2_000_000) {
       setFileError('That file is over 2MB. Paste a smaller table.');
-      setDataOpen(true);
       return;
     }
     try {
@@ -129,16 +129,28 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       });
     } catch {
       setFileError('Could not read that file.');
-      setDataOpen(true);
     }
   };
 
-  const useMyData = () => {
-    setDataOpen(true);
-    window.requestAnimationFrame(() => pasteRef.current?.focus());
+  const downloadChart = async () => {
+    if (!chart || !frameRef.current || downloading) return;
+    setDownloading(true);
+    setFileError(null);
+    try {
+      const { exportToPNG } = await import('../services/exportService');
+      const filename = (chart.config.title || 'chart').replace(/[^\w.-]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'chart';
+      await exportToPNG(frameRef.current, filename);
+      reportHomepageDownload();
+      rememberPendingChart(text, payloadFor(chart, theme));
+      setDownloaded(true);
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : 'Could not download the chart. Try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
-  const save = () => {
+  const keepChart = () => {
     if (!chart) return;
     rememberPendingChart(text, payloadFor(chart, theme));
     onRequestAuth?.();
@@ -167,64 +179,60 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
         if (file) void takeFile(file);
       }}
     >
+      <p className="instant-lead">Paste your CSV or a list of numbers below, and your chart redraws instantly.</p>
+      <label className="instant-label" htmlFor="instant-paste">Paste your data</label>
+      <textarea
+        id="instant-paste"
+        ref={pasteRef}
+        className="instant-paste"
+        value={text}
+        spellCheck={false}
+        rows={3}
+        placeholder={'Month,Sales\nJan,120\nFeb,180'}
+        aria-invalid={message ? true : undefined}
+        aria-describedby={message ? 'instant-error' : undefined}
+        onChange={(event) => applyText(event.target.value)}
+      />
+      <div className="instant-tools">
+        <label className="instant-drop">
+          <input
+            className="instant-file"
+            type="file"
+            accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,text/plain,application/json"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void takeFile(file);
+            }}
+          />
+          Drop a CSV here, or choose a file
+        </label>
+        <button
+          type="button"
+          className="instant-sample"
+          onClick={() => applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' })}
+        >
+          Try sample data
+        </button>
+      </div>
+      {message && <p id="instant-error" className="instant-error" role="alert">{message}</p>}
       {chart && (
-        <div className="instant-frame">
+        <div className="instant-frame" ref={frameRef}>
           <Suspense fallback={<p className="instant-drawing">Drawing your chart…</p>}>
             <ChartPreview data={chart.data} config={{ ...chart.config, themeMode: theme }} />
           </Suspense>
         </div>
       )}
       <div className="instant-actions">
-        <Button variant="primary" size="lg" onClick={useMyData}>
-          Use my data
+        <Button variant="primary" size="lg" onClick={() => { void downloadChart(); }} disabled={!chart || downloading} aria-busy={downloading}>
+          {downloading ? 'Preparing your PNG…' : 'Save & download this chart'}
         </Button>
-        <Button variant="default" size="lg" onClick={save} disabled={!chart}>
-          Save this chart
-        </Button>
+        {downloaded && (
+          <Button variant="default" size="lg" onClick={keepChart}>
+            Sign in with Google to keep it
+          </Button>
+        )}
       </div>
-      <p className="instant-note">
-        This sample is ready. Use your own numbers, or save it to your account.
-      </p>
-      {dataOpen && (
-        <>
-          <label className="instant-label" htmlFor="instant-paste">Paste your data</label>
-          <textarea
-            id="instant-paste"
-            ref={pasteRef}
-            className="instant-paste"
-            value={text}
-            spellCheck={false}
-            rows={5}
-            placeholder={'Month,Sales\nJan,120\nFeb,180'}
-            aria-invalid={message ? true : undefined}
-            aria-describedby={message ? 'instant-error' : undefined}
-            onChange={(event) => applyText(event.target.value)}
-          />
-          <div className="instant-tools">
-            <label className="instant-drop">
-              <input
-                className="instant-file"
-                type="file"
-                accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,text/plain,application/json"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = '';
-                  if (file) void takeFile(file);
-                }}
-              />
-              Drop a CSV here, or choose a file
-            </label>
-            <button
-              type="button"
-              className="instant-sample"
-              onClick={() => applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' })}
-            >
-              Try sample data
-            </button>
-          </div>
-        </>
-      )}
-      {message && <p id="instant-error" className="instant-error" role="alert">{message}</p>}
     </section>
   );
 }

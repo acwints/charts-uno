@@ -168,6 +168,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_starts_today": 0,
             "chart_starts_7d": 0,
             "chart_saves_7d": 0,
+            "chart_downloads_today": 0,
+            "chart_downloads_7d": 0,
         }
         self.assertEqual(counted.json(), expected)
         self.assertEqual(counted.headers["cache-control"], "no-store")
@@ -242,6 +244,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_starts_today": 0,
             "chart_starts_7d": 0,
             "chart_saves_7d": 0,
+            "chart_downloads_today": 0,
+            "chart_downloads_7d": 0,
         })
         self.assertEqual(census["public"]["count"], census["public"]["count_7_days_ago"] + census["public"]["signups_last_7d"])
         self.assertEqual(census["audit"], {
@@ -574,6 +578,8 @@ class ShareAndSignupTests(unittest.TestCase):
             HomepageChartEvent(kind="start", source="paste", created_at=now - timedelta(hours=3)),
             HomepageChartEvent(kind="save", created_at=now - timedelta(days=3)),
             HomepageChartEvent(kind="save", created_at=now - timedelta(days=9)),
+            HomepageChartEvent(kind="download", created_at=now - timedelta(hours=2)),
+            HomepageChartEvent(kind="download", created_at=now - timedelta(days=8)),
         ])
         self.db.commit()
         counted = signup_census(self.db, now)["public"]
@@ -581,7 +587,9 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(counted["homepage_views_7d"], 2)
         self.assertEqual(counted["chart_starts_today"], 1)
         self.assertEqual(counted["chart_starts_7d"], 1)
-        self.assertEqual(counted["chart_saves_7d"], 1)
+        self.assertEqual(counted["chart_downloads_today"], 1)
+        self.assertEqual(counted["chart_downloads_7d"], 1)
+        self.assertEqual(counted["chart_saves_7d"], 2)
 
         viewed = self.client.post(
             "/api/events/homepage-chart",
@@ -609,5 +617,26 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertGreaterEqual(after["homepage_views_today"], 1)
         self.assertGreaterEqual(after["chart_starts_7d"], 1)
         self.assertGreaterEqual(after["chart_saves_7d"], 1)
-        self.assertNotIn("gmail.com", str(after))
+        downloaded = self.client.post(
+            "/api/events/homepage-chart",
+            json={"kind": "download"},
+            headers={"User-Agent": "SecretAgent/9", "X-Forwarded-For": "203.0.113.50"},
+        )
+        self.assertEqual(downloaded.status_code, 204, downloaded.text)
+        self.assertEqual(downloaded.content, b"")
+        self.db.expire_all()
+        download_row = (
+            self.db.query(HomepageChartEvent)
+            .filter(HomepageChartEvent.kind == "download", HomepageChartEvent.created_at >= datetime.utcnow() - timedelta(minutes=5))
+            .one()
+        )
+        self.assertIsNone(download_row.source)
+        download_stored = f"{download_row.kind} {download_row.source} {download_row.created_at}"
+        self.assertNotIn("203.0.113.50", download_stored)
+        self.assertNotIn("SecretAgent", download_stored)
+        after_download = self.client.get("/api/count").json()
+        self.assertEqual(after_download["chart_downloads_today"], after["chart_downloads_today"] + 1)
+        self.assertEqual(after_download["chart_downloads_7d"], after["chart_downloads_7d"] + 1)
+        self.assertEqual(after_download["chart_saves_7d"], after["chart_saves_7d"] + 1)
+        self.assertNotIn("gmail.com", str(after_download))
         reset_homepage_event_limit()

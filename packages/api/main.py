@@ -288,7 +288,9 @@ async def public_count(request: Request, db: Session = Depends(get_db)):
     is the same renders in the last 7 days. homepage_views_today and
     homepage_views_7d count homepage loads. chart_starts_today and
     chart_starts_7d count the first paste, drop, or sample. chart_saves_7d
-    counts pending homepage charts saved after sign-in. None of these is a person.
+    counts pending homepage charts saved after sign-in, and PNG downloads,
+    which count as saves. chart_downloads_today and chart_downloads_7d are
+    those PNG downloads. None of these is a person.
 
         curl -s https://www.chartsuno.com/api/count
     """
@@ -332,7 +334,7 @@ async def chart_count_series(request: Request, db: Session = Depends(get_db)):
 
 
 class HomepageChartEventBody(BaseModel):
-    kind: Literal["view", "start", "save", "render"] = "render"
+    kind: Literal["view", "start", "save", "render", "download"] = "render"
     source: Optional[Literal["paste", "drop", "sample"]] = None
 
 
@@ -343,8 +345,9 @@ async def record_homepage_chart(
 ):
     """Count one anonymous homepage funnel step.
 
-    kind is view, start, save, or render. A start or a render also sends
-    source: paste, drop, or sample. A view or a save does not. Nothing else
+    kind is view, start, save, render, or download. A start or a render also
+    sends source: paste, drop, or sample. A view, a save, or a download does
+    not. Nothing else
     is read. This handler does not take the client address, user agent,
     cookies, or an id, and the access log skips the route. A process-wide
     cap limits bursts without keying them to a visitor.

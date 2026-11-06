@@ -110,20 +110,37 @@ function buildChart(
   return { data, config };
 }
 
+function chartFromNumberList(
+  rows: unknown[][],
+  options: InstantChartOptions,
+): InstantChartResult | { error: string } {
+  const header = toNumber(rows[0]?.[0]) === null ? String(rows[0]?.[0] ?? '').trim() : '';
+  const body = header ? rows.slice(1) : rows;
+  const values = body.map((row) => toNumber(row[0])).filter((value): value is number => value !== null);
+  if (values.length < 1 || values.length < body.length) {
+    return { error: 'Paste a CSV, or a list of numbers.' };
+  }
+  return buildChart(
+    values.map((_, index) => String(index + 1)),
+    [{ name: header || 'Value', data: values }],
+    options,
+  );
+}
+
 function chartFromDelimited(text: string, options: InstantChartOptions): InstantChartResult | { error: string } {
   const result = Papa.parse<unknown[]>(text, {
     header: false,
     skipEmptyLines: true,
     dynamicTyping: true,
   });
-  if (result.errors.some((error) => error.type === 'Quotes' || error.type === 'Delimiter')) {
+  if (result.errors.some((error) => error.type === 'Quotes')) {
     return { error: 'Unable to parse that table. Check the commas and quotes.' };
   }
   const rows = result.data.filter((row) => Array.isArray(row) && row.some((cell) => String(cell ?? '').trim() !== ''));
   if (rows.length < 2) return { error: 'Add a header row and at least one data row.' };
 
   const width = Math.max(...rows.map((row) => row.length));
-  if (width < 2) return { error: 'Include a label column and at least one column of numbers.' };
+  if (width < 2) return chartFromNumberList(rows, options);
 
   const headerCells = rows[0].slice(1);
   const headerIsText = headerCells.length > 0 && headerCells.every((cell) => toNumber(cell) === null && String(cell ?? '').trim() !== '');

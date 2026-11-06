@@ -51,12 +51,15 @@ def homepage_chart_counts(db: Session, now: Optional[datetime] = None) -> dict:
         "chart_starts_today": 0,
         "chart_starts_7d": 0,
         "chart_saves_7d": 0,
+        "chart_downloads_today": 0,
+        "chart_downloads_7d": 0,
     }
     fields = {
         "render": ("homepage_charts_today", "homepage_charts_7d"),
         "view": ("homepage_views_today", "homepage_views_7d"),
         "start": ("chart_starts_today", "chart_starts_7d"),
         "save": (None, "chart_saves_7d"),
+        "download": ("chart_downloads_today", "chart_downloads_7d"),
     }
     for kind, created_at in db.query(HomepageChartEvent.kind, HomepageChartEvent.created_at).all():
         created = created_at if isinstance(created_at, datetime) else datetime.min
@@ -67,4 +70,6 @@ def homepage_chart_counts(db: Session, now: Optional[datetime] = None) -> dict:
             totals[today_key] += 1
         if created >= week_ago and week_key:
             totals[week_key] += 1
+        if kind == "download" and created >= week_ago:
+            totals["chart_saves_7d"] += 1
     return totals

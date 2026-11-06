@@ -14,6 +14,13 @@
   outline-offset: 2px;
 }
 
+.instant-lead {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
 .instant-label {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -153,9 +160,18 @@
     padding: var(--space-3);
   }
 
+  .instant-paste {
+    min-height: 72px;
+  }
+
   .instant-frame {
-    height: 280px;
-    min-height: 280px;
+    height: 240px;
+    min-height: 240px;
+  }
+
+  .instant-drop {
+    flex: 1 1 auto;
+    min-height: 44px;
   }
 
   .instant-actions {

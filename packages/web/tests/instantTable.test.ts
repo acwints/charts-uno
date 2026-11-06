@@ -38,6 +38,14 @@ test('JSON rows and a labels/series object both become a chart', () => {
   expect(labeled.data.series[0].data).toEqual([18400, 17600]);
 });
 
+test('a list of numbers becomes a chart', () => {
+  const chart = chartFromText('10\n20\n30\n');
+  expect('error' in chart).toBe(false);
+  if ('error' in chart) return;
+  expect(chart.data.labels).toEqual(['1', '2', '3']);
+  expect(chart.data.series[0].data).toEqual([10, 20, 30]);
+});
+
 test('a one-line paste is not a chart yet', () => {
   expect(chartFromText('Month,Sales')).toMatchObject({ error: expect.any(String) });
 });
