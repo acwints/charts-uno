@@ -1,3 +1,4 @@
+import Bell from 'lucide-react/dist/esm/icons/bell';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { isNativeApp } from '../services/native';
 import { useState, useRef, useEffect } from 'react';
@@ -29,7 +30,7 @@ export function Header({
 }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const showBack = isNativeApp() && /^\/(chart|settings|terms|privacy|invite|dashboards|team)(\/|$)/.test(location.pathname);
+  const showBack = isNativeApp() && /^\/(chart|settings|changelog|terms|privacy|invite|dashboards|team)(\/|$)/.test(location.pathname);
   const toast = useToast();
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -103,6 +104,17 @@ export function Header({
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <ThemeToggle />
+          {isAuthenticated && (
+            <Link
+              to="/changelog"
+              aria-label="What’s New"
+              aria-current={location.pathname === '/changelog' ? 'page' : undefined}
+              title="What’s New"
+              className="header-updates"
+            >
+              <Bell size={20} aria-hidden="true" />
+            </Link>
+          )}
 
           {!isAuthenticated && onAuthOpen && (
             <Button variant="primary" onClick={onAuthOpen} className="header-signin">

@@ -133,7 +133,7 @@ export function AccountSettings({ user }: AccountSettingsProps) {
             View our privacy policy for details about how Chartsuno uses your data.
             Charts you create are private by default unless you choose to make them public.
           </p>
-          <Link to="/privacy">Privacy policy</Link> · <Link to="/terms">Terms of use</Link> · <Link to="/changelog">What’s New</Link>
+          <Link to="/privacy">Privacy policy</Link> · <Link to="/terms">Terms of use</Link>
         </div>
       </div>
 
