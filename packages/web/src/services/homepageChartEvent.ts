@@ -24,7 +24,7 @@ export function reportHomepageView(): void {
   postFunnel({ kind: 'view' });
 }
 
-/** First paste, drop, or sample click on this page load. */
+/** First edit, paste, drop, Try with your data, or Use sample on this page load. */
 export function reportHomepageStart(source: HomepageChartSource): void {
   postFunnel({ kind: 'start', source });
 }

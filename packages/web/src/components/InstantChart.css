@@ -21,6 +21,11 @@
   line-height: 1.4;
 }
 
+.instant-start.button {
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+
 .instant-label {
   font-family: var(--font-mono);
   font-size: 0.75rem;

@@ -83,6 +83,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const built = useMemo(() => (text.trim() ? chartFromText(text, options) : null), [options, text]);
   const chart = built && !('error' in built) ? built : null;
   const message = fileError || (built && 'error' in built && showParseError(text) ? built.error : null);
+  const showingSample = text.trim() === SAMPLE_TABLE.trim();
 
   useEffect(() => {
     if (pathname === '/') reportHomepageView();
@@ -156,6 +157,17 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     onRequestAuth?.();
   };
 
+  const onPrimary = () => {
+    if (!showingSample) {
+      applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' });
+      return;
+    }
+    reportHomepageStart('paste');
+    userStarted.current = true;
+    pasteRef.current?.focus();
+    pasteRef.current?.select();
+  };
+
   return (
     <section
       className={`instant ${dragActive ? 'instant--drag' : ''}`}
@@ -180,6 +192,9 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       }}
     >
       <p className="instant-lead">Paste your CSV or a list of numbers below, and your chart redraws instantly.</p>
+      <Button variant="primary" size="lg" fullWidth className="instant-start" onClick={onPrimary}>
+        {showingSample ? 'Try with your data' : 'Use sample'}
+      </Button>
       <label className="instant-label" htmlFor="instant-paste">Paste your data</label>
       <textarea
         id="instant-paste"
