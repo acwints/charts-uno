@@ -1,8 +1,9 @@
-// The five chart style faces (Inter, Nunito, DM Sans, Sora and Instrument
-// Serif italics) are only needed once a chart renders. Loading them here keeps
-// the feed's first paint free of any Google Fonts request.
-const CHART_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap';
+// The chart style faces (Inter, Nunito, DM Sans, Sora) are only needed once a
+// chart renders. Loading them here keeps the feed's first paint free of them.
+// They are self-hosted (public/fonts/chart-fonts.css) so a chart no longer waits
+// on a third-party stylesheet plus a second font origin; the CSS mirrors Google
+// Fonts' unicode-range slices, so browsers still fetch only the slices in use.
+const CHART_FONTS_HREF = '/fonts/chart-fonts.css';
 
 let requested = false;
 
