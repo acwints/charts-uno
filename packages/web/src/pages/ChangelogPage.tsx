@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getShippedCount, getShippedImprovements, type ShippedImprovement } from '../services/api';
+import { ImprovementsBox } from '../components/Improvements/ImprovementsBox';
 import './ChangelogPage.css';
 
 function formatShipped(value: string): string {
@@ -14,14 +15,14 @@ function formatShipped(value: string): string {
   }).format(date);
 }
 
-export function ChangelogPage() {
+export function ChangelogPage({ canSendFeedback }: { canSendFeedback: boolean }) {
   const [items, setItems] = useState<ShippedImprovement[] | null>(null);
   const [count, setCount] = useState<number | null>(null);
   const [listError, setListError] = useState(false);
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Shipped from your feedback';
+    document.title = 'What’s New';
     return () => {
       document.title = previousTitle;
     };
@@ -42,7 +43,8 @@ export function ChangelogPage() {
 
   return (
     <article className="changelog">
-      <h1>Shipped from your feedback</h1>
+      <h1>What’s New</h1>
+      <h2>Shipped from your feedback</h2>
       {countLabel && <p className="changelog-count">{countLabel}</p>}
       {listError && <p className="changelog-empty">Couldn&apos;t load what shipped.</p>}
       {items && items.length === 0 && !listError && (
@@ -58,6 +60,7 @@ export function ChangelogPage() {
           ))}
         </div>
       )}
+      {canSendFeedback && <ImprovementsBox />}
     </article>
   );
 }

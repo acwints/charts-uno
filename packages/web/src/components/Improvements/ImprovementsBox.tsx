@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Button } from '../Button';
 import { ApiError } from '../../services/apiBase';
 import { submitImprovement } from '../../services/api';
@@ -18,7 +18,6 @@ function requestFormSubmit(form: HTMLFormElement) {
 export function ImprovementsBox() {
   const location = useLocation();
   const noteId = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const [open, setOpen] = useState(false);
@@ -75,13 +74,12 @@ export function ImprovementsBox() {
   };
 
   return (
-    <div className={`impr ${open ? 'impr--open' : ''}`} ref={rootRef}>
+    <div className="impr">
       <div className="impr-bar">
         {open ? (
           <form ref={formRef} className="impr-form" onSubmit={onSubmit} aria-label="Improvements">
             <div className="impr-head">
               <span className="impr-kicker">Improvements</span>
-              <Link to="/changelog" className="impr-link">Shipped</Link>
               <button type="button" className="impr-close" aria-label="Close improvements" onClick={() => setOpen(false)}>
                 ×
               </button>
@@ -133,13 +131,9 @@ export function ImprovementsBox() {
             )}
           </form>
         ) : (
-          <>
-            <button type="button" className="impr-open" aria-expanded={false} onClick={() => { setDone(false); setOpen(true); }}>
-              <span className="impr-kicker">Improvements</span>
-              <span className="impr-prompt">How should Chartsuno be different?</span>
-            </button>
-            <Link to="/changelog" className="impr-link">Shipped</Link>
-          </>
+          <button type="button" className="impr-open" aria-expanded={false} onClick={() => { setDone(false); setOpen(true); }}>
+            Send feedback
+          </button>
         )}
       </div>
     </div>

@@ -1,9 +1,6 @@
 .impr {
-  position: fixed;
-  z-index: 70;
-  left: max(16px, env(safe-area-inset-left));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  width: min(28rem, calc(100vw - 32px));
+  margin-top: var(--space-4);
+  max-width: 28rem;
 }
 
 .impr-bar {
@@ -18,7 +15,6 @@
 
 .impr-open,
 .impr-form,
-.impr-link,
 .impr-head,
 .impr-thanks {
   background: var(--bg-elevated);
@@ -48,31 +44,6 @@
   color: var(--text-primary);
 }
 
-.impr-prompt {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-muted);
-  font-size: var(--text-ui);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.impr-link {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  min-height: 44px;
-  padding: 0 var(--space-3);
-  color: var(--text-muted);
-  font-size: var(--text-caption);
-  text-decoration: none;
-  transition: color 150ms;
-}
-
-.impr-link:hover {
-  color: var(--text-primary);
-}
-
 .impr-form {
   display: flex;
   flex-direction: column;
@@ -91,12 +62,8 @@
   background: transparent;
 }
 
-.impr-head .impr-link {
-  margin-left: auto;
-  padding-inline: var(--space-2);
-}
-
 .impr-close {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +160,6 @@
 }
 
 .impr-open:focus-visible,
-.impr-link:focus-visible,
 .impr-close:focus-visible,
 .impr-text:focus-visible,
 .impr-email:focus-visible,
@@ -202,36 +168,7 @@
   outline-offset: 2px;
 }
 
-.app {
-  padding-bottom: 96px;
-}
-
-#root:not(:has(.app)) {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
-}
-
-@media (max-width: 768px) {
-  body:has(.app--has-tabbar) .impr {
-    bottom: calc(var(--tabbar-clearance) + 8px);
-    width: min(28rem, calc(100vw - 24px));
-  }
-
-  .app.app--has-tabbar {
-    padding-bottom: calc(var(--tabbar-clearance) + 96px);
-  }
-}
-
-.native-app .impr {
-  bottom: calc(var(--tabbar-clearance) + 8px);
-  width: min(28rem, calc(100vw - 24px));
-}
-
-html.native-app .app {
-  padding-bottom: calc(var(--tabbar-clearance) + 96px);
-}
-
 @media (hover: none) {
-  .impr-link:hover,
   .impr-close:hover {
     color: var(--text-muted);
     background: transparent;
@@ -240,8 +177,7 @@ html.native-app .app {
 
 @media (prefers-reduced-motion: reduce) {
   .impr-open,
-  .impr-link,
-  .impr-close,
+    .impr-close,
   .impr-text,
   .impr-email {
     transition: none;

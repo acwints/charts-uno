@@ -208,7 +208,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/chart-from-json" className="footer-link">JSON</Link>
             <Link to="/chartsuno-vs-canva-charts" className="footer-link">Vs Canva</Link>
             <Link to="/iphone-chart-maker" className="footer-link">iPhone</Link>
-            <Link to="/changelog" className="footer-link">Changelog</Link>
+            <Link to="/changelog" className="footer-link">What’s New</Link>
             <Link to="/terms" className="footer-link">Terms</Link>
             <Link to="/privacy" className="footer-link">Privacy</Link>
           </nav>

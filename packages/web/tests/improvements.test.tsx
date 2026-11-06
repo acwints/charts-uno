@@ -27,9 +27,8 @@ test('the improvements bar opens one note and sends it with Enter', async () => 
     </MemoryRouter>,
   );
 
-  expect(screen.getByRole('button', { name: /Improvements/ })).toBeTruthy();
-  expect(screen.getByText('How should Chartsuno be different?')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: /Improvements/ }));
+  expect(screen.getByRole('button', { name: /Send feedback/ })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /Send feedback/ }));
   const note = screen.getByRole('textbox', { name: 'How should Chartsuno be different?' });
   fireEvent.change(note, { target: { value: 'Darker grids' } });
   fireEvent.keyDown(note, { key: 'Enter' });
@@ -50,12 +49,13 @@ test('changelog is titled from shipped feedback and hides the raw note', async (
   mocks.getShippedCount.mockResolvedValue({ count: 1 });
   render(
     <MemoryRouter>
-      <ChangelogPage />
+      <ChangelogPage canSendFeedback={false} />
     </MemoryRouter>,
   );
 
   expect(await screen.findByRole('heading', { name: 'Shipped from your feedback' })).toBeTruthy();
-  expect(document.title).toBe('Shipped from your feedback');
+  expect(document.title).toBe('What’s New');
+  expect(screen.queryByRole('button', { name: 'Send feedback' })).toBeNull();
   expect(screen.getByText('1 shipped')).toBeTruthy();
   expect(screen.getByText('Darker grids')).toBeTruthy();
   expect(screen.getByText('Nov 1, 2026')).toBeTruthy();
