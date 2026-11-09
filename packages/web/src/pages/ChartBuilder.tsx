@@ -144,7 +144,7 @@ export function ChartBuilder() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="input-view"
+      className={showInstant ? 'input-view input-view--editor' : 'input-view'}
     >
       {isNativeApp() ? <div className="native-create-heading"><h1>Create a chart</h1><p>Start with a prompt, image, or your own data.</p></div> : (
         <Hero showAuthCta={!showInstant} onAuthOpen={context?.openAuthModal}>

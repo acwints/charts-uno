@@ -66,9 +66,18 @@
   letter-spacing: 0.05em;
 }
 
+.input-view--editor {
+  gap: var(--space-4);
+}
+
 @media (max-width: 640px) {
   .input-view {
     gap: var(--space-4);
+  }
+
+  .input-view--editor {
+    padding-top: var(--space-2);
+    gap: var(--space-3);
   }
 
   .chart-view {

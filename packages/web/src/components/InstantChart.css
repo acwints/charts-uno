@@ -1,12 +1,18 @@
 .instant {
-  margin-top: var(--space-4);
+  position: relative;
+  margin-top: 0;
   text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "paste"
+    "types"
+    "samples"
+    "chart"
+    "tools"
+    "actions";
+  gap: 8px;
+  min-width: 0;
 }
 
 .instant--drag {
@@ -14,39 +20,20 @@
   outline-offset: 2px;
 }
 
-.instant-lead {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.instant-start.button {
-  min-height: 52px;
-  font-size: 1.05rem;
-}
-
-.instant-label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent-text);
-}
-
 .instant-paste {
+  grid-area: paste;
   width: 100%;
-  min-height: 132px;
+  min-width: 0;
+  min-height: 152px;
   resize: vertical;
-  padding: var(--space-3);
+  padding: 12px 14px;
   font-family: var(--font-mono);
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-lg);
 }
 
 .instant-paste::placeholder {
@@ -58,16 +45,84 @@
   border-color: var(--accent);
 }
 
+.instant-types,
+.instant-samples {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.instant-types {
+  grid-area: types;
+}
+
+.instant-samples {
+  grid-area: samples;
+}
+
+.instant-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 8px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 150ms, background-color 150ms;
+}
+
+.instant-chip[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.instant-chip:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.instant-chip[aria-pressed="true"]:hover {
+  background: var(--accent-hover);
+  color: var(--accent-foreground);
+}
+
+.instant-chip:focus-visible,
+.instant-try:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.instant-frame {
+  grid-area: chart;
+  height: 300px;
+  min-height: 300px;
+  min-width: 0;
+}
+
 .instant-tools {
+  grid-area: tools;
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .instant-drop {
   position: relative;
-  flex: 1 1 220px;
+  flex: 1 1 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,25 +152,23 @@
   outline-offset: 2px;
 }
 
-.instant-sample {
-  flex: 0 0 auto;
+.instant-try {
+  flex: 0 1 auto;
   min-height: 44px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 0;
   background: transparent;
   color: var(--accent-text);
   font: inherit;
+  font-weight: 600;
+  text-align: center;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
-.instant-sample:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .instant-error {
+  grid-column: 1 / -1;
   margin: 0;
   color: var(--text-primary);
   background: var(--bg-tertiary);
@@ -123,22 +176,12 @@
   padding: var(--space-2) var(--space-3);
 }
 
-.instant-result {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-3);
-}
-
-.instant-frame {
-  height: 420px;
-  min-height: 420px;
-}
-
 .instant-actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .instant-actions .button {
@@ -153,45 +196,87 @@
   color: var(--text-muted);
 }
 
-.instant-note {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--text-caption);
-  line-height: 1.45;
-}
-
-@media (max-width: 640px) {
+@media (min-width: 900px) {
   .instant {
-    padding: var(--space-3);
+    grid-template-columns: minmax(280px, 0.82fr) minmax(360px, 1.18fr);
+    grid-template-areas:
+      "paste types"
+      "paste chart"
+      "samples chart"
+      "tools actions";
+    column-gap: 20px;
+    row-gap: 12px;
+    align-items: stretch;
+    padding: var(--space-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
   }
 
   .instant-paste {
-    min-height: 72px;
+    height: 100%;
+    min-height: 280px;
+    background: var(--bg-tertiary);
+  }
+
+  .instant-types,
+  .instant-samples {
+    align-self: start;
+  }
+
+  .instant-chip {
+    flex: 0 1 auto;
+    padding: 8px 16px;
+    font-size: 0.92rem;
   }
 
   .instant-frame {
-    height: 240px;
-    min-height: 240px;
+    height: 100%;
+    min-height: 460px;
   }
 
-  .instant-drop {
-    flex: 1 1 auto;
-    min-height: 44px;
+  .instant-tools,
+  .instant-actions {
+    align-self: start;
   }
+}
 
+@media (max-width: 899px) {
+  .instant-tools,
   .instant-actions {
     flex-direction: column;
   }
 
-  .instant-actions .button {
+  .instant-actions .button,
+  .instant-try,
+  .instant-drop {
     width: 100%;
   }
+}
 
-  .instant-tools {
-    flex-direction: column;
+@media (hover: none) {
+  .instant-chip:hover {
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
   }
 
-  .instant-sample {
-    width: 100%;
+  .instant-chip[aria-pressed="true"]:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .instant-chip:active {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .instant-chip[aria-pressed="true"]:active {
+    background: var(--accent-hover);
+    color: var(--accent-foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instant-chip {
+    transition: none;
   }
 }

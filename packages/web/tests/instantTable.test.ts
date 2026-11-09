@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { SAMPLE_CHART_TITLE, SAMPLE_TABLE, chartFromText } from '../src/utils/instantTable';
+import { SAMPLE_CHART_TITLE, SAMPLE_DATASETS, SAMPLE_TABLE, chartFromText } from '../src/utils/instantTable';
 
 test('a pasted CSV becomes a chart without a network call', () => {
   const chart = chartFromText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE });
@@ -44,6 +44,18 @@ test('a list of numbers becomes a chart', () => {
   if ('error' in chart) return;
   expect(chart.data.labels).toEqual(['1', '2', '3']);
   expect(chart.data.series[0].data).toEqual([10, 20, 30]);
+});
+
+test('sample datasets each draw their own chart', () => {
+  expect(SAMPLE_DATASETS.map((dataset) => dataset.label)).toEqual(['Monthly sales', 'Budget', 'Website traffic']);
+  for (const dataset of SAMPLE_DATASETS) {
+    const chart = chartFromText(dataset.text, { title: dataset.title, type: dataset.type });
+    expect('error' in chart).toBe(false);
+    if ('error' in chart) return;
+    expect(chart.config.type).toBe(dataset.type);
+    expect(chart.config.title).toBe(dataset.title);
+    expect(chart.data.series[0].data.length).toBeGreaterThan(1);
+  }
 });
 
 test('a one-line paste is not a chart yet', () => {
