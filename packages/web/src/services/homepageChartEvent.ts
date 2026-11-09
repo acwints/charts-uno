@@ -24,7 +24,7 @@ export function reportHomepageView(): void {
   postFunnel({ kind: 'view' });
 }
 
-/** First edit, paste, drop, chart-type chip, sample dataset, Try with your data, or Use sample. Once per page load. */
+/** First edit, paste, drop, chart-type chip, sample dataset, Edit this example, Try with your data, or Use sample. Once per page load. */
 export function reportHomepageStart(source: HomepageChartSource): void {
   postFunnel({ kind: 'start', source });
 }

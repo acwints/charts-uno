@@ -62,6 +62,7 @@ test('loading the sample chart is not a chart start', async () => {
   expect((await shownChart()).textContent).toBe('bar|Monthly sales');
   await waitFor(() => expect(bodies).toContain('{"kind":"view"}'));
   expect(starts()).toEqual([]);
+  expect(screen.getByRole('button', { name: 'Edit this example' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Bar' }).getAttribute('aria-pressed')).toBe('true');
   expect(screen.getByRole('button', { name: 'Monthly sales' }).getAttribute('aria-pressed')).toBe('true');
 });
@@ -78,6 +79,32 @@ test('a chart-type link selects that chart without counting a start', async () =
   expect(screen.getByRole('button', { name: 'Pie' }).getAttribute('aria-pressed')).toBe('true');
   await waitFor(() => expect(bodies).toContain('{"kind":"view"}'));
   expect(starts()).toEqual([]);
+});
+
+test('Edit this example selects the visible sample and counts one chart start', async () => {
+  renderEditor();
+  await shownChart();
+  const box = screen.getByRole('textbox', { name: 'Paste your data' }) as HTMLTextAreaElement;
+  const before = box.value;
+  fireEvent.click(screen.getByRole('button', { name: 'Edit this example' }));
+  expect(document.activeElement).toBe(box);
+  expect(box.selectionStart).toBe(0);
+  expect(box.selectionEnd).toBe(box.value.length);
+  expect(box.value).toBe(before);
+  expect(starts()).toEqual(['{"kind":"start","source":"sample"}']);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit this example' }));
+  expect(starts()).toEqual(['{"kind":"start","source":"sample"}']);
+});
+
+test('clicking the visible sample chart edits it and counts one chart start', async () => {
+  renderEditor();
+  const chart = await shownChart();
+  const box = screen.getByRole('textbox', { name: 'Paste your data' }) as HTMLTextAreaElement;
+  fireEvent.click(chart);
+  expect(document.activeElement).toBe(box);
+  expect(box.selectionStart).toBe(0);
+  expect(box.selectionEnd).toBe(box.value.length);
+  expect(starts()).toEqual(['{"kind":"start","source":"sample"}']);
 });
 
 test('the first chart-type chip starts a chart once and redraws the sample', async () => {
