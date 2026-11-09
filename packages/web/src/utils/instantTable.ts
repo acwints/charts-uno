@@ -12,6 +12,57 @@ Jun,24150
 
 export const SAMPLE_CHART_TITLE = 'Monthly sales';
 
+export interface SampleDataset {
+  id: 'sales' | 'budget' | 'traffic';
+  label: string;
+  title: string;
+  type: ChartType;
+  text: string;
+}
+
+export const SAMPLE_DATASETS: readonly SampleDataset[] = [
+  {
+    id: 'sales',
+    label: 'Monthly sales',
+    title: SAMPLE_CHART_TITLE,
+    type: 'bar',
+    text: SAMPLE_TABLE,
+  },
+  {
+    id: 'budget',
+    label: 'Budget',
+    title: 'Monthly budget',
+    type: 'pie',
+    text: `Category,Amount
+Rent,1800
+Food,640
+Transit,220
+Utilities,180
+Savings,900
+`,
+  },
+  {
+    id: 'traffic',
+    label: 'Website traffic',
+    title: 'Website traffic',
+    type: 'line',
+    text: `Day,Visitors
+Mon,4200
+Tue,3850
+Wed,5100
+Thu,4760
+Fri,6230
+Sat,2980
+Sun,2540
+`,
+  },
+];
+
+export function matchingSampleDataset(text: string): SampleDataset | undefined {
+  const trimmed = text.trim();
+  return SAMPLE_DATASETS.find((dataset) => dataset.text.trim() === trimmed);
+}
+
 const MAX_ROWS = 400;
 const MAX_SERIES = 8;
 const ALLOWED_TYPES = new Set<ChartType>(['bar', 'line', 'area', 'pie']);

@@ -12,8 +12,10 @@ import { rememberPendingChart, readPendingChart } from '../services/pendingChart
 import type { CreateChartData } from '../services/api';
 import {
   SAMPLE_CHART_TITLE,
+  SAMPLE_DATASETS,
   SAMPLE_TABLE,
   chartFromText,
+  matchingSampleDataset,
   requestedChartType,
   type InstantChartResult,
 } from '../utils/instantTable';
@@ -22,6 +24,13 @@ import { Button } from './Button';
 import './InstantChart.css';
 
 const ChartPreview = lazy(() => import('./ChartPreview').then((module) => ({ default: module.ChartPreview })));
+
+const CHART_TYPES: { id: ChartType; label: string }[] = [
+  { id: 'bar', label: 'Bar' },
+  { id: 'line', label: 'Line' },
+  { id: 'area', label: 'Area' },
+  { id: 'pie', label: 'Pie' },
+];
 
 interface InstantChartProps {
   onRequestAuth?: () => void;
@@ -45,6 +54,11 @@ function showParseError(text: string): boolean {
   return trimmed.split(/\r?\n/).filter((line) => line.trim()).length >= 2;
 }
 
+function savedChartType(type: ChartType | undefined): ChartType | undefined {
+  if (type === 'bar' || type === 'line' || type === 'area' || type === 'pie') return type;
+  return 'bar';
+}
+
 export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const { theme } = useTheme();
   const { pathname } = useLocation();
@@ -58,11 +72,8 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const [titleOverride, setTitleOverride] = useState<string | undefined>(
     hasPending ? pending?.payload.title : SAMPLE_CHART_TITLE,
   );
-  const [forcedType, setForcedType] = useState<ChartType | undefined>(() => {
-    const saved = pending?.payload.config?.type;
-    if (saved === 'bar' || saved === 'line' || saved === 'area' || saved === 'pie') return saved;
-    return 'bar';
-  });
+  const [chartType, setChartType] = useState<ChartType | undefined>(() => savedChartType(pending?.payload.config?.type));
+  const [typeTouched, setTypeTouched] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [eventSource, setEventSource] = useState<HomepageChartSource>('sample');
   const [dragActive, setDragActive] = useState(false);
@@ -70,20 +81,24 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const [downloading, setDownloading] = useState(false);
   const restoredText = useRef(pending?.text ?? '');
   const userStarted = useRef(false);
+  const selectArmed = useRef(true);
   const pasteRef = useRef<HTMLTextAreaElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
 
+  const resolvedType = typeTouched ? chartType : (requestedChartType(typeParam) ?? chartType);
   const options = useMemo(() => ({
-    type: requestedChartType(typeParam) ?? forcedType,
+    type: resolvedType,
     stacked: stackedParam === '1',
     sourceType,
     title: titleOverride,
-  }), [forcedType, sourceType, stackedParam, titleOverride, typeParam]);
+  }), [resolvedType, sourceType, stackedParam, titleOverride]);
 
   const built = useMemo(() => (text.trim() ? chartFromText(text, options) : null), [options, text]);
   const chart = built && !('error' in built) ? built : null;
   const message = fileError || (built && 'error' in built && showParseError(text) ? built.error : null);
-  const showingSample = text.trim() === SAMPLE_TABLE.trim();
+  const activeDataset = matchingSampleDataset(text);
+  const onBuiltinSample = Boolean(activeDataset);
+  const shownType = chart?.config.type ?? resolvedType;
 
   useEffect(() => {
     if (pathname === '/') reportHomepageView();
@@ -96,16 +111,46 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     reportHomepageChart(eventSource);
   }, [chart, eventSource, text]);
 
+  useEffect(() => {
+    if (hasPending) return;
+    if (typeof window.matchMedia !== 'function') return;
+    const desktop = window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)');
+    if (!desktop.matches) return;
+    pasteRef.current?.focus();
+  }, [hasPending]);
+
   const applyText = (next: string, extra?: { sourceType?: 'paste' | 'csv'; title?: string; type?: ChartType; eventSource?: HomepageChartSource }) => {
     const source = extra?.eventSource ?? 'paste';
     setText(next);
     setSourceType(extra?.sourceType ?? 'paste');
     setTitleOverride(extra?.title);
-    setForcedType(extra?.type);
+    if (extra && 'type' in extra) {
+      setTypeTouched(true);
+      setChartType(extra.type);
+    } else if (!typeTouched) {
+      setChartType(undefined);
+    }
     setEventSource(source);
     setFileError(null);
     userStarted.current = true;
     reportHomepageStart(source);
+  };
+
+  const chooseType = (type: ChartType) => {
+    setTypeTouched(true);
+    setChartType(type);
+    setEventSource('sample');
+    userStarted.current = true;
+    reportHomepageStart('sample');
+  };
+
+  const selectSampleOnFocus = (element: HTMLTextAreaElement) => {
+    if (!selectArmed.current || !matchingSampleDataset(element.value)) return;
+    window.setTimeout(() => {
+      if (!element.isConnected || !selectArmed.current || !matchingSampleDataset(element.value)) return;
+      element.select();
+      selectArmed.current = false;
+    }, 0);
   };
 
   const takeFile = async (file: File) => {
@@ -158,7 +203,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   };
 
   const onPrimary = () => {
-    if (!showingSample) {
+    if (!onBuiltinSample) {
       applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' });
       return;
     }
@@ -166,6 +211,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     userStarted.current = true;
     pasteRef.current?.focus();
     pasteRef.current?.select();
+    selectArmed.current = false;
   };
 
   return (
@@ -191,23 +237,56 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
         if (file) void takeFile(file);
       }}
     >
-      <p className="instant-lead">Paste your CSV or a list of numbers below, and your chart redraws instantly.</p>
-      <Button variant="primary" size="lg" fullWidth className="instant-start" onClick={onPrimary}>
-        {showingSample ? 'Try with your data' : 'Use sample'}
-      </Button>
-      <label className="instant-label" htmlFor="instant-paste">Paste your data</label>
       <textarea
         id="instant-paste"
         ref={pasteRef}
         className="instant-paste"
         value={text}
         spellCheck={false}
-        rows={3}
+        rows={7}
         placeholder={'Month,Sales\nJan,120\nFeb,180'}
+        aria-label="Paste your data"
         aria-invalid={message ? true : undefined}
         aria-describedby={message ? 'instant-error' : undefined}
+        onFocus={(event) => selectSampleOnFocus(event.currentTarget)}
         onChange={(event) => applyText(event.target.value)}
       />
+      <div className="instant-types" role="group" aria-label="Chart type">
+        {CHART_TYPES.map((type) => (
+          <button
+            key={type.id}
+            type="button"
+            className="instant-chip"
+            aria-pressed={shownType === type.id}
+            onClick={() => chooseType(type.id)}
+          >
+            {type.label}
+          </button>
+        ))}
+      </div>
+      <div className="instant-samples" role="group" aria-label="Sample data">
+        {SAMPLE_DATASETS.map((dataset) => (
+          <button
+            key={dataset.id}
+            type="button"
+            className="instant-chip instant-chip--data"
+            aria-pressed={activeDataset?.id === dataset.id}
+            onClick={() => applyText(dataset.text, { title: dataset.title, type: dataset.type, eventSource: 'sample' })}
+          >
+            {dataset.label}
+          </button>
+        ))}
+      </div>
+      <div className="instant-frame" ref={frameRef}>
+        {chart ? (
+          <Suspense fallback={<p className="instant-drawing">Drawing your chart…</p>}>
+            <ChartPreview data={chart.data} config={{ ...chart.config, themeMode: theme }} />
+          </Suspense>
+        ) : (
+          <p className="instant-drawing">Paste a label column and at least one column of numbers.</p>
+        )}
+      </div>
+      {message && <p id="instant-error" className="instant-error" role="alert">{message}</p>}
       <div className="instant-tools">
         <label className="instant-drop">
           <input
@@ -222,22 +301,10 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
           />
           Drop a CSV here, or choose a file
         </label>
-        <button
-          type="button"
-          className="instant-sample"
-          onClick={() => applyText(SAMPLE_TABLE, { title: SAMPLE_CHART_TITLE, type: 'bar', eventSource: 'sample' })}
-        >
-          Try sample data
+        <button type="button" className="instant-try" onClick={onPrimary}>
+          {onBuiltinSample ? 'Try with your data' : 'Use sample'}
         </button>
       </div>
-      {message && <p id="instant-error" className="instant-error" role="alert">{message}</p>}
-      {chart && (
-        <div className="instant-frame" ref={frameRef}>
-          <Suspense fallback={<p className="instant-drawing">Drawing your chart…</p>}>
-            <ChartPreview data={chart.data} config={{ ...chart.config, themeMode: theme }} />
-          </Suspense>
-        </div>
-      )}
       <div className="instant-actions">
         <Button variant="primary" size="lg" onClick={() => { void downloadChart(); }} disabled={!chart || downloading} aria-busy={downloading}>
           {downloading ? 'Preparing your PNG…' : 'Save & download this chart'}

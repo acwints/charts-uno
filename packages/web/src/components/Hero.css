@@ -40,7 +40,13 @@
 }
 
 .hero-content--maker {
-  max-width: 920px;
+  max-width: 1040px;
+  text-align: left;
+}
+
+.hero--editor {
+  padding-top: var(--space-2);
+  padding-bottom: 0;
 }
 
 .hero-eyebrow {
@@ -70,6 +76,15 @@
   font-family: var(--font-display);
   font-style: italic;
   color: var(--accent-text);
+}
+
+.hero-title.hero-title--maker {
+  font-size: clamp(1.2rem, 4.6vw, 1.85rem);
+  line-height: 1.15;
+  margin-bottom: 10px;
+  text-align: left;
+  overflow-wrap: normal;
+  animation: none;
 }
 
 @keyframes fadeInUp {
@@ -163,17 +178,16 @@
     font-size: 1rem;
   }
 
-  .hero-content--maker .hero-subtitle {
-    display: none;
+  .hero--editor {
+    padding: 0;
   }
 
-  .hero-content--maker .hero-title {
-    margin-bottom: var(--space-2);
-    font-size: 1.55rem;
-  }
-
-  .hero-content--maker .hero-eyebrow {
-    margin-bottom: var(--space-1);
+  .hero-title.hero-title--maker {
+    font-size: 1.15rem;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    animation: none;
   }
 }
 

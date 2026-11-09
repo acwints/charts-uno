@@ -10,24 +10,31 @@ interface HeroProps {
 }
 
 export function Hero({ showAuthCta = false, onAuthOpen, children }: HeroProps) {
+  const editorFirst = Boolean(children);
   return (
-    <div className="hero">
+    <div className={editorFirst ? 'hero hero--editor' : 'hero'}>
       <motion.div
-        className={children ? 'hero-content hero-content--maker' : 'hero-content'}
-        initial={{ opacity: 0, y: 20 }}
+        className={editorFirst ? 'hero-content hero-content--maker' : 'hero-content'}
+        initial={editorFirst ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: editorFirst ? 0 : 0.5 }}
       >
-        <p className="hero-eyebrow">Data visualization, refined</p>
+        {editorFirst ? (
+          <h1 className="hero-title hero-title--maker">Paste your data. <em>Get a chart.</em></h1>
+        ) : (
+          <>
+            <p className="hero-eyebrow">Data visualization, refined</p>
 
-        <h1 className="hero-title">
-          Transform your data into <em>stunning visualizations</em>
-        </h1>
+            <h1 className="hero-title">
+              Transform your data into <em>stunning visualizations</em>
+            </h1>
 
-        <p className="hero-subtitle">
-          Drop in your data — CSV, spreadsheet, or a screenshot of an existing chart.
-          AI generates beautiful charts instantly.
-        </p>
+            <p className="hero-subtitle">
+              Drop in your data — CSV, spreadsheet, or a screenshot of an existing chart.
+              AI generates beautiful charts instantly.
+            </p>
+          </>
+        )}
 
         {children}
 
