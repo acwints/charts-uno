@@ -214,9 +214,19 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     selectArmed.current = false;
   };
 
+  const editExample = () => {
+    if (!onBuiltinSample) return;
+    reportHomepageStart('sample');
+    userStarted.current = true;
+    const field = pasteRef.current;
+    field?.focus();
+    field?.select();
+    selectArmed.current = false;
+  };
+
   return (
     <section
-      className={`instant ${dragActive ? 'instant--drag' : ''}`}
+      className={`instant${onBuiltinSample ? ' instant--example' : ''}${dragActive ? ' instant--drag' : ''}`}
       aria-label="Make a chart from your data"
       onDragEnter={(event) => {
         event.preventDefault();
@@ -277,7 +287,21 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
           </button>
         ))}
       </div>
-      <div className="instant-frame" ref={frameRef}>
+      {onBuiltinSample && (
+        <Button variant="primary" size="lg" fullWidth className="instant-edit" onClick={editExample}>
+          Edit this example
+        </Button>
+      )}
+      <div
+        className="instant-frame"
+        ref={frameRef}
+        onClick={(event) => {
+          if (!onBuiltinSample) return;
+          const target = event.target;
+          if (target instanceof Element && target.closest('a, button, input, textarea, select, label')) return;
+          editExample();
+        }}
+      >
         {chart ? (
           <Suspense fallback={<p className="instant-drawing">Drawing your chart…</p>}>
             <ChartPreview data={chart.data} config={{ ...chart.config, themeMode: theme }} />

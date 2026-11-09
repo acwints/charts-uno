@@ -62,6 +62,27 @@
   grid-area: samples;
 }
 
+.instant.instant--example {
+  grid-template-areas:
+    "paste"
+    "types"
+    "samples"
+    "edit"
+    "chart"
+    "tools"
+    "actions";
+}
+
+.instant-edit {
+  grid-area: edit;
+  width: 100%;
+  min-height: 44px;
+}
+
+.instant.instant--example .instant-frame {
+  cursor: pointer;
+}
+
 .instant-chip {
   flex: 1 1 0;
   min-width: 0;
@@ -216,6 +237,19 @@
     height: 100%;
     min-height: 280px;
     background: var(--bg-tertiary);
+  }
+
+  .instant.instant--example {
+    grid-template-areas:
+      "paste types"
+      "paste edit"
+      "paste chart"
+      "samples chart"
+      "tools actions";
+  }
+
+  .instant-edit {
+    align-self: start;
   }
 
   .instant-types,
