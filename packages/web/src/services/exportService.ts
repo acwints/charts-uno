@@ -141,7 +141,8 @@ async function waitForFontsReady(): Promise<void> {
   }
 }
 
-function resolveCaptureTarget(element: HTMLElement): HTMLElement {
+export function resolveCaptureTarget(element: HTMLElement): HTMLElement {
+  if (element.dataset.chartCapture === 'full') return element;
   if (element.classList.contains('chart-preview')) return element;
   const preview = element.querySelector<HTMLElement>('.chart-preview');
   return preview ?? element;

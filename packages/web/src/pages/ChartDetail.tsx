@@ -40,7 +40,7 @@ export function ChartDetail() {
   const owner = chart.user_id === user?.id;
 
   return <article className="chart-reading">
-    <div ref={captureRef} className="chart-reading__capture">
+    <div ref={captureRef} data-chart-capture="full" className="chart-reading__capture">
     <header className="chart-reading__header">
       <h1>{config.title}</h1>
       <p>{chart.user?.name || 'Chartsuno member'} · {new Date(chart.created_at).toLocaleDateString()}</p>
