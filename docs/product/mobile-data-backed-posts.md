@@ -24,6 +24,8 @@ Mobbin's requested social-post flow search was refused because this account conn
 
 ## What every post contains
 
+Confirmed source policy (2026-11-10): author-collected data may be published with an explicit **“My own data”** declaration, a collection description, and the public display table. An external source URL is optional for this source kind. This disclosure is attribution, not independent verification; it does not permit image-only posts or relax table/chart validation.
+
 1. **Public display table:** the exact rows/columns consumed by the visualization after intentional selection and transformations. Null stays missing, never zero. Numeric precision, categories, units, series identifiers, dates, and the selected period are explicit.
 2. **Chart specification:** supported type, field/series mapping, aggregation, ordering, filters, stacking, axes, units, chosen time frame, and renderer version. Feed, detail, exported image, and table share one revision ID.
 3. **Source declaration:** kind, descriptive title, attribution, source URL when applicable, observation/collection period, import/retrieval time, and methodology. Original social post/reference links are distinguishable from dataset citations.
@@ -116,6 +118,5 @@ Separate evidence storage/deletion, extraction evaluation corpus, comparison/rev
 
 ## Open decisions
 
-- Allow original/author-collected data with an explicit declaration and collection method (recommended), or demand an external URL. User clarification requested; foundation work does not depend on the answer.
 - Whether the first social launch needs comments/following/search. These are separate from the publication integrity work and are not prerequisites for this foundation slice.
 - How strict moderation should be about reconstructed data in the main feed versus a labeled category. Reconstruction must never appear as exact original data by default.

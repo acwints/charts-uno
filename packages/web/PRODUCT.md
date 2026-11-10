@@ -22,7 +22,7 @@ The existing iOS app bundles the React web implementation in Capacitor. The exis
 
 The mobile experience prioritizes discovery and sharing; advanced chart editing belongs on web. AI may assist image-to-table extraction, but whether and how to expose that is being researched. Existing stored charts contain data, configuration, and multiple legacy source fields. Published revisions and the new mobile composer are planned, not existing capabilities.
 
-An external URL requirement versus an explicit declaration of original data remains open; allowing declared original data is the current recommendation.
+Author-collected data may be published with an explicit “My own data” disclosure, a collection description, and a public display table. An external source URL is optional for this source kind. This is attribution, not independent verification, and does not permit image-only publication. Confirmed by the user on 2026-11-10.
 
 ## Brand Commitments
 
