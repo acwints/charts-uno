@@ -19,26 +19,11 @@ import './ChartFeed.css';
 
 type FeedTab = 'explore' | 'saved' | 'liked';
 
-// Last explore page, so a returning user sees real charts on the first frame
-// (and something useful offline) while the network request is in flight.
-const FEED_CACHE_KEY = 'chartsuno_feed_explore_v1';
-
-function readFeedCache(): ChartResponse[] {
-  try {
-    const raw = localStorage.getItem(FEED_CACHE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    return Array.isArray(parsed) ? (parsed as ChartResponse[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeFeedCache(charts: ChartResponse[]): void {
-  try {
-    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(charts.slice(0, 20)));
-  } catch {
-    // Storage full or unavailable: the cache is a convenience only.
-  }
+// Older releases persisted whole API documents, including editor metadata.
+// Purge that cache. Session-only pages above preserve navigation without
+// retaining private import material on disk or trusting a stale API response.
+function removeLegacyFeedCache(): void {
+  try { localStorage.removeItem('chartsuno_feed_explore_v1'); } catch { /* Storage unavailable. */ }
 }
 
 interface ChartFeedProps {
@@ -53,7 +38,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [activeTab, setActiveTab] = useState<FeedTab>(initialTab);
   const cachedPage = isNativeApp() ? nativeFeedPages.get(`${user?.id ?? 'anonymous'}:${initialTab}`) : undefined;
-  const [charts, setCharts] = useState<ChartResponse[]>(() => cachedPage?.charts ?? (initialTab === 'explore' ? readFeedCache() : []));
+  const [charts, setCharts] = useState<ChartResponse[]>(() => { removeLegacyFeedCache(); return cachedPage?.charts ?? []; });
   const [isLoading, setIsLoading] = useState(!cachedPage);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(cachedPage?.hasMore ?? true);
@@ -110,7 +95,6 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
       setHasMore(nextHasMore);
       if (resetOffset) {
         setCharts(fetchedCharts);
-        if (tab === 'explore') writeFeedCache(fetchedCharts);
         offsetRef.current = LIMIT;
       } else {
         setCharts((prev) => [...prev, ...fetchedCharts]);

@@ -127,6 +127,7 @@ from helpers import (
     assert_dashboard_access,
     get_sql_connection_or_404,
 )
+from services.public_chart import public_chart_data, public_chart_config, public_source_url
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
 from services.branding_service import materialize_browser_safe_logo_url
 from services.stock_service import fetch_stock_prices, search_tickers, generate_stock_insights
@@ -1134,6 +1135,8 @@ def _chart_to_response(
     db: Optional[Session] = None,
     liked_ids: Optional[set] = None,
     saved_ids: Optional[set] = None,
+    *,
+    owner_editor: bool = False,
 ) -> ChartResponse:
     """Convert a Chart model to a ChartResponse with computed fields.
 
@@ -1160,15 +1163,16 @@ def _chart_to_response(
                 SavedChart.chart_id == chart.id,
             ).first() is not None
 
+    include_private = owner_editor and current_user is not None and current_user.id == chart.user_id
     return ChartResponse(
         id=chart.id,
         user_id=chart.user_id,
         title=chart.title,
         description=chart.description,
-        data=chart.data,
-        config=chart.config,
+        data=chart.data if include_private else public_chart_data(chart.data),
+        config=chart.config if include_private else public_chart_config(chart.config),
         source_type=chart.source_type,
-        source_url=chart.source_url,
+        source_url=chart.source_url if include_private else public_source_url(chart.source_url),
         is_public=bool(chart.is_public),
         view_count=chart.view_count,
         like_count=chart.like_count,
@@ -1421,7 +1425,7 @@ async def get_chart(
     chart.view_count += 1
     db.commit()
 
-    return _chart_to_response(chart, current_user, db)
+    return _chart_to_response(chart, current_user, db, owner_editor=True)
 
 
 def _share_status(chart: Chart) -> dict:
@@ -1518,8 +1522,8 @@ async def read_public_share(
     chart = _chart_for_share_token(db, token)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
-    data = chart.data if isinstance(chart.data, dict) else {}
-    config = chart.config if isinstance(chart.config, dict) else {}
+    data = public_chart_data(chart.data)
+    config = public_chart_config(chart.config)
     series = []
     for item in (data.get("series") or [])[:8]:
         if not isinstance(item, dict):

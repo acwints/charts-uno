@@ -74,6 +74,7 @@ export interface ChartResponse {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any;
   source_type: string | null;
+  source_url?: string | null;
   is_public: boolean;
   view_count: number;
   like_count: number;

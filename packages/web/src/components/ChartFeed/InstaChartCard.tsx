@@ -1,4 +1,5 @@
-import { safeSourceUrl } from '../../utils/chartSources';
+import { Link, useLocation } from 'react-router-dom';
+import { collectChartSources, chartProvenanceNote } from '../../utils/chartSources';
 import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
 import { useEffect, useRef, useState } from 'react';
@@ -46,6 +47,7 @@ function formatRelativeDate(dateString: string): string {
 // actions row mirrors the like/save/share affordances of a social feed.
 export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDismiss }: InstaChartCardProps) {
   const { user } = useAuth();
+  const location = useLocation();
   const toast = useToast();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
@@ -164,7 +166,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
   };
 
   const authorName = chart.user?.name || 'Anonymous';
-  const source = safeSourceUrl(chart.config.sourceLink) || safeSourceUrl(chart.data.sourceLink) || safeSourceUrl(chart.data.sources?.[0]?.url);
+  const sources = collectChartSources(chart);
+  const source = sources[0];
+  const provenanceNote = chartProvenanceNote(chart.source_type);
   const caption = chart.title || chart.config.title || 'Untitled Chart';
 
   return (
@@ -251,7 +255,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
       </div>
 
       <div className="insta-card__body">
-        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source} target="_blank" rel="noopener noreferrer">Source: {new URL(source).hostname.replace(/^www\./, '')}</a> : 'Source not provided'}</p>}
+        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.kind === 'reference' ? 'Reference' : 'Source'}: {new URL(source.url).hostname.replace(/^www\./, '')}</a> : 'Source not provided'}</p>}
+        {isNativeApp() && <Link className="insta-card__data-link" to={`/chart/${chart.id}#data`} state={{ returnTo: location.pathname + location.search }}>Data & sources{sources.length > 1 ? ` (${sources.length})` : ''}</Link>}
+        {isNativeApp() && provenanceNote && <p className="insta-card__source">{provenanceNote}</p>}
         <span className="insta-card__likes">
           {likeCount} {likeCount === 1 ? 'like' : 'likes'}
         </span>

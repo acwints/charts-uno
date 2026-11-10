@@ -25,7 +25,7 @@ test('reading and inspecting data leaves the editor draft intact; editing requir
   mount();
   await screen.findByText('Read-only visualization');
   expect(screen.getByRole('link', { name: 'Edit chart' }).getAttribute('href')).toBe('/chart/A/edit');
-  fireEvent.click(screen.getByText('View data · 2 rows'));
+  fireEvent.click(screen.getByText('Data & sources · 2 rows'));
   expect(screen.getByText('0')).toBeTruthy();
   expect(screen.getByText('—')).toBeTruthy();
   expect(useChartStore.getState().chartData).toBe(before.chartData);
@@ -47,6 +47,8 @@ test('source links accept only explicit web URLs', () => {
   expect(safeSourceUrl('https://example.com/data')).toBe('https://example.com/data');
   expect(safeSourceUrl('javascript:alert(1)')).toBeUndefined();
   expect(safeSourceUrl('paste')).toBeUndefined();
+  expect(safeSourceUrl('https://user:secret@example.com')).toBeUndefined();
+  expect(safeSourceUrl('https://example.com/\nprivate')).toBeUndefined();
 });
 
 test('large data tables reveal remaining rows on demand', async () => {
@@ -56,7 +58,7 @@ test('large data tables reveal remaining rows on demand', async () => {
   mocks.getChart.mockResolvedValue(large);
   mount();
   await screen.findByRole('heading', { name: 'A' });
-  fireEvent.click(screen.getByText('View data · 60 rows'));
+  fireEvent.click(screen.getByText('Data & sources · 60 rows'));
   expect(screen.queryByText('Row 60')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Show more rows (50 of 60)' }));
   expect(screen.getByText('Row 60')).toBeTruthy();
@@ -67,4 +69,58 @@ test('a failed chart load offers a working retry', async () => {
   mount();
   fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
   await screen.findByRole('heading', { name: 'A' });
+});
+
+
+test('reader preserves numeric precision, categorical context, and all safe source references', async () => {
+  const item = chart('A');
+  item.data.series[0].data = [0.00001234, -1.23456789];
+  item.data.categoricalColumns = [{ name: 'Method', data: ['Measured', 'Estimated'] }];
+  item.data.sources = [{ title: 'Dataset', url: 'https://example.com/data' }];
+  item.data.sourceLink = 'https://example.com/data';
+  item.config.sourceLink = 'javascript:alert(1)';
+  item.source_url = 'https://example.org/original';
+  mocks.getChart.mockResolvedValue(item);
+  mount();
+  fireEvent.click(await screen.findByText('Data & sources · 2 rows'));
+  expect(screen.getByText('0.00001234')).toBeTruthy();
+  expect(screen.getByText('-1.23456789')).toBeTruthy();
+  expect(screen.getByRole('columnheader', { name: 'Method' })).toBeTruthy();
+  expect(screen.getByText('Estimated')).toBeTruthy();
+  expect(screen.getAllByRole('link', { name: /Dataset/ })).toHaveLength(1);
+  expect(screen.getByRole('link', { name: /Original reference/ }).getAttribute('href')).toBe('https://example.org/original');
+  expect(document.querySelector('a[href^="javascript:"]')).toBeNull();
+});
+
+test('client asserted verification cannot suppress generated-data disclosure', async () => {
+  const item = chart('A');
+  item.source_type = 'prompt'; item.data.verifiedData = true;
+  mocks.getChart.mockResolvedValue(item);
+  mount();
+  expect((await screen.findAllByText('AI-generated data. Linked sources do not independently verify these values.')).length).toBeGreaterThan(0);
+  expect(screen.queryByText('Verified')).toBeNull();
+});
+
+test('a direct data link opens the table and image reconstruction keeps its disclosure', async () => {
+  const item = chart('A'); item.source_type = 'image'; item.data.verifiedData = true;
+  mocks.getChart.mockResolvedValue(item);
+  render(<MemoryRouter initialEntries={['/chart/A#data']}><Routes><Route path="/chart/:id" element={<ChartDetail />} /></Routes></MemoryRouter>);
+  const summary = await screen.findByText('Data & sources · 2 rows');
+  expect(summary.closest('details')?.open).toBe(true);
+  expect(screen.getAllByText('Reconstructed from an image. Extracted values may be approximate.').length).toBeGreaterThan(0);
+});
+
+
+test('mixed-axis tables do not imply one unit applies to every series', async () => {
+  const item = chart('A');
+  item.data.yAxisLabel = 'Revenue'; item.data.yAxisPrefix = '$';
+  item.data.series.push({ name: 'Conversion', data: [5, 10] });
+  item.config.seriesConfig = { Conversion: { axis: 'right', chartType: 'line' } };
+  item.config.rightYAxisLabel = 'Conversion'; item.config.rightYAxisSuffix = '%';
+  mocks.getChart.mockResolvedValue(item);
+  mount();
+  fireEvent.click(await screen.findByText('Data & sources · 2 rows'));
+  expect(screen.getByText('Primary axis: Revenue $')).toBeTruthy();
+  expect(screen.getByText('Secondary axis: Conversion %')).toBeTruthy();
+  expect(screen.getByRole('columnheader', { name: 'Conversion (secondary axis)' })).toBeTruthy();
 });

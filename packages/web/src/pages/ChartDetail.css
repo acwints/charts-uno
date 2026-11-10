@@ -19,3 +19,9 @@
 .chart-reading__capture { background: var(--bg-primary); color: var(--text-primary); }
 .chart-reading__visual .chart-header { display: none; }
 .chart-reading__provenance { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin: var(--space-3) 0; }
+
+.chart-reading__sources { list-style: none; padding: 0; margin: var(--space-3) 0; }
+.chart-reading__sources a { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); min-height: 44px; color: var(--accent-text); overflow-wrap: anywhere; }
+.chart-reading__sources span { color: var(--text-secondary); }
+.chart-reading__visual .chart-source { display: none; }
+.chart-reading__data { scroll-margin-top: var(--space-4); }

@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Chart, User
 from services.homepage_events import homepage_chart_counts
+from services.public_chart import public_chart_data, public_chart_config
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 CANONICAL_ORIGIN = "https://www.chartsuno.com"
@@ -496,18 +497,18 @@ def activity_stats(db: Session, now=None) -> dict:
 
 
 def display_title(chart: Chart) -> str:
-    config = chart.config if isinstance(chart.config, dict) else {}
+    config = public_chart_config(chart.config)
     raw = config.get("title") or chart.title or "Untitled chart"
     title = str(raw).strip()
     return title[:180] or "Untitled chart"
 
 
 def _chart_data(chart: Chart) -> dict:
-    return chart.data if isinstance(chart.data, dict) else {}
+    return public_chart_data(chart.data)
 
 
 def _chart_config(chart: Chart) -> dict:
-    return chart.config if isinstance(chart.config, dict) else {}
+    return public_chart_config(chart.config)
 
 
 def _author_name(chart: Chart) -> Optional[str]:

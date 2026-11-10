@@ -53,3 +53,14 @@ Regression tests cover draft isolation, route-response races, owner/copy action 
 Validation: harness, lint, TypeScript, signed simulator build, and 62 tests across 20 files. Regression coverage includes local editor resume, cancelling document replacement, config-only dirtiness, input remount/session clearing, delayed scroll restoration, pagination after feed remount, and the native template account gate.
 
 On the existing signed-in iPhone 18 Pro Max: scrolled Feed to the second chart, opened it, and returned to the same position; pasted four rows, switched to Feed and back, and verified all rows remained; generated a draft, changed its title to “Navigation QA draft,” switched tabs, and verified the title/data returned; opened New and cancelled the native confirmation, preserving the draft. The QA draft was not saved or published. Final binary reinstalled after the account-gate correction.
+
+
+## Data-backed social-post foundation
+
+Research/plan: `docs/product/mobile-data-backed-posts.md`. Two adversarial reviews covered public data exposure and mobile product semantics; actual-diff review added legacy-cache removal and distinct units for dual-axis tables. Race previews respect the explicit carry-forward option rather than implicitly borrowing older values.
+
+Implemented: nested allowlists for public/read-only API chart payloads; lossless authenticated owner editor access; private import metadata removed from public responses; old full-response feed disk cache removed; Data & sources entry from the native feed; complete safe citations/reference links; preserved decimal precision and categorical columns; null explanation; primary/secondary-axis metadata; no unsupported Verified badge; persistent generated/image reconstruction disclosure. Explicit data navigation takes priority over saved reader scroll position and focuses the disclosure summary.
+
+Validation: 149 isolated API tests; web suite plus harness, lint and TypeScript; signed iOS simulator build; Impeccable static detector returned no findings (not a runtime accessibility certification). On the existing signed-in Pro Max, Feed → Data & sources opened the 12-row Monthly Sales table directly, Back returned to Feed, and system light/dark appearance adapted correctly. No posts or new charts were published during this pass. Native distribution beyond the simulator still requires a release.
+
+Not implemented in this foundation slice: immutable publication revisions, central publication validation, the replacement composer, or assisted screenshot import. Those remain explicitly sequenced in the product plan; the current legacy feed is not yet guaranteed to satisfy the future contract.

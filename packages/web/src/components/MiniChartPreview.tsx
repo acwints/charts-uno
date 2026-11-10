@@ -1,3 +1,5 @@
+import { racePreviewRows } from '../utils/racePreview';
+import { RACE_DEFAULTS } from '../types';
 import './MiniChartPreview.css';
 import { useMemo, type ReactNode } from 'react';
 import {
@@ -31,6 +33,7 @@ interface MiniChartPreviewConfig {
   themeMode?: ThemeMode;
   barLayout?: 'horizontal' | 'vertical';
   stacked?: boolean;
+  raceHoldLast?: boolean;
   yAxisBaselineMode?: 'auto' | 'zero' | 'data';
   customColors?: {
     background?: string;
@@ -74,21 +77,10 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
     });
   }, [data.labels, data.series]);
 
-  const raceFinishData = useMemo(() => {
-    const lastIndexWithValue = (values: Array<number | null>) => {
-      for (let index = values.length - 1; index >= 0; index -= 1) {
-        const value = values[index];
-        if (typeof value === 'number' && Number.isFinite(value)) return value;
-      }
-      return null;
-    };
-
-    return data.series
-      .map((series) => ({ name: series.name, value: lastIndexWithValue(series.data) }))
-      .filter((row): row is { name: string; value: number } => row.value !== null)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [data.series]);
+  const raceFinishData = useMemo(
+    () => racePreviewRows(data, config.raceHoldLast ?? RACE_DEFAULTS.holdLast),
+    [data, config.raceHoldLast],
+  );
 
   const pieData = useMemo(
     () =>
@@ -252,7 +244,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
   if (readable && (config.stacked || (config.type === 'pie' && data.labels.length > 5) || !['bar', 'line', 'area', 'pie'].includes(config.type ?? ''))) {
     return <div className={className} style={{ background: theme.background, color: theme.text }}>
       <table className="reading-preview-table"><thead><tr><th>{data.xAxisLabel || 'Category'}</th>{data.series.slice(0, 2).map((series, i) => <th key={i}>{series.name}</th>)}</tr></thead>
-        <tbody>{data.labels.slice(0, 4).map((label, i) => <tr key={i}><th>{label}</th>{data.series.slice(0, 2).map((series, j) => <td key={j}>{series.data[i]?.toLocaleString() ?? '—'}</td>)}</tr>)}</tbody></table>
+        <tbody>{data.labels.slice(0, 4).map((label, i) => <tr key={i}><th>{label}</th>{data.series.slice(0, 2).map((series, j) => <td key={j}>{series.data[i] == null ? '—' : String(series.data[i])}</td>)}</tr>)}</tbody></table>
       <p>Data preview · Open chart for full details</p>{children}
     </div>;
   }

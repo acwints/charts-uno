@@ -25,3 +25,13 @@ test('returning to the feed retains loaded pages and continues pagination at the
   await waitFor(() => expect(mocks.getPublicCharts).toHaveBeenLastCalledWith(20, 40));
   await screen.findByText('Chart 59');
 });
+
+
+test('upgrading purges the legacy disk cache instead of restoring private import metadata', async () => {
+  localStorage.setItem('chartsuno_feed_explore_v1', JSON.stringify([{ id: 'old', title: 'Stale private chart', data: { sourceImage: { base64: 'private-image' }, sqlQuery: 'private-query' } }]));
+  mocks.getPublicCharts.mockResolvedValue({ charts: [] });
+  render(<ChartFeed />);
+  expect(localStorage.getItem('chartsuno_feed_explore_v1')).toBeNull();
+  expect(screen.queryByText('Stale private chart')).toBeNull();
+  await waitFor(() => expect(mocks.getPublicCharts).toHaveBeenCalled());
+});

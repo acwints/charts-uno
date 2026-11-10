@@ -1,3 +1,4 @@
+import { safeSourceUrl } from '../utils/chartSources';
 import { useMemo, useState, useEffect, useCallback, useRef, useId } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { ensureChartFonts } from '../services/chartFonts';
@@ -30,7 +31,6 @@ ensureChartFonts();
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Check from 'lucide-react/dist/esm/icons/check';
 import type { ChartData, ChartConfig, ColorTheme, FillStyle, BackgroundPattern } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { COLOR_GRADIENTS, STYLE_VARIANTS, getTheme, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, isComboChart, resolveSeriesConfig, getSeriesForAxis } from '../types';
@@ -629,27 +629,16 @@ export function ChartPreview({
     const links: Array<{ title: string; url: string }> = [];
     const seen = new Set<string>();
     const add = (title: string, url?: string) => {
-      if (!url || seen.has(url)) return;
-      seen.add(url);
-      links.push({ title, url });
+      const safeUrl = safeSourceUrl(url);
+      if (!safeUrl || seen.has(safeUrl)) return;
+      seen.add(safeUrl);
+      links.push({ title, url: safeUrl });
     };
     add('Primary source', config.sourceLink);
     data.sources?.forEach((source) => add(source.title, source.url));
     add('Primary source', data.sourceLink);
     return links;
   }, [config.sourceLink, data.sourceLink, data.sources]);
-  const sourceDomain = useMemo(() => {
-    const link = sourceLinks[0]?.url;
-    if (!link) return null;
-    try {
-      return new URL(link).hostname.replace(/^www\./, '');
-    } catch {
-      return link;
-    }
-  }, [sourceLinks]);
-  const verifiedLabel = sourceDomain
-    ? `Verified real data source (${sourceDomain})`
-    : 'Verified real data source';
   const lowConfidenceCount = useMemo(() => {
     let count = 0;
     data.series.forEach((series) => {
@@ -1602,17 +1591,6 @@ export function ChartPreview({
             <span className="meta-label" style={{ color: theme.textMuted }}>Source:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.sourceType.toUpperCase()}</span>
           </span>
-          {data.verifiedData && (
-            <span
-              className="chart-meta-item chart-meta-item--verified"
-              style={{ borderColor: theme.border, color: theme.text }}
-              aria-label={verifiedLabel}
-              title={verifiedLabel}
-            >
-              <Check size={12} />
-              <span>Verified</span>
-            </span>
-          )}
           <span className="chart-meta-item">
             <span className="meta-label" style={{ color: theme.textMuted }}>Points:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.labels.length}</span>

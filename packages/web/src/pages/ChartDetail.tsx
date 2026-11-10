@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { ChartPreview } from '../components/ChartPreview';
 import { ShareMenu } from '../components/ShareMenu';
 import { getChart, type ChartResponse } from '../services/api';
-import { safeSourceUrl } from '../utils/chartSources';
+import { safeSourceUrl, collectChartSources, chartProvenanceNote } from '../utils/chartSources';
 import { useAuth } from '../hooks/useAuth';
 import type { ChartConfig, ChartData } from '../types';
 import './ChartDetail.css';
@@ -14,10 +14,12 @@ export function ChartDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const [result, setResult] = useState<{ scope: string; chart?: ChartResponse; error?: string }>();
-  const [rowLimit, setRowLimit] = useState(50);
+  const [rowPage, setRowPage] = useState({ scope: '', limit: 50 });
   const [attempt, setAttempt] = useState(0);
   const captureRef = useRef<HTMLDivElement>(null);
+  const dataRef = useRef<HTMLDetailsElement>(null);
   const scope = `${user?.id}:${id}`;
+  const rowLimit = rowPage.scope === scope ? rowPage.limit : 50;
   useEffect(() => {
     if (!id) return;
     let active = true;
@@ -25,6 +27,14 @@ export function ChartDetail() {
       .catch(() => { if (active) setResult({ scope, error: 'Could not load this chart. It may be private or unavailable.' }); });
     return () => { active = false; };
   }, [id, scope, attempt]);
+
+  useEffect(() => {
+    if (location.hash === '#data' && result?.scope === scope && result.chart && dataRef.current) {
+      dataRef.current.open = true;
+      dataRef.current.scrollIntoView?.({ block: 'start' });
+      dataRef.current.querySelector('summary')?.focus({ preventScroll: true });
+    }
+  }, [location.hash, result, scope]);
 
   if (result?.scope !== scope) return <p className="chart-reading__status" role="status">Loading chart…</p>;
   if (!result.chart) return <div className="chart-reading__status" role="alert"><p>{result.error}</p><button type="button" onClick={() => { setResult(undefined); setAttempt(n => n + 1); }}>Try again</button></div>;
@@ -37,8 +47,10 @@ export function ChartDetail() {
   config.sourceLink = safeSourceUrl(config.sourceLink);
   data.sourceLink = safeSourceUrl(data.sourceLink);
   data.sources = data.sources?.filter(source => safeSourceUrl(source.url));
-  const sources = [config.sourceLink, data.sourceLink, ...(data.sources?.map(source => source.url) ?? [])].map(safeSourceUrl).filter(Boolean);
+  const sources = collectChartSources(chart);
+  const provenanceNote = chartProvenanceNote(chart.source_type);
   const owner = chart.user_id === user?.id;
+  const hasSecondaryAxis = data.series.some(series => config.seriesConfig?.[series.name]?.axis === 'right');
 
   return <article className="chart-reading">
     <div ref={captureRef} data-chart-capture="full" className="chart-reading__capture">
@@ -49,21 +61,29 @@ export function ChartDetail() {
     </header>
     <div className="chart-reading__visual"><ChartPreview data={data} config={config} readOnly /></div>
     {!sources.length && <p className="chart-reading__provenance">Source not provided</p>}
-    {data.sourceType === 'prompt' && !data.verifiedData && <p className="chart-reading__provenance">AI-generated data · Not verified against a source</p>}
+    {provenanceNote && <p className="chart-reading__provenance">{provenanceNote}</p>}
+    {sources.length > 0 && <p className="chart-reading__provenance">{sources.map(source => `${source.title}: ${new URL(source.url).hostname.replace(/^www\./, '')}`).join('; ')}</p>}
     </div>
     <div className="chart-reading__actions">
       <Link to={`/chart/${chart.id}/edit`} state={{ returnTo: location.pathname, readerReturnTo: location.state?.returnTo }}>{owner ? 'Edit chart' : 'Customize a copy'}</Link>
       <ShareMenu chartRef={captureRef} chartId={chart.id} isPublic={chart.is_public} title={config.title} isAuthenticated={isAuthenticated} canManageLink={owner} />
     </div>
-    <details className="chart-reading__data">
-      <summary>View data · {data.labels.length} rows</summary>
+    <details ref={dataRef} id="chart-data" key={id} className="chart-reading__data">
+      <summary>Data & sources · {data.labels.length} rows</summary>
+      {sources.length > 0 && <ul className="chart-reading__sources" aria-label="Sources and references">{sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} <span>({new URL(source.url).hostname.replace(/^www\./, '')})</span></a></li>)}</ul>}
+      {!sources.length && <p className="chart-reading__provenance">Source not provided</p>}
+      {provenanceNote && <p className="chart-reading__provenance">{provenanceNote}</p>}
+      <p className="chart-reading__provenance">Values are shown as stored. — means missing, not zero.</p>
+      {(data.yAxisLabel || data.yAxisPrefix || data.yAxisSuffix || data.yAxisFormat === 'percentage') && <p className="chart-reading__provenance">{hasSecondaryAxis ? 'Primary axis' : 'Units'}: {[data.yAxisLabel, data.yAxisPrefix, data.yAxisSuffix || (data.yAxisFormat === 'percentage' ? '%' : '')].filter(Boolean).join(' ')}</p>}
+      {hasSecondaryAxis && <p className="chart-reading__provenance">Secondary axis: {[config.rightYAxisLabel, config.rightYAxisPrefix, config.rightYAxisSuffix].filter(Boolean).join(' ') || 'Units not supplied'}</p>}
       <div className="chart-reading__table-scroll" role="region" aria-label="Chart data" tabIndex={0}>
-        <table><caption>{data.yAxisLabel || config.title}</caption>
-          <thead><tr><th scope="col">{data.xAxisLabel || 'Category'}</th>{data.series.map((series, j) => <th scope="col" key={j}>{series.name}</th>)}</tr></thead>
-          <tbody>{data.labels.slice(0, rowLimit).map((label, i) => <tr key={i}><th scope="row">{label}</th>{data.series.map((series, j) => <td key={j}>{series.data[i]?.toLocaleString() ?? '—'}</td>)}</tr>)}</tbody>
+        <table><caption>{config.title}</caption>
+          <thead><tr><th scope="col">{data.xAxisLabel || 'Category'}</th>{data.series.map((series, j) => <th scope="col" key={j}>{series.name}{hasSecondaryAxis ? ` (${config.seriesConfig?.[series.name]?.axis === 'right' ? 'secondary' : 'primary'} axis)` : ''}</th>)}{data.categoricalColumns?.map((column, j) => <th scope="col" key={`category-${j}`}>{column.name}</th>)}</tr></thead>
+          <tbody>{data.labels.slice(0, rowLimit).map((label, i) => <tr key={i}><th scope="row">{label}</th>{data.series.map((series, j) => <td key={j}>{series.data[i] == null ? '—' : String(series.data[i])}</td>)}{data.categoricalColumns?.map((column, j) => <td key={`category-${j}`}>{column.data[i] || '—'}</td>)}</tr>)}</tbody>
         </table>
       </div>
-      {data.labels.length > rowLimit && <button className="chart-reading__more" type="button" onClick={() => setRowLimit(n => n + 50)}>Show more rows ({Math.min(rowLimit, data.labels.length)} of {data.labels.length})</button>}
+      {sources.length > 0 && <p className="chart-reading__provenance">Source links are supplied by the author, not independently verified.</p>}
+      {data.labels.length > rowLimit && <button className="chart-reading__more" type="button" onClick={() => setRowPage({ scope, limit: rowLimit + 50 })}>Show more rows ({Math.min(rowLimit, data.labels.length)} of {data.labels.length})</button>}
     </details>
   </article>;
 }

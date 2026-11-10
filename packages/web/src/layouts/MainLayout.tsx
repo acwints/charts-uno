@@ -37,7 +37,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  useNativeScrollRestoration(mainRef, `${user?.id ?? 'anonymous'}:${location.pathname}${location.search}`, isNativeApp() && isAuthenticated);
+  useNativeScrollRestoration(mainRef, `${user?.id ?? 'anonymous'}:${location.pathname}${location.search}${location.hash}`, isNativeApp() && isAuthenticated, location.hash === '#data');
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
   const { error: showSaveError } = useToast();
   const [pendingChartFailed, setPendingChartFailed] = useState(false);

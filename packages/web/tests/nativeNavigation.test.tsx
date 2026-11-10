@@ -61,3 +61,15 @@ test('scroll restoration waits for content, records user scrolling and isolates 
   expect(nativeScrollPositions.size).toBe(0);
   expect(nativeFeedPages.size).toBe(0);
 });
+
+
+test('an explicit data-section visit ignores the last reader offset so its anchor can win', () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+  const element = document.createElement('main');
+  element.append(document.createElement('div'));
+  Object.defineProperty(element, 'scrollHeight', { value: 2000 });
+  Object.defineProperty(element, 'clientHeight', { value: 500 });
+  nativeScrollPositions.set('user:/chart/A#data', 1200);
+  renderHook(() => useNativeScrollRestoration({ current: element }, 'user:/chart/A#data', true, true));
+  expect(element.scrollTop).toBe(0);
+});
