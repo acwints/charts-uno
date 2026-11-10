@@ -181,6 +181,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "accounts_total": 6,
             "users_with_a_chart": 0,
             "users_with_a_chart_24h": 0,
+            "first_chart_saves_today": 0,
+            "first_chart_saves_7d": 0,
             "users_with_a_chart_7_days_ago": 0,
             "users_with_a_chart_yesterday": 0,
             "signups_last_7d": 1,
@@ -265,6 +267,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "accounts_total": 19,
             "users_with_a_chart": 1,
             "users_with_a_chart_24h": 0,
+            "first_chart_saves_today": 0,
+            "first_chart_saves_7d": 0,
             "users_with_a_chart_7_days_ago": 1,
             "users_with_a_chart_yesterday": 1,
             "signups_last_7d": 6,
@@ -426,6 +430,8 @@ class ShareAndSignupTests(unittest.TestCase):
         counted = signup_census(self.db, now)["public"]
         self.assertEqual(counted["users_with_a_chart_24h"], 1)
         self.assertEqual(counted["users_with_a_chart"], 2)
+        self.assertEqual(counted["first_chart_saves_today"], 1)
+        self.assertEqual(counted["first_chart_saves_7d"], 1)
         self.assertNotIn("gmail.com", str(counted["users_with_a_chart_24h"]))
 
         public = self.client.get("/api/count")

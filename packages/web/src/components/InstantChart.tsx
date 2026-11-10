@@ -8,7 +8,7 @@ import {
   reportHomepageView,
   type HomepageChartSource,
 } from '../services/homepageChartEvent';
-import { rememberPendingChart, readPendingChart } from '../services/pendingChart';
+import { rememberHomepageDraft, rememberPendingChart, readPendingChart } from '../services/pendingChart';
 import type { CreateChartData } from '../services/api';
 import {
   SAMPLE_CHART_TITLE,
@@ -103,6 +103,11 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   useEffect(() => {
     if (pathname === '/') reportHomepageView();
   }, [pathname]);
+
+  useEffect(() => {
+    if (!chart) return;
+    rememberHomepageDraft(text, payloadFor(chart, theme));
+  }, [chart, text, theme]);
 
   useEffect(() => {
     if (!chart || !userStarted.current) return;

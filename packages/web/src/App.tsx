@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { MotionConfig } from 'motion/react';
 import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
@@ -33,6 +33,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
 import { isNativeApp } from './services/native';
+import { getMyCharts } from './services/api';
+import { prepareFirstChartEditor } from './services/firstChart';
 import { readPendingChart } from './services/pendingChart';
 
 function AppWithTeam() {
@@ -123,8 +125,36 @@ function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
   const { pendingChartFailed = false } = useOutletContext<{ pendingChartFailed?: boolean }>() ?? {};
   const waitingToSave = isAuthenticated && !pendingChartFailed && readPendingChart() !== null;
+  const shouldCheckLibrary = isAuthenticated && !isLoading && !waitingToSave && !isNativeApp();
+  const [libraryChoice, setLibraryChoice] = useState<'pending' | 'editor' | 'library'>('pending');
+  const [checkedLibrary, setCheckedLibrary] = useState(false);
+  if (checkedLibrary !== shouldCheckLibrary) {
+    setCheckedLibrary(shouldCheckLibrary);
+    setLibraryChoice('pending');
+  }
 
-  if (isLoading || waitingToSave) {
+  useEffect(() => {
+    if (!shouldCheckLibrary) return;
+    let active = true;
+    getMyCharts(1, 0)
+      .then((page) => {
+        if (!active) return;
+        if (page.total > 0) {
+          setLibraryChoice('library');
+          return;
+        }
+        prepareFirstChartEditor();
+        setLibraryChoice('editor');
+      })
+      .catch(() => {
+        if (active) setLibraryChoice('library');
+      });
+    return () => {
+      active = false;
+    };
+  }, [shouldCheckLibrary]);
+
+  if (isLoading || waitingToSave || (isAuthenticated && !isNativeApp() && libraryChoice === 'pending')) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
         <LoadingSpinner size="lg" />
@@ -135,7 +165,7 @@ function HomeRoute() {
   if (isNativeApp()) return <Navigate to="/feed" replace />;
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={libraryChoice === 'editor' ? '/chart' : '/dashboard'} replace />;
   }
 
   // Show landing page with chart builder for unauthenticated users
