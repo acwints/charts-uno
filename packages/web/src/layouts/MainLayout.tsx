@@ -63,9 +63,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [isAuthenticated, isAuthLoading, navigate, pendingChartFailed, showSaveError]);
 
   const isChartPage = location.pathname === '/chart' || location.pathname.startsWith('/chart/');
+  const isComposing = location.pathname === '/post';
   const isNewRoute = location.pathname === '/new';
   const hideSidebar = isChartPage || (!isAuthenticated && isNewRoute);
-  const showSidebar = isAuthenticated && !hideSidebar && !isNativeApp();
+  const showSidebar = isAuthenticated && !hideSidebar && !isNativeApp() && !isComposing;
   const shouldAnimateRoute = !isNativeApp() && !prefersReducedMotion && !isNewRoute;
 
   // New route = start at the top. Back/forward keeps the browser's own
@@ -136,11 +137,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   }
 
   return (
-    <div className="app app--has-tabbar">
-      {isNativeApp() ? <NativeNavigation /> : <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />}
-      {isAuthenticated && !isAuthLoading && !isNativeApp() && <FirstChartNudge />}
+    <div className={`app ${isComposing ? 'app--composing' : 'app--has-tabbar'}`}>
+      {!isComposing && (isNativeApp() ? <NativeNavigation /> : <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />)}
+      {isAuthenticated && !isAuthLoading && !isNativeApp() && !isComposing && <FirstChartNudge />}
       <NativeAppStatus />
-      {isAuthenticated && <NativeLibraryNav />}
+      {isAuthenticated && !isComposing && <NativeLibraryNav />}
 
       <div className="app-body">
         {showSidebar && <DashboardSidebar />}
@@ -178,7 +179,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         )}
       </div>
 
-      <footer className="footer">
+      {!isComposing && <footer className="footer">
         <div className="footer-content">
           <div className="footer-left">
             <span className="footer-brand">Chartsuno</span>
@@ -207,9 +208,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/privacy" className="footer-link">Privacy</Link>
           </nav>
         </div>
-      </footer>
+      </footer>}
 
-      <MobileTabBar onAuthOpen={openAuthModal} />
+      {!isComposing && <MobileTabBar onAuthOpen={openAuthModal} />}
 
       <AuthModal isOpen={!isAuthenticated && isAuthModalOpen} onClose={closeAuthModal} />
     </div>

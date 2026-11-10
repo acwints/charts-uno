@@ -1,3 +1,4 @@
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Globe from 'lucide-react/dist/esm/icons/globe';
@@ -38,6 +39,7 @@ export function PublishMenu({
   const [draftTeamIds, setDraftTeamIds] = useState<string[]>(publishedTeamIds);
   const menuRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -96,7 +98,7 @@ export function PublishMenu({
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to update publish targets:', error);
-      toast.error('Failed to update publish settings');
+      toast.error(error instanceof Error ? error.message : 'Failed to update publish settings');
     } finally {
       setIsSaving(false);
     }
@@ -124,10 +126,11 @@ export function PublishMenu({
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
           >
+            <Link className="publish-option" to={`/post?chart=${chartId}`} state={{ returnTo: location.pathname }}>Review {isPublic ? 'an update' : 'and publish'}</Link>
             <button
               className="publish-option"
               onClick={() => setDraftIsPublic((previous) => !previous)}
-              disabled={isSaving}
+              disabled={isSaving || !isPublic}
               aria-pressed={draftIsPublic}
             >
               {draftIsPublic ? <Globe size={16} /> : <Lock size={16} />}

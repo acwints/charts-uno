@@ -20,7 +20,7 @@ The existing iOS app bundles the React web implementation in Capacitor. The exis
 
 ## Capabilities and Constraints
 
-The mobile experience prioritizes discovery and sharing; advanced chart editing belongs on web. AI may assist image-to-table extraction, but whether and how to expose that is being researched. Existing stored charts contain data, configuration, and multiple legacy source fields. Published revisions and the new mobile composer are planned, not existing capabilities.
+The mobile experience prioritizes discovery and sharing; advanced chart editing belongs on web. AI may assist image-to-table extraction, but whether and how to expose that is being researched. Existing stored charts contain data, configuration, and multiple legacy source fields. Reviewed publications now store immutable snapshots of the chart, public table, source declaration, and caption. The mobile composer publishes saved charts through source disclosure, presentation, and explicit review. Advanced editing remains on web. Image/prompt-derived data require a later dedicated reconstruction review before new publication.
 
 Author-collected data may be published with an explicit “My own data” disclosure, a collection description, and a public display table. An external source URL is optional for this source kind. This is attribution, not independent verification, and does not permit image-only publication. Confirmed by the user on 2026-11-10.
 
@@ -30,7 +30,7 @@ Preserve the Chartsuno identity and existing system-based iOS appearance. “Ins
 
 ## Evidence on Hand
 
-Existing app, API models, chart/table renderers, and authenticated Pro Max session. Research and implementation sequencing: ../../docs/product/mobile-data-backed-posts.md. No claims of verified data or universal provenance coverage are supported by the current implementation.
+Existing app, API models, chart/table renderers, and authenticated Pro Max session. Research and implementation sequencing: ../../docs/product/mobile-data-backed-posts.md. Source disclosures are not independent verification. Legacy public/team/unlisted charts remain readable as grandfathered snapshots; new publications require review. Native verification of this composer remains pending because the device installation tool blocked the current run.
 
 ## Product Principles
 

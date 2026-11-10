@@ -40,6 +40,8 @@ async function fetchWithRetry(url: string, init: RequestInit): Promise<Response>
 
 interface AnalyzeAndCreateResponse {
   chart_id: string;
+  is_public?: boolean;
+  review_required?: boolean;
   chart_url: string;
   labels: string[];
   series: Array<{ name: string; data: Array<number | null> }>;
@@ -60,6 +62,7 @@ interface AnalyzeAndCreateResponse {
 export interface AnalyzeAndCreateResult {
   chartData: ChartData;
   chartUrl: string;
+  reviewRequired: boolean;
   config?: Partial<ChartConfig>;
 }
 
@@ -117,6 +120,7 @@ export async function analyzeAndCreateChart(imageBuffer: Buffer, sourceUrl: stri
 
   return {
     chartUrl: parsed.chart_url,
+    reviewRequired: parsed.review_required === true || parsed.is_public === false,
     chartData: toChartData(parsed, 'image'),
     config: parsed.config,
   };
@@ -147,6 +151,7 @@ export async function promptAndCreateChart(prompt: string, sourceUrl?: string): 
 
   return {
     chartUrl: parsed.chart_url,
+    reviewRequired: parsed.review_required === true || parsed.is_public === false,
     chartData: toChartData(parsed, 'prompt'),
     config: parsed.config,
   };

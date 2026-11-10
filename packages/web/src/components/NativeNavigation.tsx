@@ -1,6 +1,7 @@
 import { nativeInputDrafts } from '../services/nativeNavigationSession';
 import { confirmDiscardChart, useChartStore } from '../stores/chartStore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import PlusSquare from 'lucide-react/dist/esm/icons/plus-square';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
@@ -26,6 +27,7 @@ export function NativeNavigation() {
     </div>
     <span className="native-navigation__title">{title}</span>
     <div className="native-navigation__side native-navigation__side--end">
+      {(pathname === '/feed' || pathname.startsWith('/dashboard')) && <button type="button" aria-label="New post" onClick={() => navigate('/post', { state: { returnTo: pathname } })}><PlusSquare size={24} /></button>}
       {(/^\/chart(?:\/[^/]+\/edit)?$/.test(pathname)) && <button type="button" onClick={() => {
         if (!confirmDiscardChart()) return;
         useChartStore.getState().reset(); nativeInputDrafts.clear();

@@ -137,6 +137,12 @@ class Chart(Base):
     source_type = Column(String(50), nullable=True)  # 'upload', 'paste', 'twitter', 'url'
     source_url = Column(Text, nullable=True)
 
+    # Immutable reader projection; data/config above remain the editable draft.
+    publication_visibility_version = Column(Integer, nullable=False, default=0, server_default="0")
+    publication_snapshot = Column(JSON, nullable=True)
+    publication_revision_id = Column(String(36), nullable=True)
+    share_snapshot = Column(JSON, nullable=True)
+
     # Auto-refresh parameters (for cron-based data updates)
     refresh_query = Column(JSON, nullable=True)  # e.g. {"ticker": "AAPL", "range": "1Y"}
     sql_connection_id = Column(String(36), ForeignKey("sql_connections.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -159,12 +165,24 @@ class Chart(Base):
     saved_by = relationship("SavedChart", back_populates="chart", cascade="all, delete-orphan")
     likes = relationship("Like", back_populates="chart", cascade="all, delete-orphan")
     publications = relationship("ChartPublication", back_populates="chart", cascade="all, delete-orphan")
+    revisions = relationship("ChartRevision", back_populates="chart", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_charts_user_created", "user_id", "created_at"),
         Index("ix_charts_public_created", "is_public", "created_at"),
         Index("ix_charts_team_created", "team_id", "created_at"),
     )
+
+
+class ChartRevision(Base):
+    __tablename__ = "chart_revisions"
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    chart_id = Column(String(36), ForeignKey("charts.id", ondelete="CASCADE"), nullable=False, index=True)
+    chart = relationship("Chart", back_populates="revisions")
+    content_hash = Column(String(64), nullable=False)
+    snapshot = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    __table_args__ = (UniqueConstraint("chart_id", "content_hash", name="uq_chart_revision_hash"),)
 
 
 class ChartPublication(Base):
@@ -534,6 +552,7 @@ def init_db():
     ensure_referral_schema()
     ensure_homepage_event_schema()
     ensure_signup_attribution_schema()
+    ensure_publication_schema()
 
 
 def ensure_user_auth_schema() -> None:
@@ -699,3 +718,21 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_publication_schema() -> None:
+    """Additive startup compatibility for deployments that use create_all."""
+    from sqlalchemy import inspect, text
+    from services.publication import freeze_legacy
+    columns = {column["name"] for column in inspect(engine).get_columns("charts")}
+    with engine.begin() as conn:
+        for name, sql_type in (("publication_visibility_version", "INTEGER NOT NULL DEFAULT 0"), ("publication_snapshot", "JSON"), ("publication_revision_id", "VARCHAR(36)"), ("share_snapshot", "JSON")):
+            if name not in columns:
+                conn.execute(text(f"ALTER TABLE charts ADD COLUMN {name} {sql_type}"))
+    with SessionLocal() as db:
+        # Freeze legacy public/team/unlisted documents without inventing sources.
+        charts = db.query(Chart).filter(Chart.publication_snapshot.is_(None)).yield_per(100)
+        for chart in charts:
+            if chart.is_public or chart.share_token or chart.publications:
+                freeze_legacy(chart, db)
+        db.commit()

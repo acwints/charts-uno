@@ -75,6 +75,11 @@ export interface ChartResponse {
   config: any;
   source_type: string | null;
   source_url?: string | null;
+  source_declaration?: PublicationSource | null;
+  revision_id?: string | null;
+  legacy_snapshot?: boolean;
+  correction_note?: string | null;
+  published_at?: string | null;
   is_public: boolean;
   view_count: number;
   like_count: number;
@@ -115,8 +120,8 @@ export async function getPublicCharts(limit = 20, offset = 0): Promise<ChartList
   return apiRequest(`/api/charts/public?limit=${limit}&offset=${offset}`);
 }
 
-export async function getChart(chartId: string): Promise<ChartResponse> {
-  return apiRequest(`/api/charts/${chartId}`);
+export async function getChart(chartId: string, view?: 'published'): Promise<ChartResponse> {
+  return apiRequest(`/api/charts/${chartId}${view ? "?view=published" : ""}`);
 }
 
 export async function updateChart(chartId: string, data: Partial<CreateChartData>): Promise<ChartResponse> {
@@ -676,4 +681,30 @@ export function getShippedImprovements(): Promise<{ items: ShippedImprovement[] 
 
 export function getShippedCount(): Promise<{ count: number }> {
   return apiRequest('/api/improvements/shipped-count');
+}
+
+// Publication previews bind the selected presentation and source to the draft version.
+export interface PublicationSource {
+  kind: 'own_data' | 'external';
+  title: string;
+  description: string;
+  url?: string;
+}
+export interface PublicationProposal {
+  is_public?: boolean;
+  source: PublicationSource;
+  chart_type?: 'bar' | 'line' | 'area' | 'pie' | 'table';
+  caption?: string;
+}
+export interface PublicationPreview {
+  draft_hash: string;
+  chart: ChartResponse;
+  errors: string[];
+  published_revision_id?: string | null;
+}
+export function previewPublication(id: string, proposal: PublicationProposal): Promise<PublicationPreview> {
+  return apiRequest(`/api/charts/${id}/publication-preview`, { method: 'POST', body: proposal });
+}
+export function publishChart(id: string, proposal: PublicationProposal & { expected_draft_hash: string; correction_note?: string; is_public?: boolean }): Promise<ChartResponse> {
+  return apiRequest(`/api/charts/${id}/publish`, { method: 'POST', body: proposal });
 }

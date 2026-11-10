@@ -23,7 +23,7 @@ export function ChartDetail() {
   useEffect(() => {
     if (!id) return;
     let active = true;
-    getChart(id).then(chart => { if (active) setResult({ scope, chart }); })
+    getChart(id, 'published').then(chart => { if (active) setResult({ scope, chart }); })
       .catch(() => { if (active) setResult({ scope, error: 'Could not load this chart. It may be private or unavailable.' }); });
     return () => { active = false; };
   }, [id, scope, attempt]);
@@ -40,7 +40,7 @@ export function ChartDetail() {
   if (!result.chart) return <div className="chart-reading__status" role="alert"><p>{result.error}</p><button type="button" onClick={() => { setResult(undefined); setAttempt(n => n + 1); }}>Try again</button></div>;
   const chart = result.chart;
   const data: ChartData = { ...chart.data, sourceType: (chart.source_type || 'paste') as ChartData['sourceType'] };
-  const config: ChartConfig = { ...chart.config, title: chart.title || chart.config.title || 'Untitled Chart', showAxisLabels: true, showAxisTitles: true, showLegend: true, showValues: false, animate: false };
+  const config: ChartConfig = chart.revision_id && !chart.legacy_snapshot ? { ...chart.config, animate: false } : { ...chart.config, title: chart.title || chart.config.title || 'Untitled Chart', showAxisLabels: true, showAxisTitles: true, showLegend: true, showValues: false, animate: false };
   // Generated artwork is not stored on saved chart records. Never regenerate
   // paid artwork, or display an unrelated editor SVG, just by opening a chart.
   if (config.type === 'infographic') config.type = 'table';
@@ -57,21 +57,24 @@ export function ChartDetail() {
     <header className="chart-reading__header">
       <h1>{config.title}</h1>
       <p>{chart.user?.name || 'Chartsuno member'} · {new Date(chart.created_at).toLocaleDateString()}</p>
+      {chart.correction_note && <p className="chart-reading__description">Correction: {chart.correction_note}</p>}
       {chart.description && <p className="chart-reading__description">{chart.description}</p>}
     </header>
     <div className="chart-reading__visual"><ChartPreview data={data} config={config} readOnly /></div>
-    {!sources.length && <p className="chart-reading__provenance">Source not provided</p>}
+    {!sources.length && !chart.source_declaration && <p className="chart-reading__provenance">Source not provided</p>}
+    {chart.source_declaration && <p className="chart-reading__provenance">{chart.source_declaration.title}: {chart.source_declaration.description}</p>}
     {provenanceNote && <p className="chart-reading__provenance">{provenanceNote}</p>}
     {sources.length > 0 && <p className="chart-reading__provenance">{sources.map(source => `${source.title}: ${new URL(source.url).hostname.replace(/^www\./, '')}`).join('; ')}</p>}
     </div>
     <div className="chart-reading__actions">
-      <Link to={`/chart/${chart.id}/edit`} state={{ returnTo: location.pathname, readerReturnTo: location.state?.returnTo }}>{owner ? 'Edit chart' : 'Customize a copy'}</Link>
+      {owner && <Link to={`/post?chart=${chart.id}`} state={{ returnTo: location.pathname }}>{chart.is_public ? 'Update post' : 'Publish chart'}</Link>}
       <ShareMenu chartRef={captureRef} chartId={chart.id} isPublic={chart.is_public} title={config.title} isAuthenticated={isAuthenticated} canManageLink={owner} />
     </div>
     <details ref={dataRef} id="chart-data" key={id} className="chart-reading__data">
       <summary>Data & sources · {data.labels.length} rows</summary>
       {sources.length > 0 && <ul className="chart-reading__sources" aria-label="Sources and references">{sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} <span>({new URL(source.url).hostname.replace(/^www\./, '')})</span></a></li>)}</ul>}
-      {!sources.length && <p className="chart-reading__provenance">Source not provided</p>}
+      {!sources.length && !chart.source_declaration && <p className="chart-reading__provenance">Source not provided</p>}
+      {chart.source_declaration && <p className="chart-reading__provenance">{chart.source_declaration.title}: {chart.source_declaration.description}</p>}
       {provenanceNote && <p className="chart-reading__provenance">{provenanceNote}</p>}
       <p className="chart-reading__provenance">Values are shown as stored. — means missing, not zero.</p>
       {(data.yAxisLabel || data.yAxisPrefix || data.yAxisSuffix || data.yAxisFormat === 'percentage') && <p className="chart-reading__provenance">{hasSecondaryAxis ? 'Primary axis' : 'Units'}: {[data.yAxisLabel, data.yAxisPrefix, data.yAxisSuffix || (data.yAxisFormat === 'percentage' ? '%' : '')].filter(Boolean).join(' ')}</p>}

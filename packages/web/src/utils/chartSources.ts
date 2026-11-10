@@ -12,7 +12,7 @@ export interface DisplaySource { title: string; url: string; kind: 'source' | 'r
 
 // Legacy fields are citations supplied by the author, not proof of accuracy.
 // A root source_url can identify the original social post rather than a dataset.
-export function collectChartSources(chart: Pick<ChartResponse, 'config' | 'data' | 'source_url'>): DisplaySource[] {
+export function collectChartSources(chart: Pick<ChartResponse, 'config' | 'data' | 'source_url' | 'source_declaration'>): DisplaySource[] {
   const sources: DisplaySource[] = [];
   const seen = new Set<string>();
   const add = (value: unknown, title: string, kind: DisplaySource['kind']) => {
@@ -21,6 +21,7 @@ export function collectChartSources(chart: Pick<ChartResponse, 'config' | 'data'
     seen.add(url);
     sources.push({ url, title: title.trim() || new URL(url).hostname, kind });
   };
+  if (chart.source_declaration) add(chart.source_declaration.url, chart.source_declaration.title, 'source');
   chart.data.sources?.forEach(source => add(source.url, source.title, 'source'));
   add(chart.data.sourceLink, 'Data source', 'source');
   add(chart.config.sourceLink, 'Data source', 'source');

@@ -51,3 +51,6 @@ tiktok-marketing/
 
 # Local signed simulator build
 packages/mobile/build/
+
+# Local design review captures
+.impeccable/review/

@@ -133,15 +133,16 @@ export function ChartPreview({
 }: ChartPreviewProps) {
   const prefersReducedMotion = useReducedMotion();
   // Get base theme based on scheme and mode
-  const baseTheme = getTheme(config.colorScheme, config.themeMode);
+  const colorScheme = Object.hasOwn(COLOR_GRADIENTS, config.colorScheme) ? config.colorScheme : 'default';
+  const baseTheme = getTheme(colorScheme, config.themeMode === 'light' ? 'light' : 'dark');
 
   // Apply custom color overrides
   const theme: ColorTheme = applyCustomColors(baseTheme, config.customColors);
 
   // Get effective colors for series (custom or from palette)
-  const colors = getEffectiveColors(config.colorScheme, config.customColors?.seriesColors);
-  const gradients = COLOR_GRADIENTS[config.colorScheme];
-  const styleConfig = STYLE_VARIANTS[config.styleVariant];
+  const colors = getEffectiveColors(colorScheme, config.customColors?.seriesColors);
+  const gradients = COLOR_GRADIENTS[config.colorScheme] ?? COLOR_GRADIENTS.default;
+  const styleConfig = STYLE_VARIANTS[config.styleVariant] ?? STYLE_VARIANTS.professional;
 
   // Fill treatment. Unset keeps the style variant's historical behaviour, so
   // existing charts render exactly as before; the palette gradients are only
@@ -1001,6 +1002,7 @@ export function ChartPreview({
       position: (preferOutsideYLabel ? 'left' as const : 'insideLeft' as const),
       offset: valueAxisConfig.labelOffset,
       dy: 0,
+      textAnchor: 'middle' as const,
       fill: theme.textMuted,
       fontSize: 11,
       fontFamily: 'var(--font-mono)',
@@ -1187,7 +1189,8 @@ export function ChartPreview({
                     fill={getBarFill(idx)}
                     filter={glowFilter}
                     radius={styleConfig.chart.barRadius}
-                    animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
+                    isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
+                animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                     animationBegin={idx * 100}
                     stackId={stackId}
                   >
@@ -1227,7 +1230,8 @@ export function ChartPreview({
                       strokeWidth: 2,
                       fill: theme.background,
                     } : false}
-                    animationDuration={config.animate && !prefersReducedMotion ? 1200 : 0}
+                    isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
+                animationDuration={config.animate && !prefersReducedMotion ? 1200 : 0}
                     animationBegin={idx * 200}
                   >
                     {config.showValues && (
@@ -1264,7 +1268,8 @@ export function ChartPreview({
                       strokeWidth: 2,
                       fill: theme.background,
                     } : false}
-                    animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
+                    isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
+                animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
                     animationBegin={idx * 150}
                   >
                     {config.showValues && (
@@ -1309,6 +1314,7 @@ export function ChartPreview({
                 fill={getBarFill(idx)}
                     filter={glowFilter}
                 radius={styleConfig.chart.barRadius}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                 animationBegin={idx * 100}
                 {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
@@ -1352,6 +1358,7 @@ export function ChartPreview({
                 fill={getBarFill(idx)}
                     filter={glowFilter}
                 radius={0}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
                 animationBegin={idx * 100}
                 {...(config.stacked && canStack ? { stackId: 'stack' } : {})}
@@ -1398,6 +1405,7 @@ export function ChartPreview({
                   strokeWidth: 2,
                   fill: theme.background
                 } : false}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 1200 : 0}
                 animationBegin={idx * 200}
               >
@@ -1446,6 +1454,7 @@ export function ChartPreview({
                   strokeWidth: 2,
                   fill: theme.background
                 } : false}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
                 animationBegin={idx * 150}
               >
@@ -1478,7 +1487,8 @@ export function ChartPreview({
               outerRadius={120}
               paddingAngle={styleConfig.id === 'playful' ? 4 : 2}
               dataKey="value"
-              animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
+              isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
+                animationDuration={config.animate && !prefersReducedMotion ? 1000 : 0}
               label={config.showValues ? ({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} (${((percent ?? 0) * 100).toFixed(0)}%)` : false}
               labelLine={config.showValues}
             >
@@ -1512,6 +1522,7 @@ export function ChartPreview({
                 fillOpacity={0.3}
                 strokeWidth={styleConfig.chart.strokeWidth}
                 filter={glowFilter}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
               />
             ))}
@@ -1534,6 +1545,7 @@ export function ChartPreview({
                   .map((value, i) => ({ x: i + 1, y: value, name: data.labels[i] }))
                   .filter((point): point is { x: number; y: number; name: string } => typeof point.y === 'number')}
                 fill={colors[idx % colors.length]}
+                isAnimationActive={!readOnly && config.animate && !prefersReducedMotion}
                 animationDuration={config.animate && !prefersReducedMotion ? 800 : 0}
               />
             ))}
@@ -1551,7 +1563,7 @@ export function ChartPreview({
   return (
     <motion.div
       className={previewClassName}
-      initial={{ opacity: 0, scale: 0.98 }}
+      initial={readOnly || !config.animate || prefersReducedMotion ? false : { opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
       data-style-variant={config.styleVariant}
@@ -1586,7 +1598,7 @@ export function ChartPreview({
             )}
           </div>
         </div>
-        <div className="chart-meta">
+        {!readOnly && <div className="chart-meta">
           <span className="chart-meta-item">
             <span className="meta-label" style={{ color: theme.textMuted }}>Source:</span>
             <span className="meta-value" style={{ color: theme.text }}>{data.sourceType.toUpperCase()}</span>
@@ -1610,7 +1622,7 @@ export function ChartPreview({
               <span className="meta-value" style={{ color: theme.text }}>{lowConfidenceCount}</span>
             </span>
           )}
-        </div>
+        </div>}
       </div>
 
       <div
@@ -1663,7 +1675,7 @@ export function ChartPreview({
                           style={{ color: theme.textMuted, borderColor: theme.border }}
                         >
                           <span className="table-cell-value">
-                            {typeof value === 'number' ? formatTooltipValue(value) : 'N/A'}
+                            {typeof value === 'number' ? (readOnly ? String(value) : formatTooltipValue(value)) : (readOnly ? '—' : 'N/A')}
                             {isLowConfidence && (
                               <span
                                 className="low-confidence-dot"

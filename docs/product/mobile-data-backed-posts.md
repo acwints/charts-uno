@@ -120,3 +120,18 @@ Separate evidence storage/deletion, extraction evaluation corpus, comparison/rev
 
 - Whether the first social launch needs comments/following/search. These are separate from the publication integrity work and are not prerequisites for this foundation slice.
 - How strict moderation should be about reconstructed data in the main feed versus a labeled category. Reconstruction must never appear as exact original data by default.
+
+
+## Implementation update — reviewed publication and composer
+
+Implemented after the foundation in November 2026:
+
+- `ChartRevision` and immutable publication/share snapshots; additive migration 013 freezes legacy public, team, and unlisted records without inventing sources.
+- Owner-only preview and publish endpoints validate public table shape, numeric values, simple chart compatibility, and source declaration. Review hashes bind the draft, proposed source/presentation/caption, current revision, audience, and visibility generation. Corrections require a note. Exact retries are idempotent; stale reviews and revoked publication replays fail.
+- Own-data declarations use the canonical “My own data” label and require a collection description. External declarations require a safe HTTP(S) URL. Neither is a verification claim.
+- New publication supports bar, line, area, pie, and table. Unresolved secondary axes, unsupported renderer keys, and image/prompt-derived imports require web changes or a later dedicated reconstruction-review feature.
+- Feed/detail/embed, team activity/search, share HTML/table, and public APIs read snapshots. Draft updates and scheduled data refreshes remain private. Revision history is owner-only until per-revision audiences are modeled. Existing unlisted links keep their original snapshot across corrections; unpublishing revokes public link access.
+- Mobile uses a New post toolbar action and three destination tabs. Composer: saved chart → source → presentation/caption/audience → rendered preview and public table → explicit acknowledgment → publish. Link/team preparation uses the same review without listing in the feed. Advanced creation remains on web.
+- Automated bot imports create private drafts and do not send a public chart reply while review is required. This intentionally pauses automatic public bot output pending a reviewed publishing workflow.
+
+Remaining: CSV/paste imports inside the composer; assisted image extraction and correction; per-revision public history/audiences; full simulator/native acceptance (installation blocked by the Device tool in this run). Browser fixture screenshots verify responsive composition, not iOS keyboard, gestures, safe areas, or Dynamic Type. No App Store release is implied by deploying web/API or building a simulator binary.

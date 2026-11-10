@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from models.database import REVIEW_LOGIN_GOOGLE_ID, Chart, User
 from services.homepage_events import homepage_chart_counts
 from services.public_chart import public_chart_data, public_chart_config
+from services.publication import reader_document
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 CANONICAL_ORIGIN = "https://www.chartsuno.com"
@@ -497,18 +498,19 @@ def activity_stats(db: Session, now=None) -> dict:
 
 
 def display_title(chart: Chart) -> str:
-    config = public_chart_config(chart.config)
-    raw = config.get("title") or chart.title or "Untitled chart"
+    doc = reader_document(chart, shared=True)
+    config = public_chart_config(doc.get("config"))
+    raw = config.get("title") or doc.get("title") or "Untitled chart"
     title = str(raw).strip()
     return title[:180] or "Untitled chart"
 
 
 def _chart_data(chart: Chart) -> dict:
-    return public_chart_data(chart.data)
+    return public_chart_data(reader_document(chart, shared=True).get("data"))
 
 
 def _chart_config(chart: Chart) -> dict:
-    return public_chart_config(chart.config)
+    return public_chart_config(reader_document(chart, shared=True).get("config"))
 
 
 def _author_name(chart: Chart) -> Optional[str]:
@@ -649,6 +651,9 @@ def render_share_png(chart: Chart) -> bytes:
 def _draw_png_chart(canvas: _Canvas, chart: Chart, x: int, y: int, w: int, h: int) -> None:
     canvas.rect(x, y, w, h, (26, 26, 32))
     data = _chart_data(chart)
+    if not _can_preview(data, _chart_config(chart)):
+        canvas.text("OPEN TO VIEW FULL CHART AND DATA", x + 36, y + h // 2 - 10, 3, (200, 204, 214), w - 72)
+        return
     series = _series(data)
     if not series or h < 40:
         canvas.text("OPEN TO VIEW", x + 36, y + h // 2 - 10, 3, (200, 204, 214), w - 72)
@@ -738,12 +743,22 @@ def _png_pie(canvas: _Canvas, series: dict, x: int, y: int, w: int, h: int) -> N
 
 
 def _fmt(value: float) -> str:
-    if math.isclose(value, round(value)):
-        return str(int(round(value)))
-    return f"{value:.1f}"
+    if value == round(value):
+        return str(int(value))
+    return f"{value:.6g}"
+
+
+def _can_preview(data: dict, config: dict) -> bool:
+    # Never silently crop a table or flatten unsupported stacking/axis semantics.
+    return (len(data.get("labels") or []) <= _MAX_LABELS
+            and len(data.get("series") or []) <= _MAX_SERIES
+            and not config.get("stacked") and not config.get("seriesConfig")
+            and config.get("type", "bar") in {"bar", "line", "area", "pie", "table"})
 
 
 def _svg_chart(data: dict, config: dict) -> str:
+    if not _can_preview(data, config):
+        return '<p class="share-empty">See the complete data table below. This chart needs the full chart viewer for its presentation.</p>'
     series = _series(data)
     if not series:
         return '<p class="share-empty">This chart has no numbers to draw.</p>'
@@ -763,7 +778,7 @@ def _html_table(labels: list[str], series: list[dict]) -> str:
         cells = []
         for item in series:
             value = item["data"][index] if index < len(item["data"]) else None
-            cells.append(f"<td>{html.escape(_fmt(value) if value is not None else '—')}</td>")
+            cells.append(f"<td>{html.escape(str(value) if value is not None else '—')}</td>")
         rows.append(f"<tr><th scope=\"row\">{html.escape(label)}</th>{''.join(cells)}</tr>")
     return (
         '<div class="share-table-wrap"><table class="share-table">'
@@ -966,6 +981,41 @@ def _legend_positions(svg: str) -> str:
     return "".join(rebuilt)
 
 
+def _public_table_and_source(chart: Chart) -> str:
+    doc = reader_document(chart, shared=True)
+    data = public_chart_data(doc.get("data"))
+    source = doc.get("source_declaration") or {}
+    title = html.escape(str(source.get("title") or "Source not declared for this legacy chart"))
+    description = html.escape(str(source.get("description") or ""))
+    from services.public_chart import public_source_url
+    url = public_source_url(source.get("url"))
+    source_html = f'<p><strong>{title}</strong></p><p>{description}</p>'
+    if url:
+        source_html += f'<p><a href="{html.escape(url, quote=True)}" rel="noopener noreferrer">View data source</a></p>'
+    if doc.get("correction_note"):
+        source_html += f'<p>Correction: {html.escape(str(doc["correction_note"]))}</p>'
+    if doc.get("description"):
+        source_html = f'<p>{html.escape(str(doc["description"]))}</p>' + source_html
+    columns = list(data.get("series") or []) + list(data.get("categoricalColumns") or [])
+    heading = data.get("xAxisLabel") or "Label"
+    head = f'<th scope="col">{html.escape(str(heading))}</th>'
+    head += "".join(f'<th scope="col">{html.escape(str(column["name"]))}</th>' for column in columns)
+    rows = []
+    for index, label in enumerate(data.get("labels") or []):
+        cells = f'<th scope="row">{html.escape(str(label))}</th>'
+        for column in columns:
+            values = column.get("data") or []
+            value = values[index] if index < len(values) else None
+            cells += '<td>' + ("—" if value is None else html.escape(str(value))) + '</td>'
+        rows.append('<tr>' + cells + '</tr>')
+    units = html.escape(str(data.get("yAxisLabel") or ""))
+    unit_format = html.escape(" ".join(str(data.get(key) or "") for key in ("yAxisPrefix", "yAxisSuffix")).strip())
+    return ('<section aria-label="Data and sources"><h2>Data &amp; sources</h2>' + source_html
+            + f'<p>{units} {unit_format}. A dash means a missing observation.</p>'
+            + '<div style="overflow-x:auto"><table><caption>Published display table</caption><thead><tr>' + head
+            + '</tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div></section>')
+
+
 def render_share_html(chart: Chart, token: str) -> str:
     title = display_title(chart)
     safe_title = html.escape(title)
@@ -1015,6 +1065,7 @@ def render_share_html(chart: Chart, token: str) -> str:
     <h1 class="share-title">{safe_title}</h1>
     {byline}
     <figure class="share-figure">{chart_html}</figure>
+    {_public_table_and_source(chart)}
     <a class="share-credit" href="{credit_href}">{CREDIT_TEXT}</a>
     <a class="share-cta" href="{origin}/?auth=1">{cta}</a>
     <p class="share-note">Anyone with this link can view the saved chart. Previewing your own chart is free, and a free account saves up to 10 charts a month.</p>

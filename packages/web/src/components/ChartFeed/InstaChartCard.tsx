@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { collectChartSources, chartProvenanceNote } from '../../utils/chartSources';
 import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
@@ -10,6 +10,7 @@ import Send from 'lucide-react/dist/esm/icons/send';
 import Check from 'lucide-react/dist/esm/icons/check';
 import User from 'lucide-react/dist/esm/icons/user';
 import Eye from 'lucide-react/dist/esm/icons/eye';
+import type { ChartData, ChartConfig } from '../../types';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -25,6 +26,8 @@ interface InstaChartCardProps {
   onAuthRequired?: () => void;
   onDismiss?: (target: { chartId: string; userId?: string }) => void;
 }
+
+const PublishedChartPreview = lazy(() => import('../ChartPreview').then(m => ({ default: m.ChartPreview })));
 
 const DOUBLE_TAP_MS = 300;
 
@@ -183,7 +186,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         )}
         <div className="insta-card__byline">
           <span className="insta-card__author">{authorName}</span>
-          <span className="insta-card__date">{formatRelativeDate(chart.created_at)}</span>
+          <span className="insta-card__date">{formatRelativeDate(chart.published_at || chart.created_at)}</span>
         </div>
         <span className="insta-card__type">{chart.config.type}</span>
         <ChartSafetyMenu chart={chart} onAuthRequired={onAuthRequired} onDismiss={onDismiss} />
@@ -196,13 +199,15 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         onClick={handleMediaTap}
         aria-label={`Open chart: ${caption}${isNativeApp() ? '' : '. Double tap to like.'}`}
       >
-        <MiniChartPreview
+        {chart.revision_id && !chart.legacy_snapshot ? <Suspense fallback={<span role="status">Loading chart…</span>}>
+          <div className="insta-card__published" inert><PublishedChartPreview data={{ ...chart.data, sourceType: chart.source_type as ChartData['sourceType'] }} config={{ ...chart.config, animate: false } as ChartConfig} readOnly /></div>
+        </Suspense> : <MiniChartPreview
           className="insta-card__preview"
           data={chart.data}
           config={chart.config}
           minHeight={280}
           readable={isNativeApp()}
-        />
+        />}
         <AnimatePresence>
           {showBurst && (
             <motion.div
@@ -255,7 +260,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
       </div>
 
       <div className="insta-card__body">
-        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.kind === 'reference' ? 'Reference' : 'Source'}: {new URL(source.url).hostname.replace(/^www\./, '')}</a> : 'Source not provided'}</p>}
+        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.kind === 'reference' ? 'Reference' : 'Source'}: {new URL(source.url).hostname.replace(/^www\./, '')}</a> : chart.source_declaration?.title || 'Source not provided'}</p>}
         {isNativeApp() && <Link className="insta-card__data-link" to={`/chart/${chart.id}#data`} state={{ returnTo: location.pathname + location.search }}>Data & sources{sources.length > 1 ? ` (${sources.length})` : ''}</Link>}
         {isNativeApp() && provenanceNote && <p className="insta-card__source">{provenanceNote}</p>}
         <span className="insta-card__likes">

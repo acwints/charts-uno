@@ -131,6 +131,12 @@ class ChartResponse(BaseModel):
     source_type: Optional[str] = None
     source_url: Optional[str] = None
     is_public: bool
+    revision_id: Optional[str] = None
+    source_declaration: Optional[Dict[str, Any]] = None
+    legacy_snapshot: bool = False
+    correction_note: Optional[str] = None
+    published_at: Optional[datetime] = None
+    parent_revision_id: Optional[str] = None
     view_count: int
     like_count: int
     created_at: datetime
@@ -238,6 +244,8 @@ class BotPromptAndCreateRequest(BaseModel):
 
 
 class BotAnalyzeAndCreateResponse(BaseModel):
+    is_public: bool = False
+    review_required: bool = True
     chart_id: str
     chart_url: str
     labels: List[str]
@@ -779,3 +787,32 @@ class ShippedImprovementList(BaseModel):
 
 class ShippedCount(BaseModel):
     count: int
+
+
+class PublicationSource(BaseModel):
+    model_config = {"extra": "forbid"}
+    kind: Literal["own_data", "external"]
+    title: str = Field(min_length=1, max_length=300)
+    description: str = Field(min_length=1, max_length=2000)
+    url: Optional[str] = Field(default=None, max_length=2000)
+
+
+class PublicationPreviewRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    is_public: bool = True
+    source: PublicationSource
+    chart_type: Optional[Literal["bar", "line", "area", "pie", "table"]] = None
+    caption: Optional[str] = Field(default=None, max_length=5000)
+
+
+class PublicationRequest(PublicationPreviewRequest):
+    expected_draft_hash: str = Field(min_length=64, max_length=64)
+    correction_note: Optional[str] = Field(default=None, max_length=2000)
+    is_public: bool = True
+
+
+class PublicationPreviewResponse(BaseModel):
+    draft_hash: str
+    chart: ChartResponse
+    errors: List[str]
+    published_revision_id: Optional[str] = None

@@ -223,3 +223,9 @@
 
 .insta-card__data-link { display: flex; align-items: center; width: fit-content; min-height: 44px; color: var(--accent-text); font-weight: 600; }
 .insta-card__data-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.insta-card__published { width: 100%; min-width: 0; pointer-events: none; text-align: left; }
+.insta-card__published .chart-preview { margin: 0; width: 100%; }
+
+.insta-card__published .chart-container { min-height: 300px; }
+.insta-card__published .chart-header { display: none; }

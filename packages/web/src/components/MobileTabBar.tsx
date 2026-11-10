@@ -33,14 +33,14 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
         <span className="mtabbar__label">Feed</span>
       </NavLink>
 
-      <NavLink
+      {!isNativeApp() && <NavLink
         to={createPath}
         className={() => `mtabbar__tab ${pathname === '/new' || /^\/chart(?:\/[^/]+\/edit)?$/.test(pathname) ? 'mtabbar__tab--active' : ''}`}
         aria-label="Create chart"
       >
         <PlusSquare size={24} />
         <span className="mtabbar__label">Create</span>
-      </NavLink>
+      </NavLink>}
 
       {isAuthenticated ? (
         <NavLink

@@ -17,7 +17,7 @@ export function EmbedView() {
     if (!id) return;
 
     let cancelled = false;
-    getChart(id)
+    getChart(id, 'published')
       .then((chart) => {
         if (cancelled) return;
         const data: ChartData = {

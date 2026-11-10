@@ -136,6 +136,8 @@ class PublicChartPrivacyTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assert_public_chart(response.json()["items"][0]["chart"])
         self.chart.is_public = False
+        # A pre-existing unlisted legacy link remains readable without new publication.
+        self.chart.share_token = "legacy_privacy_token_1234567890"
         self.db.commit()
         share = self.client.post(f"/api/charts/{self.chart.id}/share", headers=self.owner_auth)
         self.assertEqual(share.status_code, 200)
@@ -167,6 +169,8 @@ class PublicChartPrivacyTests(unittest.TestCase):
         self.assertNotIn(SECRET, json.dumps(payload))
         self.assertEqual(payload["data"]["labels"], ["", "Known"])
         self.assertEqual(payload["data"]["series"][0]["data"], [None, 3])
+        self.chart.share_token = "legacy_nested_token_1234567890"
+        self.db.commit()
         token = self.client.post(f"/api/charts/{self.chart.id}/share", headers=self.owner_auth).json()["token"]
         for path in (f"/api/share/{token}", f"/s/{token}"):
             response = self.client.get(path)

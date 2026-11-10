@@ -64,3 +64,11 @@ Implemented: nested allowlists for public/read-only API chart payloads; lossless
 Validation: 149 isolated API tests; web suite plus harness, lint and TypeScript; signed iOS simulator build; Impeccable static detector returned no findings (not a runtime accessibility certification). On the existing signed-in Pro Max, Feed → Data & sources opened the 12-row Monthly Sales table directly, Back returned to Feed, and system light/dark appearance adapted correctly. No posts or new charts were published during this pass. Native distribution beyond the simulator still requires a release.
 
 Not implemented in this foundation slice: immutable publication revisions, central publication validation, the replacement composer, or assisted screenshot import. Those remain explicitly sequenced in the product plan; the current legacy feed is not yet guaranteed to satisfy the future contract.
+
+## Reviewed publications and mobile composer
+
+Implemented immutable publication snapshots and an explicit saved-chart posting flow. New public posts require a valid display table, supported chart, source declaration, and a hash-bound review. Own-data declarations require a collection description; external sources require a safe link. Legacy posts remain frozen and identifiable. New bot imports remain private pending review.
+
+Validation: 165 isolated API tests and 75 web tests passed. Harness, lint, TypeScript, and diff checks passed. Adversarial review findings around private history, stale/revoked review replay, team metadata, unsafe series keys, and feed rendering were fixed; regression tests cover the backend findings. Browser fixture screenshots at 390px and 1440px verify the composer in light/dark appearance. The independent visual reviewer returned `ship at browser scope` after stable recaptures. These fixtures mocked APIs and did not publish to production.
+
+Native acceptance is pending: the existing Pro Max installation attempt returned `DEVICE_IN_USE` for this thread's own session, and the advised device-status command was unavailable through the bound command. Device operations stopped as instructed. The device still runs the prior app; a successful simulator build does not establish keyboard, gesture, safe-area, or Dynamic Type behavior. No App Store release was made.

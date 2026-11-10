@@ -103,7 +103,7 @@ class ShareAndSignupTests(unittest.TestCase):
             "/api/charts",
             headers=self.owner_auth,
             json={
-                "title": "Ignored column title",
+                "title": "Q3 signups <doubled>",
                 "data": {"labels": ["Jan", "Feb"], "series": [{"name": "Signups", "data": [3, 9]}]},
                 "config": {"type": "bar", "title": "Q3 signups <doubled>"},
             },
@@ -116,6 +116,12 @@ class ShareAndSignupTests(unittest.TestCase):
         denied = self.client.post(f"/api/charts/{self.chart_id}/share", headers=self.other_auth)
         self.assertEqual(denied.status_code, 403)
 
+        # Sharing now requires a reviewed data/source snapshot, but need not list in the feed.
+        publication = {"is_public": False, "source": {"kind": "own_data", "title": "My own data", "description": "Counted signups each month"}, "chart_type": "bar"}
+        preview = self.client.post(f"/api/charts/{self.chart_id}/publication-preview", headers=self.owner_auth, json=publication)
+        reviewed = self.client.post(f"/api/charts/{self.chart_id}/publish", headers=self.owner_auth,
+                                   json={**publication, "expected_draft_hash": preview.json()["draft_hash"], "is_public": False})
+        self.assertEqual(reviewed.status_code, 200, reviewed.text)
         first = self.client.post(f"/api/charts/{self.chart_id}/share", headers=self.owner_auth)
         self.assertEqual(first.status_code, 200, first.text)
         token = first.json()["token"]

@@ -20,13 +20,13 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case, cast, String
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from models.database import (
-    init_db, get_db, User, Chart, SavedChart, Like,
+    init_db, get_db, User, Chart, ChartRevision, SavedChart, Like,
     Team, TeamMember, TeamInvitation, Subscription, ChartPublication,
     Dashboard, DashboardItem, SqlConnection, generate_uuid,
     UserBlock, ContentReport, Feedback, HomepageChartEvent,
@@ -87,6 +87,7 @@ from schemas import (
     ActivityListResponse,
     ChartPublishTargetsResponse,
     ChartPublishTargetsUpdate,
+    PublicationPreviewRequest, PublicationPreviewResponse, PublicationRequest,
     # Branding schemas
     TeamBrandingUpdate,
     TeamBrandingResponse,
@@ -126,6 +127,10 @@ from helpers import (
     get_dashboard_or_404,
     assert_dashboard_access,
     get_sql_connection_or_404,
+)
+from services.publication import (
+    candidate as publication_candidate, publish as publish_revision, freeze_legacy,
+    reader_document, reader_chart, require_reviewed, revoke_public,
 )
 from services.public_chart import public_chart_data, public_chart_config, public_source_url
 from services.ai_service import analyze_image, chat_with_chart, recommend_chart_type, generate_infographic, generate_chart_from_prompt, infer_brand_from_website
@@ -1087,9 +1092,9 @@ async def hide_reported_chart(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     if report.chart_id:
-        chart = db.query(Chart).filter(Chart.id == report.chart_id).first()
+        chart = db.query(Chart).filter(Chart.id == report.chart_id).with_for_update().first()
         if chart:
-            chart.is_public = False
+            revoke_public(chart)
             chart.share_token = None
     report.status = "hidden"
     db.commit()
@@ -1164,20 +1169,30 @@ def _chart_to_response(
             ).first() is not None
 
     include_private = owner_editor and current_user is not None and current_user.id == chart.user_id
+    doc = draft_document_for_response = reader_document(chart)
+    if include_private:
+        doc = {"title": chart.title, "description": chart.description, "data": chart.data,
+               "config": chart.config, "source_type": chart.source_type, "source_url": chart.source_url}
     return ChartResponse(
         id=chart.id,
         user_id=chart.user_id,
-        title=chart.title,
-        description=chart.description,
-        data=chart.data if include_private else public_chart_data(chart.data),
-        config=chart.config if include_private else public_chart_config(chart.config),
-        source_type=chart.source_type,
-        source_url=chart.source_url if include_private else public_source_url(chart.source_url),
+        title=doc.get("title"),
+        description=doc.get("description"),
+        data=doc.get("data") if include_private else public_chart_data(doc.get("data")),
+        config=doc.get("config") if include_private else public_chart_config(doc.get("config")),
+        source_type=doc.get("source_type"),
+        source_url=doc.get("source_url") if include_private else public_source_url(doc.get("source_url")),
+        revision_id=draft_document_for_response.get("revision_id"),
+        source_declaration=draft_document_for_response.get("source_declaration"),
+        legacy_snapshot=draft_document_for_response.get("legacy_snapshot", False),
+        correction_note=draft_document_for_response.get("correction_note"),
+        published_at=draft_document_for_response.get("published_at"),
+        parent_revision_id=draft_document_for_response.get("parent_revision_id"),
         is_public=bool(chart.is_public),
         view_count=chart.view_count,
         like_count=chart.like_count,
         created_at=chart.created_at,
-        updated_at=chart.updated_at,
+        updated_at=chart.updated_at if include_private else doc.get("published_at") or chart.updated_at,
         is_liked=is_liked,
         is_saved=is_saved,
         user=PublicAuthorResponse.model_validate(chart.user) if chart.user else None,
@@ -1409,6 +1424,7 @@ async def list_public_charts(
 @app.get("/api/charts/{chart_id}", response_model=ChartResponse)
 async def get_chart(
     chart_id: str,
+    view: Literal["draft", "published"] = "draft",
     current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -1425,7 +1441,7 @@ async def get_chart(
     chart.view_count += 1
     db.commit()
 
-    return _chart_to_response(chart, current_user, db, owner_editor=True)
+    return _chart_to_response(chart, current_user, db, owner_editor=view != "published")
 
 
 def _share_status(chart: Chart) -> dict:
@@ -1447,7 +1463,7 @@ def _share_html_response(body: str, status_code: int) -> Response:
         status_code=status_code,
         media_type="text/html; charset=utf-8",
         headers={
-            "Cache-Control": "public, max-age=60",
+            "Cache-Control": "no-store",
             "X-Robots-Tag": "noindex",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "no-referrer",
@@ -1480,7 +1496,9 @@ async def enable_chart_share(
     _ = request
     chart = get_chart_or_404(db, chart_id)
     assert_chart_owner(chart, current_user)
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().populate_existing().one()
     if not (chart.share_token or "").strip():
+        require_reviewed(chart)
         token = None
         for _attempt in range(3):
             candidate = secrets.token_urlsafe(24)
@@ -1491,6 +1509,7 @@ async def enable_chart_share(
         if not token:
             raise HTTPException(status_code=500, detail="Could not create a share link")
         chart.share_token = token
+        chart.share_snapshot = chart.publication_snapshot
         db.commit()
         db.refresh(chart)
     return _share_status(chart)
@@ -1505,7 +1524,10 @@ async def disable_chart_share(
     """Turn the share link off. The chart stays in the owner's library."""
     chart = get_chart_or_404(db, chart_id)
     assert_chart_owner(chart, current_user)
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().populate_existing().one()
     chart.share_token = None
+    chart.share_snapshot = None
+    chart.publication_visibility_version = (chart.publication_visibility_version or 0) + 1
     db.commit()
     return {"enabled": False, "url": None, "token": None}
 
@@ -1522,22 +1544,27 @@ async def read_public_share(
     chart = _chart_for_share_token(db, token)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
-    data = public_chart_data(chart.data)
-    config = public_chart_config(chart.config)
+    public = reader_chart(chart, shared=True)
+    data = public.data
+    config = public.config
     series = []
-    for item in (data.get("series") or [])[:8]:
+    for item in (data.get("series") or []):
         if not isinstance(item, dict):
             continue
         series.append({
-            "name": str(item.get("name") or "Series")[:120],
+            "name": str(item.get("name") or "Series"),
             "data": item.get("data") if isinstance(item.get("data"), list) else [],
         })
     author = chart.user.name if chart.user and chart.user.name else None
     return {
         "title": display_title(chart),
+        "revision_id": reader_document(chart, shared=True).get("revision_id"),
+        "source_declaration": reader_document(chart, shared=True).get("source_declaration"),
         "author_name": author,
         "chart_type": str(config.get("type") or "bar"),
-        "labels": [str(item)[:80] for item in (data.get("labels") or [])[:40]],
+        "labels": list(data.get("labels") or []),
+        "data": data,
+        "config": config,
         "series": series,
     }
 
@@ -1553,7 +1580,7 @@ async def share_preview_image(token: str, request: Request, db: Session = Depend
     return Response(
         content=render_share_png(chart),
         media_type="image/png",
-        headers={"Cache-Control": "public, max-age=120", "X-Content-Type-Options": "nosniff"},
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 
@@ -1581,6 +1608,8 @@ async def update_chart(
     chart = get_chart_or_404(db, chart_id)
     assert_chart_owner(chart, current_user)
 
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().populate_existing().one()
+    freeze_legacy(chart, db)
     # Update fields
     if chart_data.title is not None:
         chart.title = chart_data.title
@@ -1590,8 +1619,10 @@ async def update_chart(
         chart.data = chart_data.data.model_dump()
     if chart_data.config is not None:
         chart.config = chart_data.config.model_dump()
-    if chart_data.is_public is not None:
-        chart.is_public = bool(chart_data.is_public)
+    if chart_data.is_public is True:
+        raise HTTPException(409, "Use the posting flow to review the table and source before publishing.")
+    if chart_data.is_public is False:
+        revoke_public(chart)
 
     db.commit()
     db.refresh(chart)
@@ -1627,8 +1658,14 @@ async def update_chart_publish_targets(
     chart = get_chart_or_404(db, chart_id)
     assert_chart_owner(chart, current_user)
 
-    if publish_data.is_public is not None:
-        chart.is_public = bool(publish_data.is_public)
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().populate_existing().one()
+    freeze_legacy(chart, db)
+    if publish_data.is_public is True and not chart.is_public:
+        require_reviewed(chart)
+        chart.publication_visibility_version = (chart.publication_visibility_version or 0) + 1
+        chart.is_public = True
+    if publish_data.is_public is False:
+        revoke_public(chart)
 
     if publish_data.team_ids is not None:
         requested_team_ids = sorted({team_id for team_id in publish_data.team_ids if team_id})
@@ -1662,6 +1699,8 @@ async def update_chart_publish_targets(
             if link.team_id not in allowed_team_ids_set:
                 db.delete(link)
 
+        if allowed_team_ids_set - existing_team_ids_set:
+            require_reviewed(chart)
         for team_id in (allowed_team_ids_set - existing_team_ids_set):
             db.add(
                 ChartPublication(
@@ -1678,6 +1717,60 @@ async def update_chart_publish_targets(
         is_public=bool(chart.is_public),
         team_ids=_get_chart_publish_team_ids(db, chart.id),
     )
+
+
+@app.post("/api/charts/{chart_id}/publication-preview", response_model=PublicationPreviewResponse)
+async def preview_publication(
+    chart_id: str, payload: PublicationPreviewRequest,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
+):
+    chart = get_chart_or_404(db, chart_id)
+    assert_chart_owner(chart, current_user)
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().populate_existing().one()
+    freeze_legacy(chart, db)
+    db.commit()
+    db.refresh(chart)
+    doc, draft_hash, errors = publication_candidate(chart, payload)
+    response = _chart_to_response(chart, current_user, db)
+    response = response.model_copy(update={
+        "title": doc["title"], "description": doc["description"], "data": doc["data"],
+        "config": doc["config"], "source_type": doc["source_type"], "source_url": doc["source_url"],
+        "source_declaration": doc["source_declaration"], "revision_id": None, "legacy_snapshot": False,
+    })
+    return PublicationPreviewResponse(draft_hash=draft_hash, chart=response, errors=errors,
+                                      published_revision_id=chart.publication_revision_id)
+
+
+@app.post("/api/charts/{chart_id}/publish", response_model=ChartResponse)
+async def publish_chart(
+    chart_id: str, payload: PublicationRequest,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
+):
+    chart = db.query(Chart).filter(Chart.id == chart_id).with_for_update().first()
+    if chart is None:
+        raise HTTPException(404, "Chart not found")
+    assert_chart_owner(chart, current_user)
+    freeze_legacy(chart, db)
+    publish_revision(chart, payload, db)
+    db.commit()
+    db.refresh(chart)
+    return _chart_to_response(chart, current_user, db)
+
+
+@app.get("/api/charts/{chart_id}/revisions", response_model=List[ChartResponse])
+async def read_chart_revisions(
+    chart_id: str, current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    chart = get_chart_or_404(db, chart_id)
+    # History can include never-public team/unlisted revisions. Only the owner
+    # may enumerate it until per-revision audiences are modeled explicitly.
+    if current_user is None or chart.user_id != current_user.id:
+        raise HTTPException(403, "Revision history is available to the owner only")
+    base = _chart_to_response(chart, current_user, db)
+    revisions = db.query(ChartRevision).filter_by(chart_id=chart.id).order_by(ChartRevision.created_at.desc()).limit(100).all()
+    return [base.model_copy(update={key: value for key, value in revision.snapshot.items()
+                                   if key in ChartResponse.model_fields}) for revision in revisions]
 
 
 @app.delete("/api/charts/{chart_id}")
@@ -1993,7 +2086,7 @@ async def bot_analyze_and_create_chart(
         config=chart_config,
         source_type="image",
         source_url=payload.source_url,
-        is_public=True,
+        is_public=False,
     )
     db.add(chart)
     db.commit()
@@ -2072,7 +2165,7 @@ async def bot_prompt_and_create_chart(
         config=chart_config,
         source_type="prompt",
         source_url=payload.source_url,
-        is_public=True,
+        is_public=False,
     )
     db.add(chart)
     db.commit()
@@ -2633,15 +2726,15 @@ async def list_team_charts(
         pattern = f"%{search.strip()}%"
         query = query.filter(
             or_(
-                Chart.title.ilike(pattern),
-                Chart.description.ilike(pattern),
+                case((Chart.publication_revision_id.isnot(None), Chart.publication_snapshot["title"].as_string()), else_=Chart.title).ilike(pattern),
+                case((Chart.publication_revision_id.isnot(None), Chart.publication_snapshot["description"].as_string()), else_=Chart.description).ilike(pattern),
             )
         )
 
     sort_columns = {
         "created_at": Chart.created_at,
-        "updated_at": Chart.updated_at,
-        "title": Chart.title,
+        "updated_at": case((Chart.publication_revision_id.isnot(None), Chart.publication_snapshot["published_at"].as_string()), else_=cast(Chart.updated_at, String)),
+        "title": case((Chart.publication_revision_id.isnot(None), Chart.publication_snapshot["title"].as_string()), else_=Chart.title),
         "view_count": Chart.view_count,
     }
     if sort not in sort_columns:
@@ -2694,11 +2787,7 @@ async def list_team_activity(
         actor = publication.publisher or publication.chart.user
         if not actor:
             continue
-        chart_title = (
-            publication.chart.title
-            or (publication.chart.config or {}).get("title")
-            or "Untitled Chart"
-        )
+        chart_title = reader_document(publication.chart).get("title") or "Untitled Chart"
         events.append(
             ActivityItemResponse(
                 id=f"chart-published:{publication.id}",
@@ -2713,14 +2802,14 @@ async def list_team_activity(
         db.query(Chart)
         .join(ChartPublication, ChartPublication.chart_id == Chart.id)
         .filter(ChartPublication.team_id == team_id)
-        .order_by(Chart.updated_at.desc())
+        .order_by(Chart.created_at.desc())
         .limit(fetch_count)
         .all()
     )
     for chart in team_charts:
         if not chart.user:
             continue
-        chart_title = chart.title or (chart.config or {}).get("title") or "Untitled Chart"
+        chart_title = reader_document(chart).get("title") or "Untitled Chart"
         events.append(
             ActivityItemResponse(
                 id=f"chart-created:{chart.id}",
@@ -2730,14 +2819,16 @@ async def list_team_activity(
                 created_at=chart.created_at,
             )
         )
-        if chart.updated_at and chart.updated_at > chart.created_at:
+        published_doc = reader_document(chart)
+        published_update = published_doc.get("published_at") if published_doc.get("parent_revision_id") else None
+        if published_update:
             events.append(
                 ActivityItemResponse(
-                    id=f"chart-updated:{chart.id}",
+                    id=f"chart-updated:{chart.id}:{chart.publication_revision_id}",
                     type="chart_updated",
                     actor=UserResponse.model_validate(chart.user),
                     target=ActivityTarget(type="chart", id=chart.id, name=chart_title),
-                    created_at=chart.updated_at,
+                    created_at=datetime.fromisoformat(published_update),
                 )
             )
 
@@ -4176,13 +4267,14 @@ async def cron_refresh_dashboards(
     charts = db.query(Chart).filter(
         Chart.id.in_(chart_ids),
         Chart.refresh_query.isnot(None),
-    ).limit(100).all()
+    ).limit(100).with_for_update().all()
 
     refreshed = 0
     errors = 0
 
     for chart in charts:
         try:
+            freeze_legacy(chart, db)
             query_params = chart.refresh_query
             source = chart.source_type
 

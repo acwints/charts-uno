@@ -114,6 +114,11 @@ export async function processMention(mention: MentionData): Promise<ProcessMenti
       await markProcessed(mentionActionKey);
       return 'completed';
     }
+    if (result.reviewRequired) {
+      logger.info({ mentionId, chartUrl: result.chartUrl }, 'Chart saved privately pending publication review; no public reply sent');
+      await markProcessed(mentionActionKey);
+      return 'completed';
+    }
     const { chartData, chartUrl, config: designedConfig } = result;
 
     logger.info(

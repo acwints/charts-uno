@@ -24,7 +24,7 @@ test('reading and inspecting data leaves the editor draft intact; editing requir
   mocks.getChart.mockResolvedValue(chart('A'));
   mount();
   await screen.findByText('Read-only visualization');
-  expect(screen.getByRole('link', { name: 'Edit chart' }).getAttribute('href')).toBe('/chart/A/edit');
+  expect(screen.getByRole('link', { name: 'Update post' }).getAttribute('href')).toBe('/post?chart=A');
   fireEvent.click(screen.getByText('Data & sources · 2 rows'));
   expect(screen.getByText('0')).toBeTruthy();
   expect(screen.getByText('—')).toBeTruthy();
@@ -40,7 +40,7 @@ test('late responses cannot replace another chart and another author gets a copy
   await screen.findByRole('heading', { name: 'B' });
   await act(async () => resolveA(chart('A')));
   expect(screen.queryByRole('heading', { name: 'A' })).toBeNull();
-  expect(screen.getByRole('link', { name: 'Customize a copy' }).getAttribute('href')).toBe('/chart/B/edit');
+  expect(screen.queryByRole('link', { name: 'Update post' })).toBeNull();
 });
 
 test('source links accept only explicit web URLs', () => {

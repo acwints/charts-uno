@@ -118,7 +118,12 @@ export async function fetchApiJson<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: `Request failed` }));
-    throw new ApiError(error.detail || `HTTP ${response.status}`, response.status);
+    const detail = error.detail;
+    const message = typeof detail === 'string' ? detail
+      : Array.isArray(detail) ? detail.map((item: { msg?: string }) => item.msg || 'Invalid input').join('. ')
+      : detail?.message ? [detail.message, ...(Array.isArray(detail.errors) ? detail.errors : [])].join(' ')
+      : `Request failed (HTTP ${response.status}). Please try again.`;
+    throw new ApiError(message, response.status);
   }
 
   return response.json();
