@@ -73,10 +73,27 @@
     "actions";
 }
 
-.instant-edit {
+.instant-edit,
+.instant-link-save {
   grid-area: edit;
   width: 100%;
   min-height: 44px;
+}
+
+.instant.instant--linked {
+  grid-template-areas:
+    "paste"
+    "types"
+    "samples"
+    "linksave"
+    "edit"
+    "chart"
+    "tools"
+    "actions";
+}
+
+.instant-link-save {
+  grid-area: linksave;
 }
 
 .instant.instant--example .instant-frame {
@@ -243,6 +260,16 @@
     grid-template-areas:
       "paste types"
       "paste edit"
+      "paste chart"
+      "samples chart"
+      "tools actions";
+  }
+
+  .instant.instant--linked,
+  .instant.instant--example.instant--linked {
+    grid-template-areas:
+      "paste types"
+      "paste linksave"
       "paste chart"
       "samples chart"
       "tools actions";

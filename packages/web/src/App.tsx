@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { MotionConfig } from 'motion/react';
-import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ChartFeedPage } from './pages/ChartFeedPage';
 import { NotFound } from './pages/NotFound';
@@ -35,6 +35,7 @@ import './App.css';
 import { isNativeApp } from './services/native';
 import { getMyCharts } from './services/api';
 import { prepareFirstChartEditor } from './services/firstChart';
+import { saveStarterTemplateOnce, starterBySlug } from './content/starterTemplates';
 import { readPendingChart } from './services/pendingChart';
 
 function AppWithTeam() {
@@ -126,8 +127,11 @@ function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
   const { pendingChartFailed = false } = useOutletContext<{ pendingChartFailed?: boolean }>() ?? {};
   const waitingToSave = isAuthenticated && !pendingChartFailed && readPendingChart() !== null;
+  const [params] = useSearchParams();
+  const linkedTemplate = starterBySlug(params.get('template'));
   const shouldCheckLibrary = isAuthenticated && !isLoading && !waitingToSave && !isNativeApp();
   const [libraryChoice, setLibraryChoice] = useState<'pending' | 'editor' | 'library'>('pending');
+  const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
   const [checkedLibrary, setCheckedLibrary] = useState(false);
   if (checkedLibrary !== shouldCheckLibrary) {
     setCheckedLibrary(shouldCheckLibrary);
@@ -135,7 +139,24 @@ function HomeRoute() {
   }
 
   useEffect(() => {
-    if (!shouldCheckLibrary) return;
+    if (!shouldCheckLibrary || !linkedTemplate) return;
+    let active = true;
+    saveStarterTemplateOnce(linkedTemplate)
+      .then((id) => {
+        if (active) setSavedTemplateId(id);
+      })
+      .catch(() => {
+        if (!active) return;
+        prepareFirstChartEditor();
+        setLibraryChoice('editor');
+      });
+    return () => {
+      active = false;
+    };
+  }, [shouldCheckLibrary, linkedTemplate]);
+
+  useEffect(() => {
+    if (!shouldCheckLibrary || linkedTemplate) return;
     let active = true;
     getMyCharts(1, 0)
       .then((page) => {
@@ -153,7 +174,9 @@ function HomeRoute() {
     return () => {
       active = false;
     };
-  }, [shouldCheckLibrary]);
+  }, [shouldCheckLibrary, linkedTemplate]);
+
+  if (savedTemplateId) return <Navigate to={`/chart/${savedTemplateId}`} replace />;
 
   if (isLoading || waitingToSave || (isAuthenticated && !isNativeApp() && libraryChoice === 'pending')) {
     return (
