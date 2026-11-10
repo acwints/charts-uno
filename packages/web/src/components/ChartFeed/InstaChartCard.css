@@ -214,3 +214,9 @@
     transform: none;
   }
 }
+
+.insta-card__source { margin: 0 0 var(--space-2); font-size: 0.875rem; color: var(--text-secondary); }
+.insta-card__source a { color: var(--accent-text); display: inline-flex; align-items: center; min-height: 44px; overflow-wrap: anywhere; }
+.insta-card__source a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.insta-card__values { margin: 0; padding: var(--space-3) var(--space-4) 0; color: var(--text-primary); font-size: 0.875rem; font-variant-numeric: tabular-nums; }

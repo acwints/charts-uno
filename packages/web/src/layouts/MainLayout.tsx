@@ -166,7 +166,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </main>
 
         {/* ChatPanel as sidebar - only show on chart pages with data */}
-        {isChartPage && chartData && (
+        {isChartPage && chartData && (!isNativeApp() || location.pathname === '/chart' || location.pathname.endsWith('/edit')) && (
           <ChatPanel
             data={chartData}
             config={chartConfig}

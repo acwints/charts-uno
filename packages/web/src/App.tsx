@@ -10,6 +10,7 @@ import { PrivacyPage } from './pages/PrivacyPage';
 // The feed is the first screen; everything that drags in Recharts, CodeMirror,
 // chart capture or the map data loads on demand so the first paint stays small.
 const ChartBuilder = lazy(() => import('./pages/ChartBuilder').then((m) => ({ default: m.ChartBuilder })));
+const ChartDetail = lazy(() => import('./pages/ChartDetail').then(m => ({ default: m.ChartDetail })));
 const ChartView = lazy(() => import('./pages/ChartView').then((m) => ({ default: m.ChartView })));
 const EmbedView = lazy(() => import('./pages/EmbedView').then((m) => ({ default: m.EmbedView })));
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
@@ -58,7 +59,8 @@ function AppWithTeam() {
           <Route path="new" element={<ChartBuilder />} />
           <Route path="chart">
             <Route index element={<ChartView />} />
-            <Route path=":id" element={<ChartView />} />
+            <Route path=":id" element={isNativeApp() ? <ChartDetail /> : <ChartView />} />
+            <Route path=":id/edit" element={<ChartView />} />
           </Route>
           <Route path="invite/:token" element={<InviteAccept />} />
           <Route path="terms" element={<TermsPage />} />

@@ -57,6 +57,7 @@ interface ChartPreviewProps {
   data: ChartData;
   config: ChartConfig;
   watermark?: WatermarkSettings;
+  readOnly?: boolean;
 }
 
 interface ValueLabelProps {
@@ -128,6 +129,7 @@ export function ChartPreview({
   data,
   config,
   watermark,
+  readOnly = false,
 }: ChartPreviewProps) {
   const prefersReducedMotion = useReducedMotion();
   // Get base theme based on scheme and mode
@@ -185,7 +187,7 @@ export function ChartPreview({
 
   useEffect(() => {
     if (
-      config.type === 'infographic'
+      !readOnly && config.type === 'infographic'
       && config.aiReadyToGenerate
       && !infographicSvg
       && !infographicLoading
@@ -193,7 +195,7 @@ export function ChartPreview({
     ) {
       generateInfographicSvg();
     }
-  }, [config.type, config.aiReadyToGenerate, infographicSvg, infographicLoading, infographicError, generateInfographicSvg]);
+  }, [readOnly, config.type, config.aiReadyToGenerate, infographicSvg, infographicLoading, infographicError, generateInfographicSvg]);
 
   // Regenerate when aiMode or customPrompt changes
   useEffect(() => {
@@ -205,11 +207,11 @@ export function ChartPreview({
       customPrompt: config.aiCustomPrompt,
     };
 
-    if (optionsChanged) {
+    if (optionsChanged && !readOnly) {
       setInfographicError(null);
       setInfographicSvg(null);
     }
-  }, [config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
+  }, [readOnly, config.aiMode, config.aiCustomPrompt, setInfographicSvg]);
 
   const regenerateInfographic = () => {
     setInfographicError(null);

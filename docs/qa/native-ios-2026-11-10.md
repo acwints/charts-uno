@@ -31,3 +31,11 @@ Automated checks: harness, workspace lint, web TypeScript, 48 passing web tests.
 ## Limits
 
 No purchases, publishing, destructive account actions, photo permissions, or real-device VoiceOver/Dynamic Type certification were performed. The private four-row Untitled Chart test artifact remains in My Charts. The architecture is still Capacitor with a bundled React UI and native auth/share integration, not a SwiftUI rewrite. Main/web production deployment does not update existing App Store/TestFlight binaries; they require a new native release.
+
+## Reading flow follow-up
+
+Native saved-chart routes now open a focused reader. Editing is an explicit Edit chart / Customize a copy action, and the reader owns its fetched data without replacing the editor's draft. Sources are shown when provided; an import method is not presented as a source citation. The full data table preserves zero versus missing values and initially renders 50 rows, with more on demand. Opening saved infographic records displays their underlying data rather than silently generating new artwork.
+
+Feed line/area/bar previews have labeled axes and series legends. Line/area cards include exact first and last values. Dense pies and unsupported thumbnail chart types show labeled data previews rather than substituting a different chart type. Existing web editor behavior is preserved.
+
+Regression tests cover draft isolation, route-response races, owner/copy action destinations, source URL schemes, large data pagination, and load retry. Device verification covers feed labels, reader entry, exact data disclosure, and explicit Edit navigation.

@@ -14,6 +14,7 @@ export function NativeNavigation() {
     : pathname === '/new' ? 'Create'
     : pathname.startsWith('/dashboard') || pathname.startsWith('/team') ? 'My Charts'
     : pathname.startsWith('/settings') ? 'Account'
+    : pathname.endsWith('/edit') ? 'Edit Chart'
     : pathname === '/changelog' ? 'What’s New'
     : pathname === '/terms' ? 'Terms of Use'
     : pathname === '/privacy' ? 'Privacy Policy' : 'Chart';

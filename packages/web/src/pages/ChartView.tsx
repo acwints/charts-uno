@@ -1,3 +1,4 @@
+import { isNativeApp } from '../services/native';
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { StarterPicker } from '../components/StarterPicker/StarterPicker';
@@ -176,7 +177,7 @@ export function ChartView() {
       setPublishedTeamIds([]);
       toast.success('Chart saved to your profile');
       justSavedIdRef.current = result.id;
-      navigate(`/chart/${result.id}`, { replace: true });
+      navigate(`/chart/${result.id}${isNativeApp() ? '/edit' : ''}`, { replace: true });
       return result.id;
     } catch (err) {
       console.error('Failed to save chart:', err);

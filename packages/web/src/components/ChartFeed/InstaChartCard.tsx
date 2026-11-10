@@ -1,3 +1,4 @@
+import { safeSourceUrl } from '../../utils/chartSources';
 import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
 import { useEffect, useRef, useState } from 'react';
@@ -163,6 +164,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
   };
 
   const authorName = chart.user?.name || 'Anonymous';
+  const source = safeSourceUrl(chart.config.sourceLink) || safeSourceUrl(chart.data.sourceLink) || safeSourceUrl(chart.data.sources?.[0]?.url);
   const caption = chart.title || chart.config.title || 'Untitled Chart';
 
   return (
@@ -195,6 +197,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
           data={chart.data}
           config={chart.config}
           minHeight={280}
+          readable={isNativeApp()}
         />
         <AnimatePresence>
           {showBurst && (
@@ -212,6 +215,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         </AnimatePresence>
       </button>
 
+      {isNativeApp() && ['line', 'area'].includes(chart.config.type) && chart.data.labels.length > 1 && chart.data.series[0] && <p className="insta-card__values">
+        {chart.data.series[0].name}: {chart.data.labels[0]} {chart.data.series[0].data[0]?.toLocaleString() ?? '—'} · {chart.data.labels.at(-1)} {chart.data.series[0].data[chart.data.labels.length - 1]?.toLocaleString() ?? '—'}
+      </p>}
       <div className="insta-card__actions">
         <button
           className={`insta-card__action ${isLiked ? 'insta-card__action--liked' : ''}`}
@@ -245,6 +251,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
       </div>
 
       <div className="insta-card__body">
+        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source} target="_blank" rel="noopener noreferrer">Source: {new URL(source).hostname.replace(/^www\./, '')}</a> : 'Source not provided'}</p>}
         <span className="insta-card__likes">
           {likeCount} {likeCount === 1 ? 'like' : 'likes'}
         </span>

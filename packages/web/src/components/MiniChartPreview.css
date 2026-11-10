@@ -1,0 +1,4 @@
+.reading-preview-units { margin: 0; text-align: left; font-size: 0.875rem; color: inherit; }
+.reading-preview-table { border-collapse: collapse; width: 100%; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.reading-preview-table th, .reading-preview-table td { padding: 12px 8px; text-align: right; border-bottom: 1px solid var(--bg-tertiary); }
+.reading-preview-table th:first-child { text-align: left; }

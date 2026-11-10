@@ -1,3 +1,4 @@
+import './MiniChartPreview.css';
 import { useMemo, type ReactNode } from 'react';
 import {
   Area,
@@ -11,6 +12,7 @@ import {
   PieChart,
   XAxis,
   YAxis,
+  Legend,
 } from 'recharts';
 import type { ChartType, ColorScheme, ThemeMode } from '../types';
 import { COLOR_PALETTES, applyCustomColors, getEffectiveColors, getNumericDomainFromValues, getTheme } from '../types';
@@ -18,6 +20,8 @@ import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface MiniChartPreviewData {
   labels: string[];
+  xAxisLabel?: string;
+  yAxisLabel?: string;
   series: { name: string; data: Array<number | null> }[];
 }
 
@@ -26,6 +30,7 @@ interface MiniChartPreviewConfig {
   colorScheme?: ColorScheme;
   themeMode?: ThemeMode;
   barLayout?: 'horizontal' | 'vertical';
+  stacked?: boolean;
   yAxisBaselineMode?: 'auto' | 'zero' | 'data';
   customColors?: {
     background?: string;
@@ -44,9 +49,10 @@ interface MiniChartPreviewProps {
   minHeight: number;
   className?: string;
   children?: ReactNode;
+  readable?: boolean;
 }
 
-export function MiniChartPreview({ data, config, minHeight, className, children }: MiniChartPreviewProps) {
+export function MiniChartPreview({ data, config, minHeight, className, children, readable = false }: MiniChartPreviewProps) {
   const colorScheme = useMemo(() => {
     const scheme = config.colorScheme;
     return typeof scheme === 'string' && scheme in COLOR_PALETTES
@@ -102,6 +108,10 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
     });
   }, [data.series, config.yAxisBaselineMode]);
 
+  const tick = { fill: theme.text, fontSize: 12 };
+  const numberTick = (value: number) => new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  const margin = readable ? { top: 12, right: 16, bottom: 8, left: 0 } : { top: 5, right: 5, bottom: 5, left: 5 };
+  const legend = readable ? <Legend iconSize={10} wrapperStyle={{ fontSize: 12, color: theme.text }} /> : null;
   const renderMiniChart = () => {
     const chartType = config.type;
     const isHorizontalBar = chartType === 'bar' && config.barLayout === 'horizontal';
@@ -112,10 +122,10 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
           <BarChart
             data={raceFinishData}
             layout="vertical"
-            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+            margin={margin}
           >
             <XAxis type="number" hide domain={['dataMin', 'dataMax']} />
-            <YAxis dataKey="name" type="category" hide width={0} />
+            <YAxis dataKey="name" type="category" hide={!readable} tick={tick} width={readable ? 96 : 0} tickFormatter={(value: string) => value.length > 13 ? `${value.slice(0, 12)}…` : value} />
             <Bar dataKey="value" radius={[0, 2, 2, 0]}>
               {raceFinishData.map((row, idx) => (
                 <Cell key={row.name} fill={colors[idx % colors.length]} />
@@ -128,24 +138,27 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
         return (
           <BarChart
             data={chartData}
-            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+            margin={margin}
             {...(isHorizontalBar ? { layout: 'vertical' as const } : {})}
           >
             {isHorizontalBar ? (
               <>
-                <XAxis type="number" hide domain={numericDomain} />
-                <YAxis dataKey="name" type="category" hide width={0} />
+                <XAxis type="number" hide={!readable} tick={tick} tickFormatter={numberTick} domain={numericDomain} />
+                <YAxis dataKey="name" type="category" hide={!readable} tick={tick} width={readable ? 96 : 0} tickFormatter={(value: string) => value.length > 13 ? `${value.slice(0, 12)}…` : value} />
               </>
             ) : (
               <>
-                <XAxis dataKey="name" type="category" hide />
-                <YAxis type="number" hide domain={numericDomain} />
+                <XAxis dataKey="name" type="category" hide={!readable} tick={tick} minTickGap={24} interval="preserveStartEnd" tickFormatter={(value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value} />
+                <YAxis type="number" hide={!readable} tick={tick} tickCount={4} width={48} tickFormatter={numberTick} domain={numericDomain} />
               </>
             )}
+            {legend}
             {data.series.map((series, idx) => (
               <Bar
                 key={series.name}
                 dataKey={series.name}
+                stackId={config.stacked ? "stack" : undefined}
+                isAnimationActive={!readable}
                 fill={colors[idx % colors.length]}
                 radius={[2, 2, 0, 0]}
               />
@@ -155,15 +168,17 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
 
       case 'line':
         return (
-          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            <XAxis dataKey="name" type="category" hide />
-            <YAxis type="number" hide domain={numericDomain} />
+          <LineChart data={chartData} margin={margin}>
+            <XAxis dataKey="name" type="category" hide={!readable} tick={tick} minTickGap={24} interval="preserveStartEnd" tickFormatter={(value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value} />
+            <YAxis type="number" hide={!readable} tick={tick} tickCount={4} width={48} tickFormatter={numberTick} domain={numericDomain} />
+            {legend}
             {data.series.map((series, idx) => (
               <Line
                 key={series.name}
                 type="monotone"
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
+                isAnimationActive={!readable}
                 strokeWidth={2}
                 dot={false}
               />
@@ -173,9 +188,10 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
 
       case 'area':
         return (
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            <XAxis dataKey="name" type="category" hide />
-            <YAxis type="number" hide domain={numericDomain} />
+          <AreaChart data={chartData} margin={margin}>
+            <XAxis dataKey="name" type="category" hide={!readable} tick={tick} minTickGap={24} interval="preserveStartEnd" tickFormatter={(value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value} />
+            <YAxis type="number" hide={!readable} tick={tick} tickCount={4} width={48} tickFormatter={numberTick} domain={numericDomain} />
+            {legend}
             {data.series.map((series, idx) => (
               <Area
                 key={series.name}
@@ -184,6 +200,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
                 stroke={colors[idx % colors.length]}
                 fill={colors[idx % colors.length]}
                 fillOpacity={0.3}
+                isAnimationActive={!readable}
                 strokeWidth={2}
               />
             ))}
@@ -201,6 +218,8 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
               outerRadius={50}
               paddingAngle={2}
               dataKey="value"
+              isAnimationActive={!readable}
+              label={readable ? ({ name, value }) => `${name}: ${value}` : false}
             >
               {pieData.map((_, idx) => (
                 <Cell key={`cell-${idx}`} fill={colors[idx % colors.length]} />
@@ -211,13 +230,16 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
 
       default:
         return (
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            <XAxis dataKey="name" type="category" hide />
-            <YAxis type="number" hide domain={numericDomain} />
+          <BarChart data={chartData} margin={margin}>
+            <XAxis dataKey="name" type="category" hide={!readable} tick={tick} minTickGap={24} interval="preserveStartEnd" tickFormatter={(value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value} />
+            <YAxis type="number" hide={!readable} tick={tick} tickCount={4} width={48} tickFormatter={numberTick} domain={numericDomain} />
+            {legend}
             {data.series.map((series, idx) => (
               <Bar
                 key={series.name}
                 dataKey={series.name}
+                stackId={config.stacked ? "stack" : undefined}
+                isAnimationActive={!readable}
                 fill={colors[idx % colors.length]}
                 radius={[2, 2, 0, 0]}
               />
@@ -227,8 +249,17 @@ export function MiniChartPreview({ data, config, minHeight, className, children 
     }
   };
 
+  if (readable && (config.stacked || (config.type === 'pie' && data.labels.length > 5) || !['bar', 'line', 'area', 'pie'].includes(config.type ?? ''))) {
+    return <div className={className} style={{ background: theme.background, color: theme.text }}>
+      <table className="reading-preview-table"><thead><tr><th>{data.xAxisLabel || 'Category'}</th>{data.series.slice(0, 2).map((series, i) => <th key={i}>{series.name}</th>)}</tr></thead>
+        <tbody>{data.labels.slice(0, 4).map((label, i) => <tr key={i}><th>{label}</th>{data.series.slice(0, 2).map((series, j) => <td key={j}>{series.data[i]?.toLocaleString() ?? '—'}</td>)}</tr>)}</tbody></table>
+      <p>Data preview · Open chart for full details</p>{children}
+    </div>;
+  }
+
   return (
-    <div className={className} style={{ background: theme.background }}>
+    <div className={className} style={{ background: theme.background, color: theme.text }}>
+      {readable && data.yAxisLabel && <p className="reading-preview-units">{data.yAxisLabel}</p>}
       <SafeResponsiveContainer minWidth={0} minHeight={minHeight}>
         {renderMiniChart()}
       </SafeResponsiveContainer>
