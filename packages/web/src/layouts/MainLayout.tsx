@@ -20,6 +20,7 @@ import { homepageDownloadCounted, reportHomepageSave } from '../services/homepag
 import { flushPendingChart, readPendingChart } from '../services/pendingChart';
 import { FirstChartNudge } from '../components/FirstChartNudge';
 import { rememberReferral } from '../services/referrals';
+import { starterBySlug } from '../content/starterTemplates';
 import { rememberSignupSource } from '../services/signupSource';
 
 interface MainLayoutProps {
@@ -121,7 +122,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     ? !['/terms', '/privacy'].includes(location.pathname)
     : /^\/(?:$|feed(?:\/|$)|new(?:\/|$)|chart(?:\/|$)|dashboard(?:s)?(?:\/|$)|team(?:\/|$)|settings(?:\/|$)|invite(?:\/|$))/.test(location.pathname);
 
-  if (requiresAccount && !isAuthenticated) {
+  const guestTemplate = Boolean(starterBySlug(new URLSearchParams(location.search).get('template')));
+  if (requiresAccount && !isAuthenticated && !guestTemplate) {
     if (isAuthLoading) return <div role="status">Loading your account…</div>;
     return (
       <>

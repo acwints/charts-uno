@@ -20,6 +20,7 @@ import {
   type InstantChartResult,
 } from '../utils/instantTable';
 import type { ChartType } from '../types';
+import { starterBySlug, starterTable } from '../content/starterTemplates';
 import { Button } from './Button';
 import './InstantChart.css';
 
@@ -65,15 +66,24 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const [params] = useSearchParams();
   const typeParam = params.get('type');
   const stackedParam = params.get('stacked');
+  const linkedTemplate = starterBySlug(params.get('template'));
   const pending = useMemo(() => readPendingChart(), []);
   const hasPending = Boolean(pending?.text);
-  const [text, setText] = useState(hasPending ? pending?.text ?? '' : SAMPLE_TABLE);
+  const [text, setText] = useState(() => {
+    if (hasPending) return pending?.text ?? '';
+    if (linkedTemplate) return starterTable(linkedTemplate);
+    return SAMPLE_TABLE;
+  });
   const [sourceType, setSourceType] = useState<'paste' | 'csv'>(pending?.payload.source_type === 'csv' ? 'csv' : 'paste');
   const [titleOverride, setTitleOverride] = useState<string | undefined>(
-    hasPending ? pending?.payload.title : SAMPLE_CHART_TITLE,
+    hasPending ? pending?.payload.title : linkedTemplate?.chartTitle ?? SAMPLE_CHART_TITLE,
   );
-  const [chartType, setChartType] = useState<ChartType | undefined>(() => savedChartType(pending?.payload.config?.type));
-  const [typeTouched, setTypeTouched] = useState(false);
+  const [chartType, setChartType] = useState<ChartType | undefined>(() => {
+    if (pending?.payload.config?.type) return savedChartType(pending.payload.config.type);
+    if (linkedTemplate) return linkedTemplate.type;
+    return 'bar';
+  });
+  const [typeTouched, setTypeTouched] = useState(Boolean(linkedTemplate) && !hasPending);
   const [fileError, setFileError] = useState<string | null>(null);
   const [eventSource, setEventSource] = useState<HomepageChartSource>('sample');
   const [dragActive, setDragActive] = useState(false);
@@ -219,6 +229,14 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     selectArmed.current = false;
   };
 
+  const saveLinkedTemplate = () => {
+    if (!chart || !linkedTemplate) return;
+    const payload = payloadFor(chart, theme);
+    payload.source_type = `template:${linkedTemplate.id}`;
+    rememberPendingChart(text, payload);
+    onRequestAuth?.();
+  };
+
   const editExample = () => {
     if (!onBuiltinSample) return;
     reportHomepageStart('sample');
@@ -231,7 +249,7 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
 
   return (
     <section
-      className={`instant${onBuiltinSample ? ' instant--example' : ''}${dragActive ? ' instant--drag' : ''}`}
+      className={`instant${onBuiltinSample ? ' instant--example' : ''}${linkedTemplate ? ' instant--linked' : ''}${dragActive ? ' instant--drag' : ''}`}
       aria-label="Make a chart from your data"
       onDragEnter={(event) => {
         event.preventDefault();
@@ -292,6 +310,11 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
           </button>
         ))}
       </div>
+      {linkedTemplate && !hasPending && (
+        <Button variant="primary" size="lg" fullWidth className="instant-link-save" onClick={saveLinkedTemplate}>
+          Save chart
+        </Button>
+      )}
       {onBuiltinSample && (
         <Button variant="primary" size="lg" fullWidth className="instant-edit" onClick={editExample}>
           Edit this example

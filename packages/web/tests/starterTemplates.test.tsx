@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { EmptyState } from '../src/components/Dashboard/EmptyState';
+import { starterBySlug, starterTable } from '../src/content/starterTemplates';
 import { useChartStore } from '../src/stores/chartStore';
 
 const mocks = vi.hoisted(() => ({ createChart: vi.fn() }));
@@ -49,7 +50,7 @@ test('one click on a template saves it and opens that chart', async () => {
   });
   expect(mocks.createChart).toHaveBeenCalledTimes(1);
   const payload = mocks.createChart.mock.calls[0][0];
-  expect(payload.source_type).toBe('template:sales');
+  expect(payload.source_type).toBe('template:monthly-sales');
   expect(payload.is_public).toBe(false);
   expect(payload.title).toBe('Monthly sales');
   expect(useChartStore.getState().documentId).toBe('saved-template');
@@ -59,14 +60,24 @@ test('one click on a template saves it and opens that chart', async () => {
 test('website traffic and the ranking save as their own templates', async () => {
   renderEmpty('all');
   fireEvent.click(screen.getByRole('button', { name: /Website traffic/ }));
-  await waitFor(() => expect(mocks.createChart.mock.calls[0][0].source_type).toBe('template:traffic'));
+  await waitFor(() => expect(mocks.createChart.mock.calls[0][0].source_type).toBe('template:website-traffic'));
   expect(mocks.createChart.mock.calls[0][0].config.type).toBe('line');
   cleanup();
   mocks.createChart.mockClear();
   renderEmpty('all');
   fireEvent.click(screen.getByRole('button', { name: /Top 10 products/ }));
-  await waitFor(() => expect(mocks.createChart.mock.calls[0][0].source_type).toBe('template:ranking'));
+  await waitFor(() => expect(mocks.createChart.mock.calls[0][0].source_type).toBe('template:top-10-products'));
   expect(mocks.createChart.mock.calls[0][0].config.barLayout).toBe('horizontal');
+});
+
+test('template slugs are the public deep links', () => {
+  expect(starterBySlug('monthly-sales')?.chartTitle).toBe('Monthly sales');
+  expect(starterBySlug('budget-vs-actual')?.type).toBe('bar');
+  expect(starterBySlug('survey-results')?.type).toBe('pie');
+  expect(starterBySlug('website-traffic')?.type).toBe('line');
+  expect(starterBySlug('top-10-products')?.barLayout).toBe('horizontal');
+  expect(starterBySlug('nope')).toBeUndefined();
+  expect(starterTable(starterBySlug('survey-results')!)).toContain('Promoters,148');
 });
 
 test('paste from a spreadsheet opens the editor data view without saving', () => {
