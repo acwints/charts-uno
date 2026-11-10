@@ -107,6 +107,8 @@ def upsert_apple_user(db: Session, claims: dict, full_name: str | None, referral
 
     user = User(apple_id=apple_id, email=email, name=name, google_id=None)
     user.referral_code = allocate_referral_code(db)
+    from services.signup_attribution import apply_first_signup_source
+    apply_first_signup_source(user, "ios")
     db.add(user)
     attach_referral(db, user, referral)
     db.commit()

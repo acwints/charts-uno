@@ -142,3 +142,74 @@ class WebAuthTests(unittest.TestCase):
         created = db.query(User).filter(User.email == 'web@example.test').one()
         self.assertIsNone(created.referred_by)
         self.assertRegex(created.referral_code, r'^[A-Za-z0-9_-]{8}$')
+
+    def test_first_web_signup_stores_sanitized_attribution_and_a_later_login_does_not(self):
+        from models.database import SessionLocal, User
+
+        started = self.client.get('/auth/google', params={
+            'web_challenge': pkce_challenge(self.verifier),
+            'web_nonce': self.nonce,
+            'target': 'http://localhost:5173/',
+            'referrer_host': 'https://news.google.com/search?q=charts',
+            'landing_path': '/csv-to-chart?utm_source=newsletter',
+            'utm_source': 'newsletter',
+            'utm_medium': 'cpc',
+            'utm_campaign': 'person@gmail.com',
+            'utm_content': 'spring launch',
+            'utm_term': 'charts',
+        })
+        self.assertEqual(started.status_code, 200, started.text)
+        state = parse_qs(urlsplit(started.json()['auth_url']).query)['state'][0]
+        self.assertNotIn('person@gmail.com', state)
+        self.assertNotIn('utm_source=newsletter', state)
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            callback = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(callback.status_code, 302, callback.text)
+        db = SessionLocal()
+        self.addCleanup(db.close)
+        created = db.query(User).filter(User.google_id == 'web-test').one()
+        self.assertEqual(created.signup_platform, 'web')
+        self.assertEqual(created.signup_referrer_host, 'news.google.com')
+        self.assertEqual(created.signup_landing_path, '/csv-to-chart')
+        self.assertEqual(created.signup_utm_source, 'newsletter')
+        self.assertEqual(created.signup_utm_medium, 'cpc')
+        self.assertIsNone(created.signup_utm_campaign)
+        self.assertEqual(created.signup_utm_content, 'spring launch')
+        self.assertEqual(created.signup_utm_term, 'charts')
+
+        again = self.client.get('/auth/google', params={
+            'web_challenge': pkce_challenge('c' * 43),
+            'web_nonce': 'd' * 43,
+            'target': 'http://localhost:5173/',
+            'referrer_host': 'https://evil.example/phish',
+            'landing_path': '/account',
+            'utm_source': 'overwrite',
+        })
+        state = parse_qs(urlsplit(again.json()['auth_url']).query)['state'][0]
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            second = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(second.status_code, 302, second.text)
+        db.expire_all()
+        same = db.query(User).filter(User.google_id == 'web-test').one()
+        self.assertEqual(same.signup_platform, 'web')
+        self.assertEqual(same.signup_referrer_host, 'news.google.com')
+        self.assertEqual(same.signup_landing_path, '/csv-to-chart')
+        self.assertEqual(same.signup_utm_source, 'newsletter')
+        self.assertIsNone(same.signup_utm_campaign)
+
+    def test_existing_user_keeps_blank_attribution_on_later_web_login(self):
+        from models.database import SessionLocal, User
+
+        db = SessionLocal()
+        self.addCleanup(db.close)
+        db.add(User(email='web@example.test', google_id='web-test', name='Already', signup_platform='ios',
+                    signup_referrer_host='kept.example'))
+        db.commit()
+        state = self.start()
+        with patch.object(main.httpx, 'AsyncClient', return_value=FakeGoogle()):
+            callback = self.client.get('/auth/callback', params={'code': 'test', 'state': state}, follow_redirects=False)
+        self.assertEqual(callback.status_code, 302, callback.text)
+        db.expire_all()
+        user = db.query(User).filter(User.google_id == 'web-test').one()
+        self.assertEqual(user.signup_platform, 'ios')
+        self.assertEqual(user.signup_referrer_host, 'kept.example')

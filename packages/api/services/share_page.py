@@ -224,6 +224,13 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         User.apple_id,
         User.created_at,
         User.referred_by,
+        User.signup_platform,
+        User.signup_referrer_host,
+        User.signup_utm_source,
+        User.signup_utm_medium,
+        User.signup_utm_campaign,
+        User.signup_utm_content,
+        User.signup_utm_term,
     ).all()
     first_chart = _first_chart_at(db)
     charters = set(first_chart)
@@ -250,6 +257,17 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
             "referred": bool(row.referred_by),
             "seed": looks_seeded(email),
             "chart": row.id in charters,
+            "google": bool(row.google_id),
+            "apple": bool(row.apple_id),
+            "platform": row.signup_platform if row.signup_platform in {"ios", "web"} else None,
+            "referrer_host": row.signup_referrer_host or None,
+            "has_utm": any((
+                row.signup_utm_source,
+                row.signup_utm_medium,
+                row.signup_utm_campaign,
+                row.signup_utm_content,
+                row.signup_utm_term,
+            )),
         })
 
     by_second: dict[datetime, list] = {}
@@ -281,7 +299,8 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
     people = []
     referred = 0
     for group in by_key.values():
-        earliest = min(item["created_at"] for item in group)
+        earliest_item = min(group, key=lambda item: item["created_at"])
+        earliest = earliest_item["created_at"]
         if any(item["referred"] for item in group):
             referred += 1
         opened = [
@@ -290,10 +309,22 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
             if item["id"] in first_chart
         ]
         first_saved = min(opened) if opened else None
+        has_google = any(item["google"] for item in group)
+        has_apple = any(item["apple"] for item in group)
+        if has_google and has_apple:
+            provider = "both"
+        elif has_apple:
+            provider = "apple"
+        else:
+            provider = "google"
         people.append({
             "created_at": earliest,
             "chart": first_saved is not None,
             "first_chart_at": first_saved,
+            "provider": provider,
+            "platform": earliest_item["platform"],
+            "referrer_host": earliest_item["referrer_host"],
+            "has_utm": earliest_item["has_utm"],
         })
 
     def had_chart_before(cutoff: datetime) -> int:
@@ -309,6 +340,21 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
             and cutoff <= person["first_chart_at"] <= moment
         )
 
+    recent = [person for person in people if person["created_at"] >= week_ago]
+    by_day = []
+    day = week_ago.date()
+    last_day = moment.date()
+    while day <= last_day:
+        bucket = {"date": day.isoformat(), "google": 0, "apple": 0, "both": 0, "total": 0}
+        for person in recent:
+            if person["created_at"].date() == day:
+                bucket[person["provider"]] += 1
+                bucket["total"] += 1
+        by_day.append(bucket)
+        day += timedelta(days=1)
+    platforms = {"ios": 0, "web": 0, "unknown": 0}
+    for person in people:
+        platforms[person["platform"] or "unknown"] += 1
     public = {
         "count": len(people),
         "definition": COUNT_DEFINITION,
@@ -317,9 +363,20 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         "users_with_a_chart_24h": first_chart_in_window(day_ago),
         "users_with_a_chart_7_days_ago": had_chart_before(week_ago),
         "users_with_a_chart_yesterday": had_chart_before(day_ago),
-        "signups_last_7d": sum(1 for person in people if person["created_at"] >= week_ago),
+        "signups_last_7d": len(recent),
         "count_7_days_ago": sum(1 for person in people if person["created_at"] < week_ago),
         "count_yesterday": sum(1 for person in people if person["created_at"] < day_ago),
+        "signup_providers": {
+            "google": sum(1 for person in people if person["provider"] == "google"),
+            "apple": sum(1 for person in people if person["provider"] == "apple"),
+            "both": sum(1 for person in people if person["provider"] == "both"),
+        },
+        "signups_last_7d_by_day": by_day,
+        "signup_attribution": {
+            "platforms": platforms,
+            "with_referrer_host": sum(1 for person in people if person["referrer_host"]),
+            "with_utm": sum(1 for person in people if person["has_utm"]),
+        },
         **homepage_chart_counts(db, moment),
     }
     return {

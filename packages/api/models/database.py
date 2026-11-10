@@ -85,6 +85,16 @@ class User(Base):
     # Public invite code. referred_by stores the code this account signed up with.
     referral_code = Column(String(16), unique=True, nullable=True, index=True, default=generate_referral_code)
     referred_by = Column(String(16), nullable=True, index=True)
+    # First sign-in only. Null on accounts created before capture existed.
+    # ios = native Apple or the native Google handoff. web = browser Google OAuth.
+    signup_platform = Column(String(8), nullable=True)
+    signup_referrer_host = Column(String(253), nullable=True)
+    signup_landing_path = Column(String(200), nullable=True)
+    signup_utm_source = Column(String(64), nullable=True)
+    signup_utm_medium = Column(String(64), nullable=True)
+    signup_utm_campaign = Column(String(64), nullable=True)
+    signup_utm_content = Column(String(64), nullable=True)
+    signup_utm_term = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -523,6 +533,7 @@ def init_db():
     ensure_chart_share_schema()
     ensure_referral_schema()
     ensure_homepage_event_schema()
+    ensure_signup_attribution_schema()
 
 
 def ensure_user_auth_schema() -> None:
@@ -613,6 +624,40 @@ def ensure_referral_schema() -> None:
         backfill_referral_codes()
     except Exception as exc:
         logger.error("Could not ensure referral columns: %s", exc)
+        raise
+
+
+def ensure_signup_attribution_schema() -> None:
+    """Add first-signup source columns on databases created before they existed.
+
+    create_all does not alter an existing users table. Columns stay null for
+    every account that already exists. Nothing here is backfilled.
+    """
+    import logging
+    from sqlalchemy import inspect, text
+
+    logger = logging.getLogger(__name__)
+    columns_sql = {
+        "signup_platform": "VARCHAR(8)",
+        "signup_referrer_host": "VARCHAR(253)",
+        "signup_landing_path": "VARCHAR(200)",
+        "signup_utm_source": "VARCHAR(64)",
+        "signup_utm_medium": "VARCHAR(64)",
+        "signup_utm_campaign": "VARCHAR(64)",
+        "signup_utm_content": "VARCHAR(64)",
+        "signup_utm_term": "VARCHAR(64)",
+    }
+    try:
+        inspector = inspect(engine)
+        if "users" not in inspector.get_table_names():
+            return
+        present = {column["name"] for column in inspector.get_columns("users")}
+        with engine.begin() as conn:
+            for name, sql_type in columns_sql.items():
+                if name not in present:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {sql_type}"))
+    except Exception as exc:
+        logger.error("Could not ensure signup attribution columns: %s", exc)
         raise
 
 

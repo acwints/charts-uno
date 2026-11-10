@@ -1,6 +1,7 @@
 import { fetchApiJson } from './apiBase';
 import type { ChartData } from '../types';
 import { pendingReferral } from './referrals';
+import { pendingSignupSource } from './signupSource';
 
 export type StoredChartData = Omit<ChartData, 'sourceType'>;
 
@@ -18,6 +19,9 @@ export async function getAuthUrl(target: string, challenge: string, nonce: strin
   const params = new URLSearchParams({ target, web_challenge: challenge, web_nonce: nonce });
   const ref = pendingReferral();
   if (ref) params.set('ref', ref);
+  for (const [key, value] of Object.entries(pendingSignupSource())) {
+    if (value) params.set(key, value);
+  }
   return apiRequest(`/auth/google?${params}`);
 }
 

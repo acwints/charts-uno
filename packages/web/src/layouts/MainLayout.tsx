@@ -20,6 +20,7 @@ import { homepageDownloadCounted, reportHomepageSave } from '../services/homepag
 import { flushPendingChart, readPendingChart } from '../services/pendingChart';
 import { FirstChartNudge } from '../components/FirstChartNudge';
 import { rememberReferral } from '../services/referrals';
+import { rememberSignupSource } from '../services/signupSource';
 
 interface MainLayoutProps {
   children?: ReactNode;
@@ -102,6 +103,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   };
 
   useEffect(() => {
+    rememberSignupSource(location.search, document.referrer, location.pathname);
     const params = new URLSearchParams(location.search);
     const ref = params.get('ref');
     const wantsAuth = params.get('auth') === '1';

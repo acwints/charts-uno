@@ -83,6 +83,9 @@ class AppStoreAccountTests(unittest.TestCase):
         with SessionLocal() as db:
             user = db.query(User).filter(User.apple_id == "apple-sub-1").one()
             self.assertIsNone(user.google_id)
+            self.assertEqual(user.signup_platform, "ios")
+            self.assertIsNone(user.signup_referrer_host)
+            self.assertIsNone(user.signup_utm_source)
             self.assertIsNotNone(db.query(Team).filter(Team.owner_id == user.id, Team.is_personal.is_(True)).first())
 
     def test_apple_signup_stores_referral_once(self):
@@ -128,6 +131,9 @@ class AppStoreAccountTests(unittest.TestCase):
         me = self.client.get("/api/user/me", headers={"Authorization": f"Bearer {response.json()['token']}"})
         self.assertEqual(me.json()["id"], user_id)
         self.assertEqual(me.json()["providers"], ["google", "apple"])
+        with SessionLocal() as db:
+            linked = db.query(User).filter(User.id == user_id).one()
+            self.assertIsNone(linked.signup_platform)
 
     def test_apple_returning_user_does_not_need_an_email(self):
         self.assertEqual(self._apple(
