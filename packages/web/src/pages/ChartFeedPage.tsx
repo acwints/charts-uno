@@ -9,9 +9,9 @@ interface OutletContextType {
   openAuthModal: () => void;
 }
 
-export function ChartFeedPage() {
+export function ChartFeedPage({ initialTab = 'explore' }: { initialTab?: 'explore' | 'saved' }) {
   const navigate = useNavigate();
-  const { openAuthModal } = useOutletContext<OutletContextType>();
+  const outlet = useOutletContext<OutletContextType | undefined>();
 
   // Open the canonical chart URL: ChartView fetches the chart there, which
   // also counts the view server-side.
@@ -29,16 +29,18 @@ export function ChartFeedPage() {
   return (
     <motion.div
       key="feed"
-      initial={{ opacity: 0 }}
+      initial={isNativeApp() ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
       className="feed-view"
     >
       <ChartFeed
+        key={initialTab}
+        initialTab={initialTab}
         onChartSelect={handleChartSelect}
         onBack={isNativeApp() ? undefined : handleBack}
-        onAuthRequired={openAuthModal}
+        onAuthRequired={outlet?.openAuthModal}
       />
     </motion.div>
   );

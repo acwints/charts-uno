@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isNativeApp } from '../../services/native';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import Check from 'lucide-react/dist/esm/icons/check';
@@ -46,7 +47,7 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
+    if (diffDays <= 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
     const weeks = Math.floor(diffDays / 7);
@@ -57,12 +58,12 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
   return (
     <motion.article
       className={`dashboard-chart-card ${isSelected ? 'dashboard-chart-card--selected' : ''}`}
-      initial={{ opacity: 0, y: 20 }}
+      initial={isNativeApp() ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
+      whileHover={isNativeApp() ? undefined : { y: -4 }}
       transition={{ duration: 0.2 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={isNativeApp() ? undefined : () => setIsHovered(true)}
+      onMouseLeave={isNativeApp() ? undefined : () => setIsHovered(false)}
       onClick={handleCardClick}
     >
       <MiniChartPreview

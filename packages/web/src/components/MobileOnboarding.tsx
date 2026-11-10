@@ -19,7 +19,7 @@ const SLIDES = [
     icon: Heart,
     bars: [62, 44, 78, 56, 90, 70],
     title: 'A feed of live charts',
-    body: 'See what the community is publishing. Double-tap to like, save the keepers, share the best.',
+    body: 'See what the community is publishing. Like your favorites, save the keepers, share the best.',
   },
   {
     icon: Sparkles,

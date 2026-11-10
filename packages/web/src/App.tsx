@@ -85,6 +85,7 @@ function AppWithTeam() {
               <Route index element={<UserDashboardPage tab="all" />} />
               <Route path="published" element={<UserDashboardPage tab="published" />} />
               <Route path="liked" element={<UserDashboardPage tab="liked" />} />
+              <Route path="saved" element={<ChartFeedPage initialTab="saved" />} />
             </Route>
 
             <Route path="dashboards">

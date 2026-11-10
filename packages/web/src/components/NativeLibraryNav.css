@@ -1,18 +1,4 @@
-.native-library {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
-  color: var(--text-secondary);
-}
-
-.native-library select {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: var(--border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
+.native-library { display: flex; gap: var(--space-2); padding: var(--space-2) var(--space-4); overflow-x: auto; flex-shrink: 0; }
+.native-library a { flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; padding: var(--space-2) var(--space-3); color: var(--text-secondary); border-radius: var(--radius-md); text-decoration: none; }
+.native-library a[aria-current] { background: var(--bg-secondary); color: var(--text-primary); font-weight: 600; }
+.native-library a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

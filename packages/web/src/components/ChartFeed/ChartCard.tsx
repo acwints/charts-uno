@@ -56,7 +56,7 @@ export function ChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDis
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
+    if (diffDays <= 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
     const weeks = Math.floor(diffDays / 7);

@@ -163,9 +163,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             <div className="auth-modal__header">
               <div>
-                <p className="auth-modal__eyebrow">Welcome to Chartsuno</p>
+                {!native && <p className="auth-modal__eyebrow">Welcome to Chartsuno</p>}
                 <h2 id="auth-modal-title" className="auth-modal__title">
-                  Sign in or create an account
+                  {native ? 'Welcome to Chartsuno' : 'Sign in or create an account'}
                 </h2>
               </div>
               <button className="auth-modal__close" onClick={onClose} aria-label="Close">
@@ -175,7 +175,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             <div className="auth-modal__body">
               <p className="auth-modal__copy">
-                Sign in to save your charts, like discoveries, and pick up where you left off.
+                {native ? 'Sign in or create an account to discover, make, and save charts.' : 'Sign in to save your charts, like discoveries, and pick up where you left off.'}
               </p>
               {error && <p className="auth-modal__error" role="alert">{error}</p>}
               {native && (
@@ -196,7 +196,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </Button>
               <p className="auth-modal__footnote">
                 {native
-                  ? 'Your chart stays on this screen. Apple and Google sign-in open in a secure system sheet and return here.'
+                  ? 'New here? Your account is created when you continue.'
                   : 'Sign in securely with your Google account.'}
               </p>
               {native && (

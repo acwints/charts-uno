@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NativeAppStatus } from '../components/NativeAppStatus';
 import { NativeLibraryNav } from '../components/NativeLibraryNav';
 import { isNativeApp } from '../services/native';
+import { NativeNavigation, NativeAccountLinks } from '../components/NativeNavigation';
 import { Header } from '../components/Header';
 import { MobileTabBar } from '../components/MobileTabBar';
 import { MobileOnboarding } from '../components/MobileOnboarding';
@@ -132,8 +133,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="app app--has-tabbar">
-      <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />
-      {isAuthenticated && !isAuthLoading && <FirstChartNudge />}
+      {isNativeApp() ? <NativeNavigation /> : <Header onAuthOpen={openAuthModal} showMenuButton={showSidebar} />}
+      {isAuthenticated && !isAuthLoading && !isNativeApp() && <FirstChartNudge />}
       <NativeAppStatus />
       {isAuthenticated && <NativeLibraryNav />}
 
@@ -142,7 +143,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
         <main className="main" ref={mainRef}>
           {!shouldAnimateRoute ? (
-            <div className="app-route-shell">{routeContent}</div>
+            <div className="app-route-shell">{routeContent}{isNativeApp() && location.pathname === '/settings/account' && <NativeAccountLinks />}</div>
           ) : (
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

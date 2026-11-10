@@ -2,6 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { TeamProvider, useTeam } from '../src/contexts/TeamContext';
+import { MemoryRouter } from 'react-router-dom';
+import { ChartFeedPage } from '../src/pages/ChartFeedPage';
 import { ChartFeed } from '../src/components/ChartFeed/ChartFeed';
 
 const mocks = vi.hoisted(() => ({ getTeams: vi.fn(), getUsage: vi.fn(), getPublicCharts: vi.fn(), getSavedCharts: vi.fn(), getLikedCharts: vi.fn(), auth: { user: { id: 'one' } as { id: string } | null } }));
@@ -59,4 +61,19 @@ test('sign-out hides private feed results and ignores their pending requests', a
   await act(async () => saved.resolve([{ chart: { id: 'private', title: 'Old account secret' } }]));
   await screen.findByText('Public chart');
   expect(screen.queryByText('Old account secret')).toBeNull();
+});
+
+test('opening Saved directly never renders the cached public feed', async () => {
+  localStorage.setItem('chartsuno_feed_explore_v1', JSON.stringify([{ id: 'cached', title: 'Cached public chart' }]));
+  mocks.getSavedCharts.mockResolvedValue([{ chart: { id: 'saved', title: 'My saved chart' } }]);
+  render(<ChartFeed initialTab="saved" />);
+  expect(screen.queryByText('Cached public chart')).toBeNull();
+  await screen.findByText('My saved chart');
+  expect(mocks.getPublicCharts).not.toHaveBeenCalled();
+});
+
+test('Saved renders under a protected route without inherited outlet context', async () => {
+  mocks.getSavedCharts.mockResolvedValue([{ chart: { id: 'saved', title: 'Saved from library' } }]);
+  render(<MemoryRouter><ChartFeedPage initialTab="saved" /></MemoryRouter>);
+  await screen.findByText('Saved from library');
 });

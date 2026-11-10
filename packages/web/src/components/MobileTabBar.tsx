@@ -1,6 +1,6 @@
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import { selectionHaptic } from '../services/native';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import PlusSquare from 'lucide-react/dist/esm/icons/plus-square';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
@@ -16,6 +16,7 @@ interface MobileTabBarProps {
 // the Capacitor shell.
 export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
   const { isAuthenticated } = useAuth();
+  const { pathname } = useLocation();
 
   return (
     <nav className="mtabbar" aria-label="Primary" onClick={selectionHaptic}>
@@ -40,7 +41,7 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
       {isAuthenticated ? (
         <NavLink
           to="/dashboard"
-          className={({ isActive }) => `mtabbar__tab ${isActive ? 'mtabbar__tab--active' : ''}`}
+          className={() => `mtabbar__tab ${/^\/(dashboard|dashboards|team)(\/|$)/.test(pathname) ? 'mtabbar__tab--active' : ''}`}
           aria-label="My charts"
         >
           <LayoutDashboard size={24} />
@@ -52,7 +53,7 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
           <span className="mtabbar__label">Sign In</span>
         </button>
       )}
-      {isAuthenticated && <NavLink to="/settings/account" className={({ isActive }) => `mtabbar__tab ${isActive ? 'mtabbar__tab--active' : ''}`} aria-label="Account">
+      {isAuthenticated && <NavLink to="/settings/account" className={() => `mtabbar__tab ${pathname.startsWith('/settings') ? 'mtabbar__tab--active' : ''}`} aria-label="Account">
         <UserRound size={24} /><span className="mtabbar__label">Account</span>
       </NavLink>}
     </nav>

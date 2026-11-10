@@ -1,3 +1,4 @@
+import { isNativeApp } from '../../services/native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
@@ -40,16 +41,17 @@ function writeFeedCache(charts: ChartResponse[]): void {
 }
 
 interface ChartFeedProps {
+  initialTab?: FeedTab;
   onChartSelect?: (chart: ChartResponse) => void;
   onBack?: () => void;
   onAuthRequired?: () => void;
 }
 
-export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedProps) {
+export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 'explore' }: ChartFeedProps) {
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 640px)');
-  const [activeTab, setActiveTab] = useState<FeedTab>('explore');
-  const [charts, setCharts] = useState<ChartResponse[]>(readFeedCache);
+  const [activeTab, setActiveTab] = useState<FeedTab>(initialTab);
+  const [charts, setCharts] = useState<ChartResponse[]>(() => initialTab === 'explore' ? readFeedCache() : []);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -188,7 +190,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
               <span>Back</span>
             </button>
           )}
-          <h1 className="chart-feed__title">Chart Feed</h1>
+          <h1 className="chart-feed__title">{initialTab === 'saved' ? 'Saved' : isNativeApp() ? 'Feed' : 'Chart Feed'}</h1>
           <button
             className="chart-feed__refresh-btn"
             onClick={handleRefresh}
@@ -199,7 +201,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
           </button>
         </div>
 
-        <nav className="chart-feed__tabs">
+        {!isNativeApp() && <nav className="chart-feed__tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -212,7 +214,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
               <span>{tab.label}</span>
             </button>
           ))}
-        </nav>
+        </nav>}
       </header>
 
       <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
@@ -279,7 +281,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired }: ChartFeedPr
               {visibleCharts.map((chart, index) => (
                 <motion.div
                   key={chart.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={isNativeApp() ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(index, 8) * 0.05, duration: 0.3 }}
                 >

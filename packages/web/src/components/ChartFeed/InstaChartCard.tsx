@@ -31,7 +31,7 @@ function formatRelativeDate(dateString: string): string {
   const diffMs = Date.now() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Today';
+  if (diffDays <= 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) {
@@ -145,6 +145,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
   // Single tap opens the chart, double tap likes it. The first tap arms a
   // short timer; a second tap inside the window cancels navigation.
   const handleMediaTap = () => {
+    if (isNativeApp()) { onChartClick?.(chart); return; }
     if (tapTimerRef.current !== null) {
       window.clearTimeout(tapTimerRef.current);
       tapTimerRef.current = null;
@@ -182,11 +183,12 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         <ChartSafetyMenu chart={chart} onAuthRequired={onAuthRequired} onDismiss={onDismiss} />
       </header>
 
+      {isNativeApp() && <h2 className="insta-card__headline">{caption}</h2>}
       <button
         type="button"
         className="insta-card__media"
         onClick={handleMediaTap}
-        aria-label={`Open chart: ${caption}. Double tap to like.`}
+        aria-label={`Open chart: ${caption}${isNativeApp() ? '' : '. Double tap to like.'}`}
       >
         <MiniChartPreview
           className="insta-card__preview"
@@ -246,9 +248,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         <span className="insta-card__likes">
           {likeCount} {likeCount === 1 ? 'like' : 'likes'}
         </span>
-        <p className="insta-card__caption">
+        {!isNativeApp() && <p className="insta-card__caption">
           <span className="insta-card__author">{authorName}</span> {caption}
-        </p>
+        </p>}
         {chart.description && (
           <p className="insta-card__description">{chart.description}</p>
         )}

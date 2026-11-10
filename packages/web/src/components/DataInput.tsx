@@ -588,10 +588,12 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
 
   return (
     <div className={`data-input ${isPromptPanelOpen ? 'data-input--instructions-open' : 'data-input--instructions-collapsed'}`}>
-      <div className="input-mode-tabs">
+      <div className="input-mode-tabs" role="group" aria-label="Data source">
         {INPUT_MODES.filter((m) => !('authRequired' in m && m.authRequired) || isAuthenticated).map((inputMode) => (
           <button
             key={inputMode.id}
+            type="button"
+            aria-pressed={mode === inputMode.id}
             className={`mode-tab ${mode === inputMode.id ? 'active' : ''}`}
             onClick={() => {
               setMode(inputMode.id);
@@ -605,7 +607,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
             }}
           >
             <inputMode.icon size={18} />
-            <span>{inputMode.label}</span>
+            <span>{isNativeApp() ? ({ upload: 'CSV file', paste: 'Text or data', image: 'Photo', stocks: 'Stocks', datasets: 'Datasets', sql: 'Database' }[inputMode.id]) : inputMode.label}</span>
           </button>
         ))}
       </div>

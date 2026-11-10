@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { isNativeApp } from '../../services/native';
 import Save from 'lucide-react/dist/esm/icons/save';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Plus from 'lucide-react/dist/esm/icons/plus';
@@ -106,10 +107,10 @@ export function ChartWorkbench({
     <>
       <div className="workbench-toolbar">
         <div className="workbench-toolbar-left">
-          <Button variant="default" size="sm" onClick={onCreateNew}>
+          {!isNativeApp() && <Button variant="default" size="sm" onClick={onCreateNew}>
             <Plus size={16} />
             New Chart
-          </Button>
+          </Button>}
           <div className="workbench-status" aria-label="Chart status">
             <span className="workbench-status-pill">{config.type}</span>
             <span className="workbench-status-pill">{data.labels.length} points</span>
@@ -277,8 +278,8 @@ export function ChartWorkbench({
       ) : (
         <div className="workbench-layout">
           <div className="workbench-preview-column" ref={chartRef}>
-            {data.aiSummary && (
-              <details className="workbench-ai-summary" open>
+            {data.aiSummary && data.aiSummary !== 'Summary unavailable for this dataset.' && (
+              <details className="workbench-ai-summary" open={!isNativeApp()}>
                 <summary className="section-label workbench-ai-label">AI Insight</summary>
                 <p className="workbench-ai-text">{data.aiSummary}</p>
               </details>
