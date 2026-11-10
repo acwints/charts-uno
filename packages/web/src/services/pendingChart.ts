@@ -1,6 +1,7 @@
 import type { CreateChartData } from './api';
 
 const STORAGE_KEY = 'chartsuno.pendingChart';
+const DRAFT_KEY = 'chartsuno.homepageDraft';
 
 export interface PendingChartRecord {
   v: 1;
@@ -17,7 +18,18 @@ export function rememberPendingChart(text: string, payload: CreateChartData): vo
 
 export function readPendingChart(): PendingChartRecord | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    return readChartRecord(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function forgetPendingChart(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function readChartRecord(raw: string | null): PendingChartRecord | null {
+  try {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PendingChartRecord;
     const labels = parsed?.payload?.data?.labels;
@@ -31,8 +43,22 @@ export function readPendingChart(): PendingChartRecord | null {
   }
 }
 
-export function forgetPendingChart(): void {
-  localStorage.removeItem(STORAGE_KEY);
+/** The chart visible on the homepage, so sign-in can reopen it. This is not a save request. */
+export function rememberHomepageDraft(text: string, payload: CreateChartData): void {
+  const record: PendingChartRecord = { v: 1, text, payload };
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(record));
+  } catch {
+    // A full disk should not block the chart on screen.
+  }
+}
+
+export function readHomepageDraft(): PendingChartRecord | null {
+  try {
+    return readChartRecord(localStorage.getItem(DRAFT_KEY));
+  } catch {
+    return null;
+  }
 }
 
 export function flushPendingChart(

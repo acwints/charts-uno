@@ -27,6 +27,10 @@
   flex-wrap: wrap;
 }
 
+.workbench-save-first {
+  min-height: 44px;
+}
+
 .workbench-status {
   display: flex;
   align-items: center;

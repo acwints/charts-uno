@@ -97,7 +97,8 @@ export function ChartWorkbench({
   const isPromptSource = data.sourceType === 'prompt';
   const verificationTone = getVerificationTone(data);
   const updatesExisting = Boolean(chartId && canEditSavedChart);
-  const saveLabel = isSaving ? 'Saving...' : updatesExisting ? 'Update Chart' : chartId ? 'Save a Copy' : 'Save Chart';
+  const saveLabel = isSaving ? 'Saving...' : updatesExisting ? 'Update Chart' : chartId ? 'Save a Copy' : 'Save chart';
+  const firstSave = !chartId && isAuthenticated;
 
   return (
     <>
@@ -143,8 +144,9 @@ export function ChartWorkbench({
         <div className="workbench-toolbar-right">
           {isAuthenticated && (
             <Button
-              variant="default"
-              size="sm"
+              variant={firstSave ? 'primary' : 'default'}
+              size={firstSave ? 'lg' : 'sm'}
+              className={firstSave ? 'workbench-save-first' : undefined}
               onClick={onSave}
               disabled={isSaving}
               title={updatesExisting ? 'Update chart' : chartId ? 'Save a private copy' : 'Save chart'}

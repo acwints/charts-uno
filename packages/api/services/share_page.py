@@ -361,6 +361,8 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         "accounts_total": len(rows),
         "users_with_a_chart": sum(1 for person in people if person["chart"]),
         "users_with_a_chart_24h": first_chart_in_window(day_ago),
+        "first_chart_saves_today": first_chart_in_window(moment.replace(hour=0, minute=0, second=0, microsecond=0)),
+        "first_chart_saves_7d": first_chart_in_window(week_ago),
         "users_with_a_chart_7_days_ago": had_chart_before(week_ago),
         "users_with_a_chart_yesterday": had_chart_before(day_ago),
         "signups_last_7d": len(recent),

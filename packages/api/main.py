@@ -314,7 +314,9 @@ async def signup_count(request: Request, db: Session = Depends(get_db)):
     users_with_a_chart_7_days_ago and users_with_a_chart_yesterday count people
     whose first saved chart was created before those same cutoffs.
     users_with_a_chart_24h counts people whose first saved chart was created
-    in the last 24 hours.
+    in the last 24 hours. first_chart_saves_today is the same people whose
+    first chart falls on the current UTC day. first_chart_saves_7d is the
+    same people whose first chart falls in the last 7 days.
 
         curl -s https://www.chartsuno.com/api/stats/signups
     """
