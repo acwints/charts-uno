@@ -1,3 +1,4 @@
+import { useNativeScrollRestoration } from '../hooks/useNativeScrollRestoration';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -35,7 +36,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const mainRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  useNativeScrollRestoration(mainRef, `${user?.id ?? 'anonymous'}:${location.pathname}${location.search}`, isNativeApp() && isAuthenticated);
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
   const { error: showSaveError } = useToast();
   const [pendingChartFailed, setPendingChartFailed] = useState(false);
@@ -69,7 +71,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // New route = start at the top. Back/forward keeps the browser's own
   // restored position. Needed because the SPA never reloads the document.
   useEffect(() => {
-    if (navigationType !== 'POP') {
+    if (!isNativeApp() && navigationType !== 'POP') {
       window.scrollTo(0, 0);
       // The native shell scrolls this element rather than the document.
       mainRef.current?.scrollTo(0, 0);
@@ -122,7 +124,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     ? !['/terms', '/privacy'].includes(location.pathname)
     : /^\/(?:$|feed(?:\/|$)|new(?:\/|$)|chart(?:\/|$)|dashboard(?:s)?(?:\/|$)|team(?:\/|$)|settings(?:\/|$)|invite(?:\/|$))/.test(location.pathname);
 
-  const guestTemplate = Boolean(starterBySlug(new URLSearchParams(location.search).get('template')));
+  const guestTemplate = !isNativeApp() && Boolean(starterBySlug(new URLSearchParams(location.search).get('template')));
   if (requiresAccount && !isAuthenticated && !guestTemplate) {
     if (isAuthLoading) return <div role="status">Loading your account…</div>;
     return (

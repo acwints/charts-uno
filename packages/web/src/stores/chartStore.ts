@@ -5,8 +5,11 @@ interface ChartStore {
   chartData: ChartData | null;
   documentId: string | null;
   originalData: ChartData | null;
+  originalConfig: ChartConfig | null;
+  editorView: 'chart' | 'data';
+  setEditorView: (view: 'chart' | 'data') => void;
   loadDocument: (id: string | null, data: ChartData, config: ChartConfig) => void;
-  markSaved: (id: string | null, data: ChartData) => void;
+  markSaved: (id: string | null, data: ChartData, config?: ChartConfig) => void;
   chartConfig: ChartConfig;
   infographicSvg: string | null;
   setChartData: (data: ChartData | null) => void;
@@ -37,9 +40,12 @@ export const useChartStore = create<ChartStore>((set) => ({
   chartData: null,
   documentId: null,
   originalData: null,
+  originalConfig: null,
+  editorView: 'chart',
+  setEditorView: (editorView) => set({ editorView }),
   chartConfig: { ...defaultConfig },
-  loadDocument: (id, data, config) => set({ documentId: id, chartData: data, originalData: data, chartConfig: config, infographicSvg: null }),
-  markSaved: (id, data) => set((state) => state.documentId === id ? { originalData: data } : {}),
+  loadDocument: (id, data, config) => set({ documentId: id, chartData: data, originalData: data, originalConfig: config, chartConfig: config, editorView: 'chart', infographicSvg: null }),
+  markSaved: (id, data, config) => set((state) => state.documentId === id ? { originalData: data, originalConfig: config ?? state.chartConfig } : {}),
   infographicSvg: null,
   setChartData: (data) => set({ chartData: data }),
   setChartConfig: (config) =>
@@ -47,5 +53,17 @@ export const useChartStore = create<ChartStore>((set) => ({
       chartConfig: typeof config === 'function' ? config(state.chartConfig) : config,
     })),
   setInfographicSvg: (svg) => set({ infographicSvg: svg }),
-  reset: () => set({ documentId: null, originalData: null, chartData: null, chartConfig: { ...defaultConfig }, infographicSvg: null }),
+  reset: () => set({ documentId: null, originalData: null, originalConfig: null, editorView: 'chart', chartData: null, chartConfig: { ...defaultConfig }, infographicSvg: null }),
 }));
+
+export function hasUnsavedChartChanges(): boolean {
+  const state = useChartStore.getState();
+  if (!state.chartData) return false;
+  if (!state.documentId) return true;
+  return JSON.stringify(state.chartData) !== JSON.stringify(state.originalData)
+    || JSON.stringify(state.chartConfig) !== JSON.stringify(state.originalConfig);
+}
+
+export function confirmDiscardChart(): boolean {
+  return !hasUnsavedChartChanges() || window.confirm('Discard your unsaved chart changes? This cannot be undone.');
+}

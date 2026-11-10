@@ -1,3 +1,4 @@
+import { nativeFeedPages } from '../../services/nativeNavigationSession';
 import { isNativeApp } from '../../services/native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -51,11 +52,12 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [activeTab, setActiveTab] = useState<FeedTab>(initialTab);
-  const [charts, setCharts] = useState<ChartResponse[]>(() => initialTab === 'explore' ? readFeedCache() : []);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedPage = isNativeApp() ? nativeFeedPages.get(`${user?.id ?? 'anonymous'}:${initialTab}`) : undefined;
+  const [charts, setCharts] = useState<ChartResponse[]>(() => cachedPage?.charts ?? (initialTab === 'explore' ? readFeedCache() : []));
+  const [isLoading, setIsLoading] = useState(!cachedPage);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const offsetRef = useRef(0);
+  const [hasMore, setHasMore] = useState(cachedPage?.hasMore ?? true);
+  const offsetRef = useRef(cachedPage?.offset ?? 0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const LIMIT = 20;
@@ -125,8 +127,22 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
 
   useEffect(() => {
     if (!user?.id && activeTab !== 'explore') { setActiveTab('explore'); return; }
-    fetchCharts(activeTab, true);
-  }, [activeTab, fetchCharts, user?.id]);
+    const cached = isNativeApp() ? nativeFeedPages.get(scope) : undefined;
+    if (cached) {
+      setCharts(cached.charts);
+      setChartScope(scope);
+      setHasMore(cached.hasMore);
+      offsetRef.current = cached.offset;
+      setIsLoading(false);
+      setError(null);
+    } else { fetchCharts(activeTab, true); }
+  }, [activeTab, fetchCharts, user?.id, scope]);
+
+  useEffect(() => {
+    if (isNativeApp() && chartScope === scope && !isLoading && !error) {
+      nativeFeedPages.set(scope, { charts, offset: offsetRef.current, hasMore });
+    }
+  }, [charts, hasMore, chartScope, scope, isLoading, error]);
 
   const handleTabChange = (tab: FeedTab) => {
     if (tab !== 'explore' && !user) {

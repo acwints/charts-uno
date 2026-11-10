@@ -6,12 +6,12 @@ import { ChartView } from '../src/pages/ChartView';
 import { ChartBuilder } from '../src/pages/ChartBuilder';
 import { useChartStore } from '../src/stores/chartStore';
 
-const mocks = vi.hoisted(() => ({ getChart: vi.fn(), getMyCharts: vi.fn(async () => ({ charts: [], total: 1 })), updateChart: vi.fn(), createChart: vi.fn(), recommend: vi.fn(), teams: [], toast: { error: vi.fn(), success: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ native: false, getChart: vi.fn(), getMyCharts: vi.fn(async () => ({ charts: [], total: 1 })), updateChart: vi.fn(), createChart: vi.fn(), recommend: vi.fn(), teams: [], toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('../src/services/api', () => ({ ...mocks, getChartPublishTargets: vi.fn(async () => ({ is_public: false, team_ids: [] })), getTeamBranding: vi.fn() }));
 vi.mock('../src/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user' }, isAuthenticated: true }) }));
 vi.mock('../src/contexts/TeamContext', () => ({ useTeam: () => ({ teams: mocks.teams }) }));
 vi.mock('../src/contexts/ToastContext', () => ({ useToast: () => mocks.toast }));
-vi.mock('../src/services/native', () => ({ isNativeApp: () => false }));
+vi.mock('../src/services/native', () => ({ isNativeApp: () => mocks.native }));
 vi.mock('../src/services/chartTypeRecommender', () => ({ recommendChartType: mocks.recommend }));
 vi.mock('../src/components/ChartWorkbench', () => ({ ChartWorkbench: (p: any) => <div>
   <p data-testid="document">{p.data.labels.join(',')}</p>
@@ -30,7 +30,7 @@ function deferred<T>() { let resolve!: (value: T) => void; const promise = new P
 function chart(id: string) { return { id, user_id: 'user', title: id, source_type: 'paste', is_public: false, data: { labels: [id], series: [{ name: id, data: [1] }] }, config: { ...useChartStore.getState().chartConfig, title: id } }; }
 function Navigation() { const navigate = useNavigate(); const location = useLocation(); return <><p data-testid="route">{location.pathname}</p><button onClick={() => navigate('/chart/B')}>Open B</button><button onClick={() => navigate('/new')}>New</button></>; }
 function app(path: string) { return render(<MemoryRouter initialEntries={[path]}><Navigation /><Routes><Route path="/chart/:id" element={<ChartView />} /><Route path="/chart" element={<ChartView />} /><Route path="/new" element={<ChartBuilder />} /></Routes></MemoryRouter>); }
-beforeEach(() => { useChartStore.getState().reset(); vi.clearAllMocks(); mocks.updateChart.mockResolvedValue({}); });
+beforeEach(() => { mocks.native = false; useChartStore.getState().reset(); vi.clearAllMocks(); mocks.updateChart.mockResolvedValue({}); });
 afterEach(cleanup);
 
 test('late A response cannot replace B or cause Save to overwrite B with A', async () => {
@@ -95,4 +95,32 @@ test('saving another author public chart creates a private copy, then updates on
   expect(mocks.updateChart).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Save'));
   await waitFor(() => expect(mocks.updateChart).toHaveBeenCalledWith('my-copy', expect.anything()));
+});
+
+
+test('native editor resumes local data and configuration instead of overwriting them with the server copy', async () => {
+  mocks.native = true;
+  const a = chart('A');
+  useChartStore.getState().loadDocument('A', { ...a.data, sourceType: 'paste' }, a.config);
+  useChartStore.getState().setChartData({ ...a.data, labels: ['unsaved'], sourceType: 'paste' });
+  useChartStore.getState().setChartConfig({ ...a.config, title: 'Local title' });
+  useChartStore.getState().setEditorView('data');
+  mocks.getChart.mockResolvedValue(a);
+  app('/chart/A');
+  await waitFor(() => expect(screen.getByTestId('document').textContent).toBe('unsaved'));
+  expect(useChartStore.getState().chartConfig.title).toBe('Local title');
+  expect(useChartStore.getState().editorView).toBe('data');
+});
+
+test('cancelling a different native document preserves the unsaved editor', async () => {
+  mocks.native = true;
+  const a = chart('A');
+  useChartStore.getState().loadDocument('A', { ...a.data, sourceType: 'paste' }, a.config);
+  useChartStore.getState().setChartConfig({ ...a.config, title: 'Unsaved title' });
+  vi.spyOn(window, 'confirm').mockReturnValue(false);
+  app('/chart/B');
+  expect(window.confirm).toHaveBeenCalled();
+  expect(mocks.getChart).not.toHaveBeenCalled();
+  expect(useChartStore.getState().documentId).toBe('A');
+  expect(useChartStore.getState().chartConfig.title).toBe('Unsaved title');
 });

@@ -1,12 +1,13 @@
+import { nativeInputDrafts } from '../services/nativeNavigationSession';
 import { isNativeApp } from '../services/native';
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { StarterPicker } from '../components/StarterPicker/StarterPicker';
 import { motion } from 'motion/react';
 import type { ChartLogoOption } from '../components/ChartPreview';
-import { ChartWorkbench, type ChartEditorView } from '../components/ChartWorkbench';
+import { ChartWorkbench } from '../components/ChartWorkbench';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { useChartStore } from '../stores/chartStore';
+import { useChartStore, confirmDiscardChart } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
@@ -30,7 +31,7 @@ export function ChartView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const chartCaptureRef = useRef<HTMLDivElement>(null);
-  const { chartData, chartConfig, documentId, originalData, loadDocument, markSaved, setChartData, setChartConfig } = useChartStore();
+  const { chartData, chartConfig, documentId, originalData, editorView, setEditorView, loadDocument, markSaved, setChartData, setChartConfig } = useChartStore();
   const { isAuthenticated, user } = useAuth();
   const { teams } = useTeam();
   const toast = useToast();
@@ -42,7 +43,6 @@ export function ChartView() {
   const [publishedTeamIds, setPublishedTeamIds] = useState<string[]>([]);
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
   const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
-  const [editorView, setEditorView] = useState<ChartEditorView>('chart');
   const [editToken, setEditToken] = useState(0);
   const [offerTemplates, setOfferTemplates] = useState(false);
   const justSavedIdRef = useRef<string | null>(null);
@@ -149,7 +149,7 @@ export function ChartView() {
           config: chartConfig,
         });
         if (!isCurrent()) return id;
-        markSaved(id, chartData);
+        markSaved(id, chartData, chartConfig);
         toast.success('Chart updated');
         return id;
       }
@@ -171,7 +171,7 @@ export function ChartView() {
       });
       if (!isCurrent()) return result.id;
       // Bind the new server identity to the exact draft that was saved.
-      useChartStore.setState({ documentId: result.id, originalData: chartData });
+      useChartStore.setState({ documentId: result.id, originalData: chartData, originalConfig: chartConfig });
       setOwnership({ scope: `${user.id}:${result.id}`, ownerId: user.id });
       setIsPublishedToFeed(result.is_public);
       setPublishedTeamIds([]);
@@ -194,6 +194,7 @@ export function ChartView() {
   };
 
   const handleCreateNew = () => {
+    if (isNativeApp()) { if (!confirmDiscardChart()) return; useChartStore.getState().reset(); nativeInputDrafts.clear(); }
     navigate('/new');
   };
 
@@ -217,6 +218,12 @@ export function ChartView() {
       setIsLoading(false);
       return () => { cancelled = true; };
     }
+    const existing = useChartStore.getState();
+    const resuming = isNativeApp() && existing.documentId === id && Boolean(existing.chartData);
+    if (isNativeApp() && !resuming && !confirmDiscardChart()) {
+      navigate(-1);
+      return () => { cancelled = true; };
+    }
     setIsLoading(true);
     getChart(id).then(async (chart) => {
       if (!isCurrent()) return;
@@ -227,7 +234,7 @@ export function ChartView() {
         suggestedTitle: chart.title || chart.config.title || chart.data.suggestedTitle,
       };
       const rawConfig = chart.config as Record<string, unknown>;
-      loadDocument(id, data, {
+      if (!resuming) loadDocument(id, data, {
         ...chart.config as ChartConfig,
         themeMode: rawConfig.themeMode as ChartConfig['themeMode'] || 'dark',
         showBorder: rawConfig.showBorder as boolean ?? true,
@@ -253,7 +260,7 @@ export function ChartView() {
       setIsLoading(false);
     });
     return () => { cancelled = true; };
-  }, [id, activeScope, user?.id, loadDocument, markSaved]);
+  }, [id, activeScope, user?.id, loadDocument, markSaved, navigate]);
 
   // If no ID and no chart data, redirect to home
   useEffect(() => {
@@ -289,7 +296,7 @@ export function ChartView() {
     params.delete('paste');
     const search = params.toString();
     window.history.replaceState({}, '', `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`);
-  }, [id]);
+  }, [id, setEditorView]);
 
   const isImageSource = chartData?.sourceType === 'image';
 

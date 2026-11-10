@@ -1,3 +1,5 @@
+import { useChartStore } from '../stores/chartStore';
+import { clearNativeNavigationSession } from '../services/nativeNavigationSession';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getCurrentUser, logout as apiLogout, deleteAccount as apiDeleteAccount } from '../services/api';
 import { beginBrowserSignIn, finishBrowserSignIn } from '../services/browserAuth';
@@ -40,21 +42,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error: null,
   });
 
+  const previousUser = useRef<string | null>(null);
+  const commitAuthState = useCallback((next: AuthState) => {
+    const nextId = next.user?.id ?? null;
+    if (isNativeApp() && previousUser.current !== nextId) {
+      clearNativeNavigationSession();
+      useChartStore.getState().reset();
+    }
+    previousUser.current = nextId;
+    setState(next);
+  }, []);
+
   const checkAuth = useCallback(async () => {
     const generation = ++authGeneration.current;
     try {
       const user = await getCurrentUser();
       if (generation !== authGeneration.current) return;
-      setState({ user, isLoading: false, isAuthenticated: true, error: null });
+      commitAuthState({ user, isLoading: false, isAuthenticated: true, error: null });
     } catch (error) {
       if (generation !== authGeneration.current) return;
       if (error instanceof ApiError && error.status === 401) {
-        setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+        commitAuthState({ user: null, isLoading: false, isAuthenticated: false, error: null });
       } else {
         setState((previous) => ({ ...previous, isLoading: false, error: 'Could not check your account. Reconnect and try again.' }));
       }
     }
-  }, []);
+  }, [commitAuthState]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -66,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const cleanTarget = `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`;
 
     if (authError) {
-      setState({
+      commitAuthState({
         user: null,
         isLoading: false,
         isAuthenticated: false,
@@ -83,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return checkAuth();
         })
         .catch((err) => {
-          setState({
+          commitAuthState({
             user: null,
             isLoading: false,
             isAuthenticated: false,
@@ -97,7 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Native: load the Keychain token before the first account check.
     void restoreNativeSession().then(checkAuth);
-  }, [checkAuth]);
+  }, [checkAuth, commitAuthState]);
 
   useEffect(() => {
     if (!isNativeApp()) return;
@@ -110,7 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       document.removeEventListener('visibilitychange', recheck);
       window.removeEventListener('online', recheck);
     };
-  }, [checkAuth]);
+  }, [checkAuth, commitAuthState]);
 
   const finishNativeSignIn = useCallback(async (start: () => Promise<void>) => {
     if (signingIn.current) return;
@@ -121,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await start();
       const user = await getCurrentUser();
-      setState({ user, isLoading: false, isAuthenticated: true, error: null });
+      commitAuthState({ user, isLoading: false, isAuthenticated: true, error: null });
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'CANCELLED') return;
       setState((prev) => ({
@@ -133,7 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsSigningIn(false);
       setState((previous) => ({ ...previous, isLoading: false }));
     }
-  }, []);
+  }, [commitAuthState]);
 
   const login = useCallback(async () => {
     if (isNativeApp()) {
@@ -175,19 +188,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await apiLogout();
       await clearNativeSession();
       authGeneration.current++;
-      setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+      commitAuthState({ user: null, isLoading: false, isAuthenticated: false, error: null });
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Could not sign out. Please try again.');
     }
-  }, []);
+  }, [commitAuthState]);
 
   const deleteAccount = useCallback(async () => {
     authGeneration.current++;
     await apiDeleteAccount();
     await clearNativeSession();
     authGeneration.current++;
-    setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
-  }, []);
+    commitAuthState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+  }, [commitAuthState]);
 
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));

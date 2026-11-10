@@ -9,7 +9,7 @@ import { ValueOfCharts } from '../components/ValueOfCharts';
 import { Features } from '../components/Features';
 import { BottomCTA } from '../components/BottomCTA';
 import { useAuth } from '../hooks/useAuth';
-import { useChartStore } from '../stores/chartStore';
+import { useChartStore, confirmDiscardChart } from '../stores/chartStore';
 import { recommendChartType } from '../services/chartTypeRecommender';
 import { detectRaceShape, orientForRace } from '../utils/raceDetection';
 import type { ChartData } from '../types';
@@ -34,6 +34,7 @@ export function ChartBuilder() {
   useEffect(() => () => { requestGeneration.current += 1; }, []);
 
   const handleDataSubmit = useCallback(async (data: ChartData) => {
+    if (isNativeApp() && !confirmDiscardChart()) return;
     const generation = ++requestGeneration.current;
     reset();
     // Race-shaped data is recognised from the data itself — an ordered axis,

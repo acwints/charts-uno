@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { isNativeApp } from '../services/native';
 import { ChartFeed } from '../components/ChartFeed';
@@ -11,15 +11,16 @@ interface OutletContextType {
 
 export function ChartFeedPage({ initialTab = 'explore' }: { initialTab?: 'explore' | 'saved' }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const outlet = useOutletContext<OutletContextType | undefined>();
 
   // Open the canonical chart URL: ChartView fetches the chart there, which
   // also counts the view server-side.
   const handleChartSelect = useCallback(
     (chart: ChartResponse) => {
-      navigate(`/chart/${chart.id}`);
+      navigate(`/chart/${chart.id}`, isNativeApp() ? { state: { returnTo: location.pathname + location.search } } : undefined);
     },
-    [navigate]
+    [navigate, location.pathname, location.search]
   );
 
   const handleBack = useCallback(() => {

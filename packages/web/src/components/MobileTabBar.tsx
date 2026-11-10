@@ -1,3 +1,5 @@
+import { useChartStore } from '../stores/chartStore';
+import { isNativeApp } from '../services/native';
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import { selectionHaptic } from '../services/native';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -16,6 +18,8 @@ interface MobileTabBarProps {
 // the Capacitor shell.
 export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
   const { isAuthenticated } = useAuth();
+  const { chartData, documentId } = useChartStore();
+  const createPath = isNativeApp() && chartData ? (documentId ? `/chart/${documentId}/edit` : '/chart') : '/new';
   const { pathname } = useLocation();
 
   return (
@@ -30,8 +34,8 @@ export function MobileTabBar({ onAuthOpen }: MobileTabBarProps) {
       </NavLink>
 
       <NavLink
-        to="/new"
-        className={({ isActive }) => `mtabbar__tab ${isActive ? 'mtabbar__tab--active' : ''}`}
+        to={createPath}
+        className={() => `mtabbar__tab ${pathname === '/new' || /^\/chart(?:\/[^/]+\/edit)?$/.test(pathname) ? 'mtabbar__tab--active' : ''}`}
         aria-label="Create chart"
       >
         <PlusSquare size={24} />

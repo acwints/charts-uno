@@ -39,3 +39,17 @@ Native saved-chart routes now open a focused reader. Editing is an explicit Edit
 Feed line/area/bar previews have labeled axes and series legends. Line/area cards include exact first and last values. Dense pies and unsupported thumbnail chart types show labeled data previews rather than substituting a different chart type. Existing web editor behavior is preserved.
 
 Regression tests cover draft isolation, route-response races, owner/copy action destinations, source URL schemes, large data pagination, and load retry. Device verification covers feed labels, reader entry, exact data disclosure, and explicit Edit navigation.
+
+
+## Navigation continuity and draft protection
+
+- Native Feed retains loaded pages, pagination offset, and scroll position during chart visits and tab switches. Refresh remains explicit.
+- Create resumes the current document. Chart data, configuration, and Chart/Data view stay in the editor store; reopening the same saved document refreshes ownership without replacing local edits.
+- New and opening a different editor require confirmation when data or configuration would be discarded. Cancel retains the document. New clears the previous input draft.
+- Text/source inputs and staged uploads stay in memory across tab changes. Account transitions clear editor, input, feed, and scroll state; late input callbacks cannot repopulate a cleared session. Drafts are not persisted across process termination.
+- Reader Back carries its Feed/library origin; Edit carries its reader origin.
+- Native template query parameters no longer bypass the account gate.
+
+Validation: harness, lint, TypeScript, signed simulator build, and 62 tests across 20 files. Regression coverage includes local editor resume, cancelling document replacement, config-only dirtiness, input remount/session clearing, delayed scroll restoration, pagination after feed remount, and the native template account gate.
+
+On the existing signed-in iPhone 18 Pro Max: scrolled Feed to the second chart, opened it, and returned to the same position; pasted four rows, switched to Feed and back, and verified all rows remained; generated a draft, changed its title to “Navigation QA draft,” switched tabs, and verified the title/data returned; opened New and cancelled the native confirmation, preserving the draft. The QA draft was not saved or published. Final binary reinstalled after the account-gate correction.

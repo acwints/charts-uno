@@ -1,3 +1,4 @@
+import { useInputDraftState } from '../hooks/useInputDraftState';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Papa from 'papaparse';
@@ -110,33 +111,33 @@ function splitLikelyTiedLabels(data: ChartData, rawInput: string): ChartData {
 
 export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const { isAuthenticated } = useAuth();
-  const [mode, setMode] = useState<InputMode>('paste');
-  const [pasteContent, setPasteContent] = useState('');
-  const [userPrompt, setUserPrompt] = useState('');
-  const [isPromptPanelOpen, setIsPromptPanelOpen] = useState(false);
+  const [mode, setMode] = useInputDraftState<InputMode>('DataInput:mode', 'paste');
+  const [pasteContent, setPasteContent] = useInputDraftState('DataInput:pasteContent', '');
+  const [userPrompt, setUserPrompt] = useInputDraftState('DataInput:userPrompt', '');
+  const [isPromptPanelOpen, setIsPromptPanelOpen] = useInputDraftState('DataInput:isPromptPanelOpen', false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [tickerQuery, setTickerQuery] = useState('');
+  const [fileName, setFileName] = useInputDraftState<string | null>('DataInput:fileName', null);
+  const [tickerQuery, setTickerQuery] = useInputDraftState('DataInput:tickerQuery', '');
   const [tickerResults, setTickerResults] = useState<TickerResult[]>([]);
-  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [stockRange, setStockRange] = useState('3M');
+  const [selectedTicker, setSelectedTicker] = useInputDraftState<string | null>('DataInput:selectedTicker', null);
+  const [stockRange, setStockRange] = useInputDraftState('DataInput:stockRange', '3M');
   const [isLoadingStock, setIsLoadingStock] = useState(false);
   const [showTickerDropdown, setShowTickerDropdown] = useState(false);
   // Second ticker for comparison (optional)
-  const [ticker2Query, setTicker2Query] = useState('');
+  const [ticker2Query, setTicker2Query] = useInputDraftState('DataInput:ticker2Query', '');
   const [ticker2Results, setTicker2Results] = useState<TickerResult[]>([]);
-  const [selectedTicker2, setSelectedTicker2] = useState<string | null>(null);
+  const [selectedTicker2, setSelectedTicker2] = useInputDraftState<string | null>('DataInput:selectedTicker2', null);
   const [showTicker2Dropdown, setShowTicker2Dropdown] = useState(false);
   const [publicDatasets, setPublicDatasets] = useState<PublicDatasetOption[]>([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState('');
-  const [datasetPrompt, setDatasetPrompt] = useState('');
-  const [datasetTopN, setDatasetTopN] = useState(CHART_ROWS_DEFAULT);
-  const [datasetChartTypeHint, setDatasetChartTypeHint] = useState<'auto' | 'line' | 'bar' | 'area' | 'table'>('auto');
+  const [selectedDatasetId, setSelectedDatasetId] = useInputDraftState('DataInput:selectedDatasetId', '');
+  const [datasetPrompt, setDatasetPrompt] = useInputDraftState('DataInput:datasetPrompt', '');
+  const [datasetTopN, setDatasetTopN] = useInputDraftState('DataInput:datasetTopN', CHART_ROWS_DEFAULT);
+  const [datasetChartTypeHint, setDatasetChartTypeHint] = useInputDraftState<'auto' | 'line' | 'bar' | 'area' | 'table'>('DataInput:datasetChartTypeHint', 'auto');
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(false);
   const [isGeneratingDatasetChart, setIsGeneratingDatasetChart] = useState(false);
-  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [stagedFile, setStagedFile] = useInputDraftState<File | null>('DataInput:stagedFile', null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ticker2DebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -151,22 +152,13 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     setStagedFile(file);
     setFileName(file.name);
 
-    // Create preview URL for images
-    if (file.type.startsWith('image/')) {
-      setImagePreviewUrl(URL.createObjectURL(file));
-    } else {
-      setImagePreviewUrl(null);
-    }
-  }, []);
+  }, [setStagedFile, setFileName]);
 
-  // Clean up preview URL when mode changes or component unmounts
   useEffect(() => {
-    return () => {
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
-    };
-  }, [imagePreviewUrl]);
+    const url = stagedFile?.type.startsWith('image/') ? URL.createObjectURL(stagedFile) : null;
+    setImagePreviewUrl(url);
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [stagedFile]);
 
   // Close ticker dropdowns on outside click
   useEffect(() => {
@@ -206,14 +198,14 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         setShowTickerDropdown(false);
       }
     }, 300);
-  }, []);
+  }, [setSelectedTicker, setTickerQuery]);
 
   const handleTickerSelect = useCallback((symbol: string) => {
     setSelectedTicker(symbol);
     setTickerQuery(symbol);
     setShowTickerDropdown(false);
     setTickerResults([]);
-  }, []);
+  }, [setSelectedTicker, setTickerQuery]);
 
   // Second ticker handlers
   const handleTicker2Search = useCallback((query: string) => {
@@ -240,21 +232,21 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         setShowTicker2Dropdown(false);
       }
     }, 300);
-  }, []);
+  }, [setSelectedTicker2, setTicker2Query]);
 
   const handleTicker2Select = useCallback((symbol: string) => {
     setSelectedTicker2(symbol);
     setTicker2Query(symbol);
     setShowTicker2Dropdown(false);
     setTicker2Results([]);
-  }, []);
+  }, [setSelectedTicker2, setTicker2Query]);
 
   const clearTicker2 = useCallback(() => {
     setSelectedTicker2(null);
     setTicker2Query('');
     setTicker2Results([]);
     setShowTicker2Dropdown(false);
-  }, []);
+  }, [setSelectedTicker2, setTicker2Query]);
 
   const handleStockSubmit = useCallback(async () => {
     if (!selectedTicker) return;
@@ -405,7 +397,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       setError('Failed to read file. Please try again.');
     };
     reader.readAsText(file);
-  }, [parseCSVData, onSubmit]);
+  }, [parseCSVData, onSubmit, setFileName]);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -423,7 +415,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [onSubmit, userPrompt]);
+  }, [onSubmit, userPrompt, setFileName]);
 
   // Handle Ctrl+V paste for images in image mode
   useEffect(() => {
@@ -540,7 +532,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
           ? datasets.filter((dataset) => !dataset.id.startsWith('imdb_') && !dataset.tables.some((table) => table.includes('.imdb.')))
           : datasets;
         setPublicDatasets(visible);
-        if (visible.length > 0) {
+        if (visible.length > 0 && !visible.some(dataset => dataset.id === selectedDatasetId)) {
           setSelectedDatasetId(visible[0].id);
           setDatasetTopN(topNBoundsFor(visible[0]).initial);
           if (!datasetPrompt.trim() && visible[0].examplePrompts?.[0]) {
@@ -552,7 +544,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         setError(err instanceof Error ? err.message : 'Failed to load public datasets');
       })
       .finally(() => setIsLoadingDatasets(false));
-  }, [mode, publicDatasets.length, isLoadingDatasets, datasetPrompt]);
+  }, [mode, publicDatasets.length, isLoadingDatasets, datasetPrompt, setDatasetPrompt, setDatasetTopN, setSelectedDatasetId, selectedDatasetId]);
 
   const selectedDataset = publicDatasets.find((d) => d.id === selectedDatasetId) || null;
 

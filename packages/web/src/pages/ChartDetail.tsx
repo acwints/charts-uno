@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { ChartPreview } from '../components/ChartPreview';
 import { ShareMenu } from '../components/ShareMenu';
 import { getChart, type ChartResponse } from '../services/api';
@@ -10,6 +10,7 @@ import './ChartDetail.css';
 
 // Reading a saved chart must not replace the editor's in-progress document.
 export function ChartDetail() {
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const [result, setResult] = useState<{ scope: string; chart?: ChartResponse; error?: string }>();
@@ -51,7 +52,7 @@ export function ChartDetail() {
     {data.sourceType === 'prompt' && !data.verifiedData && <p className="chart-reading__provenance">AI-generated data · Not verified against a source</p>}
     </div>
     <div className="chart-reading__actions">
-      <Link to={`/chart/${chart.id}/edit`}>{owner ? 'Edit chart' : 'Customize a copy'}</Link>
+      <Link to={`/chart/${chart.id}/edit`} state={{ returnTo: location.pathname, readerReturnTo: location.state?.returnTo }}>{owner ? 'Edit chart' : 'Customize a copy'}</Link>
       <ShareMenu chartRef={captureRef} chartId={chart.id} isPublic={chart.is_public} title={config.title} isAuthenticated={isAuthenticated} canManageLink={owner} />
     </div>
     <details className="chart-reading__data">

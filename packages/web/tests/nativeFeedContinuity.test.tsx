@@ -1,0 +1,27 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { ChartFeed } from '../src/components/ChartFeed/ChartFeed';
+import { clearNativeNavigationSession } from '../src/services/nativeNavigationSession';
+const mocks = vi.hoisted(() => ({ getPublicCharts: vi.fn() }));
+vi.mock('../src/services/api', () => ({ ...mocks, getSavedCharts: vi.fn(), getLikedCharts: vi.fn() }));
+vi.mock('../src/services/native', () => ({ isNativeApp: () => true }));
+vi.mock('../src/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user' } }) }));
+vi.mock('../src/hooks/useMediaQuery', () => ({ useMediaQuery: () => false }));
+vi.mock('../src/components/ChartFeed/ChartCard', () => ({ ChartCard: ({ chart }: { chart: { title: string } }) => <p>{chart.title}</p> }));
+vi.mock('../src/components/ChartFeed/InstaChartCard', () => ({ InstaChartCard: () => null }));
+beforeEach(() => { clearNativeNavigationSession(); vi.clearAllMocks(); localStorage.clear(); });
+afterEach(cleanup);
+test('returning to the feed retains loaded pages and continues pagination at the next offset', async () => {
+  mocks.getPublicCharts.mockImplementation((_limit: number, offset: number) => Promise.resolve({ charts: Array.from({ length: 20 }, (_, index) => ({ id: `${offset + index}`, title: `Chart ${offset + index}` })) }));
+  const first = render(<ChartFeed />);
+  await screen.findByText('Chart 19');
+  fireEvent.click(screen.getByRole('button', { name: /Load more/i }));
+  await screen.findByText('Chart 39');
+  first.unmount();
+  render(<ChartFeed />);
+  expect(screen.getByText('Chart 39')).toBeTruthy();
+  expect(mocks.getPublicCharts).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole('button', { name: /Load more/i }));
+  await waitFor(() => expect(mocks.getPublicCharts).toHaveBeenLastCalledWith(20, 40));
+  await screen.findByText('Chart 59');
+});

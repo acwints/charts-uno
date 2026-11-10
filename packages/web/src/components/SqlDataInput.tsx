@@ -1,3 +1,4 @@
+import { useInputDraftState } from '../hooks/useInputDraftState';
 import { useState, useEffect, useCallback } from 'react';
 import Play from 'lucide-react/dist/esm/icons/play';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
@@ -22,11 +23,11 @@ interface SqlDataInputProps {
 export function SqlDataInput({ onSubmit, isProcessing }: SqlDataInputProps) {
   const { currentTeam } = useTeam();
   const [connections, setConnections] = useState<SqlConnectionResponse[]>([]);
-  const [selectedConnectionId, setSelectedConnectionId] = useState('');
-  const [sqlQuery, setSqlQuery] = useState('');
-  const [queryResult, setQueryResult] = useState<SqlQueryResponse | null>(null);
-  const [labelColumn, setLabelColumn] = useState('');
-  const [seriesColumns, setSeriesColumns] = useState<string[]>([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useInputDraftState('SqlDataInput:selectedConnectionId', '');
+  const [sqlQuery, setSqlQuery] = useInputDraftState('SqlDataInput:sqlQuery', '');
+  const [queryResult, setQueryResult] = useInputDraftState<SqlQueryResponse | null>('SqlDataInput:queryResult', null);
+  const [labelColumn, setLabelColumn] = useInputDraftState('SqlDataInput:labelColumn', '');
+  const [seriesColumns, setSeriesColumns] = useInputDraftState<string[]>('SqlDataInput:seriesColumns', []);
   const [isQuerying, setIsQuerying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
@@ -39,12 +40,12 @@ export function SqlDataInput({ onSubmit, isProcessing }: SqlDataInputProps) {
       .then((res) => {
         setConnections(res.connections);
         if (res.connections.length > 0) {
-          setSelectedConnectionId(res.connections[0].id);
+          setSelectedConnectionId(previous => res.connections.some(connection => connection.id === previous) ? previous : res.connections[0].id);
         }
       })
       .catch(() => setConnections([]))
       .finally(() => setIsLoadingConnections(false));
-  }, [currentTeam]);
+  }, [currentTeam, setSelectedConnectionId]);
 
   const handleRunQuery = useCallback(async () => {
     if (!currentTeam || !selectedConnectionId || !sqlQuery.trim()) return;
@@ -69,7 +70,7 @@ export function SqlDataInput({ onSubmit, isProcessing }: SqlDataInputProps) {
     } finally {
       setIsQuerying(false);
     }
-  }, [currentTeam, selectedConnectionId, sqlQuery, labelColumn, seriesColumns]);
+  }, [currentTeam, selectedConnectionId, sqlQuery, labelColumn, seriesColumns, setLabelColumn, setQueryResult]);
 
   const handleCreateChart = useCallback(() => {
     if (!queryResult) return;

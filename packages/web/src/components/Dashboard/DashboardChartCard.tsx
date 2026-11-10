@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isNativeApp } from '../../services/native';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Eye from 'lucide-react/dist/esm/icons/eye';
@@ -21,6 +21,7 @@ interface DashboardChartCardProps {
 
 export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = false }: DashboardChartCardProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { selectedIds, toggleSelect, isSelecting } = useDashboardStore();
@@ -33,7 +34,7 @@ export function DashboardChartCard({ chart, onUpdate, onDelete, showAuthor = fal
       toggleSelect(chart.id);
       return;
     }
-    navigate(`/chart/${chart.id}`);
+    navigate(`/chart/${chart.id}`, isNativeApp() ? { state: { returnTo: location.pathname + location.search } } : undefined);
   };
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
