@@ -324,3 +324,16 @@ For simulator builds, keep signing enabled (`CODE_SIGN_IDENTITY=-
 CODE_SIGNING_ALLOWED=YES`). Xcode embeds simulated entitlements for Keychain.
 An unsigned build can launch and render while secure session writes fail, so
 launch-only evidence is insufficient. Keep the release entitlements intact.
+
+## Local simulator builds
+
+Run `pnpm mobile:ios:build:simulator`. The app is written to
+`packages/mobile/build/simulator/Build/Products/Debug-iphonesimulator/App.app`.
+Set `CHARTSUNO_SIMULATOR_BUILD_DIR` to reuse another DerivedData location.
+The script uses the shared heavy-build slot when installed.
+
+Keep signing enabled with the ad-hoc simulator identity (`CODE_SIGN_IDENTITY=-`).
+Do not use `CODE_SIGNING_ALLOWED=NO` or manually re-sign the final bundle:
+Xcode supplies the simulator-specific entitlements needed for Keychain sessions.
+An unsigned build can complete Google OAuth but fail to save the session with
+Keychain error -34018. This simulator setup does not change App Store signing.

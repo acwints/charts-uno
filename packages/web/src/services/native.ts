@@ -123,8 +123,8 @@ export async function signInNative(): Promise<void> {
       method: 'POST',
       body: { code, verifier, deliver: 'token' },
     });
-    setSessionToken(token);
     await SecureStore.set({ key: SESSION_KEY, value: token });
+    setSessionToken(token);
     return;
   }
   // Legacy remote-URL shell: sets the httpOnly session cookie on this webview's first-party origin.
@@ -157,8 +157,8 @@ export async function signInWithApple(): Promise<void> {
       ...(referral ? { referral } : {}),
     },
   });
-  setSessionToken(token);
   await SecureStore.set({ key: SESSION_KEY, value: token });
+  setSessionToken(token);
 }
 
 /** Email and password for the App Review demo account. iOS only. */
@@ -170,8 +170,8 @@ export async function signInWithReview(email: string, password: string): Promise
     method: 'POST',
     body: { email, password, deliver: 'token' },
   });
-  setSessionToken(token);
   await SecureStore.set({ key: SESSION_KEY, value: token });
+  setSessionToken(token);
 }
 
 export async function shareNative(title: string, url: string): Promise<void> {

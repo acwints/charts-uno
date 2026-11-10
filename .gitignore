@@ -48,3 +48,6 @@ tiktok-marketing/
 
 # Python virtualenvs (packages/api)
 .venv
+
+# Local signed simulator build
+packages/mobile/build/
