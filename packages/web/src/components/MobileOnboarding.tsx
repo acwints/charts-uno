@@ -6,7 +6,6 @@ import './MobileOnboarding.css';
 
 interface MobileOnboardingProps {
   onSignIn: () => void;
-  onExplore: () => void;
 }
 
 const SLIDES = [
@@ -31,8 +30,8 @@ const SLIDES = [
 ] as const;
 
 // First-launch onboarding: three swipeable value-prop slides ending in an
-// explore-first choice (sign in, or browse the feed without an account).
-export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps) {
+// account requirement before entering the app.
+export function MobileOnboarding({ onSignIn }: MobileOnboardingProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -54,8 +53,8 @@ export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps)
     <div className="onboard" role="dialog" aria-label="Welcome to Chartsuno">
       <header className="onboard__top">
         <span className="onboard__brand"><img src="/favicon.svg" width="32" height="32" alt="" />Chartsuno</span>
-        <button type="button" className="onboard__skip" onClick={onExplore}>
-          Skip
+        <button type="button" className="onboard__skip" onClick={onSignIn}>
+          Sign in
         </button>
       </header>
 
@@ -99,10 +98,10 @@ export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps)
         {isLastSlide ? (
           <>
             <button type="button" className="onboard__btn onboard__btn--primary" onClick={onSignIn}>
-              Get started
+              Create an account
             </button>
-            <button type="button" className="onboard__btn onboard__btn--ghost" onClick={onExplore}>
-              Explore the feed first
+            <button type="button" className="onboard__btn onboard__btn--ghost" onClick={onSignIn}>
+              Already have an account? Sign in
             </button>
           </>
         ) : (

@@ -1,3 +1,4 @@
+import { isNativeApp } from '../services/native';
 import { motion } from 'motion/react';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
@@ -6,6 +7,8 @@ import './ThemeToggle.css';
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+
+  if (isNativeApp()) return null;
 
   return (
     <motion.button

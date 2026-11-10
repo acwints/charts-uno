@@ -1344,7 +1344,7 @@ async def list_my_charts(
 async def list_public_charts(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """List public charts (discover page)"""

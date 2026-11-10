@@ -96,7 +96,7 @@ class AccessRegressionTests(unittest.TestCase):
 
     def test_public_attribution_has_no_private_account_fields(self):
         self.chart.is_public=True; self.db.commit()
-        author=self.client.get("/api/charts/public").json()["charts"][0]["user"]
+        author=self.client.get("/api/charts/public", headers=self.auth).json()["charts"][0]["user"]
         self.assertEqual(author["id"],self.owner.id)
         self.assertFalse(set(author)&{"email","last_login","providers","created_at"})
         self.assertEqual(self.client.get("/api/user/me",headers=self.owner_auth).json()["email"],self.owner.email)

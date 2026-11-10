@@ -92,11 +92,18 @@ class FeedEndpointTests(unittest.TestCase):
     def tearDown(self):
         self.db.close()
 
+    def test_feed_requires_an_account(self):
+        _make_chart(self.db, self.author, "Public one")
+        self.assertEqual(self.client.get("/api/charts/public").status_code, 401)
+        self.assertEqual(self.client.get("/api/charts/public", headers={
+            "Authorization": "Bearer invalid"
+        }).status_code, 401)
+
     def test_public_feed_lists_only_public_charts(self):
         _make_chart(self.db, self.author, "Public one")
         _make_chart(self.db, self.author, "Private one", is_public=False)
 
-        resp = self.client.get("/api/charts/public")
+        resp = self.client.get("/api/charts/public", headers=self.viewer_auth)
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body["total"], 1)
@@ -109,7 +116,7 @@ class FeedEndpointTests(unittest.TestCase):
         for i in range(5):
             _make_chart(self.db, self.author, f"Chart {i}")
 
-        resp = self.client.get("/api/charts/public?limit=2&offset=2")
+        resp = self.client.get("/api/charts/public?limit=2&offset=2", headers=self.viewer_auth)
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body["total"], 5)

@@ -123,7 +123,7 @@ class ShareAndSignupTests(unittest.TestCase):
         again = self.client.post(f"/api/charts/{self.chart_id}/share", headers=self.owner_auth)
         self.assertEqual(again.json()["token"], token)
 
-        self.assertEqual(self.client.get("/api/charts/public").json()["total"], 0)
+        self.assertEqual(self.client.get("/api/charts/public", headers=self.owner_auth).json()["total"], 0)
         self.assertEqual(self.client.get(f"/api/charts/{self.chart_id}").status_code, 403)
 
         page = self.client.get(f"/s/{token}")

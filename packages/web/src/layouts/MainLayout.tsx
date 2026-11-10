@@ -7,7 +7,6 @@ import { isNativeApp } from '../services/native';
 import { Header } from '../components/Header';
 import { MobileTabBar } from '../components/MobileTabBar';
 import { MobileOnboarding } from '../components/MobileOnboarding';
-import { useMediaQuery } from '../hooks/useMediaQuery';
 import { DashboardSidebar } from '../components/Dashboard/DashboardSidebar';
 import { AuthModal } from '../components/AuthModal';
 import { ChatPanel } from '../components/ChatPanel';
@@ -34,14 +33,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   const mainRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
-  const isPhoneViewport = useMediaQuery('(max-width: 768px)');
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { isAuthModalOpen, openAuthModal, closeAuthModal } = useAuthModal();
   const { error: showSaveError } = useToast();
   const [pendingChartFailed, setPendingChartFailed] = useState(false);
-  const [hasOnboarded, setHasOnboarded] = useState(
-    () => localStorage.getItem(ONBOARDED_STORAGE_KEY) === 'true'
-  );
   const { chartData, chartConfig, setChartData, setChartConfig } = useChartStore();
   const routeContent = children || <Outlet context={{ openAuthModal, pendingChartFailed }} />;
 
@@ -93,15 +88,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [isAuthenticated]);
 
-  const completeOnboarding = (thenSignIn: boolean) => {
-    localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-    setHasOnboarded(true);
-    navigate('/feed');
-    if (thenSignIn) {
-      openAuthModal();
-    }
-  };
-
   useEffect(() => {
     rememberSignupSource(location.search, document.referrer, location.pathname);
     const params = new URLSearchParams(location.search);
@@ -130,15 +116,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }, [location.hash, location.pathname, location.search, isAuthLoading, isAuthenticated, navigate, openAuthModal]);
 
-  const showOnboarding =
-    isPhoneViewport && !isAuthLoading && !isAuthenticated && !hasOnboarded && location.pathname !== '/';
+  const requiresAccount = isNativeApp()
+    ? !['/terms', '/privacy'].includes(location.pathname)
+    : /^\/(?:$|feed(?:\/|$)|new(?:\/|$)|chart(?:\/|$)|dashboard(?:s)?(?:\/|$)|team(?:\/|$)|settings(?:\/|$)|invite(?:\/|$))/.test(location.pathname);
 
-  if (showOnboarding) {
+  if (requiresAccount && !isAuthenticated) {
+    if (isAuthLoading) return <div role="status">Loading your account…</div>;
     return (
-      <MobileOnboarding
-        onSignIn={() => completeOnboarding(true)}
-        onExplore={() => completeOnboarding(false)}
-      />
+      <>
+        <MobileOnboarding onSignIn={openAuthModal} />
+        <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
+      </>
     );
   }
 

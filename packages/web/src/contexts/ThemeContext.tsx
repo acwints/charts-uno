@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { updateNativeStatusBar } from '../services/native';
+import { isNativeApp, updateNativeStatusBar } from '../services/native';
 import type { ThemeMode } from '@chartsuno/shared';
 
 const THEME_STORAGE_KEY = 'chartsuno-theme';
@@ -17,7 +17,7 @@ function getSystemTheme(): ThemeMode {
 }
 
 function getStoredTheme(): ThemeMode | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || isNativeApp()) return null;
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
   return null;
@@ -62,7 +62,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (event: MediaQueryListEvent) => {
-      if (!hasStoredPreference) {
+      if (isNativeApp() || !hasStoredPreference) {
         setThemeState(event.matches ? 'dark' : 'light');
       }
     };
@@ -71,6 +71,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [hasStoredPreference]);
 
   const setTheme = useCallback((nextTheme: ThemeMode) => {
+    if (isNativeApp()) return;
     setThemeState(nextTheme);
     localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     setHasStoredPreference(true);
