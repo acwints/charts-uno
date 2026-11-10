@@ -19,6 +19,7 @@ interface EditableSpreadsheetProps {
   isDirty: boolean;
   onChange: (data: ChartData) => void;
   onReset: () => void;
+  editToken?: number;
 }
 
 export function EditableSpreadsheet({
@@ -27,6 +28,7 @@ export function EditableSpreadsheet({
   isDirty,
   onChange,
   onReset,
+  editToken = 0,
 }: EditableSpreadsheetProps) {
   const colors = COLOR_PALETTES[colorScheme];
   const numericValues = useMemo(() => {
@@ -212,6 +214,7 @@ export function EditableSpreadsheet({
                     <EditableCell
                       value={label}
                       onChange={(v) => handleLabelChange(rowIdx, v)}
+                      startEditingToken={rowIdx === 0 ? editToken : 0}
                     />
                     {data.labels.length > 1 && (
                       <button

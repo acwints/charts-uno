@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { StarterPicker } from '../components/StarterPicker/StarterPicker';
 import { motion } from 'motion/react';
 import type { ChartLogoOption } from '../components/ChartPreview';
 import { ChartWorkbench, type ChartEditorView } from '../components/ChartWorkbench';
@@ -8,7 +9,7 @@ import { useChartStore } from '../stores/chartStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTeam } from '../contexts/TeamContext';
 import { useToast } from '../contexts/ToastContext';
-import { getChart, createChart, getTeamBranding, getChartPublishTargets, updateChart } from '../services/api';
+import { getChart, createChart, getMyCharts, getTeamBranding, getChartPublishTargets, updateChart } from '../services/api';
 import type { ChartData, ChartConfig } from '../types';
 import type { WatermarkSettings } from '../services/exportService';
 import { creditHref } from '../services/chartCredit';
@@ -41,6 +42,8 @@ export function ChartView() {
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({ enabled: true, customLogoUrl: null });
   const [logoOptions, setLogoOptions] = useState<ChartLogoOption[]>([]);
   const [editorView, setEditorView] = useState<ChartEditorView>('chart');
+  const [editToken, setEditToken] = useState(0);
+  const [offerTemplates, setOfferTemplates] = useState(false);
   const justSavedIdRef = useRef<string | null>(null);
   const activeScope = `${user?.id ?? "anonymous"}:${id ?? "new"}`;
   const activeScopeRef = useRef(activeScope);
@@ -258,6 +261,35 @@ export function ChartView() {
     }
   }, [id, chartData, navigate]);
 
+  useEffect(() => {
+    if (id || !isAuthenticated) {
+      setOfferTemplates(false);
+      return;
+    }
+    let active = true;
+    getMyCharts(1, 0)
+      .then((page) => {
+        if (active) setOfferTemplates(page.total === 0);
+      })
+      .catch(() => {
+        if (active) setOfferTemplates(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, isAuthenticated]);
+
+  useEffect(() => {
+    if (id) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paste') !== '1') return;
+    setEditorView('data');
+    setEditToken((token) => token + 1);
+    params.delete('paste');
+    const search = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`);
+  }, [id]);
+
   const isImageSource = chartData?.sourceType === 'image';
 
   const isDataDirty = useMemo(() => {
@@ -314,6 +346,15 @@ export function ChartView() {
       transition={{ duration: 0.4 }}
       className="chart-view"
     >
+      {offerTemplates && (
+        <StarterPicker
+          onSaved={(chartId) => navigate(`/chart/${chartId}`, { replace: true })}
+          onPaste={() => {
+            setEditorView('data');
+            setEditToken((token) => token + 1);
+          }}
+        />
+      )}
       <ChartWorkbench
         key={activeScope}
         data={chartData}
@@ -343,6 +384,7 @@ export function ChartView() {
         }}
         onDataChange={setChartData}
         onDataReset={handleDataReset}
+        editToken={editToken}
         onConfigChange={setChartConfig}
         onLogoSelectionChange={handleLogoSelectionChange}
       />

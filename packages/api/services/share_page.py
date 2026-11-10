@@ -178,6 +178,21 @@ def looks_seeded(email: str) -> bool:
     return _SEED_LOCAL.fullmatch(local) is not None
 
 
+def _template_picks(db: Session, moment: datetime, user_ids: list, since: datetime) -> int:
+    """Charts saved from a starter template by counted people. Not a person count."""
+    if not user_ids:
+        return 0
+    total = 0
+    rows = db.query(Chart.created_at, Chart.source_type).filter(Chart.user_id.in_(user_ids)).all()
+    for created_at, source_type in rows:
+        if not isinstance(source_type, str) or not source_type.startswith("template:"):
+            continue
+        created = _as_datetime(created_at)
+        if since <= created <= moment:
+            total += 1
+    return total
+
+
 def has_sign_in_provider(google_id: Optional[str], apple_id: Optional[str]) -> bool:
     if apple_id:
         return True
@@ -363,6 +378,8 @@ def signup_census(db: Session, now: Optional[datetime] = None) -> dict:
         "users_with_a_chart_24h": first_chart_in_window(day_ago),
         "first_chart_saves_today": first_chart_in_window(moment.replace(hour=0, minute=0, second=0, microsecond=0)),
         "first_chart_saves_7d": first_chart_in_window(week_ago),
+        "template_picks_today": _template_picks(db, moment, [item["id"] for item in survivors], moment.replace(hour=0, minute=0, second=0, microsecond=0)),
+        "template_picks_7d": _template_picks(db, moment, [item["id"] for item in survivors], week_ago),
         "users_with_a_chart_7_days_ago": had_chart_before(week_ago),
         "users_with_a_chart_yesterday": had_chart_before(day_ago),
         "signups_last_7d": len(recent),

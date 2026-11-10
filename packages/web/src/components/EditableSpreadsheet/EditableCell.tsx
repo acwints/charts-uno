@@ -8,6 +8,7 @@ interface EditableCellProps {
   decimalPlaces?: number;
   useGrouping?: boolean;
   isHeader?: boolean;
+  startEditingToken?: number;
 }
 
 export function EditableCell({
@@ -17,10 +18,19 @@ export function EditableCell({
   decimalPlaces,
   useGrouping = true,
   isHeader = false,
+  startEditingToken = 0,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(value));
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!startEditingToken) return;
+    setEditValue(String(value));
+    setIsEditing(true);
+    // Focus once when paste asks for the first cell, not on later value edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startEditingToken]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
