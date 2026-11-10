@@ -6,7 +6,7 @@ import { ChartView } from '../src/pages/ChartView';
 import { ChartBuilder } from '../src/pages/ChartBuilder';
 import { useChartStore } from '../src/stores/chartStore';
 
-const mocks = vi.hoisted(() => ({ getChart: vi.fn(), updateChart: vi.fn(), createChart: vi.fn(), recommend: vi.fn(), teams: [], toast: { error: vi.fn(), success: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ getChart: vi.fn(), getMyCharts: vi.fn(async () => ({ charts: [], total: 1 })), updateChart: vi.fn(), createChart: vi.fn(), recommend: vi.fn(), teams: [], toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('../src/services/api', () => ({ ...mocks, getChartPublishTargets: vi.fn(async () => ({ is_public: false, team_ids: [] })), getTeamBranding: vi.fn() }));
 vi.mock('../src/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user' }, isAuthenticated: true }) }));
 vi.mock('../src/contexts/TeamContext', () => ({ useTeam: () => ({ teams: mocks.teams }) }));

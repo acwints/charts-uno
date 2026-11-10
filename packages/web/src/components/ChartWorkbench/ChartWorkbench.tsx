@@ -50,6 +50,7 @@ interface ChartWorkbenchProps {
   onPublishTargetsChange: (targets: { isPublic: boolean; teamIds: string[] }) => void;
   onDataChange: (data: ChartData) => void;
   onDataReset: () => void;
+  editToken?: number;
   onConfigChange: (config: ChartConfig) => void;
   onLogoSelectionChange: (value: string) => void;
 }
@@ -90,6 +91,7 @@ export function ChartWorkbench({
   onPublishTargetsChange,
   onDataChange,
   onDataReset,
+  editToken = 0,
   onConfigChange,
   onLogoSelectionChange,
 }: ChartWorkbenchProps) {
@@ -257,6 +259,7 @@ export function ChartWorkbench({
             isDirty={isDataDirty}
             onChange={onDataChange}
             onReset={onDataReset}
+            editToken={editToken}
           />
         </div>
       ) : isImageSource ? (

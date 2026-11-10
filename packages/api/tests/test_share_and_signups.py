@@ -183,6 +183,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "users_with_a_chart_24h": 0,
             "first_chart_saves_today": 0,
             "first_chart_saves_7d": 0,
+            "template_picks_today": 0,
+            "template_picks_7d": 0,
             "users_with_a_chart_7_days_ago": 0,
             "users_with_a_chart_yesterday": 0,
             "signups_last_7d": 1,
@@ -269,6 +271,8 @@ class ShareAndSignupTests(unittest.TestCase):
             "users_with_a_chart_24h": 0,
             "first_chart_saves_today": 0,
             "first_chart_saves_7d": 0,
+            "template_picks_today": 0,
+            "template_picks_7d": 0,
             "users_with_a_chart_7_days_ago": 1,
             "users_with_a_chart_yesterday": 1,
             "signups_last_7d": 6,
@@ -360,6 +364,29 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertNotIn("newest_signup", body.text)
         signup = self.client.get("/api/stats/signups")
         self.assertEqual(signup.json().keys(), body.json().keys())
+
+    def test_template_picks_count_real_people_only(self):
+        now = datetime(2026, 11, 10, 15, 0, 0)
+        person = User(email="maker.templates@gmail.com", google_id="template-maker", name="Maker", created_at=now - timedelta(days=2))
+        sample = User(email="sample@example.com", google_id="template-sample", name="Sample")
+        self.db.add_all([person, sample])
+        self.db.commit()
+        self.db.add_all([
+            Chart(user_id=person.id, title="Sales", data={"labels": ["Jan"], "series": [{"name": "S", "data": [1]}]},
+                  config={"type": "bar", "title": "Sales"}, source_type="template:sales", created_at=now - timedelta(hours=2)),
+            Chart(user_id=person.id, title="Old", data={"labels": ["Jan"], "series": [{"name": "S", "data": [1]}]},
+                  config={"type": "bar", "title": "Old"}, source_type="template:traffic", created_at=now - timedelta(days=9)),
+            Chart(user_id=sample.id, title="Ignored", data={"labels": ["Jan"], "series": [{"name": "S", "data": [1]}]},
+                  config={"type": "pie", "title": "Ignored"}, source_type="template:survey", created_at=now - timedelta(hours=1)),
+            Chart(user_id=person.id, title="Paste", data={"labels": ["Jan"], "series": [{"name": "S", "data": [1]}]},
+                  config={"type": "bar", "title": "Paste"}, source_type="paste", created_at=now - timedelta(hours=1)),
+        ])
+        self.db.commit()
+        public = signup_census(self.db, now)["public"]
+        self.assertEqual(public["template_picks_today"], 1)
+        self.assertEqual(public["template_picks_7d"], 1)
+        self.assertNotIn("gmail.com", str(public["template_picks_today"]))
+        self.assertNotIn("@", str(public["template_picks_7d"]))
 
     def test_public_count_includes_users_with_a_chart_after_a_real_save(self):
         """A chart saved through POST /api/charts is what users_with_a_chart counts."""
