@@ -1,8 +1,9 @@
 # Ship Chartsuno to the iOS App Store
 
 This is the path from this repo to an App Store build. The native project is
-already in the repo. You archive and upload it from a Mac with Xcode. This
-environment cannot sign or upload the binary.
+already in the repo. Archive and upload it from a Mac with Xcode. This Mac
+has signing identities and an authenticated `asc` CLI; check their validity
+and the latest App Store Connect build before each release.
 
 The iOS app is the existing React app bundled into a Capacitor shell
 (`packages/mobile`). It is not a second UI. API calls go to
@@ -94,11 +95,11 @@ Swift Package Manager, not CocoaPods.
    the App ID has to allow it. No Services ID, key, or callback URL is
    required for this native flow.
 4. **General** tab:
-   - Version (`MARKETING_VERSION`): `1.0` until you ship a user-visible
-     version bump.
+   - Version (`MARKETING_VERSION`): `1.1` for the reviewed-publication release.
+     The approved `1.0` train is closed to new uploads.
    - Build (`CURRENT_PROJECT_VERSION`): must increase on every upload.
-     The project is set to `2026.10.21`. Apple rejects a reused build
-     number. `2026.10.20` was already uploaded.
+     The project is set to `2026.11.10`. Apple rejects a reused build
+     number. Query App Store Connect before selecting the next number.
 5. Select a generic **Any iOS Device (arm64)** destination. Not a simulator.
 6. **Product → Archive**. Wait for the Organizer window.
 7. **Distribute App → App Store Connect → Upload**.
@@ -185,8 +186,9 @@ account works for it, and also for an Apple or Google account. Sign in
 with Apple and Continue with Google are on the same sheet. Google opens
 Apple's authentication sheet and returns to the same screen.
 
-The feed, including Report and Block, works without an account. Saving
-a chart requires sign-in.
+An account is required to enter the mobile app and view the feed.
+Publishing a saved chart requires reviewing its chart, public table, and
+source disclosure. Advanced chart creation is available on the website.
 
 There are no in-app purchases. Plans are managed on the website and this
 build does not link to checkout. A plan already bought on the website is
