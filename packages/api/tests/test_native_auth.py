@@ -110,6 +110,8 @@ class NativeAuthTests(unittest.TestCase):
             "native_challenge": pkce_challenge(self.verifier),
             "native_nonce": self.nonce,
             "ref": "Abcd1234",
+            "referrer_host": "https://news.google.com/story",
+            "utm_source": "newsletter",
         })
         self.assertEqual(response.status_code, 200, response.text)
         state = parse_qs(urlsplit(response.json()["auth_url"]).query)["state"][0]
@@ -119,6 +121,9 @@ class NativeAuthTests(unittest.TestCase):
         db.expire_all()
         created = db.query(User).filter(User.email == "native@example.test").one()
         self.assertEqual(created.referred_by, "Abcd1234")
+        self.assertEqual(created.signup_platform, "ios")
+        self.assertIsNone(created.signup_referrer_host)
+        self.assertIsNone(created.signup_utm_source)
 
     def test_callback_and_cookie_survive_subsequent_requests(self):
         code = self.callback()

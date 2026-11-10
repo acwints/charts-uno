@@ -287,7 +287,11 @@ async def public_count(request: Request, db: Session = Depends(get_db)):
     homepage_charts_today is anonymous renders on the UTC day. homepage_charts_7d
     is the same renders in the last 7 days. homepage_views_today and
     homepage_views_7d count homepage loads. chart_starts_today and
-    chart_starts_7d count the first paste, drop, or sample. chart_saves_7d
+    chart_starts_7d count the first paste, drop, or sample. signup_providers
+    and signups_last_7d_by_day count the same distinct people as count, split
+    by Google, Apple, or both. signup_attribution counts ios, web, and unknown
+    platform, plus how many of those people have a referrer host or any UTM.
+    No email, name, id, or per-person timestamp. chart_saves_7d
     counts pending homepage charts saved after sign-in, and PNG downloads,
     which count as saves. chart_downloads_today and chart_downloads_7d are
     those PNG downloads. None of these is a person.
@@ -582,15 +586,30 @@ def _safe_frontend_target(target: Optional[str]) -> str:
 @app.get("/auth/google")
 async def google_auth(target: Optional[str] = None, native_challenge: Optional[str] = None, native_nonce: Optional[str] = None,
                       web_challenge: Optional[str] = None, web_nonce: Optional[str] = None,
-                      ref: Optional[str] = None):
-    """Initiate Google OAuth flow"""
+                      ref: Optional[str] = None,
+                      referrer_host: Optional[str] = None, landing_path: Optional[str] = None,
+                      utm_source: Optional[str] = None, utm_medium: Optional[str] = None,
+                      utm_campaign: Optional[str] = None, utm_content: Optional[str] = None,
+                      utm_term: Optional[str] = None):
+    """Initiate Google OAuth flow.
+
+    Attribution query fields are sanitized into the signed web state. They are
+    not a platform flag. Native vs web is decided by which state this route mints.
+    """
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google OAuth not configured")
 
     if native_challenge is not None or native_nonce is not None:
         state = create_native_state(native_challenge or "", native_nonce or "", ref)
     else:
-        state = create_web_state(web_challenge or "", web_nonce or "", _safe_frontend_target(target), ref)
+        state = create_web_state(
+            web_challenge or "", web_nonce or "", _safe_frontend_target(target), ref,
+            {
+                "referrer_host": referrer_host, "landing_path": landing_path,
+                "utm_source": utm_source, "utm_medium": utm_medium, "utm_campaign": utm_campaign,
+                "utm_content": utm_content, "utm_term": utm_term,
+            },
+        )
 
     # Build authorization URL
     auth_url = (
@@ -704,6 +723,13 @@ async def google_callback(
             picture=picture,
         )
         user.referral_code = allocate_referral_code(db)
+        from services.signup_attribution import apply_first_signup_source
+        # Native state is minted only for the iOS Google handoff. Browser Google is web.
+        apply_first_signup_source(
+            user,
+            "ios" if native_state else "web",
+            (web_state or {}).get("attr") if web_state else None,
+        )
         db.add(user)
         state_payload = native_state or web_state or {}
         attach_referral(db, user, state_payload.get("ref"))

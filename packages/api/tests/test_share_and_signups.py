@@ -27,6 +27,31 @@ from services.share_page import (
 )
 
 
+def _empty_day(date: str) -> dict:
+    return {"date": date, "google": 0, "apple": 0, "both": 0, "total": 0}
+
+
+def _window_days(moment: datetime, fills: dict) -> list:
+    start = (moment - timedelta(days=7)).date()
+    day = start
+    rows = []
+    while day <= moment.date():
+        row = _empty_day(day.isoformat())
+        extra = fills.get(day.isoformat(), {})
+        row.update(extra)
+        rows.append(row)
+        day += timedelta(days=1)
+    return rows
+
+
+def _days_ending_today(google_today: int = 0) -> list:
+    moment = datetime.utcnow()
+    fills = {}
+    if google_today:
+        fills[moment.date().isoformat()] = {"google": google_today, "total": google_today}
+    return _window_days(moment, fills)
+
+
 def _png_pixels(data: bytes) -> bytes:
     if not data.startswith(b"\x89PNG\r\n\x1a\n"):
         raise AssertionError("not a png")
@@ -170,8 +195,16 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_saves_7d": 0,
             "chart_downloads_today": 0,
             "chart_downloads_7d": 0,
+            "signup_providers": {"google": 1, "apple": 0, "both": 0},
+            "signups_last_7d_by_day": _days_ending_today(google_today=1),
+            "signup_attribution": {
+                "platforms": {"ios": 0, "web": 0, "unknown": 1},
+                "with_referrer_host": 0,
+                "with_utm": 0,
+            },
         }
         self.assertEqual(counted.json(), expected)
+        self.assertNotIn("created_at", counted.text)
         self.assertEqual(counted.headers["cache-control"], "no-store")
         self.assertNotIn("gmail.com", counted.text)
         self.assertNotIn("@", counted.headers.get("x-signup-audit", ""))
@@ -246,6 +279,16 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_saves_7d": 0,
             "chart_downloads_today": 0,
             "chart_downloads_7d": 0,
+            "signup_providers": {"google": 7, "apple": 0, "both": 0},
+            "signups_last_7d_by_day": _window_days(now, {
+                "2026-10-29": {"google": 5, "total": 5},
+                "2026-10-30": {"google": 1, "total": 1},
+            }),
+            "signup_attribution": {
+                "platforms": {"ios": 0, "web": 0, "unknown": 7},
+                "with_referrer_host": 0,
+                "with_utm": 0,
+            },
         })
         self.assertEqual(census["public"]["count"], census["public"]["count_7_days_ago"] + census["public"]["signups_last_7d"])
         self.assertEqual(census["audit"], {
@@ -265,6 +308,54 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(credit_url(None), "https://www.chartsuno.com/")
         self.assertEqual(credit_url("short"), "https://www.chartsuno.com/")
         self.assertEqual(credit_url("Person01"), "https://www.chartsuno.com/?ref=Person01")
+
+    def test_signup_source_aggregates_use_the_count_filters_and_no_identity(self):
+        now = datetime(2026, 11, 10, 15, 0, 0)
+        self.db.add_all([
+            User(email="web.maker@gmail.com", google_id="web-maker", name="Web Maker", created_at=now - timedelta(days=1),
+                 signup_platform="web", signup_referrer_host="google.com", signup_landing_path="/csv-to-chart",
+                 signup_utm_source="newsletter"),
+            User(email="phone.maker@gmail.com", apple_id="apple-maker", google_id=None, name="Phone",
+                 created_at=now - timedelta(hours=3), signup_platform="ios"),
+            User(email="both.maker@gmail.com", google_id="both-google", apple_id="both-apple", name="Both",
+                 created_at=now - timedelta(days=8)),
+            User(email="sample@example.com", google_id="sample-source", name="Sample", signup_platform="web"),
+            User(email="reviewer@gmail.com", google_id=REVIEW_LOGIN_GOOGLE_ID, name="App Review", signup_platform="ios"),
+        ])
+        self.db.commit()
+        census = signup_census(self.db, now)
+        public = census["public"]
+        self.assertEqual(public["count"], 3)
+        self.assertEqual(public["signup_providers"], {"google": 1, "apple": 1, "both": 1})
+        self.assertEqual(public["signup_providers"]["google"] + public["signup_providers"]["apple"] + public["signup_providers"]["both"], public["count"])
+        self.assertEqual(public["signup_attribution"]["platforms"]["web"], 1)
+        self.assertEqual(public["signup_attribution"]["platforms"]["ios"], 1)
+        self.assertEqual(public["signup_attribution"]["platforms"]["unknown"], public["count"] - 2)
+        self.assertEqual(
+            public["signup_attribution"]["platforms"]["ios"]
+            + public["signup_attribution"]["platforms"]["web"]
+            + public["signup_attribution"]["platforms"]["unknown"],
+            public["count"],
+        )
+        self.assertEqual(public["signup_attribution"]["with_referrer_host"], 1)
+        self.assertEqual(public["signup_attribution"]["with_utm"], 1)
+        recent = [day for day in public["signups_last_7d_by_day"] if day["total"]]
+        self.assertEqual(recent, [
+            {"date": "2026-11-09", "google": 1, "apple": 0, "both": 0, "total": 1},
+            {"date": "2026-11-10", "google": 0, "apple": 1, "both": 0, "total": 1},
+        ])
+        self.assertEqual(sum(day["total"] for day in public["signups_last_7d_by_day"]), public["signups_last_7d"])
+        body = self.client.get("/api/count")
+        self.assertEqual(body.status_code, 200, body.text)
+        self.assertNotIn("created_at", body.text)
+        self.assertNotIn("@", body.text)
+        self.assertNotIn("gmail.com", body.text)
+        self.assertNotIn("google.com", body.text)
+        self.assertNotIn("Web Maker", body.text)
+        self.assertNotIn("apple-maker", body.text)
+        self.assertNotIn("newest_signup", body.text)
+        signup = self.client.get("/api/stats/signups")
+        self.assertEqual(signup.json().keys(), body.json().keys())
 
     def test_public_count_includes_users_with_a_chart_after_a_real_save(self):
         """A chart saved through POST /api/charts is what users_with_a_chart counts."""
