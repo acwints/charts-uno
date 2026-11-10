@@ -82,13 +82,12 @@ export function MobileOnboarding({ onSignIn, onExplore }: MobileOnboardingProps)
         ))}
       </div>
 
-      <div className="onboard__dots" role="tablist" aria-label="Onboarding progress">
+      <div className="onboard__dots" role="group" aria-label="Onboarding progress">
         {SLIDES.map((slide, index) => (
           <button
             key={slide.title}
             type="button"
-            role="tab"
-            aria-selected={index === activeIndex}
+            aria-current={index === activeIndex ? 'step' : undefined}
             aria-label={`Slide ${index + 1}`}
             className={`onboard__dot ${index === activeIndex ? 'onboard__dot--active' : ''}`}
             onClick={() => scrollTo(index)}

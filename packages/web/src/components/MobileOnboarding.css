@@ -145,17 +145,27 @@
 }
 
 .onboard__dot {
-  width: 8px;
-  height: 8px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: var(--bg-hover);
+  background: transparent;
+  display: grid;
+  place-items: center;
   cursor: pointer;
   transition: background-color 150ms, transform 150ms;
 }
 
-.onboard__dot--active {
+.onboard__dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+}
+
+.onboard__dot--active::before {
   background: var(--accent);
   transform: scale(1.25);
 }
