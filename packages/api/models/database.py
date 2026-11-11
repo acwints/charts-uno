@@ -503,7 +503,8 @@ class HomepageChartEvent(Base):
     __tablename__ = "homepage_chart_events"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # render, view, start, or save. Not a visitor id.
+    # render, view, start, save, download, keep_shown, keep_click, or keep_signin.
+    # Not a visitor id.
     kind = Column(String(16), nullable=False, default="render")
     source = Column(String(16), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

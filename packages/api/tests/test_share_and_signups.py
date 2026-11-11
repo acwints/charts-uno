@@ -203,8 +203,16 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_starts_today": 0,
             "chart_starts_7d": 0,
             "chart_saves_7d": 0,
+            "chart_saves_7d_signed_in": 0,
+            "chart_saves_7d_anonymous": 0,
             "chart_downloads_today": 0,
             "chart_downloads_7d": 0,
+            "keep_prompt_shown_today": 0,
+            "keep_prompt_shown_7d": 0,
+            "keep_prompt_clicked_today": 0,
+            "keep_prompt_clicked_7d": 0,
+            "keep_prompt_signins_today": 0,
+            "keep_prompt_signins_7d": 0,
             "signup_providers": {"google": 1, "apple": 0, "both": 0},
             "signups_last_7d_by_day": _days_ending_today(google_today=1),
             "signup_attribution": {
@@ -291,8 +299,16 @@ class ShareAndSignupTests(unittest.TestCase):
             "chart_starts_today": 0,
             "chart_starts_7d": 0,
             "chart_saves_7d": 0,
+            "chart_saves_7d_signed_in": 0,
+            "chart_saves_7d_anonymous": 0,
             "chart_downloads_today": 0,
             "chart_downloads_7d": 0,
+            "keep_prompt_shown_today": 0,
+            "keep_prompt_shown_7d": 0,
+            "keep_prompt_clicked_today": 0,
+            "keep_prompt_clicked_7d": 0,
+            "keep_prompt_signins_today": 0,
+            "keep_prompt_signins_7d": 0,
             "signup_providers": {"google": 7, "apple": 0, "both": 0},
             "signups_last_7d_by_day": _window_days(now, {
                 "2026-10-29": {"google": 5, "total": 5},
@@ -719,7 +735,10 @@ class ShareAndSignupTests(unittest.TestCase):
         self.assertEqual(counted["chart_starts_7d"], 1)
         self.assertEqual(counted["chart_downloads_today"], 1)
         self.assertEqual(counted["chart_downloads_7d"], 1)
+        self.assertEqual(counted["chart_saves_7d_signed_in"], 1)
+        self.assertEqual(counted["chart_saves_7d_anonymous"], 1)
         self.assertEqual(counted["chart_saves_7d"], 2)
+        self.assertEqual(counted["keep_prompt_shown_7d"], 0)
 
         viewed = self.client.post(
             "/api/events/homepage-chart",
@@ -767,6 +786,40 @@ class ShareAndSignupTests(unittest.TestCase):
         after_download = self.client.get("/api/count").json()
         self.assertEqual(after_download["chart_downloads_today"], after["chart_downloads_today"] + 1)
         self.assertEqual(after_download["chart_downloads_7d"], after["chart_downloads_7d"] + 1)
+        self.assertEqual(after_download["chart_saves_7d_anonymous"], after["chart_saves_7d_anonymous"] + 1)
         self.assertEqual(after_download["chart_saves_7d"], after["chart_saves_7d"] + 1)
-        self.assertNotIn("gmail.com", str(after_download))
+        shown = self.client.post(
+            "/api/events/homepage-chart",
+            json={"kind": "keep_shown"},
+            headers={"User-Agent": "SecretAgent/9", "X-Forwarded-For": "203.0.113.50"},
+        )
+        self.assertEqual(shown.status_code, 204, shown.text)
+        clicked = self.client.post("/api/events/homepage-chart", json={"kind": "keep_click"})
+        self.assertEqual(clicked.status_code, 204, clicked.text)
+        signed = self.client.post("/api/events/homepage-chart", json={"kind": "keep_signin"})
+        self.assertEqual(signed.status_code, 204, signed.text)
+        self.db.expire_all()
+        keep_row = (
+            self.db.query(HomepageChartEvent)
+            .filter(HomepageChartEvent.kind == "keep_shown")
+            .one()
+        )
+        keep_stored = f"{keep_row.kind} {keep_row.source} {keep_row.created_at}"
+        self.assertIsNone(keep_row.source)
+        self.assertNotIn("203.0.113.50", keep_stored)
+        self.assertNotIn("SecretAgent", keep_stored)
+        self.assertEqual(
+            {column.name for column in HomepageChartEvent.__table__.columns},
+            {"id", "kind", "source", "created_at"},
+        )
+        after_keep = self.client.get("/api/count").json()
+        self.assertEqual(after_keep["keep_prompt_shown_today"], after_download["keep_prompt_shown_today"] + 1)
+        self.assertEqual(after_keep["keep_prompt_shown_7d"], after_download["keep_prompt_shown_7d"] + 1)
+        self.assertEqual(after_keep["keep_prompt_clicked_today"], after_download["keep_prompt_clicked_today"] + 1)
+        self.assertEqual(after_keep["keep_prompt_clicked_7d"], after_download["keep_prompt_clicked_7d"] + 1)
+        self.assertEqual(after_keep["keep_prompt_signins_today"], after_download["keep_prompt_signins_today"] + 1)
+        self.assertEqual(after_keep["keep_prompt_signins_7d"], after_download["keep_prompt_signins_7d"] + 1)
+        self.assertEqual(after_keep["count"], after_download["count"])
+        self.assertNotIn("gmail.com", str(after_keep))
+        self.assertNotIn("@", str(after_keep["keep_prompt_signins_7d"]))
         reset_homepage_event_limit()

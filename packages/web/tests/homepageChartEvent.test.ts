@@ -5,6 +5,9 @@ import {
   reportHomepageSave,
   reportHomepageStart,
   reportHomepageView,
+  reportKeepPromptClicked,
+  reportKeepPromptShown,
+  reportKeepPromptSignIn,
   resetHomepageChartReport,
 } from '../src/services/homepageChartEvent';
 
@@ -30,6 +33,10 @@ test('homepage funnel events post once each and send no cookies', () => {
   reportHomepageSave();
   reportHomepageDownload();
   reportHomepageDownload();
+  reportKeepPromptShown();
+  reportKeepPromptShown();
+  reportKeepPromptClicked();
+  reportKeepPromptSignIn();
 
   expect(calls.map((call) => call.init.body)).toEqual([
     '{"kind":"view"}',
@@ -37,6 +44,9 @@ test('homepage funnel events post once each and send no cookies', () => {
     '{"kind":"render","source":"paste"}',
     '{"kind":"save"}',
     '{"kind":"download"}',
+    '{"kind":"keep_shown"}',
+    '{"kind":"keep_click"}',
+    '{"kind":"keep_signin"}',
   ]);
   expect(sessionStorage.getItem('chartsuno.homepageDownloadCounted')).toBe('1');
   for (const call of calls) {
