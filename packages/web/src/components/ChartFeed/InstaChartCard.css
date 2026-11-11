@@ -229,3 +229,7 @@
 
 .insta-card__published .chart-container { min-height: 300px; }
 .insta-card__published .chart-header { display: none; }
+
+.insta-card__like-count { font-size: 0.875rem; font-variant-numeric: tabular-nums; margin-left: 6px; }
+
+.insta-card__published .chart-source { display: none; }

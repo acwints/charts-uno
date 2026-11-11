@@ -1007,3 +1007,5 @@
     transition: none;
   }
 }
+
+.input-content-shell > .error-message { margin-bottom: var(--space-3); scroll-margin-block: 80px; }

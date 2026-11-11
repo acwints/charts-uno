@@ -80,3 +80,10 @@
     justify-content: flex-end;
   }
 }
+
+.dashboard-header--native { padding: 8px 16px 16px; border: 0; }
+.dashboard-header--native .dashboard-header-top { display: block; }
+.dashboard-header--native .dashboard-header-controls { flex-direction: row; gap: 8px; }
+.dashboard-header--native .search-input-container { flex: 1; min-width: 0; }
+.dashboard-header--native select { max-width: 112px; min-height: 44px; border: 0; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font: inherit; padding: 8px; }
+.dashboard-header--native select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

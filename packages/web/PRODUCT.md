@@ -30,7 +30,7 @@ Preserve the Chartsuno identity and existing system-based iOS appearance. “Ins
 
 ## Evidence on Hand
 
-Existing app, API models, chart/table renderers, and authenticated Pro Max session. Research and implementation sequencing: ../../docs/product/mobile-data-backed-posts.md. Source disclosures are not independent verification. Legacy public/team/unlisted charts remain readable as grandfathered snapshots; new publications require review. Native verification of this composer remains pending because the device installation tool blocked the current run.
+Existing app, API models, chart/table renderers, and authenticated Pro Max session. Research and implementation sequencing: ../../docs/product/mobile-data-backed-posts.md. Source disclosures are not independent verification. Legacy public/team/unlisted charts remain readable as grandfathered snapshots; new publications require review. The revised build was installed and opened in the existing iPhone 18 Pro Max simulator on 2026-11-10. Authenticated feed, reader, library, and saved-chart composer entry/source screens were inspected. Browser fixtures cover light/dark at 390 and 440 pixels, caption/review and error recovery. Physical-device, enlarged Dynamic Type, and end-to-end native publication remain unverified.
 
 ## Product Principles
 

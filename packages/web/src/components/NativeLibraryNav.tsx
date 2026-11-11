@@ -1,14 +1,15 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTeam } from '../contexts/TeamContext';
 import { isNativeApp } from '../services/native';
 import './NativeLibraryNav.css';
 
 export function NativeLibraryNav() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { teams } = useTeam();
   if (!isNativeApp() || !/^\/(dashboard|dashboards|team)(\/|$)/.test(pathname)) return null;
   const destinations = [
-    { path: '/dashboard', label: 'My Charts' },
+    { path: '/dashboard', label: 'All' },
     { path: '/dashboard/published', label: 'Published' },
     { path: '/dashboard/saved', label: 'Saved' },
     { path: '/dashboard/liked', label: 'Liked' },
@@ -18,6 +19,10 @@ export function NativeLibraryNav() {
   const selected = [...destinations].sort((a, b) => b.path.length - a.path.length)
     .find(({ path }) => pathname === path || pathname.startsWith(`${path}/`))?.path ?? '/dashboard';
   return <nav className="native-library" aria-label="Chart library">
-    {destinations.map(({ path, label }) => <Link key={path} to={path} aria-current={selected === path ? 'page' : undefined}>{label}</Link>)}
+    {destinations.slice(0, 3).map(({ path, label }) => <Link key={path} to={path} aria-current={selected === path ? 'page' : undefined}>{label}</Link>)}
+    <select aria-label="More library collections" value={destinations.slice(3).some(item => item.path === selected) ? selected : ''} onChange={event => { if (event.target.value) navigate(event.target.value); }}>
+      <option value="" disabled>More</option>
+      {destinations.slice(3).map(({ path, label }) => <option key={path} value={path}>{label}</option>)}
+    </select>
   </nav>;
 }

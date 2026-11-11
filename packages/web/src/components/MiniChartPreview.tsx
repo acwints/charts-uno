@@ -150,7 +150,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
                 key={series.name}
                 dataKey={series.name}
                 stackId={config.stacked ? "stack" : undefined}
-                isAnimationActive={!readable}
+                isAnimationActive={false}
                 fill={colors[idx % colors.length]}
                 radius={[2, 2, 0, 0]}
               />
@@ -170,7 +170,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
                 type="monotone"
                 dataKey={series.name}
                 stroke={colors[idx % colors.length]}
-                isAnimationActive={!readable}
+                isAnimationActive={false}
                 strokeWidth={2}
                 dot={false}
               />
@@ -192,7 +192,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
                 stroke={colors[idx % colors.length]}
                 fill={colors[idx % colors.length]}
                 fillOpacity={0.3}
-                isAnimationActive={!readable}
+                isAnimationActive={false}
                 strokeWidth={2}
               />
             ))}
@@ -210,7 +210,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
               outerRadius={50}
               paddingAngle={2}
               dataKey="value"
-              isAnimationActive={!readable}
+              isAnimationActive={false}
               label={readable ? ({ name, value }) => `${name}: ${value}` : false}
             >
               {pieData.map((_, idx) => (
@@ -231,7 +231,7 @@ export function MiniChartPreview({ data, config, minHeight, className, children,
                 key={series.name}
                 dataKey={series.name}
                 stackId={config.stacked ? "stack" : undefined}
-                isAnimationActive={!readable}
+                isAnimationActive={false}
                 fill={colors[idx % colors.length]}
                 radius={[2, 2, 0, 0]}
               />

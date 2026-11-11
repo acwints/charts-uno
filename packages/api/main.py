@@ -2311,7 +2311,12 @@ async def generate_from_prompt_endpoint(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Prompt generation failed: {e}")
-        raise HTTPException(status_code=500, detail="Chart generation failed")
+        if getattr(e, "code", None) in (402, 429):
+            raise HTTPException(
+                status_code=503,
+                detail="Chart generation is temporarily unavailable. Try again later, or upload a CSV with your data.",
+            ) from e
+        raise HTTPException(status_code=500, detail="Chart generation failed. Please try again.") from e
 
 
 # ============================================================================

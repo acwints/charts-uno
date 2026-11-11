@@ -118,6 +118,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [fileName, setFileName] = useInputDraftState<string | null>('DataInput:fileName', null);
   const [tickerQuery, setTickerQuery] = useInputDraftState('DataInput:tickerQuery', '');
   const [tickerResults, setTickerResults] = useState<TickerResult[]>([]);
@@ -486,6 +487,10 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
     });
   }, []);
 
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView?.({ block: 'center' });
+  }, [error]);
+
   const handlePasteOrDescribeSubmit = useCallback(async () => {
     setError(null);
     const input = pasteContent.trim();
@@ -605,6 +610,9 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
       </div>
 
       <div className="input-content-shell">
+        {error && <div className="error-message" role="alert" ref={errorRef}>
+          <AlertCircle size={16} /><span>{error}</span>
+        </div>}
         <AnimatePresence mode="wait">
           <motion.div
             key={mode}
@@ -1015,19 +1023,7 @@ export function DataInput({ onSubmit, isProcessing }: DataInputProps) {
         )}
       </aside>
 
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            className="error-message"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <AlertCircle size={16} />
-            <span>{error}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }

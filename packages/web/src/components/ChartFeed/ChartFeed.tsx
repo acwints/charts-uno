@@ -43,6 +43,8 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(cachedPage?.hasMore ?? true);
   const offsetRef = useRef(cachedPage?.offset ?? 0);
+  const pullStart = useRef<{ x: number; y: number } | null>(null);
+  const [pullReady, setPullReady] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const LIMIT = 20;
@@ -162,6 +164,12 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
     fetchCharts(activeTab, true);
   };
 
+  useEffect(() => {
+    const refresh = () => { void fetchCharts(activeTab, true); };
+    window.addEventListener('chartsuno:refresh-feed', refresh);
+    return () => window.removeEventListener('chartsuno:refresh-feed', refresh);
+  }, [activeTab, fetchCharts]);
+
   const handleDismiss = ({ chartId, userId }: { chartId: string; userId?: string }) => {
     setCharts((prev) => prev.filter((chart) => (userId ? chart.user_id !== userId : chart.id !== chartId)));
   };
@@ -181,8 +189,24 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
   ];
 
   return (
-    <div className="chart-feed">
-      <header className="chart-feed__header">
+    <div className="chart-feed"
+      onTouchStart={event => {
+        const touch = event.touches[0];
+        pullStart.current = isNativeApp() && window.scrollY <= 0 && !isLoading && event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
+      }}
+      onTouchMove={event => {
+        if (!pullStart.current) return;
+        const touch = event.touches[0];
+        setPullReady(touch.clientY - pullStart.current.y > 80 && Math.abs(touch.clientX - pullStart.current.x) < 40);
+      }}
+      onTouchEnd={() => {
+        if (pullReady && !isLoading) handleRefresh();
+        pullStart.current = null; setPullReady(false);
+      }}
+      onTouchCancel={() => { pullStart.current = null; setPullReady(false); }}
+    >
+      {pullReady && <p className="chart-feed__pull" role="status">Release to refresh</p>}
+      {!isNativeApp() && <header className="chart-feed__header">
         <div className="chart-feed__header-top">
           {onBack && (
             <button className="chart-feed__back-btn" onClick={onBack}>
@@ -215,7 +239,7 @@ export function ChartFeed({ onChartSelect, onBack, onAuthRequired, initialTab = 
             </button>
           ))}
         </nav>}
-      </header>
+      </header>}
 
       <main className={`chart-feed__content ${isMobile ? 'chart-feed__content--mobile' : ''}`}>
         {error && visibleCharts.length === 0 && (

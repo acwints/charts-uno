@@ -347,3 +347,5 @@
   border: none;
   cursor: pointer;
 }
+
+.chart-feed__pull { text-align: center; padding: 12px; color: var(--text-secondary); font-size: 0.875rem; }

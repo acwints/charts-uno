@@ -1,5 +1,3 @@
-import { Link, useLocation } from 'react-router-dom';
-import { collectChartSources, chartProvenanceNote } from '../../utils/chartSources';
 import { chartShareUrl } from '../../services/apiBase';
 import { isNativeApp, shareNative, selectionHaptic } from '../../services/native';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -10,7 +8,7 @@ import Send from 'lucide-react/dist/esm/icons/send';
 import Check from 'lucide-react/dist/esm/icons/check';
 import User from 'lucide-react/dist/esm/icons/user';
 import Eye from 'lucide-react/dist/esm/icons/eye';
-import type { ChartData, ChartConfig } from '../../types';
+import { publishedChartPresentation } from '../../utils/publishedChart';
 import type { ChartResponse } from '../../services/api';
 import { likeChart, unlikeChart, saveChart, unsaveChart } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -50,7 +48,6 @@ function formatRelativeDate(dateString: string): string {
 // actions row mirrors the like/save/share affordances of a social feed.
 export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, onDismiss }: InstaChartCardProps) {
   const { user } = useAuth();
-  const location = useLocation();
   const toast = useToast();
   const [isLiked, setIsLiked] = useState(chart.is_liked);
   const [likeCount, setLikeCount] = useState(chart.like_count);
@@ -168,10 +165,8 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
     }, DOUBLE_TAP_MS);
   };
 
+  const presentation = publishedChartPresentation(chart);
   const authorName = chart.user?.name || 'Anonymous';
-  const sources = collectChartSources(chart);
-  const source = sources[0];
-  const provenanceNote = chartProvenanceNote(chart.source_type);
   const caption = chart.title || chart.config.title || 'Untitled Chart';
 
   return (
@@ -188,7 +183,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
           <span className="insta-card__author">{authorName}</span>
           <span className="insta-card__date">{formatRelativeDate(chart.published_at || chart.created_at)}</span>
         </div>
-        <span className="insta-card__type">{chart.config.type}</span>
+        {!isNativeApp() && <span className="insta-card__type">{chart.config.type}</span>}
         <ChartSafetyMenu chart={chart} onAuthRequired={onAuthRequired} onDismiss={onDismiss} />
       </header>
 
@@ -199,8 +194,8 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         onClick={handleMediaTap}
         aria-label={`Open chart: ${caption}${isNativeApp() ? '' : '. Double tap to like.'}`}
       >
-        {chart.revision_id && !chart.legacy_snapshot ? <Suspense fallback={<span role="status">Loading chart…</span>}>
-          <div className="insta-card__published" inert><PublishedChartPreview data={{ ...chart.data, sourceType: chart.source_type as ChartData['sourceType'] }} config={{ ...chart.config, animate: false } as ChartConfig} readOnly /></div>
+        {isNativeApp() || (chart.revision_id && !chart.legacy_snapshot) ? <Suspense fallback={<span role="status">Loading chart…</span>}>
+          <div className="insta-card__published" inert><PublishedChartPreview data={presentation.data} config={presentation.config} readOnly /></div>
         </Suspense> : <MiniChartPreview
           className="insta-card__preview"
           data={chart.data}
@@ -224,9 +219,6 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         </AnimatePresence>
       </button>
 
-      {isNativeApp() && ['line', 'area'].includes(chart.config.type) && chart.data.labels.length > 1 && chart.data.series[0] && <p className="insta-card__values">
-        {chart.data.series[0].name}: {chart.data.labels[0]} {chart.data.series[0].data[0]?.toLocaleString() ?? '—'} · {chart.data.labels.at(-1)} {chart.data.series[0].data[chart.data.labels.length - 1]?.toLocaleString() ?? '—'}
-      </p>}
       <div className="insta-card__actions">
         <button
           className={`insta-card__action ${isLiked ? 'insta-card__action--liked' : ''}`}
@@ -236,6 +228,7 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
           aria-pressed={isLiked}
         >
           <Heart size={24} fill={isLiked ? 'currentColor' : 'none'} />
+          {isNativeApp() && likeCount > 0 && <span className="insta-card__like-count">{likeCount}</span>}
         </button>
         <button
           className="insta-card__action"
@@ -244,10 +237,10 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
         >
           {justShared ? <Check size={24} /> : <Send size={24} />}
         </button>
-        <div className="insta-card__views">
+        {!isNativeApp() && <div className="insta-card__views">
           <Eye size={16} />
           <span>{chart.view_count}</span>
-        </div>
+        </div>}
         <button
           className={`insta-card__action insta-card__action--save ${isSaved ? 'insta-card__action--saved' : ''}`}
           onClick={toggleSave}
@@ -260,12 +253,9 @@ export function InstaChartCard({ chart, onChartClick, onUpdate, onAuthRequired, 
       </div>
 
       <div className="insta-card__body">
-        {isNativeApp() && <p className="insta-card__source">{source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.kind === 'reference' ? 'Reference' : 'Source'}: {new URL(source.url).hostname.replace(/^www\./, '')}</a> : chart.source_declaration?.title || 'Source not provided'}</p>}
-        {isNativeApp() && <Link className="insta-card__data-link" to={`/chart/${chart.id}#data`} state={{ returnTo: location.pathname + location.search }}>Data & sources{sources.length > 1 ? ` (${sources.length})` : ''}</Link>}
-        {isNativeApp() && provenanceNote && <p className="insta-card__source">{provenanceNote}</p>}
-        <span className="insta-card__likes">
+        {!isNativeApp() && <span className="insta-card__likes">
           {likeCount} {likeCount === 1 ? 'like' : 'likes'}
-        </span>
+        </span>}
         {!isNativeApp() && <p className="insta-card__caption">
           <span className="insta-card__author">{authorName}</span> {caption}
         </p>}

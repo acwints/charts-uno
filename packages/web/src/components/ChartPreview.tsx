@@ -1047,6 +1047,7 @@ export function ChartPreview({
         type="category"
         dataKey="name"
         width={horizontalCategoryAxis.axisWidth}
+        interval={readOnly && data.labels.length <= 20 ? 0 : undefined}
         stroke={theme.textMuted}
         tick={hideAxisLabels ? false :
           <AdaptiveYAxisCategoryTick
@@ -1627,7 +1628,7 @@ export function ChartPreview({
 
       <div
         className={`chart-container ${isTableView ? 'chart-container--scroll' : 'chart-container--no-scroll'}`}
-        style={{ background: theme.background }}
+        style={{ background: theme.background, ...(readOnly && !isTableView ? { height: isHorizontal ? Math.max(320, Math.min(720, data.labels.length * 32 + 72)) : 320, flex: 'none' } : {}) }}
       >
         {renderBackgroundPattern()}
         {config.type === 'infographic' ? (

@@ -1,3 +1,4 @@
+import { isNativeApp } from '../../services/native';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
@@ -51,6 +52,16 @@ export function SortDropdown({ sort, order, onSort }: SortDropdownProps) {
     e.stopPropagation();
     onSort(sort, order === 'asc' ? 'desc' : 'asc');
   };
+
+  if (isNativeApp()) return <select aria-label="Sort charts" value={`${sort}:${order}`} onChange={event => {
+    const [field, direction] = event.target.value.split(':');
+    onSort(field as SortField, direction as SortOrder);
+  }}>
+    <option value="updated_at:desc">Recent</option><option value="updated_at:asc">Oldest edits</option>
+    <option value="created_at:desc">Newest</option><option value="created_at:asc">Oldest</option>
+    <option value="title:asc">Name A–Z</option><option value="title:desc">Name Z–A</option>
+    <option value="view_count:desc">Most viewed</option><option value="view_count:asc">Least viewed</option>
+  </select>;
 
   return (
     <div className="sort-dropdown" ref={dropdownRef}>

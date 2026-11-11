@@ -3,9 +3,9 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { ChartPreview } from '../components/ChartPreview';
 import { ShareMenu } from '../components/ShareMenu';
 import { getChart, type ChartResponse } from '../services/api';
-import { safeSourceUrl, collectChartSources, chartProvenanceNote } from '../utils/chartSources';
+import { collectChartSources, chartProvenanceNote } from '../utils/chartSources';
 import { useAuth } from '../hooks/useAuth';
-import type { ChartConfig, ChartData } from '../types';
+import { publishedChartPresentation } from '../utils/publishedChart';
 import './ChartDetail.css';
 
 // Reading a saved chart must not replace the editor's in-progress document.
@@ -39,14 +39,7 @@ export function ChartDetail() {
   if (result?.scope !== scope) return <p className="chart-reading__status" role="status">Loading chart…</p>;
   if (!result.chart) return <div className="chart-reading__status" role="alert"><p>{result.error}</p><button type="button" onClick={() => { setResult(undefined); setAttempt(n => n + 1); }}>Try again</button></div>;
   const chart = result.chart;
-  const data: ChartData = { ...chart.data, sourceType: (chart.source_type || 'paste') as ChartData['sourceType'] };
-  const config: ChartConfig = chart.revision_id && !chart.legacy_snapshot ? { ...chart.config, animate: false } : { ...chart.config, title: chart.title || chart.config.title || 'Untitled Chart', showAxisLabels: true, showAxisTitles: true, showLegend: true, showValues: false, animate: false };
-  // Generated artwork is not stored on saved chart records. Never regenerate
-  // paid artwork, or display an unrelated editor SVG, just by opening a chart.
-  if (config.type === 'infographic') config.type = 'table';
-  config.sourceLink = safeSourceUrl(config.sourceLink);
-  data.sourceLink = safeSourceUrl(data.sourceLink);
-  data.sources = data.sources?.filter(source => safeSourceUrl(source.url));
+  const { data, config } = publishedChartPresentation(chart);
   const sources = collectChartSources(chart);
   const provenanceNote = chartProvenanceNote(chart.source_type);
   const owner = chart.user_id === user?.id;
@@ -61,10 +54,7 @@ export function ChartDetail() {
       {chart.description && <p className="chart-reading__description">{chart.description}</p>}
     </header>
     <div className="chart-reading__visual"><ChartPreview data={data} config={config} readOnly /></div>
-    {!sources.length && !chart.source_declaration && <p className="chart-reading__provenance">Source not provided</p>}
-    {chart.source_declaration && <p className="chart-reading__provenance">{chart.source_declaration.title}: {chart.source_declaration.description}</p>}
-    {provenanceNote && <p className="chart-reading__provenance">{provenanceNote}</p>}
-    {sources.length > 0 && <p className="chart-reading__provenance">{sources.map(source => `${source.title}: ${new URL(source.url).hostname.replace(/^www\./, '')}`).join('; ')}</p>}
+    {(chart.source_declaration || sources.length > 0) && <p className="chart-reading__provenance">{chart.source_declaration?.title || sources.map(source => `${source.title}: ${new URL(source.url).hostname.replace(/^www\./, '')}`).join('; ')}</p>}
     </div>
     <div className="chart-reading__actions">
       {owner && <Link to={`/post?chart=${chart.id}`} state={{ returnTo: location.pathname }}>{chart.is_public ? 'Update post' : 'Publish chart'}</Link>}

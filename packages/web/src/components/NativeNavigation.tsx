@@ -25,7 +25,9 @@ export function NativeNavigation() {
     <div className="native-navigation__side">
       {!root && <button type="button" aria-label="Back" onClick={() => state?.returnTo ? navigate(state.returnTo, { replace: true, state: { returnTo: state.readerReturnTo } }) : window.history.state?.idx > 0 ? navigate(-1) : navigate('/feed')}><ChevronLeft size={24} /></button>}
     </div>
-    <span className="native-navigation__title">{title}</span>
+    {pathname === '/feed' ? <button type="button" className="native-navigation__title" aria-label="Chartsuno, refresh feed" onClick={() => {
+      window.scrollTo({ top: 0 }); window.dispatchEvent(new Event('chartsuno:refresh-feed'));
+    }}>{title}</button> : <span className="native-navigation__title">{title}</span>}
     <div className="native-navigation__side native-navigation__side--end">
       {(pathname === '/feed' || pathname.startsWith('/dashboard')) && <button type="button" aria-label="New post" onClick={() => navigate('/post', { state: { returnTo: pathname } })}><PlusSquare size={24} /></button>}
       {(/^\/chart(?:\/[^/]+\/edit)?$/.test(pathname)) && <button type="button" onClick={() => {

@@ -3,7 +3,7 @@
 .chart-reading__header p { margin: 0 0 var(--space-4); color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; }
 .chart-reading__header .chart-reading__description { font-size: 1rem; color: var(--text-primary); }
 .chart-reading__visual { min-width: 0; }
-.chart-reading__visual .chart-preview { min-height: 360px; }
+.chart-reading__visual .chart-preview { height: auto; }
 .chart-reading__visual .chart-preview--table { min-height: 0; }
 .chart-reading__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4) 0; }
 .chart-reading__actions > a, .chart-reading__status button, .chart-reading__more { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--accent-text); font: inherit; font-weight: 600; text-decoration: none; }

@@ -54,3 +54,5 @@
 .native-app .workbench-toolbar-left { order: 3; }
 .native-app .workbench-status { flex-wrap: wrap; mask-image: none; }
 .native-app .workbench-ai-label { min-height: 44px; display: flex; align-items: center; text-transform: none; letter-spacing: normal; }
+
+.native-navigation button.native-navigation__title { font-size: 1.0625rem; font-weight: 600; color: var(--text-primary); }
