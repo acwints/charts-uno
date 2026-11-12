@@ -1,0 +1,45 @@
+.native-app {
+  --font-body: -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-body);
+}
+.native-navigation {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
+  align-items: center;
+  padding: env(safe-area-inset-top) var(--space-3) 0;
+  min-height: calc(52px + env(safe-area-inset-top));
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--bg-tertiary);
+  flex-shrink: 0;
+}
+.native-navigation__title { font-size: 1.0625rem; font-weight: 600; text-align: center; }
+.native-navigation__side { display: flex; align-items: center; }
+.native-navigation__side--end { justify-content: flex-end; }
+.native-navigation button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; min-width: 44px; padding: var(--space-2);
+  background: transparent; border: 0; color: var(--accent-text); font: inherit;
+}
+.native-navigation button:focus-visible, .native-account-links a:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+}
+.native-account-links { display: flex; flex-direction: column; margin: var(--space-4); }
+.native-account-links a { padding: var(--space-4); min-height: 44px; color: var(--text-primary); border-bottom: 1px solid var(--bg-tertiary); }
+.native-app .settings-page__close, .native-app .settings-page__title { display: none; }
+.native-app .mtabbar__tab--active { color: var(--accent-text); }
+.native-app .mtabbar__label { font-size: 0.75rem; letter-spacing: normal; }
+.native-app .chart-feed__title { font-size: 1.0625rem; }
+.native-app .chart-feed__header { padding: var(--space-2) var(--space-4); }
+.native-app .chart-feed__content { padding: 0; }
+.native-app .chart-feed__stream { gap: 0; }
+.native-app .insta-card { border: 0; border-bottom: 1px solid var(--bg-tertiary); border-radius: 0; background: var(--bg-primary); }
+.native-app .insta-card__type { text-transform: none; letter-spacing: normal; background: transparent; }
+.native-app .insta-card__headline { padding: 0 var(--space-4) var(--space-3); margin: 0; font-size: 1.125rem; line-height: 1.35; color: var(--text-primary); }
+.native-app .chart-feed__retry-link { min-height: 44px; }
+
+.native-app .auth-modal__title { font-size: 1.375rem; font-weight: 700; }
+.native-app .auth-modal__copy { font-size: 1rem; }
+.native-app .auth-modal__footnote { line-height: 1.5; }
+.native-app .auth-modal__footnote a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-text); }
+.native-app .auth-modal__review-toggle { text-decoration: none; }
