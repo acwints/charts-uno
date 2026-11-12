@@ -17,7 +17,7 @@ import { useAuthModal } from '../hooks/useAuthModal';
 import { useToast } from '../contexts/ToastContext';
 import { useChartStore } from '../stores/chartStore';
 import { createChart } from '../services/api';
-import { homepageDownloadCounted, reportHomepageSave } from '../services/homepageChartEvent';
+import { homepageDownloadCounted, reportHomepageSave, reportKeepPromptSignIn, takeKeepPromptSignIn } from '../services/homepageChartEvent';
 import { flushPendingChart, readPendingChart } from '../services/pendingChart';
 import { FirstChartNudge } from '../components/FirstChartNudge';
 import { rememberReferral } from '../services/referrals';
@@ -50,6 +50,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     flushPendingChart((payload) => createChart(payload))
       .then((id) => {
         if (id && !homepageDownloadCounted()) reportHomepageSave();
+        if (id && takeKeepPromptSignIn()) reportKeepPromptSignIn();
         if (active && id) navigate(`/chart/${id}`, { replace: true });
       })
       .catch(() => {

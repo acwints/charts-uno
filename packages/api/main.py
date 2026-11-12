@@ -299,8 +299,13 @@ async def public_count(request: Request, db: Session = Depends(get_db)):
     platform, plus how many of those people have a referrer host or any UTM.
     No email, name, id, or per-person timestamp. chart_saves_7d
     counts pending homepage charts saved after sign-in, and PNG downloads,
-    which count as saves. chart_downloads_today and chart_downloads_7d are
-    those PNG downloads. None of these is a person.
+    which count as saves. chart_saves_7d_signed_in is only the post-sign-in
+    saves. chart_saves_7d_anonymous is the PNG downloads. These rows are not
+    tied to an account, so they are not filtered like count. chart_downloads_today
+    and chart_downloads_7d are those PNG downloads. keep_prompt_shown_today,
+    keep_prompt_shown_7d, keep_prompt_clicked_today, keep_prompt_clicked_7d,
+    keep_prompt_signins_today, and keep_prompt_signins_7d count the signed-out
+    Keep this chart prompt. None of these is a person.
 
         curl -s https://www.chartsuno.com/api/count
     """
@@ -324,7 +329,9 @@ async def signup_count(request: Request, db: Session = Depends(get_db)):
     first chart falls on the current UTC day. first_chart_saves_7d is the
     same people whose first chart falls in the last 7 days.
     template_picks_today and template_picks_7d count starter charts those
-    people saved in the UTC day and the last 7 days.
+    people saved in the UTC day and the last 7 days. Homepage save,
+    download, and keep-prompt counts are anonymous and are not filtered
+    like count.
 
         curl -s https://www.chartsuno.com/api/stats/signups
     """
@@ -348,7 +355,7 @@ async def chart_count_series(request: Request, db: Session = Depends(get_db)):
 
 
 class HomepageChartEventBody(BaseModel):
-    kind: Literal["view", "start", "save", "render", "download"] = "render"
+    kind: Literal["view", "start", "save", "render", "download", "keep_shown", "keep_click", "keep_signin"] = "render"
     source: Optional[Literal["paste", "drop", "sample"]] = None
 
 
@@ -359,9 +366,9 @@ async def record_homepage_chart(
 ):
     """Count one anonymous homepage funnel step.
 
-    kind is view, start, save, render, or download. A start or a render also
-    sends source: paste, drop, or sample. A view, a save, or a download does
-    not. Nothing else
+    kind is view, start, save, render, download, keep_shown, keep_click, or
+    keep_signin. A start or a render also sends source: paste, drop, or sample.
+    A view, a save, a download, or a keep-prompt step does not. Nothing else
     is read. This handler does not take the client address, user agent,
     cookies, or an id, and the access log skips the route. A process-wide
     cap limits bursts without keying them to a visitor.

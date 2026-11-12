@@ -1,11 +1,14 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import {
+  keepPromptAlreadyShown,
+  markKeepPromptShown,
   reportHomepageChart,
   reportHomepageDownload,
   reportHomepageStart,
   reportHomepageView,
+  reportKeepPromptShown,
   type HomepageChartSource,
 } from '../services/homepageChartEvent';
 import { rememberHomepageDraft, rememberPendingChart, readPendingChart } from '../services/pendingChart';
@@ -22,6 +25,7 @@ import {
 import type { ChartType } from '../types';
 import { starterBySlug, starterTable } from '../content/starterTemplates';
 import { Button } from './Button';
+import { KeepChartPrompt } from './KeepChartPrompt';
 import './InstantChart.css';
 
 const ChartPreview = lazy(() => import('./ChartPreview').then((module) => ({ default: module.ChartPreview })));
@@ -35,6 +39,7 @@ const CHART_TYPES: { id: ChartType; label: string }[] = [
 
 interface InstantChartProps {
   onRequestAuth?: () => void;
+  onKeepSignIn?: () => void;
 }
 
 function payloadFor(chart: InstantChartResult, themeMode: InstantChartResult['config']['themeMode']): CreateChartData {
@@ -60,7 +65,7 @@ function savedChartType(type: ChartType | undefined): ChartType | undefined {
   return 'bar';
 }
 
-export function InstantChart({ onRequestAuth }: InstantChartProps) {
+export function InstantChart({ onRequestAuth, onKeepSignIn }: InstantChartProps) {
   const { theme } = useTheme();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
@@ -87,8 +92,8 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [eventSource, setEventSource] = useState<HomepageChartSource>('sample');
   const [dragActive, setDragActive] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [keepOpen, setKeepOpen] = useState(false);
   const restoredText = useRef(pending?.text ?? '');
   const userStarted = useRef(false);
   const selectArmed = useRef(true);
@@ -193,6 +198,22 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     }
   };
 
+  const offerKeep = () => {
+    if (keepPromptAlreadyShown()) return;
+    markKeepPromptShown();
+    reportKeepPromptShown();
+    setKeepOpen(true);
+  };
+
+  const dismissKeep = useCallback(() => setKeepOpen(false), []);
+
+  const signInFromPrompt = () => {
+    if (!chart) return;
+    rememberPendingChart(text, payloadFor(chart, theme));
+    setKeepOpen(false);
+    onKeepSignIn?.();
+  };
+
   const downloadChart = async () => {
     if (!chart || !frameRef.current || downloading) return;
     setDownloading(true);
@@ -203,18 +224,12 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
       await exportToPNG(frameRef.current, filename);
       reportHomepageDownload();
       rememberPendingChart(text, payloadFor(chart, theme));
-      setDownloaded(true);
+      offerKeep();
     } catch (err) {
       setFileError(err instanceof Error ? err.message : 'Could not download the chart. Try again.');
     } finally {
       setDownloading(false);
     }
-  };
-
-  const keepChart = () => {
-    if (!chart) return;
-    rememberPendingChart(text, payloadFor(chart, theme));
-    onRequestAuth?.();
   };
 
   const onPrimary = () => {
@@ -234,7 +249,8 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
     const payload = payloadFor(chart, theme);
     payload.source_type = `template:${linkedTemplate.id}`;
     rememberPendingChart(text, payload);
-    onRequestAuth?.();
+    if (keepPromptAlreadyShown()) onRequestAuth?.();
+    else offerKeep();
   };
 
   const editExample = () => {
@@ -361,12 +377,8 @@ export function InstantChart({ onRequestAuth }: InstantChartProps) {
         <Button variant="primary" size="lg" onClick={() => { void downloadChart(); }} disabled={!chart || downloading} aria-busy={downloading}>
           {downloading ? 'Preparing your PNG…' : 'Save & download this chart'}
         </Button>
-        {downloaded && (
-          <Button variant="default" size="lg" onClick={keepChart}>
-            Sign in with Google to keep it
-          </Button>
-        )}
       </div>
+      <KeepChartPrompt open={keepOpen} onDismiss={dismissKeep} onSignIn={signInFromPrompt} />
     </section>
   );
 }

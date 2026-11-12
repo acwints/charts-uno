@@ -26,7 +26,7 @@ function hasTemporalPointLabels(data: ChartData): boolean {
 
 export function ChartBuilder() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const context = useOutletContext<OutletContextType>();
   const [isProcessing, setIsProcessing] = useState(false);
   const { setChartData, setChartConfig, reset } = useChartStore();
@@ -149,7 +149,12 @@ export function ChartBuilder() {
     >
       {isNativeApp() ? <div className="native-create-heading"><h1>Create a chart</h1><p>Start with a prompt, image, or your own data.</p></div> : (
         <Hero showAuthCta={!showInstant} onAuthOpen={context?.openAuthModal}>
-          {showInstant && <InstantChart onRequestAuth={context?.openAuthModal} />}
+          {showInstant && (
+            <InstantChart
+              onRequestAuth={context?.openAuthModal}
+              onKeepSignIn={() => { void login(); }}
+            />
+          )}
         </Hero>
       )}
       <DataInput onSubmit={handleDataSubmit} isProcessing={isProcessing} />
